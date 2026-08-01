@@ -24,7 +24,7 @@ export const sendFcmNotification = createServerFn({ method: "POST" })
       const { data: roleRows } = await admin
         .from("user_roles")
         .select("user_id")
-        .in("role", data.roles);
+        .in("role", data.roles as any);
       userIds = (roleRows ?? []).map((row) => row.user_id);
     } else {
       const { data: members } = await admin.from("profiles").select("id");

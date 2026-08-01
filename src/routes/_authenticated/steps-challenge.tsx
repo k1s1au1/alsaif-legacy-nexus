@@ -106,7 +106,7 @@ function StepsChallengePage() {
   }, []);
 
   const handleSync = async (silent = false) => {
-    let tId = null;
+    let tId: string | number | null = null;
     if (!silent) tId = toast.loading("جاري قراءة الخطوات...");
 
     try {

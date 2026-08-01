@@ -7,7 +7,6 @@ import { App } from "@capacitor/app";
 // Capacitor starts from a blank document, with no TanStack server hydration
 // payload. Start the router normally and load the current client route.
 const router = getRouter();
-router.update({ defaultSsr: false });
 
 // Voice Actions & Deep Linking Handler
 App.addListener('appUrlOpen', (event: any) => {

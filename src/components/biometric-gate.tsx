@@ -115,7 +115,7 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
           )}
 
           <button
-            onClick={checkAuth}
+            onClick={() => { void checkAuth(); }}
             className="btn-gold px-12 py-5 rounded-full font-black flex items-center gap-3 shadow-2xl mx-auto"
           >
             <Fingerprint size={24} /> محاولة مرة أخرى
