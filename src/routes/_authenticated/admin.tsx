@@ -114,7 +114,7 @@ function AdminPage() {
     community: [] as any[],
   });
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"requests" | "members" | "member_requests" | "polls" | "bugs" | "master_archive">(
+  const [tab, setTab] = useState<"requests" | "members" | "member_requests" | "polls" | "bugs" | "master_archive" | "suggestions">(
     "requests",
   );
   const [reqCounts, setReqCounts] = useState<Record<string, number>>({
