@@ -35,7 +35,9 @@ import {
   History,
   CheckCircle2,
   MapPin,
+  Inbox,
 } from "lucide-react";
+
 
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -50,6 +52,8 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { IntegratedHub } from "@/components/dashboard/integrated-hub";
 import { sendFcmNotification } from "@/lib/fcm.functions";
 import { finalizePoll } from "@/lib/api/shura.functions";
+import { SuggestionsManager } from "@/components/admin/suggestions-manager";
+
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
@@ -110,7 +114,7 @@ function AdminPage() {
     community: [] as any[],
   });
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"requests" | "members" | "member_requests" | "polls" | "bugs" | "master_archive">(
+  const [tab, setTab] = useState<"requests" | "members" | "member_requests" | "polls" | "bugs" | "master_archive" | "suggestions">(
     "requests",
   );
   const [reqCounts, setReqCounts] = useState<Record<string, number>>({
@@ -650,7 +654,23 @@ function AdminPage() {
                   )}
                 </button>
               )}
+              {(isSystemAdmin || isSiteChairman) && (
+                <button
+                  onClick={() => setTab("suggestions")}
+                  className={cn(
+                    "px-8 py-3 rounded-[22px] text-sm font-black transition-all flex items-center gap-2 shrink-0",
+                    tab === "suggestions"
+                      ? "bg-primary text-white shadow-xl"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  <Inbox size={18} /> المقترحات
+                </button>
+              )}
             </div>
+
+            {tab === "suggestions" && (isSystemAdmin || isSiteChairman) && <SuggestionsManager />}
+
 
             {tab === "requests" && (
               <section className="space-y-8 animate-fade-up">
