@@ -52,6 +52,8 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { IntegratedHub } from "@/components/dashboard/integrated-hub";
 import { sendFcmNotification } from "@/lib/fcm.functions";
 import { finalizePoll } from "@/lib/api/shura.functions";
+import { SuggestionsManager } from "@/components/admin/suggestions-manager";
+
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
