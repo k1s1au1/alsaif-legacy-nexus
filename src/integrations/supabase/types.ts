@@ -1294,7 +1294,6 @@ export type Database = {
       }
       trips: {
         Row: {
-          accommodation_type: string | null
           badge: string | null
           created_at: string
           created_by: string | null
@@ -1310,8 +1309,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          accommodation_type?: string | null
-          accommodation_type?: string | null
           badge?: string | null
           created_at?: string
           created_by?: string | null
