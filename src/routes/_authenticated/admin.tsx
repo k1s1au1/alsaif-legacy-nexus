@@ -650,7 +650,23 @@ function AdminPage() {
                   )}
                 </button>
               )}
+              {(isSystemAdmin || isSiteChairman) && (
+                <button
+                  onClick={() => setTab("suggestions")}
+                  className={cn(
+                    "px-8 py-3 rounded-[22px] text-sm font-black transition-all flex items-center gap-2 shrink-0",
+                    tab === "suggestions"
+                      ? "bg-primary text-white shadow-xl"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  <Inbox size={18} /> المقترحات
+                </button>
+              )}
             </div>
+
+            {tab === "suggestions" && (isSystemAdmin || isSiteChairman) && <SuggestionsManager />}
+
 
             {tab === "requests" && (
               <section className="space-y-8 animate-fade-up">
