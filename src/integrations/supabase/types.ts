@@ -92,6 +92,24 @@ export type Database = {
         }
         Relationships: []
       }
+      anonymous_suggestions: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           key: string
