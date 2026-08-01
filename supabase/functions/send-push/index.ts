@@ -32,7 +32,12 @@ async function getAccessToken(sa: any) {
     iat,
   };
   const unsigned = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(claim))}`;
-  const pem = sa.private_key
+  // Normalize keys pasted with escaped newlines (\\n) or CRLF
+  const normalizedKey = String(sa.private_key)
+    .replace(/\\r/g, "")
+    .replace(/\\n/g, "\n")
+    .replace(/\r/g, "");
+  const pem = normalizedKey
     .replace(/-----BEGIN PRIVATE KEY-----/, "")
     .replace(/-----END PRIVATE KEY-----/, "")
     .replace(/\s/g, "");
@@ -53,7 +58,7 @@ async function getAccessToken(sa: any) {
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
   const data = await res.json();
-  if (!data.access_token) throw new Error(`Firebase Auth Failed: ${JSON.stringify(data)}`);
+  if (!data.access_token) throw new Error(`فشل التحقق من Firebase: ${JSON.stringify(data)} — تأكد من صحة مفتاح FCM_SERVICE_ACCOUNT (نسخة كاملة من ملف JSON للحساب الخدمي).`);
   return data.access_token;
 }
 
