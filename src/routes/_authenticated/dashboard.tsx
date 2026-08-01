@@ -471,7 +471,7 @@ function Dashboard() {
     }
   };
 
-  const safeProfile = profileData || { name: "تحميل...", role: "عضو", initial: "س" };
+  const safeProfile = profileData || { id: null as any, name: "تحميل...", role: "عضو", initial: "س", avatarPath: null as any };
 
   if (profileLoading) {
     return (
