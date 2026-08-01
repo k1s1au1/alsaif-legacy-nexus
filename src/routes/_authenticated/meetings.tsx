@@ -358,12 +358,14 @@ function MeetingsPage() {
       toast.loading("جاري إرسال التذكيرات...");
       const { sendPushNotification } = await import("@/lib/api/push.functions");
       const result = await sendPushNotification({
-        title: `تذكير: ${m.title}`,
-        body: `نذكركم بموعدنا القريب في: ${formatDate(m.scheduled_at).weekday} الساعة ${formatDate(m.scheduled_at).time}`,
-        type: "meetings",
-        route: "/meetings",
-        category: "MEETING_INVITE",
-        data: { meeting_id: m.id }
+        data: {
+          title: `تذكير: ${m.title}`,
+          body: `نذكركم بموعدنا القريب في: ${formatDate(m.scheduled_at).weekday} الساعة ${formatDate(m.scheduled_at).time}`,
+          type: "meetings",
+          route: "/meetings",
+          category: "MEETING_INVITE",
+          data: { meeting_id: String(m.id) },
+        },
       });
 
       toast.dismiss();
