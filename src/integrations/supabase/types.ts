@@ -1471,6 +1471,7 @@ export type Database = {
         Args: { _conversation_id: string }
         Returns: undefined
       }
+      public_stats: { Args: never; Returns: Json }
     }
     Enums: {
       account_request_status: "pending" | "approved" | "rejected"
