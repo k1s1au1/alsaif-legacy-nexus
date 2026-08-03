@@ -27,12 +27,13 @@ export function useAppBackground(settingKey: string) {
         return;
       }
 
-      // Use Public URL instead of Signed URL so it works on login page
-      const { data: { publicUrl } } = supabase.storage
+      // Bucket is private -> signed URL (anon has read access via RLS)
+      const { data: signed } = await supabase.storage
         .from(BUCKET)
-        .getPublicUrl(path);
+        .createSignedUrl(path, 60 * 60 * 24 * 7);
 
-      if (!cancelled) setUrl(publicUrl);
+      if (!cancelled) setUrl(signed?.signedUrl ?? null);
+
     })();
 
     const channelId = `app-settings-${settingKey}-${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
