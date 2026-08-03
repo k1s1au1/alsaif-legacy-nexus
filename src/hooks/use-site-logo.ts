@@ -36,12 +36,13 @@ export function useSiteLogo() {
           return;
         }
 
-        // Use Public URL instead of Signed URL so it works on login page
-        const { data: { publicUrl } } = supabase.storage
+        // Bucket is private -> use a long-lived signed URL (readable by anon via RLS)
+        const { data: signed } = await supabase.storage
           .from(BUCKET)
-          .getPublicUrl(path);
+          .createSignedUrl(path, SIGN_SECONDS);
 
-        const finalUrl = publicUrl;
+        const finalUrl = signed?.signedUrl ?? null;
+
 
         if (!cancelled) {
           globalLogoUrl = finalUrl;
