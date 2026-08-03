@@ -53,9 +53,12 @@ export function BackgroundUploader({
           .maybeSingle();
 
         if (setting?.value) {
-          const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(setting.value);
-          setCurrentPreview(publicUrl);
+          const { data: signed } = await supabase.storage
+            .from(BUCKET)
+            .createSignedUrl(setting.value, 60 * 60 * 24 * 7);
+          setCurrentPreview(signed?.signedUrl ?? null);
         }
+
       } catch (err) {
         console.error("Error checking permissions or fetching preview:", err);
       }

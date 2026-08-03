@@ -57,12 +57,13 @@ function AuthPage() {
   const { data: counts = { members: 0, completedTasks: 0 } } = useQuery({
     queryKey: ["public-stats"],
     queryFn: async () => {
-      const [{ count: mCount }, { count: tCount }] = await Promise.all([
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("tasks").select("*", { count: "exact", head: true }).eq("status", "done"),
-      ]);
-      return { members: mCount || 0, completedTasks: tCount || 0 };
+      const { data } = await (supabase as any).rpc("public_stats");
+      return {
+        members: (data as any)?.members ?? 0,
+        completedTasks: (data as any)?.completedTasks ?? 0,
+      };
     },
+
     refetchInterval: 1000 * 10,
   });
 
