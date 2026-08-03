@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
 
     let sent = 0;
     const fcmErrors: any[] = [];
+    const staleTokens: string[] = [];
 
     await Promise.all(tokens.map(async (fcmToken: string) => {
       const message = {
@@ -134,11 +135,29 @@ Deno.serve(async (req) => {
         body: JSON.stringify(message)
       });
 
-      if (res.ok) sent++;
-      else fcmErrors.push(await res.json());
+      if (res.ok) {
+        sent++;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        const raw = JSON.stringify(err);
+        if (/UNREGISTERED|INVALID_ARGUMENT|SenderId mismatch|NOT_FOUND/i.test(raw)) {
+          staleTokens.push(fcmToken);
+        }
+        fcmErrors.push(err);
+      }
     }));
 
-    return new Response(JSON.stringify({ success: true, sent, total: tokens.length, errors: fcmErrors }), { headers: CORS_HEADERS });
+    // Auto-cleanup: deactivate tokens registered on a different/old Firebase project
+    if (staleTokens.length) {
+      await supabase.from("push_tokens").update({ is_active: false }).in("token", staleTokens);
+    }
+
+    const msg = sent === 0 && staleTokens.length
+      ? `الأجهزة المسجّلة (${staleTokens.length}) تنتمي لمشروع Firebase قديم وتم تعطيلها. أعد ربط الجهاز.`
+      : undefined;
+
+    return new Response(JSON.stringify({ success: true, sent, total: tokens.length, stale: staleTokens.length, msg, errors: fcmErrors }), { headers: CORS_HEADERS });
+
 
   } catch (e: any) {
     console.error(e);
