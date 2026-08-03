@@ -34,6 +34,20 @@ public class StepsPlugin extends Plugin implements SensorEventListener {
         call.resolve(ret);
     }
 
+    @PluginMethod
+    public void checkHealthConnect(PluginCall call) {
+        JSObject ret = new JSObject();
+        try {
+            int status = androidx.health.connect.client.HealthConnectClient.getSdkStatus(getContext(), "com.google.android.apps.healthdata");
+            ret.put("status", status);
+            // 1: NOT_INSTALLED, 2: NOT_SUPPORTED, 3: SDK_AVAILABLE
+            call.resolve(ret);
+        } catch (Exception e) {
+            ret.put("status", 2);
+            call.resolve(ret);
+        }
+    }
+
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_STEP_COUNTER) {

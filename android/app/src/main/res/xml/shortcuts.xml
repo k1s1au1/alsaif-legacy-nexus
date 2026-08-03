@@ -1,40 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Capability to open meetings -->
-    <capability android:name="actions.intent.OPEN_APP_FEATURE">
+    <!-- Meeting / Majlis -->
+    <shortcut
+        android:shortcutId="open_majlis"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_meetings_label">
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="com.alsaif.familyhub"
             android:targetClass="com.alsaif.familyhub.MainActivity"
-            android:data="alsaif://meetings">
-            <parameter
-                android:name="feature"
-                android:key="feature" />
-        </intent>
-    </capability>
+            android:data="alsaif://majlis" />
+    </shortcut>
 
-    <!-- Capability for steps challenge -->
-    <capability android:name="actions.intent.RECORD_EXERCISE">
+    <!-- Steps Challenge -->
+    <shortcut
+        android:shortcutId="open_steps"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_steps_label">
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="com.alsaif.familyhub"
             android:targetClass="com.alsaif.familyhub.MainActivity"
             android:data="alsaif://steps-challenge" />
-    </capability>
+    </shortcut>
 
-    <!-- Custom shortcuts for common Arabic commands -->
+    <!-- Vault -->
     <shortcut
-        android:shortcutId="open_meetings"
+        android:shortcutId="open_vault"
         android:enabled="true"
         android:icon="@mipmap/ic_launcher"
-        android:shortcutShortLabel="@string/shortcut_meetings_label">
-        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
-            <parameter-binding
-                android:key="feature"
-                android:value="الاجتماعات" />
-        </capability-binding>
+        android:shortcutShortLabel="@string/shortcut_vault_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="alsaif://meetings" />
+            android:targetPackage="com.alsaif.familyhub"
+            android:targetClass="com.alsaif.familyhub.MainActivity"
+            android:data="alsaif://vault" />
+    </shortcut>
+
+    <!-- Family Tree -->
+    <shortcut
+        android:shortcutId="open_tree"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_family_tree_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.alsaif.familyhub"
+            android:targetClass="com.alsaif.familyhub.MainActivity"
+            android:data="alsaif://family-tree" />
     </shortcut>
 </shortcuts>

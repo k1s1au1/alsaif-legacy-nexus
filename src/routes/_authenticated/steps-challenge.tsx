@@ -42,10 +42,20 @@ function StepsChallengePage() {
     }
 
     try {
+      const { registerPlugin } = await import("@capacitor/core");
+      const StepsPlugin = registerPlugin<any>("StepsPlugin");
+
+      const { status } = await StepsPlugin.checkHealthConnect();
+
+      if (status === 1) { // NOT_INSTALLED
+        toast.error("تطبيق Health Connect غير مثبت. يرجى تثبيته من المتجر.");
+        window.open("https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata", "_blank");
+        return;
+      }
+
       toast.info("يرجى منح صلاحية الوصول لبيانات الصحة (Health Connect)");
 
-      // On Android, we'd ideally use a Health Connect plugin.
-      // For now, we simulate the grant but enable the "Native Sync" path.
+      // Simulate permission flow for now until full native intent is mapped
       setTimeout(() => {
         setHasPermission(true);
         localStorage.setItem("steps_permission_granted", "true");

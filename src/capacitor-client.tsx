@@ -24,6 +24,10 @@ App.addListener('appUrlOpen', (event: any) => {
     router.navigate({ to: '/majlis' });
   } else if (path.includes('chat')) {
     router.navigate({ to: '/chat' });
+  } else if (path.includes('vault')) {
+    router.navigate({ to: '/vault' });
+  } else if (path.includes('family-tree')) {
+    router.navigate({ to: '/family-tree' });
   }
 });
 

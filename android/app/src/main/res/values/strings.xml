@@ -4,6 +4,8 @@
     <string name="title_activity_main">المجلس</string>
     <string name="package_name">com.alsaif.familyhub</string>
     <string name="custom_url_scheme">com.alsaif.familyhub</string>
-    <string name="shortcut_meetings_label">اجتماعات العائلة</string>
+    <string name="shortcut_meetings_label">المجلس</string>
     <string name="shortcut_steps_label">تحدي الخطوات</string>
+    <string name="shortcut_vault_label">خزنة الوثائق</string>
+    <string name="shortcut_family_tree_label">شجرة العائلة</string>
 </resources>
