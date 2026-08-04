@@ -258,17 +258,45 @@ function SettingsPage() {
         // ننتظر 6 ثواني لنعطي فرصة للتسجيل
         await new Promise((r) => setTimeout(r, 6000));
       } else {
-        const { isSupported, getMessaging, getToken } = await import("firebase/messaging");
+        const { isSupported, getMessaging, getToken, deleteToken } = await import("firebase/messaging");
         const { initializeApp, getApps } = await import("firebase/app");
         const { FIREBASE_CONFIG, FCM_VAPID_KEY } = await import("@/lib/fcm-config");
 
         if (!(await isSupported())) throw new Error("المتصفح لا يدعم الإشعارات");
+
+        const inIframe = typeof window !== "undefined" && window.self !== window.top;
+        if (Notification.permission === "denied") {
+          throw new Error(
+            inIframe
+              ? "الإشعارات محجوبة داخل نافذة المعاينة. افتح الموقع في تبويب مستقل ثم أعد المحاولة."
+              : "الإشعارات محجوبة من إعدادات المتصفح لهذا الموقع. اسمح بالإشعارات من أيقونة القفل في شريط العنوان ثم أعد المحاولة.",
+          );
+        }
+
         const permission = await Notification.requestPermission();
-        if (permission !== "granted") throw new Error("لم يتم منح إذن الإشعارات");
+        if (permission !== "granted") {
+          throw new Error(
+            inIframe
+              ? "لم يتم منح إذن الإشعارات — افتح الموقع في تبويب مستقل (خارج نافذة المعاينة) ثم أعد المحاولة."
+              : "لم يتم منح إذن الإشعارات",
+          );
+        }
+
+        // تحديث Service Worker لضمان استخدام إعدادات Firebase الجديدة
+        const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
+          scope: "/",
+        });
+        await registration.update().catch(() => {});
+        await navigator.serviceWorker.ready;
 
         const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
         const messaging = getMessaging(app);
-        const token = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+        // حذف أي رمز قديم يعود لمشروع Firebase السابق
+        await deleteToken(messaging).catch(() => {});
+        const token = await getToken(messaging, {
+          vapidKey: FCM_VAPID_KEY,
+          serviceWorkerRegistration: registration,
+        });
 
         if (token) {
           const { data: auth } = await supabase.auth.getUser();
