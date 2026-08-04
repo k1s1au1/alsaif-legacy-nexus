@@ -3,12 +3,12 @@ importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "AIzaSyC9bAtP8U3ohl22gRWGqrscUAqD15h2wDw",
-  authDomain: "alsaif-nexus.firebaseapp.com",
-  projectId: "alsaif-nexus",
-  storageBucket: "alsaif-nexus.firebasestorage.app",
-  messagingSenderId: "1099282607132",
-  appId: "1:1099282607132:web:dd39f94650748db6a803d9",
+  apiKey: "AIzaSyCbPxOtCK-mrTnlIENrz-PG-Oao4h5bgwo",
+  authDomain: "alsaif-family-hub-rsmy.firebaseapp.com",
+  projectId: "alsaif-family-hub-rsmy",
+  storageBucket: "alsaif-family-hub-rsmy.firebasestorage.app",
+  messagingSenderId: "471598482928",
+  appId: "1:471598482928:web:b4899f018f1de5376ec935",
 });
 
 const messaging = firebase.messaging();
