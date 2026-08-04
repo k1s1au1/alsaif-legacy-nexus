@@ -1,5 +1,5 @@
 export const FCM_VAPID_KEY =
-  "BGg-qnRU0xItRiDOi8ZZnEDmUjH-9wVB-0lhE8uCFruEquh_QNJF1DGjxlJc-5yBLe2hzNlPOdurN6AlljpHKhs";
+  "BLdiq4uRy7aW0wQBXFgEDt96RshxwYDiRpBxX684IM4mj848cc1HdCYDg9x4-CfAmNMQ3e630rBm4s4wvdCXVXI";
 
 export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCbPxOtCK-mrTnlIENrz-PG-Oao4h5bgwo",
