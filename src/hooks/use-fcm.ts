@@ -28,8 +28,10 @@ export function useFcm() {
         try {
           if (!(await isSupported())) return;
 
-          const permission = await Notification.requestPermission();
-          if (permission !== "granted") return;
+          // Browsers require a direct user gesture before showing the prompt.
+          // The settings button handles first-time permission requests; here we
+          // only restore registration when permission was already granted.
+          if (Notification.permission !== "granted") return;
 
           const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
             scope: "/",

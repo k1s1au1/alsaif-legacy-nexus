@@ -258,13 +258,10 @@ function SettingsPage() {
         // ننتظر 6 ثواني لنعطي فرصة للتسجيل
         await new Promise((r) => setTimeout(r, 6000));
       } else {
-        const { isSupported, getMessaging, getToken, deleteToken } = await import("firebase/messaging");
-        const { initializeApp, getApps } = await import("firebase/app");
-        const { FIREBASE_CONFIG, FCM_VAPID_KEY } = await import("@/lib/fcm-config");
-
-        if (!(await isSupported())) throw new Error("المتصفح لا يدعم الإشعارات");
-
         const inIframe = typeof window !== "undefined" && window.self !== window.top;
+        if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+          throw new Error("هذا المتصفح لا يدعم إشعارات الويب");
+        }
         if (Notification.permission === "denied") {
           throw new Error(
             inIframe
@@ -273,6 +270,8 @@ function SettingsPage() {
           );
         }
 
+        // Keep this as the first awaited action after the click. Loading Firebase
+        // beforehand loses Chrome's transient user activation and suppresses the prompt.
         const permission = await Notification.requestPermission();
         if (permission !== "granted") {
           throw new Error(
@@ -281,6 +280,12 @@ function SettingsPage() {
               : "لم يتم منح إذن الإشعارات",
           );
         }
+
+        const { isSupported, getMessaging, getToken, deleteToken } = await import("firebase/messaging");
+        const { initializeApp, getApps } = await import("firebase/app");
+        const { FIREBASE_CONFIG, FCM_VAPID_KEY } = await import("@/lib/fcm-config");
+
+        if (!(await isSupported())) throw new Error("المتصفح لا يدعم الإشعارات");
 
         // تحديث Service Worker لضمان استخدام إعدادات Firebase الجديدة
         const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
@@ -301,10 +306,11 @@ function SettingsPage() {
         if (token) {
           const { data: auth } = await supabase.auth.getUser();
           if (auth.user) {
-            await supabase.from("push_tokens").upsert(
+            const { error: tokenError } = await supabase.from("push_tokens").upsert(
               { user_id: auth.user.id, token, platform: "web", is_active: true },
               { onConflict: "token" }
             );
+            if (tokenError) throw new Error(`تعذر حفظ تسجيل الجهاز: ${tokenError.message}`);
           }
         }
       }
