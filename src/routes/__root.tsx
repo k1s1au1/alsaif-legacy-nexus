@@ -160,7 +160,7 @@ function RootComponent() {
                 platform: Capacitor.getPlatform() || "android",
                 is_active: true,
               },
-              { onConflict: "token" },
+              { onConflict: "user_id,token" },
             );
           } catch (e) {
             console.warn("[Push] Failed to save stored token on login:", e);

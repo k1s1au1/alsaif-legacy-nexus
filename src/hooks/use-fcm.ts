@@ -56,7 +56,7 @@ export function useFcm() {
                   platform: "web",
                   is_active: true,
                 },
-                { onConflict: "token" }
+                { onConflict: "user_id,token" }
               );
             }
           }
