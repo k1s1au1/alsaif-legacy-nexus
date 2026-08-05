@@ -627,7 +627,7 @@ function SettingsPage() {
 
                     if (result?.success) {
                       if (result.sent > 0) {
-                        toast.success("تم إرسال الإشعار بنجاح! تفقد مركز التنبيهات.");
+                        toast.success("تم قبول الإشعار وإرساله إلى جهازك.");
                       } else {
                         toast.error("فشل الإرسال: " + (result.msg || "لم يتم العثور على أجهزة مسجلة لهذا الحساب."));
                       }
