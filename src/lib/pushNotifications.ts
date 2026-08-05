@@ -61,7 +61,7 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
           is_active: true,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "token" },
+        { onConflict: "user_id,token" },
       );
 
       if (!error) {

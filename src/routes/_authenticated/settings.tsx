@@ -308,7 +308,7 @@ function SettingsPage() {
           if (auth.user) {
             const { error: tokenError } = await supabase.from("push_tokens").upsert(
               { user_id: auth.user.id, token, platform: "web", is_active: true },
-              { onConflict: "token" }
+              { onConflict: "user_id,token" }
             );
             if (tokenError) throw new Error(`تعذر حفظ تسجيل الجهاز: ${tokenError.message}`);
           }
