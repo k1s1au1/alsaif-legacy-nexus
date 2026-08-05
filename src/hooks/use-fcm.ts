@@ -5,7 +5,7 @@ import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { FCM_VAPID_KEY, FIREBASE_CONFIG } from "@/lib/fcm-config";
 import { initializeApp, getApps } from "firebase/app";
-import { getMessaging, getToken, isSupported } from "firebase/messaging";
+import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 
 /**
  * Hook to initialize push notifications for both Web and Mobile.
@@ -14,6 +14,8 @@ export function useFcm() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let unsubscribeForeground: (() => void) | undefined;
+
     const initPush = async () => {
       // 1. Native Platform (Mobile App)
       if (Capacitor.isNativePlatform()) {
@@ -41,6 +43,30 @@ export function useFcm() {
           const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
           const messaging = getMessaging(app);
 
+           // Firebase does not display notification payloads automatically while
+           // the web app is in the foreground. Listen explicitly and display a
+           // real browser notification so a successful test is visible at once.
+           unsubscribeForeground = onMessage(messaging, (payload) => {
+             const title = payload.notification?.title || payload.data?.title || "إشعار جديد";
+             const body = payload.notification?.body || payload.data?.body || "";
+             const targetUrl = payload.data?.url || "/";
+
+             if (Notification.permission !== "granted") return;
+
+             const notification = new Notification(title, {
+               body,
+               icon: "/logo.png",
+               badge: "/logo.png",
+               data: { url: targetUrl },
+             });
+
+             notification.onclick = () => {
+               window.focus();
+               notification.close();
+               if (targetUrl.startsWith("/")) navigate({ to: targetUrl });
+             };
+           });
+
           const token = await getToken(messaging, {
             vapidKey: FCM_VAPID_KEY,
             serviceWorkerRegistration: registration,
@@ -67,5 +93,6 @@ export function useFcm() {
     };
 
     void initPush();
+    return () => unsubscribeForeground?.();
   }, [navigate]);
 }
