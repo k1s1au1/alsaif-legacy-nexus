@@ -75,10 +75,45 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
       console.error("[Push] FCM Registration error:", err);
     });
 
-    await PushNotifications.addListener("pushNotificationReceived", (notification) => {
+    await PushNotifications.addListener("pushNotificationReceived", async (notification) => {
       console.log("[Push] Notification received in foreground:", notification);
-      toast.info(notification.title || "تنبيه جديد", {
-        description: notification.body,
+      const title = notification.title || (notification.data as any)?.title || "تنبيه جديد";
+      const body = notification.body || (notification.data as any)?.body || "";
+
+      // Android does not display push payloads while the app is in the
+      // foreground, so mirror it as a real system notification.
+      try {
+        const { LocalNotifications } = await import("@capacitor/local-notifications");
+        let lp = await LocalNotifications.checkPermissions();
+        if (lp.display !== "granted") lp = await LocalNotifications.requestPermissions();
+        if (lp.display === "granted") {
+          await LocalNotifications.createChannel({
+            id: "alsaif_notifications",
+            name: "إشعارات المجلس",
+            importance: 5,
+            visibility: 1,
+            sound: "default",
+            vibration: true,
+          });
+          await LocalNotifications.schedule({
+            notifications: [
+              {
+                id: Math.floor(Math.random() * 100000),
+                title,
+                body,
+                channelId: "alsaif_notifications",
+                smallIcon: "ic_launcher",
+                extra: notification.data || {},
+              },
+            ],
+          });
+        }
+      } catch (e) {
+        console.warn("[Push] Local mirror failed:", e);
+      }
+
+      toast.info(title, {
+        description: body,
         duration: 5000,
         action: {
           label: "فتح",
@@ -89,6 +124,19 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
         }
       });
     });
+
+    // Tapping the mirrored local notification should also deep-link
+    try {
+      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      await LocalNotifications.removeAllListeners();
+      await LocalNotifications.addListener("localNotificationActionPerformed", (ev: any) => {
+        const url = ev?.notification?.extra?.url;
+        if (url && navigate) navigate({ to: url as any });
+      });
+    } catch (e) {
+      console.warn("[Push] Local listener failed:", e);
+    }
+
 
     await PushNotifications.addListener("pushNotificationActionPerformed", async (notification: any) => {
       console.log("[Push] Notification action performed:", notification);
