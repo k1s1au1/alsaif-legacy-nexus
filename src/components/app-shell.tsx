@@ -242,6 +242,7 @@ export function AppShell({
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
   const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(() => {
     if (typeof window !== "undefined") {
       const cached = localStorage.getItem("bottom_nav_prefs");
@@ -338,6 +339,7 @@ export function AppShell({
           ["chairman", "admin", "manager"].includes(role),
         );
         setIsAdmin(hasManagementRank);
+        setIsGuest(rs.includes("guest"));
 
         if (profileData?.bottom_nav_prefs && Array.isArray(profileData.bottom_nav_prefs)) {
           const keys = profileData.bottom_nav_prefs as NavItemKey[];
@@ -460,6 +462,7 @@ export function AppShell({
         <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto no-scrollbar">
           {navItems
             .filter((item) => !item.adminOnly || isAdmin)
+            .filter((item) => !isGuest || ["/dashboard", "/profile", "/settings", "/members"].includes(item.to))
             .map(({ to, label, icon: Icon }) => (
               <Link
                 key={to}
@@ -671,6 +674,7 @@ export function AppShell({
             {bottomNavKeys.slice(0, 2).map((key) => {
               const def = NAV_REGISTRY.find((n) => n.id === key);
               if (!def || (def.adminOnly && !isAdmin)) return null;
+              if (isGuest && ["chat", "tasks", "vault", "finance", "admin"].includes(def.id)) return null;
               return (
                 <BottomNavItem
                   key={def.id}
@@ -700,6 +704,7 @@ export function AppShell({
             {bottomNavKeys.slice(2, 3).map((key) => {
               const def = NAV_REGISTRY.find((n) => n.id === key);
               if (!def || (def.adminOnly && !isAdmin)) return null;
+              if (isGuest && ["chat", "tasks", "vault", "finance", "admin"].includes(def.id)) return null;
               return (
                 <BottomNavItem
                   key={def.id}
@@ -796,6 +801,7 @@ export function AppShell({
                 <div className="relative z-10 grid grid-cols-1 gap-2.5">
                   {navItems
                     .filter((item) => !item.adminOnly || isAdmin)
+                    .filter((item) => !isGuest || ["/dashboard", "/profile", "/settings", "/members"].includes(item.to))
                     .map(({ to, label, icon: Icon }) => (
                       <Link
                         key={to}
@@ -891,8 +897,8 @@ export function AppShell({
                     to="/chat"
                     label="محادثة"
                     icon={<MessageCircle size={28} />}
-                    color="bg-[#065F46]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#065F46]", isGuest && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => { if (isGuest) { e.preventDefault(); toast.error("خاص بالعائلة"); } else { setShowQuickActions(false); } }}
                   />
                   <QuickActionItem
                     to="/trips"
@@ -912,8 +918,8 @@ export function AppShell({
                     to="/tasks"
                     label="مهام"
                     icon={<ListChecks size={28} />}
-                    color="bg-[#947D4C]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#947D4C]", isGuest && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => { if (isGuest) { e.preventDefault(); toast.error("خاص بالعائلة"); } else { setShowQuickActions(false); } }}
                   />
                   <QuickActionItem
                     to="/majlis"
@@ -954,15 +960,15 @@ export function AppShell({
                     to="/vault"
                     label="الخزنة"
                     icon={<Lock size={28} />}
-                    color="bg-[#7c2d12]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#7c2d12]", isGuest && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => { if (isGuest) { e.preventDefault(); toast.error("خاص بالعائلة"); } else { setShowQuickActions(false); } }}
                   />
                   <QuickActionItem
                     to="/finance"
                     label="الصندوق"
                     icon={<Wallet size={28} />}
-                    color="bg-[#BF953F]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#BF953F]", isGuest && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => { if (isGuest) { e.preventDefault(); toast.error("خاص بالعائلة"); } else { setShowQuickActions(false); } }}
                   />
                   <QuickActionItem
                     to="/steps-challenge"

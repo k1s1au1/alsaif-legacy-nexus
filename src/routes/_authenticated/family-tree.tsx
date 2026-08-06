@@ -77,6 +77,7 @@ function FamilyTreePage() {
   const [zoom, setZoom] = useState(0.6);
   const [translate, setTranslate] = useState({ x: 200, y: 100 });
   const [addOpen, setAddOpen] = useState(false);
+  const [pathIds, setPathIds] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Normalizing Arabic text for better search
@@ -247,6 +248,57 @@ function FamilyTreePage() {
     const m = memberId ? members.find((mem) => mem.id === memberId) : null;
     const isRoot = memberId === "__root__";
     const isMe = me?.id && m && m.id === me.id;
+    const isInPath = memberId && pathIds.has(memberId);
+
+    const handleNodeClick = () => {
+      if (isRoot) {
+        setPathIds(new Set());
+        toggleNode();
+        return;
+      }
+
+      if (!me?.id || !memberId) return;
+
+      const getAncestors = (id: string) => {
+        const list: string[] = [];
+        let curr = members.find(x => x.id === id);
+        while (curr) {
+          list.push(curr.id);
+          if (!curr.parent_id) break;
+          curr = members.find(x => x.id === curr?.parent_id);
+        }
+        return list;
+      };
+
+      const myAncestors = getAncestors(me.id);
+      const targetAncestors = getAncestors(memberId);
+
+      let lca = null;
+      for (const id of myAncestors) {
+        if (targetAncestors.includes(id)) {
+          lca = id;
+          break;
+        }
+      }
+
+      if (lca) {
+        const finalPath = new Set<string>();
+        for (const id of myAncestors) {
+          finalPath.add(id);
+          if (id === lca) break;
+        }
+        for (const id of targetAncestors) {
+          finalPath.add(id);
+          if (id === lca) break;
+        }
+        setPathIds(finalPath);
+      } else {
+        // No common ancestor found (different roots)
+        setPathIds(new Set([...targetAncestors]));
+      }
+
+      toggleNode();
+    };
 
     // Improved search matching with normalization
     const isSearchMatch =
@@ -261,10 +313,11 @@ function FamilyTreePage() {
       <g className="node-group">
         <foreignObject width={NODE_W} height={NODE_H} x={-NODE_W / 2} y={-NODE_H / 2}>
           <div
-            onClick={toggleNode}
+            onClick={handleNodeClick}
             className={cn(
               "relative flex flex-col items-center justify-center gap-3 transition-all duration-500 p-4 cursor-pointer group",
               isSearchMatch && "scale-110",
+              isInPath && "scale-105",
             )}
           >
             {/* Medallion Avatar Container */}
@@ -274,6 +327,7 @@ function FamilyTreePage() {
                   "size-20 md:size-24 rounded-full p-1 transition-all duration-500 shadow-xl",
                   isRoot ? "bg-gradient-to-br from-gold-primary via-white to-gold-primary animate-pulse" :
                   isMe ? "bg-gradient-to-br from-emerald-400 to-primary" :
+                  isInPath ? "bg-gold-primary ring-4 ring-gold-primary/30" :
                   isExtra ? "bg-slate-200" : "bg-gradient-to-br from-primary/20 to-primary/5",
                   isSearchMatch && "ring-4 ring-gold-primary ring-offset-4"
                 )}
@@ -308,6 +362,7 @@ function FamilyTreePage() {
                 "px-3 py-2.5 rounded-2xl border text-center min-w-[130px] shadow-md backdrop-blur-md transition-all duration-300",
                 isRoot ? "bg-primary text-white border-gold-primary/50 shadow-gold-primary/20" :
                 isMe ? "bg-primary text-white border-primary" :
+                isInPath ? "bg-gold-primary text-white border-gold-primary shadow-lg" :
                 "bg-white text-primary border-border"
               )}
             >
@@ -440,7 +495,12 @@ function FamilyTreePage() {
                 }
               }}
               pathFunc="diagonal"
-              pathClassFunc={() => "tree-link-curved"}
+              pathClassFunc={(link) => {
+                const targetId = link.target.data.attributes?.memberId as string;
+                const sourceId = link.source.data.attributes?.memberId as string;
+                if (pathIds.has(targetId) && pathIds.has(sourceId)) return "tree-link-active";
+                return "tree-link-curved";
+              }}
               nodeSize={{ x: NODE_W + 100, y: NODE_H + 120 }}
               renderCustomNodeElement={renderNode}
               collapsible={false}
@@ -566,8 +626,26 @@ function FamilyTreePage() {
           stroke: #D4AF37;
           stroke-width: 3.5px;
           stroke-linecap: round;
-          opacity: 0.6;
+          opacity: 0.2;
           transition: all 0.5s ease;
+        }
+
+        .tree-link-active {
+          fill: none;
+          stroke: #D4AF37;
+          stroke-width: 6px;
+          stroke-linecap: round;
+          opacity: 1;
+          filter: drop-shadow(0 0 8px rgba(212,175,55,0.8));
+          stroke-dasharray: 1000;
+          stroke-dashoffset: 1000;
+          animation: draw-path 1.5s ease forwards;
+        }
+
+        @keyframes draw-path {
+          to {
+            stroke-dashoffset: 0;
+          }
         }
 
         .rd3t-tree-container {
