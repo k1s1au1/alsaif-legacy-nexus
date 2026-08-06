@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
-import { Trophy, Footprints, Flame, TrendingUp, Calendar, Loader2, Plus, RotateCw, ShieldCheck } from "lucide-react";
+import { Trophy, Footprints, Flame, TrendingUp, Loader2, RotateCw, ShieldCheck, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/user-avatar";
 import { Capacitor } from "@capacitor/core";
@@ -14,208 +13,241 @@ export const Route = createFileRoute("/_authenticated/steps-challenge")({
   head: () => ({
     meta: [
       { title: "تحدي الخطوات — السيف" },
-      { name: "description", content: "تحدي الخطوات العائلي الأسبوعي." },
+      { name: "description", content: "تحدي الخطوات العائلي الأسبوعي بقياس حقيقي من مستشعر جوالك." },
+      { property: "og:title", content: "تحدي الخطوات — السيف" },
+      { property: "og:description", content: "تنافس مع أفراد العائلة بخطوات حقيقية أسبوعياً." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: StepsChallengePage,
 });
 
+const isNative = () => Capacitor.isNativePlatform();
+
+async function getStepsPlugin() {
+  const { registerPlugin } = await import("@capacitor/core");
+  return registerPlugin<any>("StepsPlugin");
+}
+
+// Local date (device timezone) — avoids the UTC off-by-one of toISOString().
+function localDate(d = new Date()) {
+  const y = d.getFullYear();
+  const m = `${d.getMonth() + 1}`.padStart(2, "0");
+  const day = `${d.getDate()}`.padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function startOfWeekIso() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay()); // Sunday-based week
+  return localDate(d);
+}
+
 function StepsChallengePage() {
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [mySteps, setMySteps] = useState<number>(0);
+  const [mySteps, setMySteps] = useState(0);
+  const [myToday, setMyToday] = useState(0);
   const [meId, setMeId] = useState<string | null>(null);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [sensorReady, setSensorReady] = useState<boolean | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualValue, setManualValue] = useState("");
+  const syncingRef = useRef(false);
 
-  useEffect(() => {
-    // Check if permission was already granted in this session
-    const savedPerm = localStorage.getItem("steps_permission_granted");
-    if (savedPerm === "true") setHasPermission(true);
-    else if (!Capacitor.isNativePlatform()) setHasPermission(true);
-    else setHasPermission(false);
+  const checkSensor = useCallback(async () => {
+    if (!isNative()) {
+      setSensorReady(false);
+      return false;
+    }
+    try {
+      const plugin = await getStepsPlugin();
+      const { available, granted } = await plugin.isAvailable();
+      const ready = Boolean(available && granted);
+      setSensorReady(ready);
+      return ready;
+    } catch {
+      setSensorReady(false);
+      return false;
+    }
   }, []);
 
-  const requestActivityPermission = async () => {
-    if (!Capacitor.isNativePlatform()) {
-      setHasPermission(true);
-      return;
-    }
-
-    try {
-      const { registerPlugin } = await import("@capacitor/core");
-      const StepsPlugin = registerPlugin<any>("StepsPlugin");
-
-      const { status } = await StepsPlugin.checkHealthConnect();
-
-      if (status === 1) { // NOT_INSTALLED
-        toast.error("تطبيق Health Connect غير مثبت. يرجى تثبيته من المتجر.");
-        window.open("https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata", "_blank");
-        return;
-      }
-
-      toast.info("يرجى منح صلاحية الوصول لبيانات الصحة (Health Connect)");
-
-      // Simulate permission flow for now until full native intent is mapped
-      setTimeout(() => {
-        setHasPermission(true);
-        localStorage.setItem("steps_permission_granted", "true");
-        toast.success("تم الربط مع Health Connect بنجاح ✨");
-      }, 1500);
-    } catch (e) {
-      toast.error("فشل الحصول على الإذن");
-    }
-  };
-
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setMeId(user.id);
 
-      // Load leaderboard (sum of steps for this week)
-      const startOfWeek = new Date();
-      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-      const startIso = startOfWeek.toISOString().split('T')[0];
-
       const { data: stepsData, error } = await supabase
-        .from("steps_data" as any)
-        .select("user_id, steps")
-        .gte("date", startIso);
+        .from("steps_data")
+        .select("user_id, steps, date")
+        .gte("date", startOfWeekIso());
 
       if (error) throw error;
 
-      // Group and sum
       const grouped: Record<string, number> = {};
-      stepsData.forEach((row: any) => {
-        grouped[row.user_id] = (grouped[row.user_id] || 0) + row.steps;
+      const today = localDate();
+      let todayMine = 0;
+      (stepsData ?? []).forEach((row) => {
+        grouped[row.user_id] = (grouped[row.user_id] || 0) + (row.steps || 0);
+        if (row.user_id === user.id && row.date === today) todayMine = row.steps || 0;
       });
 
       const userIds = Object.keys(grouped);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, arabic_name, full_name, avatar_url")
-        .in("id", userIds);
-
-      const board = (profiles || []).map(p => ({
-        ...p,
-        totalSteps: grouped[p.id] || 0,
-      })).sort((a, b) => b.totalSteps - a.totalSteps);
+      let board: any[] = [];
+      if (userIds.length) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, arabic_name, full_name, avatar_url")
+          .in("id", userIds);
+        board = (profiles || [])
+          .map((p) => ({ ...p, totalSteps: grouped[p.id] || 0 }))
+          .sort((a, b) => b.totalSteps - a.totalSteps);
+      }
 
       setLeaderboard(board);
       setMySteps(grouped[user.id] || 0);
+      setMyToday(todayMine);
     } catch (e) {
       console.error("Steps load error", e);
+      toast.error("تعذر تحميل بيانات الخطوات");
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadData();
   }, []);
 
-  const handleSync = async (silent = false) => {
-    let tId: string | number | null = null;
-    if (!silent) tId = toast.loading("جاري قراءة الخطوات...");
+  const saveSteps = useCallback(async (steps: number, source: "device" | "manual") => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("NOT_SIGNED_IN");
+
+    // Never lower a day's count with a smaller reading (sensor restarts, etc.)
+    const today = localDate();
+    const { data: existing } = await supabase
+      .from("steps_data")
+      .select("steps")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .maybeSingle();
+
+    const finalSteps = source === "manual" ? steps : Math.max(steps, existing?.steps ?? 0);
+
+    const { error } = await supabase
+      .from("steps_data")
+      .upsert({ user_id: user.id, date: today, steps: finalSteps, source }, { onConflict: "user_id,date" });
+
+    if (error) throw error;
+    return finalSteps;
+  }, []);
+
+  const requestActivityPermission = async () => {
+    if (!isNative()) {
+      setManualOpen(true);
+      return;
+    }
+    try {
+      const plugin = await getStepsPlugin();
+      const { granted } = await plugin.requestActivityPermission();
+      if (!granted) {
+        toast.error("لم يتم منح إذن النشاط البدني", { description: "افتح إعدادات التطبيق واسمح بـ (النشاط البدني)." });
+        return;
+      }
+      const { available } = await plugin.isAvailable();
+      if (!available) {
+        toast.error("جوالك لا يحتوي على مستشعر خطوات", { description: "يمكنك إدخال خطواتك يدوياً." });
+        setSensorReady(false);
+        return;
+      }
+      setSensorReady(true);
+      toast.success("تم تفعيل عدّاد الخطوات ✨");
+      handleSync(false);
+    } catch (e) {
+      console.error(e);
+      toast.error("فشل تفعيل عدّاد الخطوات");
+    }
+  };
+
+  const handleSync = useCallback(async (loud = true) => {
+    if (syncingRef.current) return;
+    if (!isNative()) {
+      if (loud) setManualOpen(true);
+      return;
+    }
+    syncingRef.current = true;
+    setSyncing(true);
+    let tId: string | number | undefined;
+    if (loud) tId = toast.loading("جاري قراءة الخطوات من المستشعر...");
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        if (!silent) toast.error("يجب تسجيل الدخول أولاً", { id: tId! });
-        return;
-      }
-
-      let finalSteps = 0;
-
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const { registerPlugin } = await import("@capacitor/core");
-          const StepsPlugin = registerPlugin<any>("StepsPlugin");
-          const result = await StepsPlugin.getTodaySteps();
-          finalSteps = result.steps || 0;
-
-          // Step Counter on Android returns total steps since last boot.
-          // For a true "today" steps, we'd need to subtract the start-of-day value.
-          // For now, getting the raw sensor value is 100x better than random.
-          if (finalSteps === 0) {
-             // Fallback to time-based logic if sensor hasn't reported yet
-             const hr = new Date().getHours();
-             finalSteps = 2000 + (hr * 300);
-          }
-        } catch (e) {
-          console.error("Native sensor error", e);
-          const hr = new Date().getHours();
-          finalSteps = 2000 + (hr * 300);
-        }
-      } else {
-        finalSteps = Math.floor(Math.random() * 2000) + 500;
-      }
-
-      const todayIso = new Date().toISOString().split('T')[0];
-
-      // محاولة الحفظ في قاعدة البيانات
-      const { error: dbError } = await supabase.from("steps_data" as any).upsert({
-        user_id: user.id,
-        steps: finalSteps,
-        date: todayIso
-      }, { onConflict: "user_id,date" });
-
-      if (dbError) {
-        console.error("Database Error:", dbError);
-        if (!silent) {
-          toast.error("خطأ في قاعدة البيانات", {
-            id: tId!,
-            description: "تأكد من تفعيل جدول steps_data في مشروع Supabase الأساسي."
-          });
-        }
-        return;
-      }
-
-      if (!silent) toast.success(`تمت المزامنة: ${finalSteps.toLocaleString()} خطوة ✨`, { id: tId! });
-      loadData();
+      const plugin = await getStepsPlugin();
+      const result = await plugin.getTodaySteps();
+      const steps = Number(result?.steps ?? 0);
+      const saved = await saveSteps(steps, "device");
+      if (loud) toast.success(`خطوات اليوم: ${saved.toLocaleString()} 👟`, { id: tId });
+      await loadData();
     } catch (e: any) {
-      console.error("Steps sync error:", e);
-      if (!silent) {
-        toast.error("عطل فني في المزامنة", {
-          id: tId!,
-          description: e.message || "حدث خطأ غير متوقع"
-        });
+      const code = String(e?.message || e?.code || "");
+      if (loud) {
+        if (code.includes("NO_PERMISSION")) {
+          toast.error("لم يتم منح إذن النشاط البدني", { id: tId });
+          setSensorReady(false);
+        } else if (code.includes("NO_SENSOR")) {
+          toast.error("لا يوجد مستشعر خطوات في هذا الجهاز", { id: tId, description: "أدخل خطواتك يدوياً." });
+          setSensorReady(false);
+        } else if (code.includes("NO_DATA")) {
+          toast.error("لم يصل قياس بعد", { id: tId, description: "تحرّك قليلاً ثم أعد المزامنة." });
+        } else {
+          toast.error("تعذرت المزامنة", { id: tId, description: code });
+        }
       }
+      console.error("Steps sync error", e);
+    } finally {
+      syncingRef.current = false;
+      setSyncing(false);
+    }
+  }, [loadData, saveSteps]);
+
+  const submitManual = async () => {
+    const value = Number(manualValue);
+    if (!Number.isFinite(value) || value < 0 || value > 200000) {
+      toast.error("أدخل عدد خطوات صحيح");
+      return;
+    }
+    try {
+      const saved = await saveSteps(Math.round(value), "manual");
+      toast.success(`تم تسجيل ${saved.toLocaleString()} خطوة لليوم`);
+      setManualOpen(false);
+      setManualValue("");
+      await loadData();
+    } catch (e: any) {
+      toast.error("تعذر الحفظ", { description: e?.message });
     }
   };
 
   useEffect(() => {
-    // Auto-sync when entering the page if permission is granted
-    const savedPerm = localStorage.getItem("steps_permission_granted");
-    if (savedPerm === "true" || !Capacitor.isNativePlatform()) {
-      handleSync(true);
-    }
+    (async () => {
+      await loadData();
+      const ready = await checkSensor();
+      if (ready) handleSync(false);
+    })();
 
-    // Listener for app resume (auto-sync when coming back to the app)
-    let listenerHandle: any = null;
-    if (Capacitor.isNativePlatform()) {
+    let handle: any = null;
+    if (isNative()) {
       import("@capacitor/app").then(({ App }) => {
         App.addListener("appStateChange", ({ isActive }) => {
-          if (isActive && (localStorage.getItem("steps_permission_granted") === "true")) {
-            console.log("[Steps] App resumed, auto-syncing...");
-            handleSync(true);
-          }
-        }).then(h => {
-          listenerHandle = h;
-        });
+          if (isActive) handleSync(false);
+        }).then((h) => { handle = h; });
       });
     }
+    return () => { if (handle) handle.remove(); };
+  }, [loadData, checkSensor, handleSync]);
 
-    return () => {
-      if (listenerHandle) listenerHandle.remove();
-    };
-  }, []);
+  const myRank = leaderboard.findIndex((u) => u.id === meId) + 1;
 
   return (
     <AppShell title="تحدي الخطوات" user={{ name: "تحدي العائلة", role: "رياضة", initial: "ت" }}>
       <div className="max-w-4xl mx-auto space-y-12 pb-24" dir="rtl">
-        {/* Header Medallion */}
         <section className="text-center space-y-6 animate-fade-up">
           <div className="relative inline-block">
             <div className="absolute inset-0 bg-gold-primary/20 blur-[60px] rounded-full" />
@@ -230,18 +262,17 @@ function StepsChallengePage() {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-4xl font-black text-primary tracking-tight">تحدي خطوات العائلة</h2>
+            <h1 className="text-4xl font-black text-primary tracking-tight">تحدي خطوات العائلة</h1>
             <p className="text-muted-foreground font-bold">المنافسة الشريفة تبني أجساداً قوية وأرواحاً متآلفة.</p>
           </div>
         </section>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-up" style={{ animationDelay: "100ms" }}>
           <StatCard
             label="خطواتك هذا الأسبوع"
             value={mySteps.toLocaleString()}
             icon={<Footprints className="text-blue-500" />}
-            desc="استمر في التقدم!"
+            desc={`اليوم: ${myToday.toLocaleString()} خطوة`}
           />
           <StatCard
             label="السعرات التقريبية"
@@ -251,40 +282,77 @@ function StepsChallengePage() {
           />
           <StatCard
             label="مركزك الحالي"
-            value={leaderboard.findIndex(u => u.id === meId) + 1 || "-"}
+            value={myRank > 0 ? myRank : "-"}
             icon={<TrendingUp className="text-emerald-500" />}
             desc="من بين جميع الأعضاء"
           />
         </div>
 
-        {/* Action Button */}
         <div className="flex flex-col items-center gap-4 animate-fade-up" style={{ animationDelay: "200ms" }}>
-          {!hasPermission ? (
+          {isNative() && sensorReady !== true ? (
             <button
               onClick={requestActivityPermission}
               className="px-12 py-5 rounded-full bg-primary text-white flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black"
             >
-              <ShieldCheck className="size-6" /> تفعيل إذن النشاط البدني
+              <ShieldCheck className="size-6" /> تفعيل عدّاد الخطوات
+            </button>
+          ) : isNative() ? (
+            <button
+              onClick={() => handleSync(true)}
+              disabled={syncing}
+              className="btn-gold px-12 py-5 rounded-full flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black disabled:opacity-60"
+            >
+              {syncing ? <Loader2 className="size-6 animate-spin" /> : <RotateCw className="size-6" />}
+              مزامنة خطوات اليوم
             </button>
           ) : (
             <button
-              onClick={() => handleSync(false)}
+              onClick={() => setManualOpen(true)}
               className="btn-gold px-12 py-5 rounded-full flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black"
             >
-              <RotateCw className="size-6" /> مزامنة خطوات اليوم
+              <Pencil className="size-6" /> تسجيل خطوات اليوم
             </button>
           )}
-          {!hasPermission && (
-            <p className="text-[10px] font-bold text-muted-foreground opacity-60">
-              ملاحظة: يتطلب هذا التحدي الوصول لبيانات الحركة في جوالك.
-            </p>
+
+          <p className="text-[11px] font-bold text-muted-foreground opacity-70 text-center max-w-md leading-relaxed">
+            {isNative()
+              ? "يتم القياس من مستشعر الخطوات في جوالك ويُحدَّث تلقائياً عند فتح التطبيق."
+              : "قياس الخطوات التلقائي متاح داخل تطبيق الجوال فقط. من المتصفح يمكنك تسجيل خطوات اليوم يدوياً."}
+          </p>
+
+          {isNative() && (
+            <button onClick={() => setManualOpen(true)} className="text-xs font-black text-primary underline underline-offset-4 opacity-70">
+              تسجيل يدوي بدلاً من المستشعر
+            </button>
           )}
         </div>
 
-        {/* Leaderboard */}
+        {manualOpen && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setManualOpen(false)}>
+            <div className="card-surface p-8 w-full max-w-sm space-y-6" onClick={(e) => e.stopPropagation()}>
+              <div className="space-y-1">
+                <h2 className="text-xl font-black text-primary">تسجيل خطوات اليوم</h2>
+                <p className="text-xs font-bold text-muted-foreground">أدخل عدد خطواتك كما يظهر في تطبيق الصحة بجوالك.</p>
+              </div>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={manualValue}
+                onChange={(e) => setManualValue(e.target.value)}
+                placeholder="مثال: 8500"
+                className="w-full rounded-2xl border border-border bg-background px-5 py-4 text-lg font-black text-primary outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <div className="flex gap-3">
+                <button onClick={submitManual} className="btn-gold flex-1 py-3 rounded-2xl font-black">حفظ</button>
+                <button onClick={() => setManualOpen(false)} className="flex-1 py-3 rounded-2xl font-black border border-border">إلغاء</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <section className="space-y-6 animate-fade-up" style={{ animationDelay: "300ms" }}>
           <div className="flex items-center gap-4">
-            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">لوحة الصدارة الأسبوعية</h3>
+            <h2 className="text-xs font-black text-primary uppercase tracking-[0.3em]">لوحة الصدارة الأسبوعية</h2>
             <div className="h-px flex-1 bg-border/60" />
           </div>
 
