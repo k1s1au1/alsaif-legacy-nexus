@@ -15,11 +15,16 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
 
     console.log("[Push] Checking permissions...");
     let perm = await PushNotifications.checkPermissions();
-    if (perm.receive === "prompt" || perm.receive === "denied") {
+    console.log("[Push] Initial permission state:", perm.receive);
+
+    if (perm.receive === "prompt") {
       perm = await PushNotifications.requestPermissions();
+      console.log("[Push] Permission state after request:", perm.receive);
     }
+
     if (perm.receive !== "granted") {
-      console.warn("[Push] Permissions not granted");
+      console.warn("[Push] Permissions not granted by user.");
+      // Optional: don't toast here to avoid annoyance on every boot
       return;
     }
 
@@ -185,8 +190,11 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
     });
 
     // 4. Register with FCM
+    console.log("[Push] Triggering final registration...");
     await PushNotifications.register();
-  } catch (e) {
-    console.error("[Push] setup failed:", e);
+    console.log("[Push] Registration triggered successfully.");
+  } catch (e: any) {
+    console.error("[Push] setup failed completely:", e);
+    toast.error("فشل إعداد الإشعارات: " + (e.message || "خطأ غير معروف"));
   }
 }

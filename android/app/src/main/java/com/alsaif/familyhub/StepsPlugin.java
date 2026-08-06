@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -32,6 +33,7 @@ import java.util.Locale;
 )
 public class StepsPlugin extends Plugin implements SensorEventListener {
 
+    private static final String TAG = "StepsPlugin";
     private static final String PREFS = "steps_challenge_prefs";
     private static final String KEY_BASELINE = "baseline_counter";
     private static final String KEY_BASE_DATE = "baseline_date";
@@ -42,10 +44,13 @@ public class StepsPlugin extends Plugin implements SensorEventListener {
 
     @Override
     public void load() {
+        Log.d(TAG, "Loading StepsPlugin...");
         sensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager != null) {
             stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+            Log.d(TAG, "Step counter sensor available: " + (stepSensor != null));
             if (stepSensor != null && hasActivityPermission()) {
+                Log.d(TAG, "Permissions already granted, registering listener.");
                 sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL);
             }
         }
@@ -74,19 +79,23 @@ public class StepsPlugin extends Plugin implements SensorEventListener {
 
     @PluginMethod
     public void requestActivityPermission(PluginCall call) {
+        Log.d(TAG, "requestActivityPermission called");
         if (hasActivityPermission()) {
+            Log.d(TAG, "Already granted, starting sensor.");
             startSensor();
             JSObject ret = new JSObject();
             ret.put("granted", true);
             call.resolve(ret);
             return;
         }
+        Log.d(TAG, "Requesting activity permission...");
         requestPermissionForAlias("activity", call, "activityPermsCallback");
     }
 
     @PermissionCallback
-    private void activityPermsCallback(PluginCall call) {
+    public void activityPermsCallback(PluginCall call) {
         boolean granted = hasActivityPermission();
+        Log.d(TAG, "activityPermsCallback: granted=" + granted);
         if (granted) startSensor();
         JSObject ret = new JSObject();
         ret.put("granted", granted);
@@ -95,17 +104,21 @@ public class StepsPlugin extends Plugin implements SensorEventListener {
 
     private void startSensor() {
         if (sensorManager != null && stepSensor != null) {
+            Log.d(TAG, "Registering sensor listener manually.");
             sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
 
     @PluginMethod
     public void getTodaySteps(final PluginCall call) {
+        Log.d(TAG, "getTodaySteps called");
         if (stepSensor == null) {
+            Log.w(TAG, "Sensor not found.");
             call.reject("NO_SENSOR");
             return;
         }
         if (!hasActivityPermission()) {
+            Log.w(TAG, "Permission not granted.");
             call.reject("NO_PERMISSION");
             return;
         }
@@ -114,6 +127,7 @@ public class StepsPlugin extends Plugin implements SensorEventListener {
         // The step counter is cumulative since device boot, so we wait briefly
         // for the first sensor event, then subtract today's stored baseline.
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            Log.d(TAG, "Delayed execution: lastCounter=" + lastCounter);
             if (lastCounter < 0) {
                 call.reject("NO_DATA");
                 return;

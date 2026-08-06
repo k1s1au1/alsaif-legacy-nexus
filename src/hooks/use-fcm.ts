@@ -20,9 +20,10 @@ export function useFcm() {
       // 1. Native Platform (Mobile App)
       if (Capacitor.isNativePlatform()) {
         try {
+          console.log("[Push] Initiating Native Push setup...");
           await setupPushNotifications(navigate);
         } catch (err) {
-          console.error("[Push] Native setup failed:", err);
+          console.error("[Push] Native setup failed hook:", err);
         }
       }
       // 2. Web Platform (Browser)

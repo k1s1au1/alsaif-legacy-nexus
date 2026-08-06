@@ -1,42 +1,40 @@
-# تفعيل Health Connect واختصارات التطبيق (App Shortcuts)
+# إصلاح إشعارات الأندرويد وتفعيل نظام الـ Push الرسمي
 
-سأقوم بتنفيذ مقترحين لتعزيز الجانب التقني والواقعي للتطبيق: ربط تحدي الخطوات بـ Health Connect وتوفير اختصارات سريعة للوصول إلى أقسام التطبيق الهامة.
+بناءً على التحليل، يبدو أن هناك عدة أسباب تمنع وصول الإشعارات لتطبيق الأندرويد رغم عملها في المتصفح. الخطة تهدف لضمان ربط تطبيق الأندرويد بمشروع Firebase الصحيح وتفعيل الصلاحيات اللازمة.
 
 ## التغييرات المقترحة
 
-### [أندرويد] دمج Health Connect
+### [أندرويد] إعدادات البيئة والبناء
 
 #### [تعديل] [build.gradle](file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/build.gradle)
-* إضافة مكتبة `androidx.health.connect:connect-client` لتمكين التواصل مع تطبيق Health Connect.
+* تبسيط وتصحيح طريقة تطبيق إضافة `google-services` لضمان قراءة ملف الإعدادات بشكل سليم في كافة ظروف البناء.
+* التأكد من أن الـ `namespace` و الـ `applicationId` متطابقان تماماً مع ما هو موجود في Firebase Console.
 
-#### [تعديل] [StepsPlugin.java](file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/src/main/java/com/alsaif/familyhub/StepsPlugin.java)
-* إضافة دوال للتحقق من وجود Health Connect.
-* إضافة دوال لطلب صلاحيات القراءة والكتابة للخطوات.
-* تعديل دالة `getTodaySteps` لجلب البيانات من Health Connect كأولوية، والرجوع للحساس (Step Counter) في حال عدم توفره.
+#### [تعديل] [capacitor.config.ts](file:///C:/Projects/alsaif-legacy-nexus-b14dc257/capacitor.config.ts)
+* إضافة إعدادات الـ `PushNotifications` لتحديد كيفية ظهور الإشعارات (صوت، تنبيه، شارة) أثناء فتح التطبيق.
 
-### [أندرويد] اختصارات التطبيق (App Shortcuts)
+### [واجهة المستخدم] نظام الإشعارات (Native Push)
 
-#### [تعديل] [strings.xml](file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/src/main/res/values/strings.xml)
-* إضافة نصوص عربية للاختصارات الجديدة (المجلس، الخزنة، شجرة العائلة).
+#### [تعديل] [pushNotifications.ts](file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/lib/pushNotifications.ts)
+* إضافة سجلات (Logs) مفصلة تظهر في الـ Console لمعرفة حالة التسجيل (Success/Error).
+* تحسين معالجة إذن `POST_NOTIFICATIONS` الخاص بأندرويد 13 فما فوق.
+* التأكد من حذف المستمعين (Listeners) القدامى قبل البدء لتجنب تكرار العمليات.
 
-#### [تعديل] [shortcuts.xml](file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/src/main/res/xml/shortcuts.xml)
-* إضافة اختصارات ثابتة (Static Shortcuts) تظهر عند الضغط المطول على أيقونة التطبيق.
-* ربط هذه الاختصارات بالـ Deep Links الحالية (`alsaif://...`).
+#### [تعديل] [use-fcm.ts](file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/hooks/use-fcm.ts)
+* تعزيز آلية التحقق من الصلاحيات قبل محاولة التسجيل.
 
-### [تطوير الويب] تحدي الخطوات
+## تنبيهات هامة للمستخدم
+> [!IMPORTANT]
+> بعد تطبيق هذه التغييرات، **يجب** عليك القيام بالخطوات التالية لتفعيلها:
+> 1. تنفيذ أمر `npx cap copy` أو الضغط على "Sync Project with Gradle Files" في Android Studio.
+> 2. **إعادة بناء التطبيق (Build & Run)** على جوالك.
+> 3. الذهاب لصفحة الإعدادات والضغط على زر **"إعادة ربط الجوال"** لضمان تسجيل الـ Token الجديد للمشروع المحدث.
 
-#### [تعديل] [steps-challenge.tsx](file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/routes/_authenticated/steps-challenge.tsx)
-* تحديث واجهة طلب الأذونات لتشمل طلب إذن Health Connect الحقيقي عبر الـ Plugin المحدث.
-* التعامل مع الاستجابات الجديدة من `StepsPlugin`.
-
-#### [تعديل] [capacitor-client.tsx](file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/capacitor-client.tsx)
-* التأكد من معالجة كافة الروابط العميقة (Deep Links) الجديدة للاختصارات.
+> [!WARNING]
+> إذا كنت تستخدم مشروع Firebase قديم، تأكد من أن مفتاح `FCM_SERVICE_ACCOUNT` في لوحة تحكم Supabase يطابق المشروع الجديد المستخدم في ملف `google-services.json`.
 
 ## خطة التحقق
 
-### الاختبارات الآلية
-* التأكد من بناء المشروع (Build) بدون أخطاء بعد إضافة المكتبات الجديدة.
-
-### التحقق اليدوي
-* اختبار ظهور الاختصارات عند الضغط المطول على أيقونة التطبيق.
-* محاولة ربط الخطوات في صفحة التحدي والتأكد من استلام طلب الإذن (على محاكي أو جهاز يدعم Health Connect).
+### الاختبارات اليدوية
+* استخدام زر "إرسال تجربة" في صفحة الإعدادات للتأكد من وصول الإشعار.
+* التأكد من ظهور إشعار نظام (System Notification) عند إرسال تنبيه والتطبيق في الخلفية.

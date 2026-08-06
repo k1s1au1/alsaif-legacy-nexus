@@ -149,22 +149,28 @@ function StepsChallengePage() {
     try {
       const plugin = await getStepsPlugin();
       const { granted } = await plugin.requestActivityPermission();
+      console.log("Permission request result:", granted);
+
       if (!granted) {
         toast.error("لم يتم منح إذن النشاط البدني", { description: "افتح إعدادات التطبيق واسمح بـ (النشاط البدني)." });
+        setSensorReady(false);
         return;
       }
+
       const { available } = await plugin.isAvailable();
       if (!available) {
         toast.error("جوالك لا يحتوي على مستشعر خطوات", { description: "يمكنك إدخال خطواتك يدوياً." });
         setSensorReady(false);
         return;
       }
+
       setSensorReady(true);
       toast.success("تم تفعيل عدّاد الخطوات ✨");
-      handleSync(false);
+      // Force a sync attempt immediately
+      setTimeout(() => handleSync(true), 500);
     } catch (e) {
-      console.error(e);
-      toast.error("فشل تفعيل عدّاد الخطوات");
+      console.error("Permission request failed", e);
+      toast.error("فشل تفعيل عدّاد الخطوات", { description: "تأكد من تحديث التطبيق وإعطاء الصلاحيات." });
     }
   };
 

@@ -8,6 +8,11 @@ const config: CapacitorConfig = {
     url: "https://alsaif-legacy-nexus.lovable.app",
     cleartext: true,
   },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
+    },
+  },
 };
 
 export default config;
