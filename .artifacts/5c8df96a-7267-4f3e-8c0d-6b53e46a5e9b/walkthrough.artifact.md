@@ -17,6 +17,11 @@
 *   **مزامنة فورية:** تعديل الكود ليقوم بمحاولة مزامنة الخطوات فور الضغط على "تفعيل" ونجاح العملية، بدلاً من انتظار التحديث التلقائي فقط.
 *   **رسائل خطأ أوضح:** تحسين التنبيهات لتشمل نصائح للمستخدم (مثل "تحرك قليلاً") في حال عدم وجود قراءة فورية من المستشعر.
 
+### 4. تثبيت شريط التنقل السفلي (Bottom Navigation)
+*   **إلغاء الإخفاء التلقائي:** تم إزالة منطق `navVisible` الذي كان يخفي البار عند التمرير لأسفل، ليبقى ثابتاً دائماً في تطبيق الجوال.
+*   **تجنب تغطية المحتوى:** تم زيادة الهامش السفلي (`pb-40`) في الحاوية الرئيسية `main` لضمان ظهور كامل محتوى الصفحة فوق البار العائم.
+*   **الحفاظ على البار العلوي:** تم الإبقاء على نظام البار العلوي كما هو (يتقلص عند التمرير) بناءً على طلبك.
+
 ---
 
 > [!IMPORTANT]
@@ -24,11 +29,9 @@
 > 1. افتح مشروع الأندرويد في **Android Studio**.
 > 2. اضغط على **"Sync Project with Gradle Files"** (أيقونة الفيل الصغير في الأعلى).
 > 3. أعد بناء التطبيق وتشغيله على جوالك (**Build & Run**).
-> 4. جرب الضغط على "تفعيل عداد الخطوات" مرة أخرى.
-
-> [!TIP]
-> إذا استمرت المشكلة، يرجى تزويدي بما يظهر في نافذة **Logcat** عند الضغط على الزر، حيث سأتمكن من رؤية السجلات الجديدة التي أضفتها (`StepsPlugin: ...`).
+> 4. جرب التمرير في أي صفحة طويلة للتأكد من ثبات البار السفلي ووضوح المحتوى.
 
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/src/main/AndroidManifest.xml)
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/src/main/java/com/alsaif/familyhub/StepsPlugin.java)
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/routes/_authenticated/steps-challenge.tsx)
+render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/components/app-shell.tsx)

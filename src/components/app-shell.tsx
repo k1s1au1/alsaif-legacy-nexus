@@ -294,21 +294,13 @@ export function AppShell({
     }
   }, [sidebarOpen, showQuickActions, showMoreHub]);
 
-  // Navigation Visibility Control
+  // Header Visibility Control
   const [headerCompact, setHeaderCompact] = useState(false);
-  const [navVisible, setNavVisible] = useState(true);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    const previous = scrollY.getPrevious() ?? 0;
-    const diff = latest - previous;
-
     // Header logic
     if (latest > 100) setHeaderCompact(true);
     else setHeaderCompact(false);
-
-    // Bottom Nav logic
-    if (diff > 15 && latest > 200) setNavVisible(false);
-    else if (diff < -25 || latest < 50) setNavVisible(true);
   });
 
   useEffect(() => {
@@ -469,7 +461,7 @@ export function AppShell({
         </nav>
       </motion.aside>
 
-      <main className="relative min-h-screen pb-32 md:pb-20">
+      <main className="relative min-h-screen pb-40 md:pb-24">
         <motion.div
           initial={false}
           animate={{
@@ -650,85 +642,80 @@ export function AppShell({
         </div>
 
         {/* MODERN FLOATING MOBILE BOTTOM DOCK */}
-        <AnimatePresence>
-          {navVisible && (
-            <motion.div
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="md:hidden fixed bottom-8 inset-x-6 z-[100] flex justify-center"
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          className="md:hidden fixed bottom-8 inset-x-6 z-[100] flex justify-center"
+        >
+          <nav className="h-16 w-full max-w-sm bg-[var(--nav-bg)]/95 border border-white/10 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center justify-around px-4 backdrop-blur-2xl relative overflow-hidden transition-all duration-500">
+            {/* Subtle Sheen Effect */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
+
+            <BottomNavItem
+              to="/dashboard"
+              label="الرئيسية"
+              icon={<Home size={20} />}
+              active={path === "/dashboard"}
+            />
+            <BottomNavItem
+              to="/settings"
+              label="الأعدادات"
+              icon={<Settings size={20} />}
+              active={path === "/settings"}
+            />
+
+            {/* PULSING CENTRAL LOGO */}
+            <div className="relative flex items-center justify-center">
+              <motion.div
+                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 rounded-full bg-gold-primary/50 blur-md"
+              />
+              <button
+                onClick={() => setShowQuickActions(true)}
+                className="size-12 rounded-full bg-white dark:bg-gold-primary shadow-lg flex items-center justify-center border-2 border-[var(--nav-bg)]/20 dark:border-black/20 p-2 relative z-10 active:scale-90 transition-transform"
+              >
+                <LayoutGrid className="text-primary dark:text-black size-6" strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {bottomNavShortcut === "admin" ? (
+              <BottomNavItem
+                to="/admin"
+                label="الإدارة"
+                icon={<ShieldCheck size={20} />}
+                active={path === "/admin"}
+              />
+            ) : bottomNavShortcut === "news" ? (
+              <BottomNavItem
+                to="/majlis"
+                label="الأخبار"
+                icon={<Newspaper size={20} />}
+                active={path === "/majlis"}
+              />
+            ) : (
+              <div
+                aria-hidden="true"
+                className="flex flex-col items-center gap-1 text-transparent"
+              >
+                <Newspaper size={20} />
+                <span className="text-[9px] font-black uppercase">الأخبار</span>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowMoreHub(true)}
+              className={cn(
+                "flex flex-col items-center gap-1 transition-all duration-300",
+                showMoreHub ? "text-gold-primary" : "text-white/40",
+              )}
             >
-              <nav className="h-16 w-full max-w-sm bg-[var(--nav-bg)]/95 border border-white/10 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center justify-around px-4 backdrop-blur-2xl relative overflow-hidden transition-all duration-500">
-                {/* Subtle Sheen Effect */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
-
-                <BottomNavItem
-                  to="/dashboard"
-                  label="الرئيسية"
-                  icon={<Home size={20} />}
-                  active={path === "/dashboard"}
-                />
-                <BottomNavItem
-                  to="/settings"
-                  label="الأعدادات"
-                  icon={<Settings size={20} />}
-                  active={path === "/settings"}
-                />
-
-                {/* PULSING CENTRAL LOGO */}
-                <div className="relative flex items-center justify-center">
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0, 0.3] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute inset-0 rounded-full bg-gold-primary/50 blur-md"
-                  />
-                  <button
-                    onClick={() => setShowQuickActions(true)}
-                    className="size-12 rounded-full bg-white dark:bg-gold-primary shadow-lg flex items-center justify-center border-2 border-[var(--nav-bg)]/20 dark:border-black/20 p-2 relative z-10 active:scale-90 transition-transform"
-                  >
-                    <LayoutGrid className="text-primary dark:text-black size-6" strokeWidth={2.5} />
-                  </button>
-                </div>
-
-                {bottomNavShortcut === "admin" ? (
-                  <BottomNavItem
-                    to="/admin"
-                    label="الإدارة"
-                    icon={<ShieldCheck size={20} />}
-                    active={path === "/admin"}
-                  />
-                ) : bottomNavShortcut === "news" ? (
-                  <BottomNavItem
-                    to="/majlis"
-                    label="الأخبار"
-                    icon={<Newspaper size={20} />}
-                    active={path === "/majlis"}
-                  />
-                ) : (
-                  <div
-                    aria-hidden="true"
-                    className="flex flex-col items-center gap-1 text-transparent"
-                  >
-                    <Newspaper size={20} />
-                    <span className="text-[9px] font-black uppercase">الأخبار</span>
-                  </div>
-                )}
-
-                <button
-                  onClick={() => setShowMoreHub(true)}
-                  className={cn(
-                    "flex flex-col items-center gap-1 transition-all duration-300",
-                    showMoreHub ? "text-gold-primary" : "text-white/40",
-                  )}
-                >
-                  <MoreHorizontal size={20} />
-                  <span className="text-[9px] font-black uppercase">المزيد</span>
-                </button>
-              </nav>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <MoreHorizontal size={20} />
+              <span className="text-[9px] font-black uppercase">المزيد</span>
+            </button>
+          </nav>
+        </motion.div>
 
         {/* MOBILE MORE HUB OVERLAY (REPLACES SIDEBAR) */}
         <AnimatePresence>
