@@ -9,7 +9,9 @@ export const approveAccountRequest = createServerFn({ method: "POST" })
     const { userId } = context;
     const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = await getSupabaseAdmin();
-    if (!admin) throw new Error("Server error");
+    if (!admin) {
+      throw new Error("تتطلب هذه العملية مفتاح SUPABASE_SERVICE_ROLE_KEY. يرجى إضافته في أسرار المشروع (Secrets) في Lovable.");
+    }
 
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
     const isPriv = (roles ?? []).some((r: any) => ["admin", "chairman"].includes(r.role));

@@ -10,17 +10,22 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     const token = authHeader.replace("Bearer ", "");
     const { createClient } = await import("@supabase/supabase-js");
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } },
-    );
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Supabase configuration is missing (URL/Anon Key)");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
     const { data, error } = await supabase.auth.getClaims(token);
     if (error || !data?.claims) throw new Error("Unauthorized");
 
     return next({
-      context: { userId: data.claims.sub, claims: data.claims },
+      context: { userId: data.claims.sub, claims: data.claims, token },
     });
   },
 );
