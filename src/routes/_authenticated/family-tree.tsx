@@ -305,19 +305,22 @@ function FamilyTreePage() {
             {/* Content Card */}
             <div
               className={cn(
-                "px-4 py-2 rounded-2xl border text-center min-w-[120px] shadow-sm backdrop-blur-md transition-all duration-300",
+                "px-3 py-2.5 rounded-2xl border text-center min-w-[130px] shadow-md backdrop-blur-md transition-all duration-300",
                 isRoot ? "bg-primary text-white border-gold-primary/50 shadow-gold-primary/20" :
                 isMe ? "bg-primary text-white border-primary" :
-                "bg-white/80 text-primary border-border"
+                "bg-white text-primary border-border"
               )}
             >
-              <p className="text-sm font-black tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
+              <p className={cn(
+                "font-black tracking-tight whitespace-nowrap overflow-hidden text-ellipsis",
+                (isRoot || isMe) ? "text-base" : "text-[15px]"
+              )}>
                 {isRoot ? nodeDatum.name : m?.first_name}
               </p>
               <p
                 className={cn(
-                  "text-[9px] font-bold uppercase tracking-widest mt-0.5 opacity-60",
-                  (isRoot || isMe) ? "text-white/70" : "text-gold-primary"
+                  "text-[10px] font-black uppercase tracking-widest mt-0.5",
+                  (isRoot || isMe) ? "text-white/80" : "text-gold-primary"
                 )}
               >
                 {isRoot ? "الأصل" : isExtra ? "قيد التسجيل" : m?.father_name || "السيف"}

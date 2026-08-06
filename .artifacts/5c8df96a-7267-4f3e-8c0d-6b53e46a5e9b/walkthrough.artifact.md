@@ -27,6 +27,11 @@
 *   **دعم الصور الديناميكية:** تم ربط عملية التمرير بحدث `onLoad` للصور؛ بحيث إذا اكتمل تحميل صورة وأدت لزيادة طول المحادثة، ينزل التطبيق تلقائياً ليبقى المستخدم عند آخر رسالة.
 *   **ثبات الحالة:** إضافة مرجع `isInitialLoad` لضمان التمييز بين التحميل الأول وبين استقبال رسائل جديدة (التي تستخدم التمرير السلس).
 
+### 6. تحسين وضوح الأسماء في شجرة العائلة
+*   **تكبير الخطوط:** تم زيادة حجم خط الاسم الأول إلى `text-[15px]` (أو `text-base` للجذور)، واسم الأب إلى `text-[10px]` لضمان القراءة السهلة.
+*   **تحسين التباين:** تغيير خلفية بطاقة الاسم لتكون صلبة (`bg-white`) بدلاً من شبه شفافة، وإزالة الشفافية عن النصوص لبروزها بشكل أفضل فوق الخلفية الداكنة.
+*   **تنسيق البطاقة:** زيادة عرض البطاقة الأدنى وتحسين التوزيع الداخلي (Padding) لتوفير راحة بصرية أكبر عند تصفح الشجرة.
+
 ---
 
 > [!IMPORTANT]
@@ -34,10 +39,11 @@
 > 1. افتح مشروع الأندرويد في **Android Studio**.
 > 2. اضغط على **"Sync Project with Gradle Files"** (أيقونة الفيل الصغير في الأعلى).
 > 3. أعد بناء التطبيق وتشغيله على جوالك (**Build & Run**).
-> 4. ادخل أي محادثة وتأكد من أنها تبدأ من الأسفل فوراً.
+> 4. افتح شجرة العائلة وتأكد من وضوح الأسماء وسهولة القراءة.
 
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/src/main/AndroidManifest.xml)
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/src/main/java/com/alsaif/familyhub/StepsPlugin.java)
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/routes/_authenticated/steps-challenge.tsx)
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/components/app-shell.tsx)
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/routes/_authenticated/chat.$conversationId.tsx)
+render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/routes/_authenticated/family-tree.tsx)
