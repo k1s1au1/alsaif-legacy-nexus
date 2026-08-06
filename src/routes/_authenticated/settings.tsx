@@ -280,8 +280,12 @@ function SettingsPage() {
         .update({ bottom_nav_prefs: next })
         .eq("id", auth.user.id);
 
-      if (error) toast.error("تعذر حفظ التفضيلات");
-      else toast.success("تم تحديث شريط التنقل");
+      if (error) {
+        console.error("Nav preference update error:", error);
+        toast.error(`تعذر حفظ التفضيلات: ${error.message}`);
+      } else {
+        toast.success("تم تحديث شريط التنقل");
+      }
     }
   };
 
