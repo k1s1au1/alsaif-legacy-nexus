@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "manager" | "member" | "chairman";
+export type AppRole = "admin" | "manager" | "member" | "chairman" | "guest";
 
 export type Section =
   "meetings" | "tasks" | "trips" | "finance" | "heritage" | "news" | "community";
@@ -43,6 +43,8 @@ export function roleLabel(role: AppRole | string | null): string {
       return "مسؤول قسم";
     case "chairman":
       return "رئيس المجلس";
+    case "guest":
+      return "ضيف المجلس";
     default:
       return "عضو";
   }
@@ -99,7 +101,7 @@ export function useUserRole() {
   };
 
   const primaryRole: AppRole | null =
-    (roles.find((r) => ["admin", "chairman", "manager", "member"].includes(r)) as AppRole) || null;
+    (roles.find((r) => ["admin", "chairman", "manager", "member", "guest"].includes(r)) as AppRole) || null;
 
   return {
     userId,

@@ -1370,6 +1370,14 @@ function MemberAdminRow({
               label="عضو"
               activeClass="bg-primary text-white shadow-primary/30"
             />
+            <RoleToggleBtn
+              disabled={!canManageRoles}
+              active={currentRole === "guest"}
+              onClick={() => handleRole(member.id, "guest")}
+              icon={<UserCircle2 className="size-3.5" />}
+              label="ضيف المجلس"
+              activeClass="bg-slate-600 text-white shadow-slate-600/30"
+            />
           </div>
           {!isMe && currentRole !== "admin" && canManageRoles && (
             <button
