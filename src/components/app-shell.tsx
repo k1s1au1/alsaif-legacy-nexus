@@ -47,6 +47,7 @@ import { useAppPermissions } from "@/hooks/use-app-permissions";
 import { DynamicIsland } from "@/components/dynamic-island";
 import { LiveClock } from "@/components/dashboard/live-clock";
 import { BiometricGate } from "@/components/biometric-gate";
+import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -241,7 +242,7 @@ export function AppShell({
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [isAdmin, setIsAdmin] = useState(false);
-  const [bottomNavShortcut, setBottomNavShortcut] = useState<"admin" | "news" | null>(null);
+  const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(DEFAULT_NAV_KEYS);
   const [myAvatarPath, setMyAvatarPath] = useState<string | null>(user?.avatarPath ?? null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [myName, setMyName] = useState<string>(user?.name || "");
@@ -315,7 +316,7 @@ export function AppShell({
           supabase.from("user_roles").select("role").eq("user_id", uid),
           supabase
             .from("profiles")
-            .select("arabic_name, full_name, avatar_url")
+            .select("arabic_name, full_name, avatar_url, bottom_nav_prefs")
             .eq("id", uid)
             .maybeSingle(),
         ]);
@@ -325,9 +326,10 @@ export function AppShell({
           ["chairman", "admin", "manager"].includes(role),
         );
         setIsAdmin(hasManagementRank);
-        // Resolve this once from the member's rank so the mobile shortcut never
-        // flashes "الأخبار" before changing to "الإدارة".
-        setBottomNavShortcut(hasManagementRank ? "admin" : "news");
+
+        if (profileData?.bottom_nav_prefs && Array.isArray(profileData.bottom_nav_prefs)) {
+          setBottomNavKeys(profileData.bottom_nav_prefs as NavItemKey[]);
+        }
 
         const name =
           profileData?.arabic_name ||
@@ -652,18 +654,19 @@ export function AppShell({
             {/* Subtle Sheen Effect */}
             <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
 
-            <BottomNavItem
-              to="/dashboard"
-              label="الرئيسية"
-              icon={<Home size={20} />}
-              active={path === "/dashboard"}
-            />
-            <BottomNavItem
-              to="/settings"
-              label="الأعدادات"
-              icon={<Settings size={20} />}
-              active={path === "/settings"}
-            />
+            {bottomNavKeys.slice(0, 2).map((key) => {
+              const def = NAV_REGISTRY.find((n) => n.id === key);
+              if (!def || (def.adminOnly && !isAdmin)) return null;
+              return (
+                <BottomNavItem
+                  key={def.id}
+                  to={def.to}
+                  label={def.label}
+                  icon={<def.icon size={20} />}
+                  active={path === def.to}
+                />
+              );
+            })}
 
             {/* PULSING CENTRAL LOGO */}
             <div className="relative flex items-center justify-center">
@@ -680,29 +683,19 @@ export function AppShell({
               </button>
             </div>
 
-            {bottomNavShortcut === "admin" ? (
-              <BottomNavItem
-                to="/admin"
-                label="الإدارة"
-                icon={<ShieldCheck size={20} />}
-                active={path === "/admin"}
-              />
-            ) : bottomNavShortcut === "news" ? (
-              <BottomNavItem
-                to="/majlis"
-                label="الأخبار"
-                icon={<Newspaper size={20} />}
-                active={path === "/majlis"}
-              />
-            ) : (
-              <div
-                aria-hidden="true"
-                className="flex flex-col items-center gap-1 text-transparent"
-              >
-                <Newspaper size={20} />
-                <span className="text-[9px] font-black uppercase">الأخبار</span>
-              </div>
-            )}
+            {bottomNavKeys.slice(2, 3).map((key) => {
+              const def = NAV_REGISTRY.find((n) => n.id === key);
+              if (!def || (def.adminOnly && !isAdmin)) return null;
+              return (
+                <BottomNavItem
+                  key={def.id}
+                  to={def.to}
+                  label={def.label}
+                  icon={<def.icon size={20} />}
+                  active={path === def.to}
+                />
+              );
+            })}
 
             <button
               onClick={() => setShowMoreHub(true)}

@@ -29,6 +29,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BiometricAuth } from "@/lib/native-bridge";
 import { setupPushNotifications } from "@/lib/pushNotifications";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
+import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
 
 const FONTS = [
   { id: "Tajawal", name: "تجوال (عصري)", family: "'Tajawal', sans-serif", desc: "خط ناعم وأنيق" },
@@ -71,7 +72,10 @@ function SettingsPage() {
   const [isNative, setIsNative] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
+  const [showNavPicker, setShowNavPicker] = useState(false);
+  const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(DEFAULT_NAV_KEYS);
   const [canCustomizeBg, setCanCustomizeBg] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
   const dynamicLogo = useSiteLogo();
@@ -85,7 +89,19 @@ function SettingsPage() {
         .select("role")
         .eq("user_id", auth.user.id);
       const rs = (roles ?? []).map((r) => r.role);
-      setCanCustomizeBg(rs.includes("admin") || rs.includes("chairman"));
+      const isA = rs.includes("admin") || rs.includes("chairman");
+      setCanCustomizeBg(isA);
+      setIsAdmin(isA || rs.includes("manager"));
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("bottom_nav_prefs")
+        .eq("id", auth.user.id)
+        .maybeSingle();
+
+      if (profile?.bottom_nav_prefs && Array.isArray(profile.bottom_nav_prefs)) {
+        setBottomNavKeys(profile.bottom_nav_prefs as NavItemKey[]);
+      }
     })();
   }, []);
 
@@ -244,6 +260,29 @@ function SettingsPage() {
     toast.success(
       `تم تفعيل الوضع ${theme === "dark" ? "الداكن" : theme === "light" ? "الفاتح" : "التلقائي"}`,
     );
+  };
+
+  const handleNavToggle = async (key: NavItemKey) => {
+    let next = [...bottomNavKeys];
+    if (next.includes(key)) {
+      if (next.length <= 1) return toast.error("يجب اختيار عنصر واحد على الأقل");
+      next = next.filter((k) => k !== key);
+    } else {
+      if (next.length >= 3) return toast.error("يمكنك اختيار 3 عناصر كحد أقصى");
+      next.push(key);
+    }
+    setBottomNavKeys(next);
+
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth.user) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ bottom_nav_prefs: next })
+        .eq("id", auth.user.id);
+
+      if (error) toast.error("تعذر حفظ التفضيلات");
+      else toast.success("تم تحديث شريط التنقل");
+    }
   };
 
   const currentThemeObj = THEME_COLORS.find((c) => c.id === themeColor) || THEME_COLORS[0];
@@ -494,22 +533,19 @@ function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-                    لون الهوية
+                    شريط التنقل
                   </p>
-                  <h4 className="text-xl font-black text-primary">{currentThemeObj.name}</h4>
+                  <h4 className="text-xl font-black text-primary">تخصيص الاختصارات</h4>
                 </div>
-                <div
-                  className="size-14 rounded-2xl shadow-xl transition-transform group-hover:rotate-12 duration-500"
-                  style={{
-                    background: `linear-gradient(135deg, ${currentThemeObj.primary}, ${currentThemeObj.secondary})`,
-                  }}
-                />
+                <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-lg">
+                  <Smartphone className="size-7" />
+                </div>
               </div>
               <button
-                onClick={() => setShowColorPicker(true)}
+                onClick={() => setShowNavPicker(true)}
                 className="w-full btn-gold py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-sm shadow-2xl shadow-gold-primary/20"
               >
-                <Palette className="size-5" /> اختيار لون جديد
+                <Palette className="size-5" /> تخصيص الشريط السفلي
               </button>
             </div>
           </div>
@@ -685,6 +721,68 @@ function SettingsPage() {
           </section>
         )}
       </div>
+
+      <AnimatePresence>
+        {showNavPicker && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+            dir="rtl"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="card-surface w-full max-w-lg p-8 space-y-8 shadow-2xl rounded-[48px]"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-black text-primary tracking-tight">تخصيص شريط التنقل</h3>
+                  <p className="text-xs font-bold text-muted-foreground mt-1">اختر 3 أيقونات تفضلها للشريط السفلي</p>
+                </div>
+                <button
+                  onClick={() => setShowNavPicker(false)}
+                  className="size-10 rounded-full bg-muted flex items-center justify-center transition-transform hover:rotate-90"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[55vh] overflow-y-auto pr-2 custom-scrollbar">
+                {NAV_REGISTRY.filter(n => !n.adminOnly || isAdmin).map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => handleNavToggle(n.id)}
+                    className={cn(
+                      "p-4 rounded-[28px] border-2 transition-all flex flex-col items-center gap-3 group relative",
+                      bottomNavKeys.includes(n.id)
+                        ? "border-primary bg-primary/5 shadow-inner"
+                        : "border-transparent bg-muted/30 hover:bg-muted/50",
+                    )}
+                  >
+                    <div className={cn(
+                      "size-10 rounded-xl flex items-center justify-center transition-all",
+                      bottomNavKeys.includes(n.id) ? "bg-primary text-white" : "bg-card text-muted-foreground"
+                    )}>
+                      <n.icon size={20} />
+                    </div>
+                    <span className="font-black text-[11px] text-primary">{n.label}</span>
+                    {bottomNavKeys.includes(n.id) && (
+                      <div className="absolute top-2 left-2 size-5 rounded-full bg-primary flex items-center justify-center text-white">
+                        <Check size={10} strokeWidth={4} />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowNavPicker(false)}
+                className="w-full btn-gold py-4 rounded-2xl font-black text-sm"
+              >
+                تم الحفظ
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showColorPicker && (
