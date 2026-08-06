@@ -15,13 +15,17 @@ export function useFcm() {
 
   useEffect(() => {
     let unsubscribeForeground: (() => void) | undefined;
+    const isInitialized = (window as any)._fcm_initialized;
 
     const initPush = async () => {
+      if (isInitialized) return;
+
       // 1. Native Platform (Mobile App)
       if (Capacitor.isNativePlatform()) {
         try {
           console.log("[Push] Initiating Native Push setup...");
           await setupPushNotifications(navigate);
+          (window as any)._fcm_initialized = true;
         } catch (err) {
           console.error("[Push] Native setup failed hook:", err);
         }

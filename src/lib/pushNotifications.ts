@@ -177,24 +177,36 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
     });
 
     // 3. Register Action Types (The buttons)
-    await (PushNotifications as any).registerActionTypes({
-      types: [
-        {
-          id: "MEETING_INVITE",
-          actions: [
-            { id: "going", title: "سأحضر ✅", foreground: false },
-            { id: "not_going", title: "أعتذر ❌", foreground: false, destructive: true },
+    // Wrap in try-catch as some Android versions or plugin versions might not implement this bridge.
+    try {
+      if (Capacitor.getPlatform() !== 'android' || (PushNotifications as any).registerActionTypes) {
+        console.log("[Push] Registering action types...");
+        await (PushNotifications as any).registerActionTypes({
+          types: [
+            {
+              id: "MEETING_INVITE",
+              actions: [
+                { id: "going", title: "سأحضر ✅", foreground: false },
+                { id: "not_going", title: "أعتذر ❌", foreground: false, destructive: true },
+              ],
+            },
           ],
-        },
-      ],
-    });
+        });
+      }
+    } catch (e) {
+      console.warn("[Push] registerActionTypes is not supported on this device/platform:", e);
+    }
 
     // 4. Register with FCM
     console.log("[Push] Triggering final registration...");
     await PushNotifications.register();
     console.log("[Push] Registration triggered successfully.");
   } catch (e: any) {
-    console.error("[Push] setup failed completely:", e);
-    toast.error("فشل إعداد الإشعارات: " + (e.message || "خطأ غير معروف"));
+    console.error("[Push] setup failed:", e);
+    // Only toast for real permission or registration failures, not implementation bridge issues
+    const msg = e.message || String(e);
+    if (msg.includes("permission") || msg.includes("registration")) {
+      toast.error("فشل إعداد الإشعارات: " + msg);
+    }
   }
 }
