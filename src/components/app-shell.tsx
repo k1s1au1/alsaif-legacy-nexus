@@ -242,7 +242,19 @@ export function AppShell({
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [isAdmin, setIsAdmin] = useState(false);
-  const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(DEFAULT_NAV_KEYS);
+  const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("bottom_nav_prefs");
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          return DEFAULT_NAV_KEYS;
+        }
+      }
+    }
+    return DEFAULT_NAV_KEYS;
+  });
   const [myAvatarPath, setMyAvatarPath] = useState<string | null>(user?.avatarPath ?? null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [myName, setMyName] = useState<string>(user?.name || "");
@@ -328,7 +340,9 @@ export function AppShell({
         setIsAdmin(hasManagementRank);
 
         if (profileData?.bottom_nav_prefs && Array.isArray(profileData.bottom_nav_prefs)) {
-          setBottomNavKeys(profileData.bottom_nav_prefs as NavItemKey[]);
+          const keys = profileData.bottom_nav_prefs as NavItemKey[];
+          setBottomNavKeys(keys);
+          localStorage.setItem("bottom_nav_prefs", JSON.stringify(keys));
         }
 
         const name =

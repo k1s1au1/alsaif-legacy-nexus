@@ -73,7 +73,19 @@ function SettingsPage() {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [showNavPicker, setShowNavPicker] = useState(false);
-  const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(DEFAULT_NAV_KEYS);
+  const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("bottom_nav_prefs");
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          return DEFAULT_NAV_KEYS;
+        }
+      }
+    }
+    return DEFAULT_NAV_KEYS;
+  });
   const [canCustomizeBg, setCanCustomizeBg] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
@@ -100,7 +112,9 @@ function SettingsPage() {
         .maybeSingle();
 
       if (profile?.bottom_nav_prefs && Array.isArray(profile.bottom_nav_prefs)) {
-        setBottomNavKeys(profile.bottom_nav_prefs as NavItemKey[]);
+        const keys = profile.bottom_nav_prefs as NavItemKey[];
+        setBottomNavKeys(keys);
+        localStorage.setItem("bottom_nav_prefs", JSON.stringify(keys));
       }
     })();
   }, []);
@@ -284,6 +298,7 @@ function SettingsPage() {
         console.error("Nav preference update error:", error);
         toast.error(`تعذر حفظ التفضيلات: ${error.message}`);
       } else {
+        localStorage.setItem("bottom_nav_prefs", JSON.stringify(next));
         toast.success("تم تحديث شريط التنقل");
       }
     }
