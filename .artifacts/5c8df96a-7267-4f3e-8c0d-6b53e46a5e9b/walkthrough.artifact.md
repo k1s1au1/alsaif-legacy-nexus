@@ -22,6 +22,11 @@
 *   **تجنب تغطية المحتوى:** تم زيادة الهامش السفلي (`pb-40`) في الحاوية الرئيسية `main` لضمان ظهور كامل محتوى الصفحة فوق البار العائم.
 *   **الحفاظ على البار العلوي:** تم الإبقاء على نظام البار العلوي كما هو (يتقلص عند التمرير) بناءً على طلبك.
 
+### 5. تحسين تجربة التمرير في الدردشة
+*   **القفز الفوري لآخر رسالة:** تم تعديل منطق التمرير بحيث يقفز التطبيق فوراً لآخر رسالة عند فتح المحادثة لأول مرة (`behavior: "auto"`) بدلاً من التمرير السلس البطيء، مما يوفر وقتاً لمستخدمي الجوال.
+*   **دعم الصور الديناميكية:** تم ربط عملية التمرير بحدث `onLoad` للصور؛ بحيث إذا اكتمل تحميل صورة وأدت لزيادة طول المحادثة، ينزل التطبيق تلقائياً ليبقى المستخدم عند آخر رسالة.
+*   **ثبات الحالة:** إضافة مرجع `isInitialLoad` لضمان التمييز بين التحميل الأول وبين استقبال رسائل جديدة (التي تستخدم التمرير السلس).
+
 ---
 
 > [!IMPORTANT]
@@ -29,9 +34,10 @@
 > 1. افتح مشروع الأندرويد في **Android Studio**.
 > 2. اضغط على **"Sync Project with Gradle Files"** (أيقونة الفيل الصغير في الأعلى).
 > 3. أعد بناء التطبيق وتشغيله على جوالك (**Build & Run**).
-> 4. جرب التمرير في أي صفحة طويلة للتأكد من ثبات البار السفلي ووضوح المحتوى.
+> 4. ادخل أي محادثة وتأكد من أنها تبدأ من الأسفل فوراً.
 
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/src/main/AndroidManifest.xml)
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/android/app/src/main/java/com/alsaif/familyhub/StepsPlugin.java)
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/routes/_authenticated/steps-challenge.tsx)
 render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/components/app-shell.tsx)
+render_diffs(file:///C:/Projects/alsaif-legacy-nexus-b14dc257/src/routes/_authenticated/chat.$conversationId.tsx)

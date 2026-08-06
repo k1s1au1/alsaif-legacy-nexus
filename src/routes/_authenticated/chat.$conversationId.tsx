@@ -96,6 +96,7 @@ function ConversationRoute() {
   const [recordingTime, setRecordingTime] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isInitialLoad = useRef(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -340,9 +341,37 @@ function ConversationRoute() {
     };
   }, [conversationId, meId]);
 
+  const scrollToBottom = useCallback((immediate = false) => {
+    if (!scrollRef.current) return;
+    const scrollContainer = scrollRef.current;
+
+    if (immediate) {
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    } else {
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, []);
+
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages.length]);
+    if (messages.length > 0) {
+      // Small delay to allow DOM to update with new messages
+      const timeout = setTimeout(() => {
+        scrollToBottom(isInitialLoad.current);
+        if (isInitialLoad.current) {
+          isInitialLoad.current = false;
+        }
+      }, isInitialLoad.current ? 50 : 0);
+      return () => clearTimeout(timeout);
+    }
+  }, [messages.length, scrollToBottom]);
+
+  useEffect(() => {
+    // Reset initial load flag when conversation changes
+    isInitialLoad.current = true;
+  }, [conversationId]);
 
   async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>, isImage: boolean) {
     const file = e.target.files?.[0];
@@ -650,6 +679,7 @@ function ConversationRoute() {
               setReactingTo(null);
             },
             closeReactingTo: () => setReactingTo(null),
+            onMediaLoad: () => scrollToBottom(false),
           })}
         </AnimatePresence>
 
@@ -866,6 +896,7 @@ function renderGroupedMessages(opts: any) {
     reactingTo,
     onPickReaction,
     closeReactingTo,
+    onMediaLoad,
   } = opts;
   const nodes: React.ReactNode[] = [];
   let lastDay = "";
@@ -901,6 +932,7 @@ function renderGroupedMessages(opts: any) {
         reacting={reactingTo === m.id}
         onPickReaction={(mid: string, e: string) => onPickReaction(mid, e)}
         closeReacting={closeReactingTo}
+        onMediaLoad={onMediaLoad}
       />,
     );
   });
@@ -921,6 +953,7 @@ function MessageBubble({
   reacting,
   onPickReaction,
   closeReacting,
+  onMediaLoad,
 }: any) {
   const mine = m.sender_id === meId;
   const profile = profiles[m.sender_id];
@@ -1013,6 +1046,7 @@ function MessageBubble({
                     <img
                       src={signedUrl}
                       alt=""
+                      onLoad={onMediaLoad}
                       className="max-w-full h-auto object-cover max-h-[300px] hover:scale-105 transition-transform duration-500"
                     />
                   </div>
