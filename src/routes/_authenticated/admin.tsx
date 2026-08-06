@@ -18,6 +18,7 @@ import {
   Crown,
   Star,
   User as UserIcon,
+  UserCircle2,
   Image as ImageIcon,
   Palette,
   Clock,
