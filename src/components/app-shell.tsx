@@ -243,6 +243,7 @@ export function AppShell({
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
+  const [allowedSections, setAllowedSections] = useState<string[]>([]);
   const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(() => {
     if (typeof window !== "undefined") {
       const cached = localStorage.getItem("bottom_nav_prefs");
@@ -329,7 +330,7 @@ export function AppShell({
           supabase.from("user_roles").select("role").eq("user_id", uid),
           supabase
             .from("profiles")
-            .select("arabic_name, full_name, avatar_url, bottom_nav_prefs")
+            .select("arabic_name, full_name, avatar_url, bottom_nav_prefs, allowed_sections")
             .eq("id", uid)
             .maybeSingle(),
         ]);
@@ -340,6 +341,7 @@ export function AppShell({
         );
         setIsAdmin(hasManagementRank);
         setIsGuest(rs.includes("guest"));
+        setAllowedSections((profileData?.allowed_sections as string[]) || []);
 
         if (profileData?.bottom_nav_prefs && Array.isArray(profileData.bottom_nav_prefs)) {
           const keys = profileData.bottom_nav_prefs as NavItemKey[];
@@ -462,7 +464,17 @@ export function AppShell({
         <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto no-scrollbar">
           {navItems
             .filter((item) => !item.adminOnly || isAdmin)
-            .filter((item) => !isGuest || ["/dashboard", "/profile", "/settings", "/members"].includes(item.to))
+            .filter((item) => {
+              if (!isGuest) return true;
+              // Public for guests
+              if (["/dashboard", "/profile", "/settings", "/members"].includes(item.to)) return true;
+              // Dynamic check
+              const sectionMap: Record<string, string> = {
+                "/majlis": "news",
+              };
+              const section = sectionMap[item.to];
+              return section ? allowedSections.includes(section) : false;
+            })
             .map(({ to, label, icon: Icon }) => (
               <Link
                 key={to}
@@ -674,7 +686,12 @@ export function AppShell({
             {bottomNavKeys.slice(0, 2).map((key) => {
               const def = NAV_REGISTRY.find((n) => n.id === key);
               if (!def || (def.adminOnly && !isAdmin)) return null;
-              if (isGuest && ["chat", "tasks", "vault", "finance", "admin"].includes(def.id)) return null;
+
+              if (isGuest) {
+                const publicKeys = ["dashboard", "profile", "settings", "members"];
+                if (!publicKeys.includes(def.id) && !allowedSections.includes(def.id)) return null;
+              }
+
               return (
                 <BottomNavItem
                   key={def.id}
@@ -704,7 +721,12 @@ export function AppShell({
             {bottomNavKeys.slice(2, 3).map((key) => {
               const def = NAV_REGISTRY.find((n) => n.id === key);
               if (!def || (def.adminOnly && !isAdmin)) return null;
-              if (isGuest && ["chat", "tasks", "vault", "finance", "admin"].includes(def.id)) return null;
+
+              if (isGuest) {
+                const publicKeys = ["dashboard", "profile", "settings", "members"];
+                if (!publicKeys.includes(def.id) && !allowedSections.includes(def.id)) return null;
+              }
+
               return (
                 <BottomNavItem
                   key={def.id}
@@ -801,7 +823,15 @@ export function AppShell({
                 <div className="relative z-10 grid grid-cols-1 gap-2.5">
                   {navItems
                     .filter((item) => !item.adminOnly || isAdmin)
-                    .filter((item) => !isGuest || ["/dashboard", "/profile", "/settings", "/members"].includes(item.to))
+                    .filter((item) => {
+                      if (!isGuest) return true;
+                      if (["/dashboard", "/profile", "/settings", "/members"].includes(item.to)) return true;
+                      const sectionMap: Record<string, string> = {
+                        "/majlis": "news",
+                      };
+                      const section = sectionMap[item.to];
+                      return section ? allowedSections.includes(section) : false;
+                    })
                     .map(({ to, label, icon: Icon }) => (
                       <Link
                         key={to}
@@ -897,85 +927,157 @@ export function AppShell({
                     to="/chat"
                     label="محادثة"
                     icon={<MessageCircle size={28} />}
-                    color={cn("bg-[#065F46]", isGuest && "opacity-20 grayscale cursor-not-allowed")}
-                    onClick={(e: any) => { if (isGuest) { e.preventDefault(); toast.error("خاص بالعائلة"); } else { setShowQuickActions(false); } }}
+                    color={cn("bg-[#065F46]", isGuest && !allowedSections.includes("chat") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("chat")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/trips"
                     label="ترفيه"
                     icon={<Ticket size={28} />}
-                    color="bg-[#D4AF37]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#D4AF37]", isGuest && !allowedSections.includes("trips") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("trips")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/meetings"
                     label="اجتماعات"
                     icon={<CalendarDays size={28} />}
-                    color="bg-[#1B3022]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#1B3022]", isGuest && !allowedSections.includes("meetings") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("meetings")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/tasks"
                     label="مهام"
                     icon={<ListChecks size={28} />}
-                    color={cn("bg-[#947D4C]", isGuest && "opacity-20 grayscale cursor-not-allowed")}
-                    onClick={(e: any) => { if (isGuest) { e.preventDefault(); toast.error("خاص بالعائلة"); } else { setShowQuickActions(false); } }}
+                    color={cn("bg-[#947D4C]", isGuest && !allowedSections.includes("tasks") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("tasks")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/majlis"
                     label="الأخبار"
                     icon={<Newspaper size={28} />}
-                    color="bg-[#064E3B]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#064E3B]", isGuest && !allowedSections.includes("news") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("news")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/community"
                     label="ركن الأعضاء"
                     icon={<Users size={28} />}
-                    color="bg-[#3D8557]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#3D8557]", isGuest && !allowedSections.includes("community") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("community")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/archive"
                     label="الألبوم"
                     icon={<Archive size={28} />}
-                    color="bg-[#C5A87C]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#C5A87C]", isGuest && !allowedSections.includes("archive") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("archive")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/heritage"
                     label="الإرث"
                     icon={<History size={28} />}
-                    color="bg-[#8E7745]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#8E7745]", isGuest && !allowedSections.includes("heritage") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("heritage")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/family-tree"
                     label="شجرة العائلة"
                     icon={<Trees size={28} />}
-                    color="bg-[#153221]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#153221]", isGuest && !allowedSections.includes("tree") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("tree")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/vault"
                     label="الخزنة"
                     icon={<Lock size={28} />}
-                    color={cn("bg-[#7c2d12]", isGuest && "opacity-20 grayscale cursor-not-allowed")}
-                    onClick={(e: any) => { if (isGuest) { e.preventDefault(); toast.error("خاص بالعائلة"); } else { setShowQuickActions(false); } }}
+                    color={cn("bg-[#7c2d12]", isGuest && !allowedSections.includes("vault") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("vault")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/finance"
                     label="الصندوق"
                     icon={<Wallet size={28} />}
-                    color={cn("bg-[#BF953F]", isGuest && "opacity-20 grayscale cursor-not-allowed")}
-                    onClick={(e: any) => { if (isGuest) { e.preventDefault(); toast.error("خاص بالعائلة"); } else { setShowQuickActions(false); } }}
+                    color={cn("bg-[#BF953F]", isGuest && !allowedSections.includes("finance") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("finance")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/steps-challenge"
                     label="تحدي الخطوات"
                     icon={<Footprints size={28} />}
-                    color="bg-[#10b981]"
-                    onClick={() => setShowQuickActions(false)}
+                    color={cn("bg-[#10b981]", isGuest && !allowedSections.includes("steps") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("steps")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
                   />
                   <QuickActionItem
                     to="/profile"

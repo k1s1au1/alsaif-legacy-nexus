@@ -176,7 +176,7 @@ function AdminPage() {
             supabase
               .from("profiles")
               .select(
-                "id, arabic_name, full_name, avatar_url, is_active, created_at, updated_at, first_name, father_name, grandfather_name, parent_id, terms_accepted_at",
+                "id, arabic_name, full_name, avatar_url, is_active, created_at, updated_at, first_name, father_name, grandfather_name, parent_id, terms_accepted_at, allowed_sections",
               )
               .order("full_name"),
             supabase.from("user_roles").select("user_id, role"),
@@ -1305,6 +1305,26 @@ function MemberAdminRow({
     onAssignRole(uid, role);
   };
 
+  const handleToggleSection = async (section: string) => {
+    const current = member.allowed_sections || [];
+    const next = current.includes(section)
+      ? current.filter((s: string) => s !== section)
+      : [...current, section];
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ allowed_sections: next })
+        .eq("id", member.id);
+      if (error) throw error;
+      toast.success("تم تحديث صلاحيات الضيف");
+      // Note: In a real app, you'd want to refresh the local state or parent data
+      member.allowed_sections = next;
+    } catch (err: any) {
+      toast.error("فشل التحديث: " + err.message);
+    }
+  };
+
   return (
     <div className="card-surface p-4 md:p-5 hover:bg-primary/5 transition-all group">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -1390,6 +1410,38 @@ function MemberAdminRow({
           )}
         </div>
       </div>
+
+      {currentRole === "guest" && (
+        <div className="mt-4 pt-4 border-t border-border/40 bg-slate-50/50 p-4 rounded-2xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2">
+            <ShieldCheck size={12} /> تصاريح دخول الضيف (حدد ما يمكنه رؤيته)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {SECTION_OPTIONS.map((s) => {
+              const allowed = (member.allowed_sections || []).includes(s.key);
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => handleToggleSection(s.key)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-[11px] font-black border transition-all flex items-center gap-2",
+                    allowed
+                      ? "bg-slate-800 text-white border-slate-800 shadow-md"
+                      : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                  )}
+                >
+                  <div className={cn(
+                    "size-2 rounded-full",
+                    allowed ? "bg-emerald-400 animate-pulse" : "bg-slate-200"
+                  )} />
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 pt-4 border-t border-border/40">
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mb-2">
           مسؤوليات الأقسام
