@@ -1,0 +1,10 @@
+{
+  "name": "مجلس السيف",
+  "short_name": "السيف",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F5A3A",
+  "theme_color": "#0F5A3A",
+  "description": "منصة مجلس عائلة السيف الرقمية",
+  "icons": []
+}

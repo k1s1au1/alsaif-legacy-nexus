@@ -17,8 +17,6 @@ messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title || payload.data?.title || "إشعار جديد";
   const options = {
     body: payload.notification?.body || payload.data?.body || "",
-    icon: "/logo.png",
-    badge: "/logo.png",
     data: payload.data || {},
   };
   self.registration.showNotification(title, options);
