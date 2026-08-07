@@ -317,18 +317,8 @@ function SettingsPage() {
         await new Promise((r) => setTimeout(r, 6000));
       } else {
         const inIframe = typeof window !== "undefined" && window.self !== window.top;
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-        const isStandalone = (window.navigator as any).standalone || (window.navigator as any).standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-
-        if (isIOS && !isStandalone) {
-          throw new Error("لتفعيل الإشعارات على الأيفون، اضغط على زر 'مشاركة' ثم 'إضافة للشاشة الرئيسية' وافتح التطبيق من هناك.");
-        }
-
         if (!("Notification" in window) || !("serviceWorker" in navigator)) {
-          if (isIOS && !("Notification" in window)) {
-            throw new Error("إشعارات الويب غير مدعومة في متصفحك الحالي. يرجى استخدام Safari وتحديث النظام لـ iOS 16.4+.");
-          }
-          throw new Error("هذا المتصفح لا يدعم إشعارات الويب، أو أنك تستخدم 'الوضع الخاص' (Incognito) الذي يمنع الإشعارات.");
+          throw new Error("هذا المتصفح لا يدعم إشعارات الويب");
         }
         if (Notification.permission === "denied") {
           throw new Error(

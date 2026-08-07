@@ -1,5 +1,6 @@
-- `[/]` تهيئة دعم PWA وإشعارات iOS
-    - `[ ]` إنشاء ملف `public/manifest.json`
-    - `[ ]` ربط المانيفست في `public/index.html`
-    - `[ ]` تحسين منطق الكشف والرسائل في `settings.tsx`
-- `[ ]` التحقق والاختبار
+- `[x]` تهيئة دعم PWA وإشعارات iOS
+    - `[x]` إنشاء ملف `public/manifest.json`
+    - `[x]` ربط المانيفست في `public/index.html`
+    - `[x]` تحسين منطق الكشف والرسائل في `settings.tsx`
+- `[x]` التحقق والاختبار
+    - `[x]` تحديث `firebase-messaging-sw.js` لإزالة الروابط المكسورة
