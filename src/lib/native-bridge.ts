@@ -41,58 +41,88 @@ export const FamilySharing = {
     date: string;
     location: string;
   }) {
-    if (Capacitor.isNativePlatform()) {
-      try {
-        await FamilySharingRaw.shareInvitation({ title, date, location });
-        return;
-      } catch (e) {
-        console.warn("Custom plugin failed, falling back to web sharing");
-      }
-    }
+    /*
+       Royal Update: We now use the Web Canvas implementation for BOTH web and native platforms.
+       This ensures the invitation always includes the official Alsaif Logo/Seal and
+       the premium ivory-gold design, which is more easily managed via the web bridge.
+    */
 
-    // Web Fallback: Generate Canvas Image
+    // Web Fallback: Generate Canvas Image (Royal Edition)
     const canvas = document.createElement("canvas");
     canvas.width = 1200;
-    canvas.height = 1200;
+    canvas.height = 1500; // Taller for better proportions
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Draw Background
-    const grad = ctx.createLinearGradient(0, 0, 1200, 1200);
-    grad.addColorStop(0, "#064E3B"); // Emerald
-    grad.addColorStop(1, "#051410"); // Dark
+    // 1. Draw Background (Royal Ivory Texture)
+    const grad = ctx.createLinearGradient(0, 0, 1200, 1500);
+    grad.addColorStop(0, "#FDFCF7"); // Ivory White
+    grad.addColorStop(1, "#F2F1EA"); // Off-white
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 1200, 1200);
+    ctx.fillRect(0, 0, 1200, 1500);
 
-    // Draw Frame
-    ctx.strokeStyle = "#D4AF37"; // Gold
-    ctx.lineWidth = 40;
-    ctx.strokeRect(60, 60, 1080, 1080);
+    // 2. Draw Borders (Gold Frame)
+    ctx.strokeStyle = "#8E7745"; // Gold
+    ctx.lineWidth = 20;
+    ctx.strokeRect(40, 40, 1120, 1420);
+    ctx.lineWidth = 5;
+    ctx.strokeRect(70, 70, 1060, 1360);
 
-    // Text Style
+    // 3. Load and Draw Logo as a "Seal/Stamp"
+    const loadLogo = () => new Promise<HTMLImageElement>((res) => {
+      const img = new Image();
+      img.src = "/logo-home.png";
+      img.onload = () => res(img);
+      img.onerror = () => res(new Image()); // Fallback if failed
+    });
+
+    const logo = await loadLogo();
+    if (logo.width > 0) {
+      // Draw watermark logo (Large & Subtle in center)
+      ctx.globalAlpha = 0.04;
+      ctx.drawImage(logo, 300, 450, 600, 600);
+      ctx.globalAlpha = 1.0;
+
+      // Draw official seal logo (Top Center)
+      ctx.drawImage(logo, 500, 100, 200, 200);
+    }
+
+    // 4. Draw Typography
     ctx.textAlign = "center";
-    ctx.fillStyle = "#D4AF37";
-    ctx.font = 'bold 120px "Amiri", serif';
-    ctx.fillText("دعوة عائلية", 600, 300);
+    ctx.fillStyle = "#064E3B"; // Diamond Green
+    ctx.font = 'bold 100px "Amiri", serif';
+    ctx.fillText("دعوة عائلية", 600, 420);
 
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 90px sans-serif";
-    ctx.fillText(title, 600, 500);
+    // Decorative Line
+    ctx.strokeStyle = "#8E7745";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(400, 460);
+    ctx.lineTo(800, 460);
+    ctx.stroke();
 
-    ctx.font = "50px sans-serif";
-    ctx.fillStyle = "#D4AF37";
-    ctx.fillText("📅 التاريخ والوقت", 600, 700);
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillText(date, 600, 780);
+    ctx.fillStyle = "#1A1C1E";
+    ctx.font = 'bold 80px "Tajawal", sans-serif';
+    ctx.fillText(title, 600, 600);
 
-    ctx.fillStyle = "#D4AF37";
-    ctx.fillText("📍 الموقع", 600, 900);
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillText(location, 600, 980);
+    // Details Section
+    const drawDetail = (label: string, value: string, y: number) => {
+      ctx.fillStyle = "#8E7745";
+      ctx.font = 'bold 45px "Tajawal", sans-serif';
+      ctx.fillText(label, 600, y);
+      ctx.fillStyle = "#064E3B";
+      ctx.font = 'bold 60px "Tajawal", sans-serif';
+      ctx.fillText(value, 600, y + 80);
+    };
 
-    ctx.font = "italic 40px serif";
-    ctx.fillStyle = "rgba(255,255,255,0.3)";
-    ctx.fillText("مجلس السيف الرقمي", 600, 1120);
+    drawDetail("📅 الموعد والتاريخ", date, 800);
+    drawDetail("📍 الموقع والمكان", location, 1050);
+
+    // Footer - Official Stamp Style
+    ctx.fillStyle = "rgba(6, 78, 59, 0.4)";
+    ctx.font = 'italic 35px "Amiri", serif';
+    ctx.fillText("صُدرت من مجلس عائلة السيف الرقمي", 600, 1350);
+    ctx.fillText("نصل العائلة، نحفظ الإرث، ونبني المستقبل", 600, 1410);
 
     // Share or Download
     canvas.toBlob(async (blob) => {
