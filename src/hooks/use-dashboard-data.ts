@@ -18,7 +18,8 @@ export function useProfile() {
       const { data: r } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
 
       const rs = (r ?? []).map((x) => x.role);
-      const name = p?.arabic_name || p?.full_name || user.email?.split("@")[0] || "عضو العائلة";
+      const profileName = p?.arabic_name || p?.full_name;
+      const name = profileName || user.email?.split("@")[0] || "عضو العائلة";
 
       return {
         id: user.id,

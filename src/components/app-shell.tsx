@@ -349,12 +349,12 @@ export function AppShell({
           localStorage.setItem("bottom_nav_prefs", JSON.stringify(keys));
         }
 
-        const name =
-          profileData?.arabic_name ||
-          profileData?.full_name ||
-          authData.user.email?.split("@")[0] ||
-          "عضو العائلة";
-        setMyName(name);
+        const profileName = profileData?.arabic_name || profileData?.full_name;
+        if (profileName) {
+          setMyName(profileName);
+        } else if (!myName || myName === "تحميل..." || myName === "جاري التحميل...") {
+          setMyName(authData.user.email?.split("@")[0] || "عضو العائلة");
+        }
 
         let roleLabelStr = "عضو";
         if (rs.includes("chairman")) roleLabelStr = "رئيس المجلس";
