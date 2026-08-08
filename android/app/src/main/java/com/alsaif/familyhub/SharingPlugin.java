@@ -68,4 +68,43 @@ public class SharingPlugin extends Plugin {
             call.reject("Failed to share: " + e.getMessage());
         }
     }
+
+    @PluginMethod
+    public void shareImage(PluginCall call) {
+        String base64Data = call.getString("base64Data");
+        if (base64Data == null || base64Data.isEmpty()) {
+            call.reject("Image data is required");
+            return;
+        }
+
+        try {
+            // Remove header if present (data:image/png;base64,)
+            if (base64Data.contains(",")) {
+                base64Data = base64Data.split(",")[1];
+            }
+
+            byte[] decodedString = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT);
+            File cachePath = new File(getContext().getCacheDir(), "images");
+            cachePath.mkdirs();
+            File imageFile = new File(cachePath, "invitation.png");
+            
+            FileOutputStream stream = new FileOutputStream(imageFile);
+            stream.write(decodedString);
+            stream.close();
+
+            Uri contentUri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", imageFile);
+
+            if (contentUri != null) {
+                Intent shareIntent = new Intent();
+                shareIntent.setAction(Intent.ACTION_SEND);
+                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                shareIntent.setDataAndType(contentUri, getContext().getContentResolver().getType(contentUri));
+                shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                getActivity().startActivity(Intent.createChooser(shareIntent, "مشاركة الدعوة الملكية"));
+                call.resolve();
+            }
+        } catch (Exception e) {
+            call.reject("Failed to share image: " + e.getMessage());
+        }
+    }
 }

@@ -8,6 +8,7 @@ export interface BiometricAuthPlugin {
 
 export interface FamilySharingPlugin {
   shareInvitation(options: { title: string; date: string; location: string }): Promise<void>;
+  shareImage(options: { base64Data: string }): Promise<void>;
 }
 
 export interface FamilyContactsPlugin {
@@ -124,7 +125,19 @@ export const FamilySharing = {
     ctx.fillText("صُدرت من مجلس عائلة السيف الرقمي", 600, 1350);
     ctx.fillText("نصل العائلة، نحفظ الإرث، ونبني المستقبل", 600, 1410);
 
-    // Share or Download
+    // Handle Native Sharing via Bridge
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const dataUrl = canvas.toDataURL("image/png");
+        await FamilySharingRaw.shareImage({ base64Data: dataUrl });
+        return;
+      } catch (e) {
+        console.error("Native share failed", e);
+        toast.error("تعذر فتح نافذة المشاركة الأصلية");
+      }
+    }
+
+    // Share or Download (Web Only)
     canvas.toBlob(async (blob) => {
       if (!blob) return;
       const file = new File([blob], "invitation.png", { type: "image/png" });
