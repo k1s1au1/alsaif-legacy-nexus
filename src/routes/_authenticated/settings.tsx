@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Moon,
   Sun,
+  Languages,
   Bell,
   Smartphone,
   Check,
