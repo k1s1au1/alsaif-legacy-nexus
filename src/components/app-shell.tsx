@@ -159,7 +159,7 @@ function ConnectionStatus({ state, dark = false }: { state: PresenceState; dark?
   );
 }
 
-function UserDropdown({ safeUser, myAvatarPath, connectionState, signOut, logo }: any) {
+function UserDropdown({ safeUser, connectionState, signOut, logo }: any) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -176,7 +176,7 @@ function UserDropdown({ safeUser, myAvatarPath, connectionState, signOut, logo }
           >
             <div className="size-full">
               <UserAvatar
-                path={myAvatarPath}
+                path={safeUser.avatarPath}
                 name={safeUser.name}
                 initial={safeUser.initial}
                 className="size-full rounded-full"
@@ -392,12 +392,13 @@ export function AppShell({
   // Placeholder names like "إعدادات المجلس" or "جاري التحميل" are filtered out.
   const profileName = globalProfile?.name;
   const isRealName = profileName && profileName !== "جاري التحميل..." && profileName !== "عضو العائلة";
+  const isProfileLoaded = !!globalProfile;
 
   const safeUser = {
     name: isRealName ? profileName : (myName || "جاري التحميل..."),
-    role: globalProfile?.role || myRole || user?.role || "عضو",
+    role: isProfileLoaded ? globalProfile.role : (myRole || user?.role || "عضو"),
     initial: (isRealName ? profileName : (myName || "ع"))[0].toUpperCase(),
-    avatarPath: globalProfile?.avatarPath || myAvatarPath || user?.avatarPath,
+    avatarPath: isProfileLoaded ? globalProfile.avatarPath : (myAvatarPath || user?.avatarPath),
   };
 
   return (
@@ -449,7 +450,7 @@ export function AppShell({
             )}
           >
             <UserAvatar
-              path={myAvatarPath}
+              path={safeUser.avatarPath}
               name={safeUser.name}
               initial={safeUser.initial}
               className="size-full rounded-full"
@@ -552,7 +553,6 @@ export function AppShell({
 
               <UserDropdown
                 safeUser={safeUser}
-                myAvatarPath={myAvatarPath}
                 connectionState={myPresenceState}
                 signOut={signOut}
                 logo={dynamicLogo}
@@ -813,7 +813,7 @@ export function AppShell({
                     )}
                   >
                     <UserAvatar
-                      path={myAvatarPath}
+                      path={safeUser.avatarPath}
                       name={safeUser.name}
                       initial={safeUser.initial}
                       className="size-full rounded-full"
