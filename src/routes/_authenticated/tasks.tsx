@@ -186,7 +186,7 @@ function TasksPage() {
   };
 
   return (
-    <AppShell title="المسؤوليات" user={profile}>
+    <AppShell title="المسؤوليات" user={{ name: "", role: "", initial: "ص" }}>
       <div className="max-w-7xl mx-auto space-y-12 pb-24 px-4 md:px-0" dir="rtl">
         <QuickActionsBanner />
 

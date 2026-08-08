@@ -397,7 +397,7 @@ function SettingsPage() {
   };
 
   return (
-    <AppShell title="الإعدادات" user={{ name: "إعدادات المجلس", role: "تخصيص", initial: "إ" }}>
+    <AppShell title="الإعدادات" user={{ name: "", role: "", initial: "إ" }}>
       <div className="max-w-4xl mx-auto space-y-12 pb-24" dir="rtl">
         <section className="space-y-6 animate-fade-up">
           <div className="flex items-center gap-4">

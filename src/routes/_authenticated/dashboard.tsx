@@ -482,7 +482,7 @@ function Dashboard() {
   }
 
   return (
-    <AppShell title="لوحة العائلة" user={safeProfile}>
+    <AppShell title="لوحة العائلة" user={{ name: "", role: "", initial: "س" }}>
       <div className="max-w-6xl mx-auto space-y-12 pb-20 px-4 md:px-0">
         {/* 1. SPIRITUAL REMINDER - Linked to Theme Colors */}
         <section className="animate-fade-up px-2 md:px-0">

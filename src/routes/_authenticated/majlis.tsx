@@ -235,7 +235,7 @@ function MajlisPage() {
   }, [posts, debouncedQ]);
 
   return (
-    <AppShell title="الأخبار" user={profile}>
+    <AppShell title="الأخبار" user={{ name: "", role: "", initial: "ص" }}>
       <div className="max-w-6xl mx-auto space-y-12 pb-24" dir="rtl">
         <QuickActionsBanner />
 

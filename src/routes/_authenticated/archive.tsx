@@ -320,7 +320,7 @@ function ArchivePage() {
   };
 
   return (
-    <AppShell title="الألبوم العائلي" user={profile}>
+    <AppShell title="الألبوم العائلي" user={{ name: "", role: "", initial: "ص" }}>
       <div className="max-w-7xl mx-auto space-y-12 pb-24 px-4 md:px-0" dir="rtl">
         {/* Immersive Header Banner */}
         <section className="animate-fade-up">

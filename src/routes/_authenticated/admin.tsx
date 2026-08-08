@@ -531,7 +531,7 @@ function AdminPage() {
   });
 
   return (
-    <AppShell title="الإدارة" user={profile}>
+    <AppShell title="الإدارة" user={{ name: "", role: "", initial: "ص" }}>
       <div className="max-w-6xl mx-auto space-y-12 pb-24" dir="rtl">
         <section className="animate-fade-up px-4 md:px-0">
           <div className="relative overflow-hidden rounded-[32px] md:rounded-[48px] bg-gradient-to-br from-primary via-emerald-950 to-black p-6 md:p-12 text-white shadow-2xl border border-white/5 group">

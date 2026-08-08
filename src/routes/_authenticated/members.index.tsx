@@ -175,7 +175,7 @@ function MembersPage() {
   return (
     <AppShell
       title="الأعضاء"
-      user={{ name: me.name, role: "عضو", initial: me.initial, avatarPath: me.avatarPath }}
+      user={{ name: "", role: "", initial: "ع", avatarPath: null }}
     >
       <div className="max-w-7xl mx-auto space-y-12 pb-24" dir="rtl">
         {/* Alsaif Header */}

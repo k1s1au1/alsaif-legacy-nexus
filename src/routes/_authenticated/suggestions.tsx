@@ -90,7 +90,7 @@ function SuggestionsPage() {
   };
 
   return (
-    <AppShell title="صندوق المقترحات" user={{ name: "صندوق الأفكار", role: "خصوصية", initial: "ص" }}>
+    <AppShell title="صندوق المقترحات" user={{ name: "", role: "", initial: "ص" }}>
       <div className="max-w-4xl mx-auto space-y-12 pb-24" dir="rtl">
         {/* Header Section */}
         <section className="text-center space-y-6 animate-fade-up">

@@ -387,13 +387,17 @@ export function AppShell({
     }
   }
 
-  const isLoadingName = !myName || myName === "..." || myName === "جاري التحميل..." || myName === "تحميل...";
+  // Name Stabilization Logic:
+  // We strictly prioritize the global profile data (Abu Al-Waleed) over any local page props.
+  // Placeholder names like "إعدادات المجلس" or "جاري التحميل" are filtered out.
+  const profileName = globalProfile?.name;
+  const isRealName = profileName && profileName !== "جاري التحميل..." && profileName !== "عضو العائلة";
 
   const safeUser = {
-    name: isLoadingName ? (globalProfile?.name || user?.name || "جاري التحميل...") : myName,
-    role: myRole || globalProfile?.role || user?.role || "عضو",
-    initial: (myName || globalProfile?.name || user?.name || "ع")[0].toUpperCase(),
-    avatarPath: myAvatarPath || globalProfile?.avatarPath || user?.avatarPath,
+    name: isRealName ? profileName : (myName || "جاري التحميل..."),
+    role: globalProfile?.role || myRole || user?.role || "عضو",
+    initial: (isRealName ? profileName : (myName || "ع"))[0].toUpperCase(),
+    avatarPath: globalProfile?.avatarPath || myAvatarPath || user?.avatarPath,
   };
 
   return (

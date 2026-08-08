@@ -402,7 +402,7 @@ function MeetingsPage() {
   );
 
   return (
-    <AppShell title="الاجتماعات" user={profile}>
+    <AppShell title="الاجتماعات" user={{ name: "", role: "", initial: "ص" }}>
       <div className="max-w-6xl mx-auto space-y-8 pb-24 px-4 md:px-0" dir="rtl">
         <QuickActionsBanner />
 

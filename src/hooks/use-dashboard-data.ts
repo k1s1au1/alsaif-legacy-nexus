@@ -19,7 +19,9 @@ export function useProfile() {
 
       const rs = (r ?? []).map((x) => x.role as string);
       const profileName = p?.arabic_name || p?.full_name;
-      const name = profileName || user.email?.split("@")[0] || "عضو العائلة";
+      // If we have a profile name, use it. Otherwise, use a clear placeholder while we're sure about the identity.
+      // We avoid email fallback here to prevent the "flicker" of the email address.
+      const name = profileName || "عضو العائلة";
 
       const role = rs.includes("chairman")
         ? "رئيس المجلس"

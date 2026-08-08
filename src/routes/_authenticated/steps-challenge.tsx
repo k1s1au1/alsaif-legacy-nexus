@@ -257,7 +257,7 @@ function StepsChallengePage() {
   const myRank = leaderboard.findIndex((u) => u.id === meId) + 1;
 
   return (
-    <AppShell title="تحدي الخطوات" user={{ name: "تحدي العائلة", role: "رياضة", initial: "ت" }}>
+    <AppShell title="تحدي الخطوات" user={{ name: "", role: "", initial: "ت" }}>
       <div className="max-w-4xl mx-auto space-y-12 pb-24" dir="rtl">
         <section className="text-center space-y-6 animate-fade-up">
           <div className="relative inline-block">

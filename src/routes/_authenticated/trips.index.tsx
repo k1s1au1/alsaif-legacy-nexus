@@ -139,7 +139,7 @@ function TripsPage() {
   }, [userId, primaryRole]);
 
   return (
-    <AppShell title="الترفيه" user={profile}>
+    <AppShell title="الترفيه" user={{ name: "", role: "", initial: "ص" }}>
       <div className="max-w-7xl mx-auto space-y-8 pb-24" dir="rtl">
         <QuickActionsBanner />
 
