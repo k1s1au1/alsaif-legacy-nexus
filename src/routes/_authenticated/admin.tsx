@@ -97,8 +97,8 @@ function AdminPage() {
   const isPowerUser = isSiteChairman || isSystemAdmin;
 
   const [profile, setProfile] = useState({
-    name: "...",
-    role: "...",
+    name: "",
+    role: "",
     initial: "ص",
     avatarPath: null as string | null,
   });
@@ -163,15 +163,7 @@ function AdminPage() {
 
       if (isA) {
         try {
-          const [
-            { data: reqs },
-            { data: mems, error: memErr },
-            { data: allRoles },
-            { data: allHeads },
-            { data: mreqs },
-            { data: bugs },
-            { data: pollList },
-          ] = await Promise.all([
+          const results = await Promise.all([
             supabase.from("account_requests").select("*").order("created_at", { ascending: false }),
             supabase
               .from("profiles")
@@ -187,13 +179,13 @@ function AdminPage() {
                   .select("*")
                   .eq("kind", "request")
                   .order("created_at", { ascending: false })
-              : Promise.resolve({ data: [] }),
+              : Promise.resolve({ data: [], error: null }),
             isSystemAdmin || isSiteChairman
               ? supabase
                   .from("bug_reports" as any)
                   .select("*")
                   .order("created_at", { ascending: false })
-              : Promise.resolve({ data: [] }),
+              : Promise.resolve({ data: [], error: null }),
             supabase
               .from("majlis_posts")
               .select("*")
@@ -201,8 +193,19 @@ function AdminPage() {
               .order("created_at", { ascending: false }),
           ]);
 
+          const [
+            { data: reqs, error: reqsErr },
+            { data: mems, error: memErr },
+            { data: allRoles, error: rolesErr },
+            { data: allHeads, error: headsErr },
+            { data: mreqs, error: mreqsErr },
+            { data: bugs, error: bugsErr },
+            { data: pollList, error: pollErr },
+          ] = results;
+
           if (memErr) {
             console.error("Members fetch error:", memErr);
+            toast.error("حدث خطأ أثناء جلب قائمة الأعضاء");
             setMembers([]);
           } else {
             const rolesByUser = new Map<string, { role: string }[]>();
@@ -751,9 +754,9 @@ function AdminPage() {
                       canManageRoles={isPowerUser}
                     />
                   ))}
-                  {filteredMembers.length === 0 && !loading && (
+                  {filteredMembers.length === 0 && (
                     <div className="p-20 text-center bg-muted/10 rounded-[40px] border-2 border-dashed text-muted-foreground italic">
-                      لا توجد نتائج مطابقة للبحث أو قائمة الأعضاء فارغة.
+                      {loading ? "جاري جلب قائمة الأعضاء..." : members.length === 0 ? "قائمة الأعضاء فارغة أو لا تملك صلاحية عرضها." : "لا توجد نتائج مطابقة للبحث."}
                     </div>
                   )}
                 </div>

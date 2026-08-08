@@ -47,6 +47,7 @@ import { useAppPermissions } from "@/hooks/use-app-permissions";
 import { DynamicIsland } from "@/components/dynamic-island";
 import { LiveClock } from "@/components/dashboard/live-clock";
 import { BiometricGate } from "@/components/biometric-gate";
+import { useProfile } from "@/hooks/use-dashboard-data";
 import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
 import {
   DropdownMenu,
@@ -276,6 +277,8 @@ export function AppShell({
     else if (diff < -20 || latest < 50) setHeaderVisible(true);
   });
 
+  const { data: globalProfile } = useProfile();
+
   const queryClient = useQueryClient();
   const dynamicLogo = useSiteLogo();
   const onlineCount = useOnlineCount();
@@ -352,7 +355,7 @@ export function AppShell({
         const profileName = profileData?.arabic_name || profileData?.full_name;
         if (profileName && profileName !== myName) {
           setMyName(profileName);
-        } else if (!myName || myName === "تحميل..." || myName === "جاري التحميل...") {
+        } else if (!myName || myName === "..." || myName === "تحميل..." || myName === "جاري التحميل...") {
           // Only fallback to email if we absolutely have no name from props or DB
           const emailFallback = authData.user.email?.split("@")[0] || "عضو العائلة";
           setMyName(emailFallback);
@@ -384,11 +387,13 @@ export function AppShell({
     }
   }
 
+  const isLoadingName = !myName || myName === "..." || myName === "جاري التحميل..." || myName === "تحميل...";
+
   const safeUser = {
-    name: myName || "جاري التحميل...",
-    role: myRole || "عضو",
-    initial: (myName || "ع")[0].toUpperCase(),
-    avatarPath: myAvatarPath,
+    name: isLoadingName ? (globalProfile?.name || user?.name || "جاري التحميل...") : myName,
+    role: myRole || globalProfile?.role || user?.role || "عضو",
+    initial: (myName || globalProfile?.name || user?.name || "ع")[0].toUpperCase(),
+    avatarPath: myAvatarPath || globalProfile?.avatarPath || user?.avatarPath,
   };
 
   return (

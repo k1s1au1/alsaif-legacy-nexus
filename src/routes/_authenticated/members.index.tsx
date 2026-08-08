@@ -69,7 +69,7 @@ function MembersPage() {
     role: string;
   }>({
     id: "",
-    name: "...",
+    name: "",
     initial: "س",
     avatarPath: null,
     role: "عضو",

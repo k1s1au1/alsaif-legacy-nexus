@@ -231,7 +231,7 @@ function ProfilePage() {
 
   if (loading) {
     return (
-      <AppShell title="الملف الشخصي" user={{ name: "...", role: "عضو", initial: "ص" }}>
+      <AppShell title="الملف الشخصي" user={{ name: "", role: "عضو", initial: "ع" }}>
         <div className="flex flex-col items-center justify-center py-32 space-y-4 opacity-40">
           <div className="size-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
           <p className="font-black">جاري تحميل بياناتك...</p>

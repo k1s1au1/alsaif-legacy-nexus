@@ -17,18 +17,22 @@ export function useProfile() {
 
       const { data: r } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
 
-      const rs = (r ?? []).map((x) => x.role);
+      const rs = (r ?? []).map((x) => x.role as string);
       const profileName = p?.arabic_name || p?.full_name;
       const name = profileName || user.email?.split("@")[0] || "عضو العائلة";
+
+      const role = rs.includes("chairman")
+        ? "رئيس المجلس"
+        : rs.includes("admin")
+          ? "مسؤول تقني"
+          : rs.includes("manager")
+            ? "مسؤول قسم"
+            : "عضو المجلس";
 
       return {
         id: user.id,
         name,
-        role: rs.includes("admin")
-          ? "مسؤول تقني"
-          : rs.includes("chairman")
-            ? "رئيس المجلس"
-            : "عضو المجلس",
+        role,
         initial: (name[0] || "ع").toUpperCase(),
         avatarPath: p?.avatar_url ?? null,
       };

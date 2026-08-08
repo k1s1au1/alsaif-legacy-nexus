@@ -61,7 +61,7 @@ function MemberProfilePage() {
     initial: string;
     avatarPath: string | null;
   }>({
-    name: "...",
+    name: "",
     role: "عضو",
     initial: "س",
     avatarPath: null,

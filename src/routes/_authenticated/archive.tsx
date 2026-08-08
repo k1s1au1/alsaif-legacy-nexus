@@ -116,8 +116,8 @@ const MAX_BYTES = 50 * 1024 * 1024;
 
 function ArchivePage() {
   const [profile, setProfile] = useState({
-    name: "...",
-    role: "...",
+    name: "",
+    role: "",
     initial: "ص",
     avatarPath: null as string | null,
   });

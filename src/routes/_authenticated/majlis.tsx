@@ -60,8 +60,8 @@ function MajlisPage() {
   const canPostNews = isChairman || isAdmin || canManageSection("news");
 
   const [profile, setProfile] = useState({
-    name: "...",
-    role: "...",
+    name: "",
+    role: "",
     initial: "ص",
     avatarPath: null as string | null,
   });

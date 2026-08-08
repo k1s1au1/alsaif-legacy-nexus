@@ -68,8 +68,8 @@ function CommunityPage() {
   const isHead = canManage("community");
 
   const [profile, setProfile] = useState({
-    name: "...",
-    role: "...",
+    name: "",
+    role: "",
     initial: "ع",
     avatarPath: null as string | null,
   });

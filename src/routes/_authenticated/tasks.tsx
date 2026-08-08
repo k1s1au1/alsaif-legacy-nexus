@@ -76,7 +76,7 @@ function formatDate(iso: string | null) {
 
 function TasksPage() {
   const [profile, setProfile] = useState({
-    name: "...",
+    name: "",
     role: "عضو",
     initial: "ص",
     avatarPath: null as string | null,
