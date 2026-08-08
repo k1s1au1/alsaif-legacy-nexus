@@ -7,4 +7,10 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 // Alsaif Family Hub - Optimized Config
-export default defineConfig({});
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      external: ["@capacitor/app", "@capacitor/local-notifications"]
+    }
+  }
+});

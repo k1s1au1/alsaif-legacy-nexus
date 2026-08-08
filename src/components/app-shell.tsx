@@ -350,10 +350,12 @@ export function AppShell({
         }
 
         const profileName = profileData?.arabic_name || profileData?.full_name;
-        if (profileName) {
+        if (profileName && profileName !== myName) {
           setMyName(profileName);
         } else if (!myName || myName === "تحميل..." || myName === "جاري التحميل...") {
-          setMyName(authData.user.email?.split("@")[0] || "عضو العائلة");
+          // Only fallback to email if we absolutely have no name from props or DB
+          const emailFallback = authData.user.email?.split("@")[0] || "عضو العائلة";
+          setMyName(emailFallback);
         }
 
         let roleLabelStr = "عضو";

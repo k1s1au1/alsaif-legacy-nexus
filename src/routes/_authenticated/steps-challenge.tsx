@@ -240,11 +240,16 @@ function StepsChallengePage() {
 
     let handle: any = null;
     if (isNative()) {
-      import("@capacitor/app").then(({ App }) => {
-        App.addListener("appStateChange", ({ isActive }) => {
-          if (isActive) handleSync(false);
-        }).then((h) => { handle = h; });
-      });
+      (async () => {
+        try {
+          const { App } = await import(/* @vite-ignore */ "@capacitor/app");
+          handle = await App.addListener("appStateChange", ({ isActive }) => {
+            if (isActive) handleSync(false);
+          });
+        } catch (e) {
+          console.warn("Capacitor App plugin not available", e);
+        }
+      })();
     }
     return () => { if (handle) handle.remove(); };
   }, [loadData, checkSensor, handleSync]);
