@@ -90,11 +90,11 @@ export function IntegratedHub({
   const [tripApi, setTripApi] = useState<CarouselApi>();
   const [activeTripIndex, setActiveTripIndex] = useState(0);
 
-  const tripsPlugin = useRef(Autoplay({ delay: 6000, stopOnInteraction: true }));
-  const meetingsPlugin = useRef(Autoplay({ delay: 6000, stopOnInteraction: true }));
+  const tripsPlugin = useRef(Autoplay({ delay: 10000, stopOnInteraction: true }));
+  const meetingsPlugin = useRef(Autoplay({ delay: 10000, stopOnInteraction: true }));
   const tripsPlugins = useMemo(() => [tripsPlugin.current], []);
   const meetingsPlugins = useMemo(() => [meetingsPlugin.current], []);
-  const carouselOpts = useMemo(() => ({ loop: true }), []);
+  const carouselOpts = useMemo(() => ({ loop: true, axis: "y" as const, dragFree: false }), []);
 
   useEffect(() => {
     if (!tripApi || !tripApi.on) return;
