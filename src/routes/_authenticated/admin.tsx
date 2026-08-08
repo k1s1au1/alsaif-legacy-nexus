@@ -168,7 +168,7 @@ function AdminPage() {
             supabase
               .from("profiles")
               .select(
-                "id, arabic_name, full_name, avatar_url, is_active, created_at, updated_at, first_name, father_name, grandfather_name, parent_id, terms_accepted_at, allowed_sections",
+                "id, arabic_name, full_name, avatar_url, is_active, created_at, updated_at, first_name, father_name, grandfather_name, parent_id, terms_accepted_at",
               )
               .order("full_name"),
             supabase.from("user_roles").select("user_id, role"),
