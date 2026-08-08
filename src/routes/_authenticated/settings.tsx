@@ -7,11 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Moon,
   Sun,
-  Languages,
   Bell,
   Smartphone,
-  ShieldCheck,
-  ChevronLeft,
   Check,
   Palette,
   Type,
@@ -68,7 +65,6 @@ function SettingsPage() {
   const [fontStyle, setFontStyle] = useState<"modern" | "royal">("modern");
   const [fontScale, setFontScale] = useState(1);
   const [themeColor, setThemeColor] = useState("emerald");
-  const [appVersion, setAppVersion] = useState("1.1.9 (Web)");
   const [isNative, setIsNative] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
@@ -168,10 +164,6 @@ function SettingsPage() {
     const win = window as any;
     if (win.Capacitor?.isNativePlatform()) {
       setIsNative(true);
-      const plugins = win.Capacitor?.Plugins;
-      if (plugins?.App) {
-        plugins.App.getInfo().then((info: any) => setAppVersion(`${info.version} (Native)`));
-      }
     }
   }, []);
 
@@ -570,29 +562,6 @@ function SettingsPage() {
           </div>
         </section>
 
-        <section className="space-y-6 animate-fade-up" style={{ animationDelay: "200ms" }}>
-          <div className="flex items-center gap-4">
-            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-              إعدادات النظام
-            </h3>
-            <div className="h-px flex-1 bg-border/60" />
-          </div>
-          <div className="card-surface overflow-hidden divide-y divide-border/40">
-            <SettingRow icon={<Languages />} title="لغة الواجهة" desc="العربية (الافتراضية)" />
-            <SettingRow icon={<Bell />} title="الإشعارات" desc="مفعلة لكافة الأحداث" />
-            <SettingRow icon={<ShieldCheck />} title="الأمان" desc="التحقق من الهوية مفعل" />
-
-            <div className="p-8 flex items-center justify-between text-muted-foreground/40 italic">
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                Version {appVersion}
-              </span>
-              <div
-                className="size-6 logo-alsaif grayscale opacity-20"
-                style={{ "--logo-url": dynamicLogo ? `url(${dynamicLogo})` : "none" } as any}
-              />
-            </div>
-          </div>
-        </section>
 
         {isNative && (
           <section className="space-y-6 animate-fade-up" style={{ animationDelay: "250ms" }}>
@@ -941,22 +910,6 @@ function ThemeCard({ active, label, icon, onClick }: any) {
   );
 }
 
-function SettingRow({ icon, title, desc }: any) {
-  return (
-    <div className="p-8 flex items-center justify-between group transition-all">
-      <div className="flex items-center gap-6">
-        <div className="size-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
-          {icon}
-        </div>
-        <div className="text-right">
-          <p className="font-black text-primary tracking-tight">{title}</p>
-          <p className="text-xs font-bold text-muted-foreground opacity-60">{desc}</p>
-        </div>
-      </div>
-      <ChevronLeft className="size-5 text-muted-foreground/30" />
-    </div>
-  );
-}
 
 const NOTIF_OPTIONS: {
   key: "meetings" | "entertainment" | "tasks" | "chat" | "news";
