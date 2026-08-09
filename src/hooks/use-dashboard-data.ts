@@ -9,15 +9,22 @@ export function useProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Robust selection: We try to get everything, but handle partial failures gracefully.
-      const { data: profileData, error: pErr } = await supabase
+      const { data: p, error: pErr } = await supabase
         .from("profiles")
-        .select("id, arabic_name, full_name, avatar_url, bottom_nav_prefs, allowed_sections")
+        .select("arabic_name, full_name, avatar_url, bottom_nav_prefs, allowed_sections")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (pErr) {
-        console.error("[useProfile] Data fetch warning (likely permissions):", pErr.message);
+      // If the extended select failed (e.g. Permission Denied on some columns),
+      // fallback to a safe core selection to ensure identity is preserved.
+      let profileData = p;
+      if (pErr || !p) {
+        const { data: coreP } = await supabase
+          .from("profiles")
+          .select("arabic_name, full_name, avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
+        profileData = coreP;
       }
 
       const { data: r } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
@@ -45,7 +52,7 @@ export function useProfile() {
         allowedSections: (profileData?.allowed_sections as string[]) || [],
       };
     },
-    staleTime: 1000,
+    staleTime: 0,
     gcTime: 1000 * 60 * 10,
   });
 }
