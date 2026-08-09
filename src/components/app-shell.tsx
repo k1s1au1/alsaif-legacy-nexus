@@ -232,7 +232,7 @@ function UserDropdown({ safeUser, connectionState, signOut, logo }: any) {
 export function AppShell({
   children,
   title,
-  user,
+  user: initialUser,
   fullWidth = false,
 }: {
   children: ReactNode;
@@ -242,35 +242,29 @@ export function AppShell({
 }) {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isGuest, setIsGuest] = useState(false);
-  const [myAvatarPath, setMyAvatarPath] = useState<string | null>(user?.avatarPath ?? null);
-  const [myUserId, setMyUserId] = useState<string | null>(null);
-  const [myName, setMyName] = useState<string>(user?.name || "");
-  const [myRole, setMyRole] = useState<string>(user?.role || "");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showMoreHub, setShowMoreHub] = useState(false);
 
+  // 1. Centralized Identity Source (Zero Redundancy)
+  const { data: globalProfile, isLoading: profileLoading } = useProfile();
+
   // Header Visibility Control
-  const [headerVisible, setHeaderVisible] = useState(true);
   const { scrollY } = useScroll();
+  const [headerCompact, setHeaderCompact] = useState(false);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    const previous = scrollY.getPrevious() ?? 0;
-    const diff = latest - previous;
-    if (diff > 10 && latest > 100) setHeaderVisible(false);
-    else if (diff < -20 || latest < 50) setHeaderVisible(true);
+    if (latest > 100) setHeaderCompact(true);
+    else setHeaderCompact(false);
   });
-
-  const { data: globalProfile } = useProfile();
 
   const queryClient = useQueryClient();
   const dynamicLogo = useSiteLogo();
   const onlineCount = useOnlineCount();
-  const myPresenceState = usePresenceFor(myUserId);
+  const myPresenceState = usePresenceFor(globalProfile?.id);
   const onlineUserIds = useOnlineUsers();
   const [onlineProfiles, setOnlineUserProfiles] = useState<any[]>([]);
+
   useFcm();
   useAppPermissions();
   usePresenceHeartbeat();
@@ -298,61 +292,6 @@ export function AppShell({
     }
   }, [sidebarOpen, showQuickActions, showMoreHub]);
 
-  // Header Visibility Control
-  const [headerCompact, setHeaderCompact] = useState(false);
-
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    // Header logic
-    if (latest > 100) setHeaderCompact(true);
-    else setHeaderCompact(false);
-  });
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data: authData } = await supabase.auth.getUser();
-        if (!authData?.user) return;
-        const uid = authData.user.id;
-        setMyUserId(uid);
-
-        const [{ data: rolesData }, { data: profileData }] = await Promise.all([
-          supabase.from("user_roles").select("role").eq("user_id", uid),
-          supabase
-            .from("profiles")
-            .select("arabic_name, full_name, avatar_url")
-            .eq("id", uid)
-            .maybeSingle(),
-        ]);
-
-        const rs = (rolesData ?? []).map((x) => x.role);
-        const hasManagementRank = rs.some((role) =>
-          ["chairman", "admin", "manager"].includes(role),
-        );
-        setIsAdmin(hasManagementRank);
-        setIsGuest(rs.includes("guest"));
-
-        const profileName = profileData?.arabic_name || profileData?.full_name;
-        if (profileName && profileName !== myName) {
-          setMyName(profileName);
-        } else if (!myName || myName === "..." || myName === "تحميل..." || myName === "جاري التحميل...") {
-          // Only fallback to email if we absolutely have no name from props or DB
-          const emailFallback = authData.user.email?.split("@")[0] || "عضو العائلة";
-          setMyName(emailFallback);
-        }
-
-        let roleLabelStr = "عضو";
-        if (rs.includes("chairman")) roleLabelStr = "رئيس المجلس";
-        else if (rs.includes("admin")) roleLabelStr = "مسؤول";
-        else if (rs.includes("manager")) roleLabelStr = "مسؤول قسم";
-        setMyRole(roleLabelStr);
-
-        if (profileData?.avatar_url) setMyAvatarPath(profileData.avatar_url);
-      } catch (e) {
-        console.error("Shell initialization error", e);
-      }
-    })();
-  }, []);
-
   async function signOut() {
     try {
       await queryClient.cancelQueries();
@@ -365,22 +304,18 @@ export function AppShell({
     }
   }
 
-  // Name Stabilization Logic:
-  // We strictly prioritize the global profile data (Abu Al-Waleed) over any local page props.
-  // Placeholder names like "إعدادات المجلس" or "جاري التحميل" are filtered out.
-  const profileName = globalProfile?.name;
-  const isRealName = profileName && profileName !== "جاري التحميل..." && profileName !== "عضو العائلة";
-  const isProfileLoaded = !!globalProfile;
+  // Final stabilized user identity
+  const safeUser = {
+    name: globalProfile?.name || initialUser?.name || "جاري التحميل...",
+    role: globalProfile?.role || initialUser?.role || "عضو",
+    initial: (globalProfile?.name || initialUser?.name || "ع")[0].toUpperCase(),
+    avatarPath: globalProfile?.avatarPath || initialUser?.avatarPath,
+  };
 
   const allowedSections = globalProfile?.allowedSections || [];
   const bottomNavKeys = globalProfile?.bottomNavPrefs || DEFAULT_NAV_KEYS;
-
-  const safeUser = {
-    name: isRealName ? profileName : (myName || "جاري التحميل..."),
-    role: isProfileLoaded ? globalProfile.role : (myRole || user?.role || "عضو"),
-    initial: (isRealName ? profileName : (myName || "ع"))[0].toUpperCase(),
-    avatarPath: isProfileLoaded ? globalProfile.avatarPath : (myAvatarPath || user?.avatarPath),
-  };
+  const isAdmin = globalProfile?.role === "رئيس المجلس" || globalProfile?.role === "مسؤول تقني";
+  const isGuest = globalProfile?.role === "ضيف المجلس";
 
   return (
     <BiometricGate>

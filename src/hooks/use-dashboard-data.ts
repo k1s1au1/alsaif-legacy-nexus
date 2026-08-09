@@ -41,7 +41,8 @@ export function useProfile() {
         allowedSections: (p?.allowed_sections as string[]) || [],
       };
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60, // Reduced to 1 minute for better responsiveness
+    gcTime: 1000 * 60 * 10,
   });
 }
 
