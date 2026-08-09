@@ -184,7 +184,7 @@ function UserDropdown({ safeUser, connectionState, signOut, logo }: any) {
             </div>
           </div>
           <span className="text-[10px] md:text-[15px] font-black text-white md:text-primary tracking-tight drop-shadow-sm truncate">
-            {safeUser.name.split(" ")[0]}
+            {safeUser.name}
           </span>
           <ChevronDown className="size-3 md:size-4 text-white/70 md:text-primary/30 group-hover/profile:text-white md:group-hover/profile:text-primary transition-colors shrink-0" />
         </button>
@@ -268,6 +268,32 @@ export function AppShell({
   useFcm();
   useAppPermissions();
   usePresenceHeartbeat();
+
+  // 2. Real-time Profile Synchronization (Bottom Nav & Identity)
+  useEffect(() => {
+    if (!globalProfile?.id) return;
+
+    const channel = supabase
+      .channel(`profile-sync-${globalProfile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${globalProfile.id}`
+        },
+        () => {
+          console.log("[AppShell] Real-time profile update detected, invalidating cache...");
+          queryClient.invalidateQueries({ queryKey: ["profile"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [globalProfile?.id, queryClient]);
 
   useEffect(() => {
     if (onlineUserIds.length > 0) {

@@ -647,7 +647,7 @@ function SecureVaultPage() {
                                     isSelected ? "text-primary" : "text-muted-foreground",
                                   )}
                                 >
-                                  {(p.arabic_name || p.full_name || "عضو").split(" ")[0]}
+                                  {p.arabic_name || p.full_name || "عضو"}
                                 </span>
                               </button>
                             );
@@ -866,8 +866,8 @@ function VaultCard({
               المودع
             </p>
             <h5 className="text-[10px] md:text-[13px] font-black text-primary/70 truncate tracking-tight">
-              {item.uploader?.arabic_name?.split(" ")[0] ||
-                item.uploader?.full_name?.split(" ")[0] ||
+              {item.uploader?.arabic_name ||
+                item.uploader?.full_name ||
                 "عضو"}
             </h5>
           </div>

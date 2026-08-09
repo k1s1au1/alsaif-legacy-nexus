@@ -254,7 +254,7 @@ function MemberProfilePage() {
 
               <ProfileField
                 label="الاسم الأول"
-                value={profile.first_name || profile.arabic_name?.split(" ")[0]}
+                value={profile.first_name || profile.arabic_name}
                 icon={<UserIcon />}
               />
               <ProfileField
