@@ -8,4 +8,5 @@
     <string name="shortcut_steps_label">تحدي الخطوات</string>
     <string name="shortcut_vault_label">خزنة الوثائق</string>
     <string name="shortcut_family_tree_label">شجرة العائلة</string>
+    <string name="health_connect_rationale">يستخدم تطبيق المجلس بيانات خطواتك لتشغيل تحدي الخطوات العائلي والمنافسة بين الأعضاء.</string>
 </resources>

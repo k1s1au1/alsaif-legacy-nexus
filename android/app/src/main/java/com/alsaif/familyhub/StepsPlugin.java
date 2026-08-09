@@ -200,6 +200,19 @@ public class StepsPlugin extends Plugin implements SensorEventListener {
         }
     }
 
+    @PluginMethod
+    public void openHealthConnectSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS");
+            intent.setPackage("com.google.android.apps.healthdata");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("COULD_NOT_OPEN_SETTINGS");
+        }
+    }
+
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_STEP_COUNTER) {

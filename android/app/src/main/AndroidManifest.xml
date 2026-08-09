@@ -67,13 +67,21 @@
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="alsaif_notifications" />
         <receiver android:name=".NotificationActionReceiver" android:exported="false" />
 
+        <meta-data android:name="health_permissions_rationale" android:value=".HealthConnectActivity" />
+
         <!-- Health Connect Activity -->
         <activity
             android:name=".HealthConnectActivity"
-            android:exported="true"
-            android:permission="com.google.android.gms.permission.HEALTH_DATA_READ">
+            android:exported="true">
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="alsaif-legacy-nexus.lovable.app" android:path="/privacy" />
             </intent-filter>
         </activity>
     </application>

@@ -246,6 +246,10 @@ function StepsChallengePage() {
   const handleHealthSync = async () => {
     if (healthConnectStatus !== 1) {
       toast.info("يرجى تثبيت أو تحديث تطبيق Health Connect من متجر جوجل بلاي أولاً.");
+      try {
+        const plugin = await getStepsPlugin();
+        await plugin.openHealthConnectSettings();
+      } catch (e) {}
       return;
     }
     const tId = toast.loading("جاري المزامنة مع بيانات الصحة...");
@@ -256,6 +260,10 @@ function StepsChallengePage() {
       if (result.supported) {
         toast.success("تم الربط مع نظام الصحة بنجاح ✨", { id: tId });
         await handleSync(true);
+      } else {
+        // If supported but no data/permission, open settings
+        await plugin.openHealthConnectSettings();
+        toast.dismiss(tId);
       }
     } catch (e: any) {
       toast.error("فشل الربط مع بيانات الصحة", { id: tId, description: e?.message });
