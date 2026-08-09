@@ -132,12 +132,20 @@ function RootComponent() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("theme") as "light" | "dark" | "system" | null;
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+
+      const updateTheme = () => {
+        const theme = localStorage.getItem("theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDark = theme === "dark" || (!theme && prefersDark) || (theme === "system" && prefersDark);
+
+        if (isDark) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      };
+
+      updateTheme();
 
       const savedFont = localStorage.getItem("font-style") as "modern" | "royal" | null;
       if (savedFont === "royal") {
@@ -177,7 +185,25 @@ function RootComponent() {
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
-    return () => sub.subscription.unsubscribe();
+
+    const mediaQuery = typeof window !== "undefined" ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+    const systemThemeListener = () => {
+      const currentStored = localStorage.getItem("theme");
+      if (!currentStored || currentStored === "system") {
+        const theme = localStorage.getItem("theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDark = theme === "dark" || (!theme && prefersDark) || (theme === "system" && prefersDark);
+        if (isDark) document.documentElement.classList.add("dark");
+        else document.documentElement.classList.remove("dark");
+      }
+    };
+
+    if (mediaQuery) mediaQuery.addEventListener("change", systemThemeListener);
+
+    return () => {
+      sub.subscription.unsubscribe();
+      if (mediaQuery) mediaQuery.removeEventListener("change", systemThemeListener);
+    };
   }, [router, queryClient]);
 
   return (
