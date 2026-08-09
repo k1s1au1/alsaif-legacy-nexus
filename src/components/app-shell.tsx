@@ -306,9 +306,9 @@ export function AppShell({
 
   // Final stabilized user identity
   const safeUser = {
-    name: globalProfile?.name || initialUser?.name || "جاري التحميل...",
+    name: globalProfile?.realName || initialUser?.name || "أبو الوليد", // Abu Al-Waleed as final fallback if we know them
     role: globalProfile?.role || initialUser?.role || "عضو",
-    initial: (globalProfile?.name || initialUser?.name || "ع")[0].toUpperCase(),
+    initial: (globalProfile?.realName || initialUser?.name || "أ")[0].toUpperCase(),
     avatarPath: globalProfile?.avatarPath || initialUser?.avatarPath,
   };
 

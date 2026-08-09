@@ -9,19 +9,28 @@ export function useProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data: p } = await supabase
+      const { data: p, error: pErr } = await supabase
         .from("profiles")
         .select("arabic_name, full_name, avatar_url, bottom_nav_prefs, allowed_sections")
         .eq("id", user.id)
         .maybeSingle();
 
+      // If the extended select failed (e.g. Permission Denied on some columns),
+      // fallback to a safe core selection to ensure identity is preserved.
+      let profileData = p;
+      if (pErr || !p) {
+        const { data: coreP } = await supabase
+          .from("profiles")
+          .select("arabic_name, full_name, avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
+        profileData = coreP;
+      }
+
       const { data: r } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
 
       const rs = (r ?? []).map((x) => x.role as string);
-      const profileName = p?.arabic_name || p?.full_name;
-      // If we have a profile name, use it. Otherwise, use a clear placeholder while we're sure about the identity.
-      // We avoid email fallback here to prevent the "flicker" of the email address.
-      const name = profileName || "عضو العائلة";
+      const profileName = profileData?.arabic_name || profileData?.full_name;
 
       const role = rs.includes("chairman")
         ? "رئيس المجلس"
@@ -33,15 +42,17 @@ export function useProfile() {
 
       return {
         id: user.id,
-        name,
+        name: profileName || "عضو العائلة",
+        realName: profileName,
+        email: user.email,
         role,
-        initial: (name[0] || "ع").toUpperCase(),
-        avatarPath: p?.avatar_url ?? null,
-        bottomNavPrefs: (p?.bottom_nav_prefs as any[]) || null,
-        allowedSections: (p?.allowed_sections as string[]) || [],
+        initial: (profileName?.[0] || user.email?.[0] || "ع").toUpperCase(),
+        avatarPath: profileData?.avatar_url ?? null,
+        bottomNavPrefs: (profileData?.bottom_nav_prefs as any[]) || null,
+        allowedSections: (profileData?.allowed_sections as string[]) || [],
       };
     },
-    staleTime: 1000 * 60, // Reduced to 1 minute for better responsiveness
+    staleTime: 0,
     gcTime: 1000 * 60 * 10,
   });
 }
