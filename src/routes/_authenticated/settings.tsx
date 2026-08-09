@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { BiometricAuth } from "@/lib/native-bridge";
 import { setupPushNotifications } from "@/lib/pushNotifications";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
@@ -61,6 +62,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 function SettingsPage() {
+  const queryClient = useQueryClient();
   const [darkMode, setDarkMode] = useState<"light" | "dark" | "system" | null>(null);
   const [font, setFont] = useState("Tajawal");
   const [fontStyle, setFontStyle] = useState<"modern" | "royal">("modern");
@@ -292,6 +294,8 @@ function SettingsPage() {
         toast.error(`تعذر حفظ التفضيلات: ${error.message}`);
       } else {
         localStorage.setItem("bottom_nav_prefs", JSON.stringify(next));
+        // Force immediate refresh of the AppShell nav
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
         toast.success("تم تحديث شريط التنقل");
       }
     }

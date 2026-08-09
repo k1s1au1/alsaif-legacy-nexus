@@ -244,20 +244,6 @@ export function AppShell({
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
-  const [allowedSections, setAllowedSections] = useState<string[]>([]);
-  const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(() => {
-    if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("bottom_nav_prefs");
-      if (cached) {
-        try {
-          return JSON.parse(cached);
-        } catch {
-          return DEFAULT_NAV_KEYS;
-        }
-      }
-    }
-    return DEFAULT_NAV_KEYS;
-  });
   const [myAvatarPath, setMyAvatarPath] = useState<string | null>(user?.avatarPath ?? null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [myName, setMyName] = useState<string>(user?.name || "");
@@ -333,7 +319,7 @@ export function AppShell({
           supabase.from("user_roles").select("role").eq("user_id", uid),
           supabase
             .from("profiles")
-            .select("arabic_name, full_name, avatar_url, bottom_nav_prefs, allowed_sections")
+            .select("arabic_name, full_name, avatar_url")
             .eq("id", uid)
             .maybeSingle(),
         ]);
@@ -344,13 +330,6 @@ export function AppShell({
         );
         setIsAdmin(hasManagementRank);
         setIsGuest(rs.includes("guest"));
-        setAllowedSections((profileData?.allowed_sections as string[]) || []);
-
-        if (profileData?.bottom_nav_prefs && Array.isArray(profileData.bottom_nav_prefs)) {
-          const keys = profileData.bottom_nav_prefs as NavItemKey[];
-          setBottomNavKeys(keys);
-          localStorage.setItem("bottom_nav_prefs", JSON.stringify(keys));
-        }
 
         const profileName = profileData?.arabic_name || profileData?.full_name;
         if (profileName && profileName !== myName) {
@@ -370,7 +349,6 @@ export function AppShell({
         if (profileData?.avatar_url) setMyAvatarPath(profileData.avatar_url);
       } catch (e) {
         console.error("Shell initialization error", e);
-        setBottomNavShortcut("news");
       }
     })();
   }, []);
@@ -393,6 +371,9 @@ export function AppShell({
   const profileName = globalProfile?.name;
   const isRealName = profileName && profileName !== "جاري التحميل..." && profileName !== "عضو العائلة";
   const isProfileLoaded = !!globalProfile;
+
+  const allowedSections = globalProfile?.allowedSections || [];
+  const bottomNavKeys = globalProfile?.bottomNavPrefs || DEFAULT_NAV_KEYS;
 
   const safeUser = {
     name: isRealName ? profileName : (myName || "جاري التحميل..."),

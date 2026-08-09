@@ -11,7 +11,7 @@ export function useProfile() {
 
       const { data: p } = await supabase
         .from("profiles")
-        .select("arabic_name, full_name, avatar_url")
+        .select("arabic_name, full_name, avatar_url, bottom_nav_prefs, allowed_sections")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -37,6 +37,8 @@ export function useProfile() {
         role,
         initial: (name[0] || "ع").toUpperCase(),
         avatarPath: p?.avatar_url ?? null,
+        bottomNavPrefs: (p?.bottom_nav_prefs as any[]) || null,
+        allowedSections: (p?.allowed_sections as string[]) || [],
       };
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
