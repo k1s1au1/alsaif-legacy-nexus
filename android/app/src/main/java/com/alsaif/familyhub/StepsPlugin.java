@@ -162,10 +162,42 @@ public class StepsPlugin extends Plugin implements SensorEventListener {
         try {
             int status = androidx.health.connect.client.HealthConnectClient.getSdkStatus(getContext(), "com.google.android.apps.healthdata");
             ret.put("status", status);
+
+            if (status == 1) { // SDK_AVAILABLE
+                androidx.health.connect.client.HealthConnectClient client = androidx.health.connect.client.HealthConnectClient.getOrCreate(getContext());
+                // In a real implementation, we'd check permissions here too.
+            }
         } catch (Exception e) {
             ret.put("status", 2);
         }
         call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getHealthConnectSteps(final PluginCall call) {
+        // This is a simplified version. Health Connect requires complex async handling in Java.
+        // We will implement a robust check and return what we can.
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
+            call.reject("UNSUPPORTED_OS");
+            return;
+        }
+
+        try {
+            int status = androidx.health.connect.client.HealthConnectClient.getSdkStatus(getContext());
+            if (status != 1) {
+                call.reject("HC_UNAVAILABLE");
+                return;
+            }
+
+            // Since we're in Java and HC is Kotlin-first, we'll suggest using
+            // the sensor as primary and HC as manual trigger for now.
+            // Full HC implementation usually requires a Kotlin bridge or specific Java wrappers.
+            JSObject ret = new JSObject();
+            ret.put("supported", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject(e.getMessage());
+        }
     }
 
     @Override

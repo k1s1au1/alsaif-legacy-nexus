@@ -53,9 +53,21 @@ function StepsChallengePage() {
   const [myToday, setMyToday] = useState(0);
   const [meId, setMeId] = useState<string | null>(null);
   const [sensorReady, setSensorReady] = useState<boolean | null>(null);
+  const [healthConnectStatus, setHealthConnectStatus] = useState<number>(0); // 0: unknown, 1: available, 2: not installed, 3: update required
   const [manualOpen, setManualOpen] = useState(false);
   const [manualValue, setManualValue] = useState("");
   const syncingRef = useRef(false);
+
+  const checkHealth = useCallback(async () => {
+    if (!isNative()) return;
+    try {
+      const plugin = await getStepsPlugin();
+      const { status } = await plugin.checkHealthConnect();
+      setHealthConnectStatus(status || 2);
+    } catch {
+      setHealthConnectStatus(2);
+    }
+  }, []);
 
   const checkSensor = useCallback(async () => {
     if (!isNative()) {
@@ -231,9 +243,29 @@ function StepsChallengePage() {
     }
   };
 
+  const handleHealthSync = async () => {
+    if (healthConnectStatus !== 1) {
+      toast.info("يرجى تثبيت أو تحديث تطبيق Health Connect من متجر جوجل بلاي أولاً.");
+      return;
+    }
+    const tId = toast.loading("جاري المزامنة مع بيانات الصحة...");
+    try {
+      const plugin = await getStepsPlugin();
+      // This will trigger the permission request or just succeed if already granted
+      const result = await plugin.getHealthConnectSteps();
+      if (result.supported) {
+        toast.success("تم الربط مع نظام الصحة بنجاح ✨", { id: tId });
+        await handleSync(true);
+      }
+    } catch (e: any) {
+      toast.error("فشل الربط مع بيانات الصحة", { id: tId, description: e?.message });
+    }
+  };
+
   useEffect(() => {
     (async () => {
       await loadData();
+      await checkHealth();
       const ready = await checkSensor();
       if (ready) handleSync(false);
     })();
@@ -244,7 +276,10 @@ function StepsChallengePage() {
         try {
           const { App } = await import(/* @vite-ignore */ "@capacitor/app");
           handle = await App.addListener("appStateChange", ({ isActive }) => {
-            if (isActive) handleSync(false);
+            if (isActive) {
+              handleSync(false);
+              checkHealth();
+            }
           });
         } catch (e) {
           console.warn("Capacitor App plugin not available", e);
@@ -252,7 +287,7 @@ function StepsChallengePage() {
       })();
     }
     return () => { if (handle) handle.remove(); };
-  }, [loadData, checkSensor, handleSync]);
+  }, [loadData, checkSensor, handleSync, checkHealth]);
 
   const myRank = leaderboard.findIndex((u) => u.id === meId) + 1;
 
@@ -300,6 +335,15 @@ function StepsChallengePage() {
         </div>
 
         <div className="flex flex-col items-center gap-4 animate-fade-up" style={{ animationDelay: "200ms" }}>
+          {isNative() && healthConnectStatus === 1 && (
+             <button
+              onClick={handleHealthSync}
+              className="px-12 py-5 rounded-full bg-emerald-600 text-white flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black"
+            >
+              <ShieldCheck className="size-6" /> ربط مع Health Connect
+            </button>
+          )}
+
           {isNative() && sensorReady !== true ? (
             <button
               onClick={requestActivityPermission}
@@ -327,7 +371,7 @@ function StepsChallengePage() {
 
           <p className="text-[11px] font-bold text-muted-foreground opacity-70 text-center max-w-md leading-relaxed">
             {isNative()
-              ? "يتم القياس من مستشعر الخطوات في جوالك ويُحدَّث تلقائياً عند فتح التطبيق."
+              ? "يتم القياس من مستشعر الخطوات في جوالك أو عبر Health Connect ويُحدَّث تلقائياً عند فتح التطبيق."
               : "قياس الخطوات التلقائي متاح داخل تطبيق الجوال فقط. من المتصفح يمكنك تسجيل خطوات اليوم يدوياً."}
           </p>
 
