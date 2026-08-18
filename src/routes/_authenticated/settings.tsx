@@ -338,55 +338,35 @@ function SettingsPage() {
 
         const { isSupported, getMessaging, getToken, deleteToken } = await import("firebase/messaging");
         const { initializeApp, getApps } = await import("firebase/app");
-        const { FIREBASE_CONFIG, FCM_VAPID_KEY } = await import("@/lib/fcm-config");
-
-        if (!(await isSupported())) throw new Error("المتصفح لا يدعم الإشعارات");
-
-        // تحديث Service Worker لضمان استخدام إعدادات Firebase الجديدة
-        const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
-          scope: "/",
-        });
-        await registration.update().catch(() => {});
-        await navigator.serviceWorker.ready;
-
-        const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-        const messaging = getMessaging(app);
-        // حذف أي رمز قديم يعود لمشروع Firebase السابق
-        await deleteToken(messaging).catch(() => {});
+        const firebaseConfig = {
+          apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+          authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+          projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+          storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+          appId: import.meta.env.VITE_FIREBASE_APP_ID,
+        };
+        const firebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+        if (!(await isSupported())) throw new Error("خدمة الإشعارات غير مدعومة في هذا المتصفح");
+        const messaging = getMessaging(firebaseApp);
+        const registration = await navigator.serviceWorker.ready;
         const token = await getToken(messaging, {
-          vapidKey: FCM_VAPID_KEY,
+          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
           serviceWorkerRegistration: registration,
         });
-
         if (token) {
           const { data: auth } = await supabase.auth.getUser();
           if (auth.user) {
-            const { error: tokenError } = await supabase.from("push_tokens").upsert(
-              { user_id: auth.user.id, token, platform: "web", is_active: true },
-              { onConflict: "user_id,token" }
+            await supabase.from("push_tokens").upsert(
+              { user_id: auth.user.id, token, platform: "web" },
+              { onConflict: "token" },
             );
-            if (tokenError) throw new Error(`تعذر حفظ تسجيل الجهاز: ${tokenError.message}`);
           }
         }
       }
 
-      const { data: auth } = await supabase.auth.getUser();
-      if (auth.user) {
-        const { data: tokens } = await supabase
-          .from("push_tokens")
-          .select("id")
-          .eq("user_id", auth.user.id)
-          .eq("is_active", true);
-
-        toast.dismiss(tId);
-        if (tokens && tokens.length > 0) {
-          toast.success("تم الربط بنجاح! ستصلك التنبيهات الآن ✨");
-        } else {
-          toast.error("فشل تسجيل الجهاز. يرجى التأكد من السماح بالإشعارات.");
-        }
-      } else {
-        toast.dismiss(tId);
-      }
+      toast.dismiss(tId);
+      toast.success("تم الربط بنجاح! ستصلك التنبيهات الآن ✨");
     } catch (e: any) {
       toast.dismiss(tId);
       toast.error("حدث خطأ أثناء الربط: " + (e.message || "خطأ غير معروف"));
@@ -424,6 +404,29 @@ function SettingsPage() {
               icon={<Smartphone />}
             />
           </div>
+
+          <button
+            onClick={() => setShowColorPicker(true)}
+            className="w-full card-surface p-5 flex items-center justify-between gap-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-xl"
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div
+                className="size-12 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-lg"
+                style={{ backgroundColor: currentThemeObj.primary }}
+              >
+                <Palette className="size-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-black text-primary">ألوان الهوية</p>
+                <p className="text-xs text-muted-foreground mt-1 truncate">
+                  {currentThemeObj.name}
+                </p>
+              </div>
+            </div>
+            <span className="btn-gold px-5 py-3 rounded-xl font-black text-xs shrink-0">
+              تغيير
+            </span>
+          </button>
         </section>
 
         <section className="space-y-6 animate-fade-up" style={{ animationDelay: "100ms" }}>
@@ -460,85 +463,63 @@ function SettingsPage() {
                     className={cn(
                       "flex-1 py-3 rounded-xl font-black text-xs transition-all",
                       fontStyle === "royal"
-                        ? "bg-gold-primary text-white shadow-lg"
+                        ? "bg-primary text-white shadow-lg"
                         : "text-muted-foreground hover:bg-muted",
                     )}
                   >
-                    ملكي (مخطوطة)
+                    ملكي
                   </button>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                      <Languages className="size-5" />
-                    </div>
-                    <h4 className="text-lg font-black text-primary">اختيار الخط المخصص</h4>
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-gold-primary/10 flex items-center justify-center text-gold-primary">
+                    <Languages className="size-5" />
                   </div>
-                  <button
-                    onClick={() => setShowFontPicker(true)}
-                    className="text-[10px] font-black text-gold-primary uppercase tracking-widest hover:underline"
-                  >
-                    تغيير
-                  </button>
+                  <h4 className="text-lg font-black text-primary">الخط</h4>
                 </div>
-                <div className="p-4 rounded-2xl bg-muted/30 border border-border/60">
-                  <p className="text-sm font-bold text-primary">{currentFontObj.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{currentFontObj.desc}</p>
-                </div>
+                <button
+                  onClick={() => setShowFontPicker(true)}
+                  className="w-full p-4 rounded-2xl border border-border/60 bg-muted/30 flex items-center justify-between gap-4 text-right"
+                >
+                  <div className="min-w-0">
+                    <p className="font-black text-primary">{currentFontObj.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{currentFontObj.desc}</p>
+                  </div>
+                  <Type className="size-5 shrink-0 text-gold-primary" />
+                </button>
               </div>
             </div>
 
-            <div className="pt-6 border-t border-border/40">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                    <Type className="size-5" />
-                  </div>
-                  <div className="text-right">
-                    <h4 className="text-lg font-black text-primary">تكبير الخطوط</h4>
-                    <p className="text-[10px] text-muted-foreground font-bold">
-                      تحكم في حجم نصوص المنصة بالكامل
-                    </p>
-                  </div>
-                </div>
-                <div className="px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-primary font-black text-xs">
-                  {Math.round(fontScale * 100)}%
-                </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-black text-primary">حجم الخط</h4>
+                <span className="text-sm font-black text-gold-primary">{Math.round(fontScale * 100)}%</span>
               </div>
-
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4">
                 <button
-                  onClick={() => handleFontScaleChange(Math.max(0.8, fontScale - 0.05))}
-                  className="size-12 rounded-2xl bg-muted flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90"
+                  onClick={() => handleFontScaleChange(Math.max(0.85, fontScale - 0.05))}
+                  className="size-12 rounded-2xl border border-border/60 bg-muted/30 flex items-center justify-center"
+                  aria-label="تصغير الخط"
                 >
-                  <Minus size={20} strokeWidth={3} />
+                  <Minus className="size-5" />
                 </button>
-
-                <div className="flex-1 px-2">
-                  <input
-                    type="range"
-                    min="0.8"
-                    max="1.5"
-                    step="0.05"
-                    value={fontScale}
-                    onChange={(e) => handleFontScaleChange(parseFloat(e.target.value))}
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                  />
-                  <div className="flex justify-between mt-2 px-1 text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                    <span>افتراضي</span>
-                    <span>كبير</span>
-                    <span>ضخم</span>
-                  </div>
-                </div>
-
+                <input
+                  type="range"
+                  min="0.85"
+                  max="1.25"
+                  step="0.05"
+                  value={fontScale}
+                  onChange={(e) => handleFontScaleChange(Number(e.target.value))}
+                  className="flex-1 accent-gold-primary"
+                />
                 <button
-                  onClick={() => handleFontScaleChange(Math.min(1.5, fontScale + 0.05))}
-                  className="size-12 rounded-2xl bg-primary flex items-center justify-center text-white hover:brightness-110 transition-all active:scale-90 shadow-lg shadow-primary/20"
+                  onClick={() => handleFontScaleChange(Math.min(1.25, fontScale + 0.05))}
+                  className="size-12 rounded-2xl border border-border/60 bg-muted/30 flex items-center justify-center"
+                  aria-label="تكبير الخط"
                 >
-                  <Plus size={20} strokeWidth={3} />
+                  <Plus className="size-5" />
                 </button>
               </div>
             </div>
@@ -567,7 +548,6 @@ function SettingsPage() {
           </div>
         </section>
 
-
         {isNative && (
           <section className="space-y-6 animate-fade-up" style={{ animationDelay: "250ms" }}>
             <div className="flex items-center gap-4">
@@ -583,144 +563,78 @@ function SettingsPage() {
                   <Fingerprint className="size-6" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-base font-black text-primary">القفل بالبصمة أو رمز الجهاز</h4>
-                  <p className="mt-1 text-[11px] leading-relaxed font-bold text-muted-foreground">
-                    {biometricsAvailable
-                      ? "يطلب تأكيد هويتك عند فتح التطبيق أو العودة إليه."
-                      : "فعّل البصمة أو رمز قفل الشاشة من إعدادات جهازك أولاً."}
+                  <h4 className="font-black text-primary">قفل التطبيق</h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    حماية التطبيق بالبصمة أو رمز قفل الجهاز
                   </p>
                 </div>
               </div>
-
               <button
-                type="button"
-                role="switch"
-                aria-checked={biometricEnabled}
                 onClick={handleBiometricChange}
-                disabled={!biometricsAvailable}
                 className={cn(
-                  "relative h-8 w-14 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-45",
-                  biometricEnabled ? "bg-primary" : "bg-muted",
+                  "shrink-0 px-5 py-3 rounded-xl font-black text-xs transition-all",
+                  biometricEnabled ? "bg-primary text-white" : "btn-gold",
                 )}
               >
-                <span
-                  className={cn(
-                    "absolute top-1 right-1 size-6 rounded-full bg-white shadow-md transition-transform duration-300",
-                    biometricEnabled ? "-translate-x-6" : "translate-x-0",
-                  )}
-                />
+                {biometricEnabled ? "مفعل" : "تفعيل"}
               </button>
             </div>
           </section>
         )}
 
-        <NotificationPreferencesSection />
-
-        <section className="space-y-6 animate-fade-up">
-          <div className="flex items-center gap-4">
-            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-              تجربة الإشعارات ({isNative ? "تطبيق الجوال" : "المتصفح"})
-            </h3>
-            <div className="h-px flex-1 bg-border/60" />
-          </div>
-          <div className="card-surface p-8 space-y-4">
-            <p className="text-sm font-bold text-muted-foreground">
-              إذا لم تكن الإشعارات تصلك، يمكنك محاولة إعادة طلب الإذن يدوياً من هنا.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={handleDeviceLinking}
-                className="flex-1 btn-gold py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-sm shadow-xl"
-              >
-                {isNative ? <Smartphone className="size-5" /> : <Bell className="size-5" />}
-                {isNative ? "إعادة ربط الجوال" : "تفعيل إشعارات المتصفح"}
-              </button>
-
-              <button
-                onClick={async () => {
-                  const tId = toast.loading("جاري إرسال إشعار تجريبي لجهازك...");
-                  try {
-                    const { data: auth } = await supabase.auth.getUser();
-                    const { data: result, error } = await supabase.functions.invoke("send-push", {
-                      body: {
-                        title: "🔔 تجربة الإشعارات",
-                        body: "هذا إشعار تجريبي من مجلس السيف الرقمي ✨",
-                        user_ids: [auth.user?.id],
-                      }
-                    });
-                    toast.dismiss(tId);
-
-                    if (error) {
-                      throw new Error(error.message || "فشل الاتصال بالخادم (Edge Function). تأكد من رفع الوظائف البرمجية للمشروع.");
-                    }
-
-                    if (result?.success) {
-                      if (result.sent > 0) {
-                        toast.success("تم قبول الإشعار وإرساله إلى جهازك.");
-                      } else {
-                        toast.error("فشل الإرسال: " + (result.msg || "لم يتم العثور على أجهزة مسجلة لهذا الحساب."));
-                      }
-                    } else {
-                      toast.error("خطأ تقني: " + (result?.error || "فشل إرسال الإشعار. تأكد من إعداد FCM_SERVICE_ACCOUNT في Supabase Dashboard."));
-                    }
-                  } catch (e: any) {
-                    toast.dismiss(tId);
-                    toast.error("خطأ تقني: " + e.message);
-                  }
-                }}
-                className="px-8 py-4 rounded-2xl bg-white/5 text-white font-black text-sm border border-white/10 hover:bg-white/10 transition-all"
-              >
-                إرسال تجربة
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {canCustomizeBg && (
+        {isAdmin && (
           <section className="space-y-6 animate-fade-up" style={{ animationDelay: "300ms" }}>
             <div className="flex items-center gap-4">
               <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-                خلفيات الواجهة
+                هوية المنصة
               </h3>
               <div className="h-px flex-1 bg-border/60" />
             </div>
             <div className="card-surface p-8 space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="size-12 rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary">
-                  <ImagePlus className="size-6" />
+              <div className="flex items-center gap-4">
+                <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <ImagePlus className="size-7" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-black text-primary">تخصيص الخلفيات</h4>
-                  <p className="text-xs font-bold text-muted-foreground opacity-60">
-                    متاح للمسؤولين التقنيين ورئيس المجلس فقط.
-                  </p>
+                  <h4 className="text-xl font-black text-primary">خلفية المنصة</h4>
+                  <p className="text-sm text-muted-foreground mt-1">تخصيص الخلفية الرئيسية للمنصة</p>
                 </div>
               </div>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50">
-                    شعار المنصة
-                  </p>
-                  <BackgroundUploader inline settingKey="site_logo" label="تحديث الشعار الرسمي" />
-                </div>
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50">
-                    خلفية صفحة الدخول
-                  </p>
-                  <BackgroundUploader inline settingKey="auth_bg" label="تغيير خلفية الترحيب" />
-                </div>
-              </div>
+              {canCustomizeBg && <BackgroundUploader />}
             </div>
           </section>
         )}
+
+        <section className="space-y-6 animate-fade-up" style={{ animationDelay: "350ms" }}>
+          <div className="flex items-center gap-4">
+            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
+              الإشعارات
+            </h3>
+            <div className="h-px flex-1 bg-border/60" />
+          </div>
+          <div className="card-surface p-8 flex items-center justify-between gap-6">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="size-14 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                <Bell className="size-7" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xl font-black text-primary">ربط الجهاز</h4>
+                <p className="text-sm text-muted-foreground mt-1">فعّل إشعارات هذا الجهاز</p>
+              </div>
+            </div>
+            <button
+              onClick={handleDeviceLinking}
+              className="btn-gold px-6 py-3 rounded-xl font-black text-xs shrink-0"
+            >
+              ربط الجهاز
+            </button>
+          </div>
+        </section>
       </div>
 
       <AnimatePresence>
-        {showNavPicker && (
-          <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-            dir="rtl"
-          >
+        {showFontPicker && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" dir="rtl">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -728,10 +642,59 @@ function SettingsPage() {
               className="card-surface w-full max-w-lg p-8 space-y-8 shadow-2xl rounded-[48px]"
             >
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-black text-primary tracking-tight">تخصيص شريط التنقل</h3>
-                  <p className="text-xs font-bold text-muted-foreground mt-1">اختر 3 أيقونات تفضلها للشريط السفلي</p>
-                </div>
+                <h3 className="text-2xl font-black text-primary tracking-tight">اختيار الخط</h3>
+                <button
+                  onClick={() => setShowFontPicker(false)}
+                  className="size-10 rounded-full bg-muted flex items-center justify-center transition-transform hover:rotate-90"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {FONTS.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => handleFontChange(f.id)}
+                    className={cn(
+                      "p-5 rounded-[32px] border-2 transition-all text-right flex items-center gap-4 group relative",
+                      font === f.id
+                        ? "border-gold-primary bg-gold-primary/10 shadow-lg"
+                        : "border-border/50 bg-muted/20 hover:border-gold-primary/40",
+                    )}
+                  >
+                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                      <Type className="size-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-black text-primary" style={{ fontFamily: f.family }}>
+                        {f.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{f.desc}</p>
+                    </div>
+                    {font === f.id && (
+                      <div className="absolute top-3 left-3 size-6 rounded-full bg-gold-primary flex items-center justify-center text-white">
+                        <Check size={12} strokeWidth={4} />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showNavPicker && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" dir="rtl">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="card-surface w-full max-w-lg p-8 space-y-8 shadow-2xl rounded-[48px]"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-black text-primary tracking-tight">تخصيص الشريط السفلي</h3>
                 <button
                   onClick={() => setShowNavPicker(false)}
                   className="size-10 rounded-full bg-muted flex items-center justify-center transition-transform hover:rotate-90"
@@ -739,23 +702,21 @@ function SettingsPage() {
                   <X size={20} />
                 </button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[55vh] overflow-y-auto pr-2 custom-scrollbar">
-                {NAV_REGISTRY.filter(n => !n.adminOnly || isAdmin).map((n) => (
+              <p className="text-sm text-muted-foreground">اختر حتى 3 اختصارات تظهر في الشريط السفلي.</p>
+              <div className="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {NAV_REGISTRY.map((n) => (
                   <button
                     key={n.id}
                     onClick={() => handleNavToggle(n.id)}
                     className={cn(
-                      "p-4 rounded-[28px] border-2 transition-all flex flex-col items-center gap-3 group relative",
+                      "relative w-full p-4 rounded-2xl border-2 flex items-center gap-4 text-right transition-all",
                       bottomNavKeys.includes(n.id)
-                        ? "border-primary bg-primary/5 shadow-inner"
-                        : "border-transparent bg-muted/30 hover:bg-muted/50",
+                        ? "border-primary bg-primary/10"
+                        : "border-border/50 bg-muted/20 hover:border-primary/40",
                     )}
                   >
-                    <div className={cn(
-                      "size-10 rounded-xl flex items-center justify-center transition-all",
-                      bottomNavKeys.includes(n.id) ? "bg-primary text-white" : "bg-card text-muted-foreground"
-                    )}>
-                      <n.icon size={20} />
+                    <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <n.icon className="size-5" />
                     </div>
                     <span className="font-black text-[11px] text-primary">{n.label}</span>
                     {bottomNavKeys.includes(n.id) && (
@@ -808,78 +769,20 @@ function SettingsPage() {
                     className={cn(
                       "p-5 rounded-[32px] border-2 transition-all text-right flex items-center gap-4 group relative",
                       themeColor === c.id
-                        ? "border-primary bg-primary/5 shadow-inner"
-                        : "border-transparent bg-muted/30 hover:bg-muted/50",
+                        ? "border-gold-primary bg-gold-primary/10 shadow-lg"
+                        : "border-border/50 bg-muted/20 hover:border-gold-primary/40",
                     )}
                   >
-                    <div
-                      className="size-12 rounded-2xl shadow-lg shrink-0 group-hover:scale-110 transition-transform"
-                      style={{
-                        background: `linear-gradient(135deg, ${c.primary}, ${c.secondary})`,
-                      }}
-                    />
-                    <div className="flex-1">
-                      <span className="font-black text-sm block text-primary">{c.name}</span>
-                      {c.isPrimary && (
-                        <span className="text-[9px] font-black text-gold-primary uppercase tracking-widest mt-0.5">
-                          الهوية الأساسية
-                        </span>
-                      )}
+                    <div className="size-14 rounded-2xl shrink-0 shadow-lg border border-white/20" style={{ background: c.primary }} />
+                    <div className="min-w-0">
+                      <p className="font-black text-primary">{c.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{c.id === "emerald" ? "الهوية الأصلية" : "لون هوية بديل"}</p>
                     </div>
-                    {c.isPrimary && (
-                      <Star className="absolute top-4 left-4 size-4 text-gold-primary fill-gold-primary" />
-                    )}
                     {themeColor === c.id && (
-                      <div className="absolute top-1/2 left-4 -translate-y-1/2 size-6 rounded-full bg-primary flex items-center justify-center text-white">
-                        <Check size={14} strokeWidth={4} />
+                      <div className="absolute top-3 left-3 size-6 rounded-full bg-gold-primary flex items-center justify-center text-white">
+                        <Check size={12} strokeWidth={4} />
                       </div>
                     )}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showFontPicker && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="card-surface w-full max-w-lg p-6 space-y-6 shadow-2xl rounded-[40px]"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-black text-primary tracking-tight">تخصيص الخط</h3>
-                <button
-                  onClick={() => setShowFontPicker(false)}
-                  className="size-8 rounded-full bg-muted flex items-center justify-center"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                {FONTS.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => handleFontChange(f.id)}
-                    style={{ fontFamily: f.family }}
-                    className={cn(
-                      "p-4 rounded-2xl border-2 transition-all text-right flex items-center justify-between group",
-                      font === f.id
-                        ? "border-primary bg-primary/5"
-                        : "border-transparent bg-muted/30 hover:bg-muted/50",
-                    )}
-                  >
-                    <div className="overflow-hidden">
-                      <p className="text-sm font-bold truncate">{f.name}</p>
-                      <p className="text-[10px] opacity-60 truncate">{f.desc}</p>
-                    </div>
-                    <span className="text-xl opacity-20 font-black group-hover:opacity-100 transition-opacity shrink-0">
-                      أبج
-                    </span>
                   </button>
                 ))}
               </div>
@@ -891,129 +794,32 @@ function SettingsPage() {
   );
 }
 
-function ThemeCard({ active, label, icon, onClick }: any) {
+function ThemeCard({
+  active,
+  onClick,
+  label,
+  icon,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  icon: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "p-6 md:p-8 rounded-[32px] md:rounded-[40px] border-4 transition-all duration-500 flex flex-col items-center gap-3 md:gap-4 text-center",
-        active
-          ? "bg-primary border-gold-primary text-primary-foreground shadow-2xl scale-105"
-          : "bg-card border-transparent text-muted-foreground hover:bg-muted",
+        "card-surface p-6 flex items-center gap-4 text-right transition-all",
+        active ? "border-primary bg-primary/10 shadow-xl" : "hover:-translate-y-1 hover:shadow-lg",
       )}
     >
-      <div
-        className={cn(
-          "size-12 md:size-16 rounded-[22px] md:rounded-[28px] flex items-center justify-center transition-all duration-700",
-          active ? "bg-white/10 text-gold-primary rotate-12" : "bg-muted text-primary",
-        )}
-      >
+      <div className={cn("size-12 rounded-2xl flex items-center justify-center", active ? "bg-primary text-white" : "bg-muted text-primary")}>
         {icon}
       </div>
-      <span className="text-base md:text-lg font-black tracking-tight">{label}</span>
+      <div className="min-w-0">
+        <p className="font-black text-primary">{label}</p>
+        <p className="text-xs text-muted-foreground mt-1">مظهر الواجهة</p>
+      </div>
     </button>
-  );
-}
-
-
-const NOTIF_OPTIONS: {
-  key: "meetings" | "entertainment" | "tasks" | "chat" | "news";
-  label: string;
-  desc: string;
-}[] = [
-  { key: "meetings", label: "إشعارات الاجتماعات", desc: "تنبيه عند إنشاء اجتماع جديد." },
-  { key: "entertainment", label: "إشعارات الترفيه", desc: "تنبيه للفعاليات والرحلات والمناسبات." },
-  { key: "tasks", label: "إشعارات المهام", desc: "تنبيه عند إسناد مهمة لك." },
-  { key: "chat", label: "إشعارات المحادثات", desc: "تنبيه عند وصول رسالة جديدة." },
-  { key: "news", label: "إشعارات الأخبار والإعلانات", desc: "تنبيه عند نشر خبر أو إعلان." },
-];
-
-function NotificationPreferencesSection() {
-  const [prefs, setPrefs] = useState<Record<string, boolean>>({
-    meetings: true,
-    entertainment: true,
-    tasks: true,
-    chat: true,
-    news: true,
-  });
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) {
-        setLoading(false);
-        return;
-      }
-      setUserId(auth.user.id);
-      const { data } = await supabase
-        .from("notification_preferences")
-        .select("meetings,entertainment,tasks,chat,news")
-        .eq("user_id", auth.user.id)
-        .maybeSingle();
-      if (data) setPrefs(data as any);
-      setLoading(false);
-    })();
-  }, []);
-
-  const toggle = async (key: string) => {
-    if (!userId) return;
-    const next = { ...prefs, [key]: !prefs[key] };
-    setPrefs(next);
-    const { error } = await supabase
-      .from("notification_preferences")
-      .upsert({ user_id: userId, ...next }, { onConflict: "user_id" });
-    if (error) {
-      toast.error("تعذّر حفظ الإعداد");
-      setPrefs(prefs);
-    }
-  };
-
-  return (
-    <section className="space-y-6 animate-fade-up" style={{ animationDelay: "250ms" }}>
-      <div className="flex items-center gap-4">
-        <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-          إعدادات الإشعارات
-        </h3>
-        <div className="h-px flex-1 bg-border/60" />
-      </div>
-      <div className="card-surface overflow-hidden divide-y divide-border/40">
-        {NOTIF_OPTIONS.map((o) => (
-          <div key={o.key} className="p-6 md:p-8 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 md:gap-6 min-w-0">
-              <div className="size-11 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shrink-0">
-                <Bell className="size-5" />
-              </div>
-              <div className="text-right min-w-0">
-                <p className="font-black text-primary tracking-tight text-sm md:text-base">
-                  {o.label}
-                </p>
-                <p className="text-xs font-bold text-muted-foreground opacity-60 truncate">
-                  {o.desc}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => toggle(o.key)}
-              disabled={loading}
-              aria-pressed={prefs[o.key]}
-              className={cn(
-                "relative w-14 h-8 rounded-full transition-colors shrink-0",
-                prefs[o.key] ? "bg-primary" : "bg-muted",
-                loading && "opacity-50",
-              )}
-            >
-              <span
-                className={cn(
-                  "absolute top-1 size-6 rounded-full bg-white shadow transition-all",
-                  prefs[o.key] ? "right-1" : "right-7",
-                )}
-              />
-            </button>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
