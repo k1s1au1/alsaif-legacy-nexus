@@ -1,5 +1,17 @@
 /* Floating header — mobile/tablet only. Desktop remains unchanged. */
 @media (max-width:1023px){
+  /* The page canvas itself follows the live identity color. Existing cards keep their own surfaces, so only surrounding gaps inherit this color. */
+  main{
+    background:var(--nav-bg,var(--primary))!important;
+  }
+  main>div.p-4.md\:p-8.lg\:p-12{
+    background:var(--nav-bg,var(--primary))!important;
+  }
+  main>div.p-4.md\:p-8.lg\:p-12>div,
+  main>div.p-4.md\:p-8.lg\:p-12>section{
+    --page-gap-color:var(--nav-bg,var(--primary));
+  }
+
   main>.z-\[80\].fixed{
     position:fixed!important;
     top:0!important;
@@ -45,6 +57,13 @@
     margin-top:24px!important;
   }
   main>div.p-4.md\:p-8.lg\:p-12:has(.max-w-6xl.mx-auto.space-y-12){padding-top:148px!important}
+
+  /* Common blank spacers and separators inherit the active identity color instead of the app background. */
+  main>div.p-4.md\:p-8.lg\:p-12 .bg-background:empty,
+  main>div.p-4.md\:p-8.lg\:p-12 .bg-muted\/20:empty,
+  main>div.p-4.md\:p-8.lg\:p-12 .bg-muted\/30:empty{
+    background:var(--nav-bg,var(--primary))!important;
+  }
 
   main>.z-\[80\].fixed>header::before{top:25px!important;left:16px!important;width:70px!important;height:70px!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--nav-bg,var(--primary)) 70%,transparent),0 10px 22px -14px rgba(0,0,0,.7)!important;transition:all .45s cubic-bezier(.23,1,.32,1)!important}
   main>.z-\[80\].fixed>header>.absolute.inset-0{top:15px!important;height:82px!important;transition:all .45s cubic-bezier(.23,1,.32,1)!important}
