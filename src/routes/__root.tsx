@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import mobileTabletHeroCss from "../mobile-tablet-hero.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
@@ -95,6 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: mobileTabletHeroCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "apple-touch-icon", href: "/logo-home.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -161,7 +163,6 @@ function RootComponent() {
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        // Try to save FCM token if we have one stored
         const storedToken = localStorage.getItem("fcm_token");
         if (storedToken && session?.user) {
           try {
