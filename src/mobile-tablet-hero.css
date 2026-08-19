@@ -1,260 +1,39 @@
-/* AlSaif approved mobile/tablet dashboard treatment.
-   Desktop (1024px+) is intentionally untouched. */
-
-@media (max-width: 1023px) {
-  /* Green mobile canvas connects header and hero with no white gutters. */
-  main {
-    background: linear-gradient(180deg, #004b38 0, #004b38 470px, var(--background) 470px) !important;
-  }
-
-  main > .z-\[80\].fixed {
-    position: relative !important;
-    inset: auto !important;
-    top: auto !important;
-    padding: 0 !important;
-    transform: none !important;
-    width: 100% !important;
-    display: block !important;
-  }
-
-  main > .z-\[80\].fixed > header {
-    width: 100% !important;
-    height: 150px !important;
-    max-width: none !important;
-    border-radius: 0 !important;
-    border: 0 !important;
-    padding: 0 20px !important;
-    background: linear-gradient(180deg, #004b38 0%, #003f31 100%) !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-    backdrop-filter: none !important;
-    position: relative !important;
-  }
-
-  /* Do not add a fake title/subtitle: the real live clock/date stays visible. */
-  main > .z-\[80\].fixed > header::after { display: none !important; }
-
-  /* Circular family mark, no square white badge. */
-  main > .z-\[80\].fixed > header::before {
-    content: "";
-    position: absolute;
-    left: 18px;
-    top: 30px;
-    width: 76px;
-    height: 76px;
-    border-radius: 999px;
-    border: 2px solid #cda85c;
-    background-color: #fdfcf7;
-    background-image: url('/logo-home.png');
-    background-position: center;
-    background-size: 92%;
-    background-repeat: no-repeat;
-    box-shadow: 0 0 0 5px rgba(0,53,41,.45), inset 0 0 0 1px rgba(0,0,0,.04);
-    z-index: 6;
-    overflow: hidden;
-  }
-
-  /* Restore the REAL LiveClock/date/online-count center content. */
-  main > .z-\[80\].fixed > header > .absolute.inset-0 {
-    display: flex !important;
-    top: 25px !important;
-    bottom: auto !important;
-    height: 78px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    z-index: 4 !important;
-  }
-  main > .z-\[80\].fixed > header > .absolute.inset-0 > div {
-    gap: 7px !important;
-  }
-  main > .z-\[80\].fixed > header > .absolute.inset-0 .text-\[16px\] {
-    font-size: 25px !important;
-    line-height: 1 !important;
-  }
-  main > .z-\[80\].fixed > header > .absolute.inset-0 .text-\[9px\] {
-    font-size: 10px !important;
-    color: #d9b76d !important;
-    letter-spacing: 0 !important;
-  }
-
-  /* Avatar at far right. */
-  main > .z-\[80\].fixed > header > .order-first {
-    position: absolute !important;
-    right: 18px !important;
-    top: 31px !important;
-    z-index: 7 !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-  main > .z-\[80\].fixed > header > .order-first button {
-    width: 58px !important;
-    max-width: 58px !important;
-    height: 58px !important;
-    padding: 0 !important;
-    background: transparent !important;
-    border: 0 !important;
-    overflow: visible !important;
-  }
-  main > .z-\[80\].fixed > header > .order-first button > div {
-    width: 56px !important;
-    height: 56px !important;
-  }
-  main > .z-\[80\].fixed > header > .order-first button > span,
-  main > .z-\[80\].fixed > header > .order-first button > svg { display: none !important; }
-
-  /* Bell beside avatar. */
-  main > .z-\[80\].fixed > header > .order-last {
-    position: absolute !important;
-    right: 86px !important;
-    top: 40px !important;
-    z-index: 7 !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    padding: 0 !important;
-  }
-  main > .z-\[80\].fixed > header > .order-last > .flex,
-  main > .z-\[80\].fixed > header > .order-last > .hidden { display: none !important; }
-  main > .z-\[80\].fixed > header > .order-last > .md\:hidden { display: block !important; }
-
-  main > div.p-4.md\:p-8.lg\:p-12 {
-    padding-top: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    background: transparent !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 {
-    max-width: none !important;
-    padding-inline: 0 !important;
-    gap: 20px !important;
-  }
-
-  /* Keep the quote out of the gap, exactly like approved mockup. */
-  .max-w-6xl.mx-auto.space-y-12 > section:first-child { display: none !important; }
-
-  /* Hero sits on the SAME green canvas; no white left/right/top gap. */
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) {
-    padding: 10px 18px 24px !important;
-    margin: 0 !important;
-    background: linear-gradient(180deg, #003f31 0%, #004b38 100%) !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div {
-    width: 100% !important;
-    min-height: 300px !important;
-    height: 300px !important;
-    border-radius: 28px !important;
-    border: 1px solid rgba(255,255,255,.20) !important;
-    box-shadow: 0 18px 34px -20px rgba(0,0,0,.62) !important;
-    background: #06251d !important;
-    overflow: hidden !important;
-  }
-
-  /* No externally-added hero photograph. Preserve the project's own dark hero surface. */
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .absolute.inset-0 { display: block !important; opacity: .05 !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .group\/avatar { display: none !important; }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 {
-    position: relative !important;
-    height: 100% !important;
-    min-height: 300px !important;
-    display: block !important;
-    padding: 0 !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center {
-    position: absolute !important;
-    right: 28px !important;
-    left: auto !important;
-    top: 62px !important;
-    bottom: auto !important;
-    width: min(72%, 360px) !important;
-    text-align: right !important;
-    margin: 0 !important;
-    z-index: 4 !important;
-  }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center::before {
-    content: "أهلًا بكم في";
-    display: block;
-    color: rgba(255,255,255,.95);
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 7px;
-  }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2 {
-    font-size: 0 !important;
-    line-height: 1 !important;
-    margin: 0 0 12px !important;
-    overflow: visible !important;
-  }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2::after {
-    content: "لوحة العائلة";
-    display: block;
-    color: white;
-    font-size: 38px;
-    line-height: 1.08;
-    font-weight: 900;
-    text-shadow: 0 4px 18px rgba(0,0,0,.45);
-  }
-
-  /* Keep original animated status copy; do not replace it with static text. */
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .mt-6.md\:mt-8 {
-    margin-top: 12px !important;
-    justify-content: flex-start !important;
-  }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .h-8.overflow-hidden {
-    height: 32px !important;
-    overflow: hidden !important;
-  }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .h-8.overflow-hidden p {
-    font-size: 14px !important;
-    color: rgba(255,255,255,.76) !important;
-    line-height: 1.5 !important;
-  }
-
-  /* CTA remains, but without adding a photo. */
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 {
-    position: absolute !important;
-    right: 28px !important;
-    bottom: 28px !important;
-    display: inline-flex !important;
-    padding: 10px 18px !important;
-    border-radius: 999px !important;
-    background: #007b5b !important;
-    border: 1px solid rgba(255,255,255,.10) !important;
-  }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 > svg { display: none !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 p { font-size: 0 !important; letter-spacing: 0 !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 p::after {
-    content: "استكشف المزيد  ‹";
-    color: #fff;
-    font-size: 14px;
-    font-weight: 800;
-  }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .absolute.top-0.right-0 { display: none !important; }
+/* AlSaif approved mobile/tablet dashboard treatment. Desktop stays untouched. */
+@media (max-width:1023px){
+main{background:linear-gradient(180deg,#004b38 0,#004b38 500px,var(--background) 500px)!important}
+main>.z-\[80\].fixed{position:relative!important;inset:auto!important;top:auto!important;padding:0!important;transform:none!important;width:100%!important;display:block!important}
+main>.z-\[80\].fixed>header{width:100%!important;height:150px!important;max-width:none!important;border-radius:0!important;border:0!important;padding:0 20px!important;background:linear-gradient(180deg,#004b38,#003f31)!important;box-shadow:none!important;overflow:visible!important;backdrop-filter:none!important;position:relative!important}
+main>.z-\[80\].fixed>header::after{display:none!important}
+main>.z-\[80\].fixed>header::before{content:"";position:absolute;left:18px;top:30px;width:76px;height:76px;border-radius:999px;border:2px solid #cda85c;background:#fdfcf7 url('/logo-home.png') center/92% no-repeat;box-shadow:0 0 0 5px rgba(0,53,41,.45);z-index:6;overflow:hidden}
+main>.z-\[80\].fixed>header>.absolute.inset-0{display:flex!important;top:25px!important;bottom:auto!important;height:78px!important;align-items:center!important;justify-content:center!important;z-index:4!important}
+main>.z-\[80\].fixed>header>.absolute.inset-0>div{gap:7px!important}
+main>.z-\[80\].fixed>header>.absolute.inset-0 .text-\[16px\]{font-size:25px!important;line-height:1!important}
+main>.z-\[80\].fixed>header>.absolute.inset-0 .text-\[9px\]{font-size:10px!important;color:#d9b76d!important;letter-spacing:0!important}
+main>.z-\[80\].fixed>header>.order-first{position:absolute!important;right:18px!important;top:31px!important;z-index:7!important;opacity:1!important;pointer-events:auto!important}
+main>.z-\[80\].fixed>header>.order-first button{width:58px!important;max-width:58px!important;height:58px!important;padding:0!important;background:transparent!important;border:0!important;overflow:visible!important}
+main>.z-\[80\].fixed>header>.order-first button>div{width:56px!important;height:56px!important}
+main>.z-\[80\].fixed>header>.order-first button>span,main>.z-\[80\].fixed>header>.order-first button>svg{display:none!important}
+main>.z-\[80\].fixed>header>.order-last{position:absolute!important;right:86px!important;top:40px!important;z-index:7!important;opacity:1!important;pointer-events:auto!important;padding:0!important}
+main>.z-\[80\].fixed>header>.order-last>.flex,main>.z-\[80\].fixed>header>.order-last>.hidden{display:none!important}main>.z-\[80\].fixed>header>.order-last>.md\:hidden{display:block!important}
+main>div.p-4.md\:p-8.lg\:p-12{padding-top:0!important;padding-left:0!important;padding-right:0!important;background:transparent!important}
+.max-w-6xl.mx-auto.space-y-12{max-width:none!important;padding-inline:0!important;gap:20px!important}.max-w-6xl.mx-auto.space-y-12>section:first-child{display:none!important}
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2){padding:10px 18px 24px!important;margin:0!important;background:linear-gradient(180deg,#003f31,#004b38)!important}
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div{width:100%!important;height:300px!important;min-height:300px!important;border-radius:28px!important;border:1px solid rgba(255,255,255,.18)!important;box-shadow:0 18px 34px -20px rgba(0,0,0,.62)!important;overflow:hidden!important;background:radial-gradient(ellipse at 72% 78%,rgba(216,183,109,.18) 0 8%,transparent 9%),linear-gradient(180deg,rgba(8,67,70,.96) 0%,rgba(6,59,58,.94) 45%,rgba(3,38,34,.98) 100%)!important}
+/* abstract Jannah-island mood: sea horizon and warm coast, no stock photo */
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 0 52%,rgba(45,129,132,.22) 53%,rgba(9,70,69,.55) 70%,rgba(3,34,31,.88) 100%),radial-gradient(ellipse at 78% 55%,rgba(218,178,92,.32),transparent 24%);pointer-events:none;z-index:1}
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div::after{content:"جَنّة • الجذور التي تجمعنا";position:absolute;left:22px;bottom:18px;color:rgba(217,183,109,.72);font-size:10px;font-weight:800;letter-spacing:.04em;z-index:3}
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.absolute.inset-0{display:block!important;opacity:.04!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .group\/avatar{display:none!important}
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.relative.z-10{position:relative!important;height:100%!important;min-height:300px!important;display:block!important;padding:0!important;z-index:4!important}
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{position:absolute!important;right:28px!important;left:auto!important;top:50px!important;bottom:auto!important;width:min(78%,390px)!important;text-align:right!important;margin:0!important;z-index:4!important}
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center::before{content:"حيّاك الله";display:block;color:#d9b76d;font-size:16px;font-weight:800;margin-bottom:5px}
+/* Real signed-in profile name is the hero headline. */
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:38px!important;line-height:1.08!important;margin:0 0 13px!important;overflow:visible!important;color:#fff!important;font-weight:900!important;text-shadow:0 4px 18px rgba(0,0,0,.45)!important}
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2::after{display:none!important}
+/* Hide old greeting chip; greeting is now clean and personal above the name. */
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .inline-flex.items-center.gap-3{display:none!important}
+/* Keep Framer Motion rotating messages exactly functional. */
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .mt-6.md\:mt-8{margin-top:10px!important;justify-content:flex-start!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .h-8.overflow-hidden{height:48px!important;overflow:hidden!important;max-width:290px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .h-8.overflow-hidden p{font-size:14px!important;color:rgba(255,255,255,.82)!important;line-height:1.55!important;font-style:normal!important;text-align:right!important}
+.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .absolute.top-0.right-0{display:none!important}
 }
-
-@media (max-width: 599px) {
-  main > .z-\[80\].fixed > header { height: 142px !important; }
-  main > .z-\[80\].fixed > header::before { width: 68px; height: 68px; left: 14px; top: 31px; }
-  main > .z-\[80\].fixed > header > .absolute.inset-0 { top: 27px !important; }
-  main > .z-\[80\].fixed > header > .absolute.inset-0 .text-\[16px\] { font-size: 22px !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) { padding: 8px 14px 22px !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div,
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 { height: 285px !important; min-height: 285px !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center { right: 22px !important; top: 48px !important; width: 76% !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2::after { font-size: 34px; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 { right: 22px !important; bottom: 24px !important; }
-}
-
-@media (min-width: 600px) and (max-width: 1023px) {
-  main > .z-\[80\].fixed > header { height: 166px !important; }
-  main > .z-\[80\].fixed > header::before { left: 32px; top: 36px; width: 84px; height: 84px; }
-  main > .z-\[80\].fixed > header > .absolute.inset-0 { top: 35px !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) { padding: 12px 28px 30px !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div,
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 { height: 370px !important; min-height: 370px !important; border-radius: 32px !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center { right: 38px !important; top: 78px !important; width: 62% !important; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2::after { font-size: 46px; }
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 { right: 38px !important; bottom: 38px !important; }
-}
+@media(max-width:599px){main>.z-\[80\].fixed>header{height:142px!important}main>.z-\[80\].fixed>header::before{width:68px;height:68px;left:14px;top:31px}main>.z-\[80\].fixed>header>.absolute.inset-0{top:27px!important}main>.z-\[80\].fixed>header>.absolute.inset-0 .text-\[16px\]{font-size:22px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2){padding:8px 14px 22px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div,.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.relative.z-10{height:285px!important;min-height:285px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{right:22px!important;top:43px!important;width:82%!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:34px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div::after{left:18px;bottom:16px}}
+@media(min-width:600px) and (max-width:1023px){main>.z-\[80\].fixed>header{height:166px!important}main>.z-\[80\].fixed>header::before{left:32px;top:36px;width:84px;height:84px}main>.z-\[80\].fixed>header>.absolute.inset-0{top:35px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2){padding:12px 28px 30px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div,.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.relative.z-10{height:370px!important;min-height:370px!important;border-radius:32px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{right:38px!important;top:70px!important;width:70%!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:46px!important}}
