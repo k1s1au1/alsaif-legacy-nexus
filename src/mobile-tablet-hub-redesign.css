@@ -1,68 +1,19 @@
-/* Mobile/tablet dashboard hub redesign. Desktop intentionally untouched. */
-@media (max-width:1023px){
-  .max-w-6xl.mx-auto.space-y-12{gap:0!important;row-gap:0!important}
-  .max-w-6xl.mx-auto.space-y-12>section{margin-top:0!important;margin-bottom:0!important}
-  .family-services-section{padding-bottom:12px!important;margin-bottom:0!important}
-
-  /* Pull the hub up to the services block and let its real content define height. */
-  .integrated-hub{display:block!important;height:auto!important;min-height:0!important;padding:10px 18px 18px!important;margin:0!important;background:var(--nav-bg,var(--primary))!important}
-  .integrated-hub .hub-shell{position:relative!important;height:auto!important;min-height:0!important;overflow:hidden!important;border-radius:28px!important;border:1px solid color-mix(in srgb,var(--gold-primary) 55%,transparent)!important;background:linear-gradient(145deg,color-mix(in srgb,var(--nav-bg,var(--primary)) 92%,black),color-mix(in srgb,var(--nav-bg,var(--primary)) 74%,black))!important;box-shadow:0 20px 38px -26px rgba(0,0,0,.8)!important}
-  .integrated-hub .hub-shell:before,.integrated-hub .hub-shell:after{content:"";position:absolute;top:57%;width:18px;height:36px;border-radius:999px;background:var(--nav-bg,var(--primary));z-index:20;pointer-events:none}
-  .integrated-hub .hub-shell:before{left:-10px}.integrated-hub .hub-shell:after{right:-10px}
-
-  .integrated-hub .hub-tabs{height:58px!important;padding:5px 7px!important;background:color-mix(in srgb,var(--nav-bg,var(--primary)) 80%,black)!important;border-bottom:1px dashed color-mix(in srgb,var(--gold-primary) 34%,transparent)!important}
-  .integrated-hub .hub-tabs button{padding:7px 4px!important;border-radius:14px!important;gap:3px!important}
-  .integrated-hub .hub-tabs button span{font-size:9px!important;letter-spacing:0!important}
-  .integrated-hub .hub-tabs button svg{width:17px!important;height:17px!important}
-
-  .integrated-hub .hub-content,.integrated-hub .hub-carousel,.integrated-hub .hub-carousel-content{height:205px!important;min-height:205px!important;max-height:205px!important;overflow:hidden!important}
-  .integrated-hub .hub-slide{height:205px!important;min-height:205px!important;max-height:205px!important;padding:14px 18px!important;overflow:hidden!important}
-  .integrated-hub .hub-shell>.absolute.inset-0{opacity:.12!important}
-
-  .integrated-hub .hub-slide-layout{height:100%!important;min-height:0!important;display:grid!important;grid-template-columns:minmax(0,1fr) 88px!important;grid-template-areas:'info actions'!important;gap:12px!important;align-items:stretch!important;direction:rtl!important;position:relative!important;overflow:hidden!important}
-  /* Use a real border on the action column so the divider can never escape the ticket. */
-  .integrated-hub .hub-slide-layout:after{display:none!important;content:none!important}
-  .integrated-hub .hub-event-info{grid-area:info!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;text-align:right!important;gap:8px!important;margin:0!important;padding-left:6px!important;min-width:0!important}
-  .integrated-hub .hub-event-info>*{margin:0!important}
-  .integrated-hub .hub-eyebrow{justify-content:flex-start!important;gap:6px!important;color:var(--gold-primary)!important}
-  .integrated-hub .hub-eyebrow span{font-size:9px!important;letter-spacing:.02em!important}
-  .integrated-hub .hub-eyebrow svg{width:13px!important;height:13px!important;color:var(--gold-primary)!important}
-  .integrated-hub .hub-event-title{font-size:24px!important;line-height:1.08!important;color:#fff!important;text-align:right!important}
-  .integrated-hub .hub-meta{justify-content:flex-start!important;gap:6px!important;width:100%!important}
-  .integrated-hub .hub-meta span{padding:5px 8px!important;border-radius:10px!important;font-size:8px!important;background:color-mix(in srgb,var(--nav-bg,var(--primary)) 72%,white 7%)!important;border:1px solid color-mix(in srgb,var(--gold-primary) 18%,transparent)!important;color:rgba(255,255,255,.72)!important}
-  .integrated-hub .hub-meta svg{color:var(--gold-primary)!important}
-  .integrated-hub .hub-actions{grid-area:actions!important;width:88px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:stretch!important;gap:8px!important;padding:0 6px 0 0!important;border-left:1px dashed color-mix(in srgb,var(--gold-primary) 48%,transparent)!important;overflow:hidden!important}
-  .integrated-hub .hub-countdown{width:78px!important;min-width:0!important;flex:none!important;padding:10px 4px!important;border-radius:18px!important;background:color-mix(in srgb,var(--nav-bg,var(--primary)) 68%,transparent)!important;border:1px solid color-mix(in srgb,var(--gold-primary) 58%,transparent)!important;box-shadow:none!important}
-  .integrated-hub .hub-countdown span:first-child{font-size:25px!important;line-height:1!important;color:var(--gold-primary)!important}
-  .integrated-hub .hub-countdown span:last-child{font-size:7px!important;color:rgba(255,255,255,.68)!important;letter-spacing:0!important;margin-top:4px!important}
-  .integrated-hub .hub-details{width:78px!important;min-width:0!important;flex:none!important;padding:9px 4px!important;border-radius:11px!important;font-size:9px!important;background:linear-gradient(135deg,var(--gold-primary),color-mix(in srgb,var(--gold-primary) 70%,#8b5e20))!important}
-
-  .integrated-hub .hub-content>div:last-child.p-8{height:205px!important;min-height:205px!important;max-height:205px!important;padding:18px!important;overflow:hidden!important;background:linear-gradient(135deg,color-mix(in srgb,var(--nav-bg,var(--primary)) 88%,#123f45),color-mix(in srgb,var(--nav-bg,var(--primary)) 74%,black))!important}
-  .integrated-hub .hub-content>div:last-child.p-8 .text-5xl{font-size:38px!important;color:var(--gold-primary)!important}
-
-  /* Remove inherited oversized padding before the card that follows the hub. */
-  .integrated-hub+section,.integrated-hub~section{margin-top:0!important;padding-top:16px!important}
+/* Separate dashboard cards on mobile/tablet. Desktop remains outside this redesign. */
+.hub-mobile-slider{display:none}.hub-desktop-legacy{display:block}
+@media(max-width:1023px){
+ .hub-desktop-legacy{display:none!important}.hub-mobile-slider{display:block!important}
+ .max-w-6xl.mx-auto.space-y-12{gap:0!important;row-gap:0!important}.max-w-6xl.mx-auto.space-y-12>section{margin-top:0!important;margin-bottom:0!important}.family-services-section{padding-bottom:12px!important;margin-bottom:0!important}
+ .integrated-hub{padding:10px 18px 14px!important;margin:0!important;background:var(--nav-bg,var(--primary))!important}
+ .hub-mobile-slider .overflow-hidden{overflow:hidden!important;border-radius:28px}
+ .hub-card{height:250px;position:relative;overflow:hidden;border-radius:28px;border:1px solid color-mix(in srgb,var(--gold-primary) 52%,transparent);background:linear-gradient(145deg,color-mix(in srgb,var(--nav-bg,var(--primary)) 90%,black),color-mix(in srgb,var(--nav-bg,var(--primary)) 74%,black));color:#fff;box-shadow:0 18px 36px -28px rgba(0,0,0,.85)}
+ .hub-card-bg{position:absolute;inset:0;opacity:.13}.hub-card-bg:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--nav-bg,var(--primary)),transparent,var(--nav-bg,var(--primary)))}
+ .hub-trip-ticket{display:grid;grid-template-columns:minmax(0,1fr) 92px;direction:rtl}.hub-trip-main{position:relative;z-index:2;padding:28px 24px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:right}.hub-card-kicker{display:flex;align-items:center;gap:7px;color:var(--gold-primary);font-size:11px;font-weight:900;margin-bottom:12px}.hub-trip-main h3,.hub-meeting-copy h3,.hub-task-copy h3{font-size:30px;line-height:1.15;font-weight:900;margin:0 0 16px}.hub-card-meta{display:flex;flex-wrap:wrap;gap:7px}.hub-card-meta span{display:flex;align-items:center;gap:5px;padding:7px 9px;border:1px solid color-mix(in srgb,var(--gold-primary) 18%,transparent);border-radius:11px;background:rgba(255,255,255,.055);font-size:9px;color:rgba(255,255,255,.72)}
+ .hub-ticket-stub{position:relative;z-index:2;border-right:1px dashed color-mix(in srgb,var(--gold-primary) 55%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px 8px}.hub-ticket-stub:before,.hub-ticket-stub:after{content:"";position:absolute;right:-10px;width:20px;height:20px;border-radius:50%;background:var(--nav-bg,var(--primary))}.hub-ticket-stub:before{top:-10px}.hub-ticket-stub:after{bottom:-10px}
+ .hub-countdown{width:72px;padding:12px 4px;text-align:center;border:1px solid color-mix(in srgb,var(--gold-primary) 62%,transparent);border-radius:18px;background:rgba(0,0,0,.12)}.hub-countdown span:first-child{display:block;color:var(--gold-primary);font-size:27px;line-height:1;font-weight:900}.hub-countdown span:last-child{display:block;margin-top:5px;font-size:7px;color:rgba(255,255,255,.65);font-weight:800}.hub-ticket-stub button,.hub-meeting-copy button,.hub-task-copy a{border:0;border-radius:11px;background:linear-gradient(135deg,var(--gold-primary),color-mix(in srgb,var(--gold-primary) 72%,#805a22));color:#fff;font-size:9px;font-weight:900;padding:10px 12px;text-decoration:none}
+ .hub-meeting-card{display:grid;grid-template-columns:105px minmax(0,1fr);align-items:stretch}.hub-meeting-date{border-left:1px solid color-mix(in srgb,var(--gold-primary) 28%,transparent);background:color-mix(in srgb,var(--gold-primary) 8%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--gold-primary);font-size:18px;font-weight:900}.hub-meeting-copy,.hub-task-copy{padding:28px 24px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:right}.hub-meeting-copy p{display:flex;gap:6px;align-items:center;color:rgba(255,255,255,.62);font-size:10px;margin:0 0 16px}
+ .hub-tasks-card{display:grid;grid-template-columns:105px minmax(0,1fr);align-items:stretch}.hub-task-score{border-left:1px dashed color-mix(in srgb,var(--gold-primary) 35%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold-primary)}.hub-task-score strong{font-size:44px;line-height:1;margin-top:8px}.hub-task-score span{font-size:9px;margin-top:5px;color:rgba(255,255,255,.6)}.hub-task-copy p{font-size:10px;line-height:1.8;color:rgba(255,255,255,.58);margin:0 0 15px;max-width:260px}
+ .hub-dots{height:30px;display:flex;align-items:center;justify-content:center;gap:7px;direction:ltr}.hub-dots button{width:6px;height:6px;padding:0;border:0;border-radius:999px;background:color-mix(in srgb,var(--gold-primary) 25%,transparent);transition:.25s}.hub-dots button.active{width:22px;background:var(--gold-primary)}
+ .integrated-hub+section,.integrated-hub~section{margin-top:0!important;padding-top:12px!important}
 }
-@media(max-width:599px){
-  .family-services-section{padding-bottom:10px!important}
-  .integrated-hub{padding:8px 18px 14px!important}
-  .integrated-hub .hub-content,.integrated-hub .hub-carousel,.integrated-hub .hub-carousel-content,.integrated-hub .hub-slide{height:195px!important;min-height:195px!important;max-height:195px!important}
-  .integrated-hub .hub-slide{padding:12px 14px!important}
-  .integrated-hub .hub-slide-layout{grid-template-columns:minmax(0,1fr) 82px!important;gap:8px!important}
-  .integrated-hub .hub-event-title{font-size:22px!important}
-  .integrated-hub .hub-actions{width:82px!important}
-  .integrated-hub .hub-countdown,.integrated-hub .hub-details{width:73px!important}
-  .integrated-hub .hub-countdown span:first-child{font-size:23px!important}
-  .integrated-hub+section,.integrated-hub~section{padding-top:12px!important}
-}
-@media(min-width:600px) and (max-width:1023px){
-  .family-services-section{padding-bottom:16px!important}
-  .integrated-hub{padding:12px 30px 20px!important}
-  .integrated-hub .hub-content,.integrated-hub .hub-carousel,.integrated-hub .hub-carousel-content,.integrated-hub .hub-slide{height:245px!important;min-height:245px!important;max-height:245px!important}
-  .integrated-hub .hub-slide{padding:20px 26px!important}
-  .integrated-hub .hub-slide-layout{grid-template-columns:minmax(0,1fr) 112px!important;gap:18px!important}
-  .integrated-hub .hub-event-title{font-size:31px!important}
-  .integrated-hub .hub-actions{width:112px!important}
-  .integrated-hub .hub-countdown,.integrated-hub .hub-details{width:101px!important}
-  .integrated-hub+section,.integrated-hub~section{padding-top:18px!important}
-}
+@media(max-width:599px){.integrated-hub{padding:8px 18px 10px!important}.hub-card{height:230px}.hub-trip-ticket{grid-template-columns:minmax(0,1fr) 84px}.hub-trip-main{padding:22px 18px}.hub-trip-main h3,.hub-meeting-copy h3,.hub-task-copy h3{font-size:25px}.hub-ticket-stub{padding:10px 6px}.hub-countdown{width:66px}.hub-countdown span:first-child{font-size:24px}.hub-meeting-card,.hub-tasks-card{grid-template-columns:92px minmax(0,1fr)}.hub-meeting-copy,.hub-task-copy{padding:22px 18px}.hub-task-score strong{font-size:38px}}
+@media(min-width:600px) and (max-width:1023px){.integrated-hub{padding:14px 30px 18px!important}.hub-card{height:285px}.hub-trip-ticket{grid-template-columns:minmax(0,1fr) 120px}.hub-trip-main{padding:34px}.hub-trip-main h3,.hub-meeting-copy h3,.hub-task-copy h3{font-size:36px}.hub-ticket-stub{padding:16px 10px}.hub-countdown{width:92px}.hub-countdown span:first-child{font-size:34px}.hub-meeting-card,.hub-tasks-card{grid-template-columns:135px minmax(0,1fr)}.hub-meeting-copy,.hub-task-copy{padding:34px}.hub-task-score strong{font-size:52px}}
