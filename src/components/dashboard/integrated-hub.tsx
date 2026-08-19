@@ -1,19 +1,9 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, Plane, ListChecks, Timer, MapPin, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { TripImage } from "@/components/trip-image";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-  type CarouselApi,
-} from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 
 interface HubProps {
   upcomingMeetings: any[];
@@ -24,166 +14,101 @@ interface HubProps {
 }
 
 function CountdownDisplay({ targetDate }: { targetDate: string }) {
-  const [timeLeft, setTimeLeft] = useState<{ value: string; label: string } | null>(null);
-
+  const [timeLeft, setTimeLeft] = useState({ value: "0", label: "أيام متبقية" });
   useEffect(() => {
     const calculate = () => {
-      const now = new Date().getTime();
-      const target = new Date(targetDate).getTime();
-      const diff = target - now;
+      const diff = new Date(targetDate).getTime() - Date.now();
       if (diff <= 0) return { value: "0", label: "بدأ الآن" };
-      const seconds = Math.floor(diff / 1000);
-      const minutes = Math.floor(seconds / 60);
+      const minutes = Math.floor(diff / 60000);
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
-      if (days >= 1) return { value: days.toString(), label: days === 1 ? "يوم متبقي" : days === 2 ? "يومان متبقيان" : "أيام متبقية" };
-      if (hours >= 1) {
-        const remainingMinutes = minutes % 60;
-        if (remainingMinutes > 0) return { value: `${hours}:${remainingMinutes.toString().padStart(2, "0")}`, label: "ساعة ودقيقة" };
-        return { value: hours.toString(), label: hours === 1 ? "ساعة متبقية" : "ساعات متبقية" };
-      }
-      return { value: minutes.toString(), label: "دقيقة متبقية" };
+      if (days >= 1) return { value: String(days), label: days === 1 ? "يوم متبقي" : "أيام متبقية" };
+      if (hours >= 1) return { value: String(hours), label: "ساعات متبقية" };
+      return { value: String(minutes), label: "دقائق متبقية" };
     };
     setTimeLeft(calculate());
     const id = setInterval(() => setTimeLeft(calculate()), 60000);
     return () => clearInterval(id);
   }, [targetDate]);
-
-  if (!timeLeft) return null;
-  return (
-    <div className="hub-countdown bg-white/5 border border-white/10 rounded-2xl md:rounded-3xl p-3 md:p-6 text-center flex-1 md:flex-none md:min-w-[120px] shadow-2xl">
-      <span className="block text-2xl md:text-5xl font-black text-gold-primary tracking-tighter leading-none">{timeLeft.value}</span>
-      <span className="block text-[8px] md:text-[10px] font-black text-white/40 uppercase tracking-widest mt-1">{timeLeft.label}</span>
-    </div>
-  );
+  return <div className="hub-countdown"><span>{timeLeft.value}</span><span>{timeLeft.label}</span></div>;
 }
 
 export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], tasksCount = 0, onViewTrip, onViewMeeting }: HubProps) {
-  const [activeTab, setActiveTab] = useState<"meetings" | "trips" | "tasks">("trips");
-  const [tripApi, setTripApi] = useState<CarouselApi>();
-  const [activeTripIndex, setActiveTripIndex] = useState(0);
-  const tripsPlugin = useRef(Autoplay({ delay: 10000, stopOnInteraction: true }));
-  const meetingsPlugin = useRef(Autoplay({ delay: 10000, stopOnInteraction: true }));
-  const tripsPlugins = useMemo(() => [tripsPlugin.current], []);
-  const meetingsPlugins = useMemo(() => [meetingsPlugin.current], []);
-  const carouselOpts = useMemo(() => ({ loop: true, axis: "y" as const, dragFree: false }), []);
+  const trip = upcomingTrips[0];
+  const meeting = upcomingMeetings[0];
+  const [api, setApi] = useState<CarouselApi>();
+  const [slide, setSlide] = useState(0);
 
   useEffect(() => {
-    if (!tripApi || !tripApi.on) return;
-    const onSelect = () => setActiveTripIndex(tripApi.selectedScrollSnap());
-    tripApi.on("select", onSelect);
-    return () => { tripApi.off("select", onSelect); };
-  }, [tripApi]);
+    if (!api) return;
+    const sync = () => setSlide(api.selectedScrollSnap());
+    sync(); api.on("select", sync);
+    return () => { api.off("select", sync); };
+  }, [api]);
 
-  const tabs = [
-    { id: "trips", label: "الترفيه", icon: Plane, color: "text-indigo-400" },
-    { id: "meetings", label: "الاجتماعات", icon: CalendarDays, color: "text-amber-400" },
-    { id: "tasks", label: "المسؤوليات", icon: ListChecks, color: "text-rose-400" },
-  ];
-  const currentTripImage = upcomingTrips[activeTripIndex]?.image_url;
-  const getMotivationalNudge = () => {
-    const messages = ["إنجازك لهذه المهام يسهل مسيرة العائلة، نحن بانتظارك!", "كل مهمة تنجزها هي لبنة في بناء مستقبل عائلتنا.", "همتك العالية هي سر نجاح مجلسنا، استمر!", "العائلة تفتخر بمبادراتك، إنجازك يصنع الفرق.", "خطوة واحدة منك تقربنا من أهدافنا الكبرى."];
-    if (tasksCount === 0) return "أنت فخر العائلة! لا توجد مهام معلقة حالياً.";
-    if (tasksCount > 5) return "ما شاء الله! العائلة تعتمد على همتك العالية لإنجاز هذه المسؤوليات.";
-    return messages[tasksCount % messages.length];
-  };
+  const nudge = tasksCount === 0 ? "أنت فخر العائلة! لا توجد مهام معلقة حالياً." : "إنجازك لهذه المسؤوليات يصنع فرقاً في مسيرة العائلة.";
 
   return (
     <section className="integrated-hub px-4 animate-fade-up" style={{ animationDelay: "250ms" }}>
-      <div className="hub-shell relative overflow-hidden rounded-[32px] md:rounded-[40px] border border-white/5 bg-[#051410] shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-        <AnimatePresence mode="wait">
-          {activeTab === "trips" && upcomingTrips.length > 0 ? (
-            <motion.div key={`bg-trips-${activeTripIndex}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.8 }} className="absolute inset-0 z-0">
-              <TripImage path={currentTripImage} alt="" className="size-full object-cover opacity-60" />
-              <div className="absolute inset-0 bg-gradient-to-br from-[#0d2620]/90 via-[#051410]/70 to-black/90" />
-            </motion.div>
-          ) : (
-            <motion.div key="bg-gradient" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-gradient-to-br from-[#0d2620] via-[#051410] to-black z-0" />
-          )}
-        </AnimatePresence>
-        <div className="absolute top-0 right-0 size-40 bg-gold-primary/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 z-1" />
+      {/* Mobile + tablet: three genuinely separate cards, one visible at a time by horizontal swipe. */}
+      <div className="hub-mobile-slider">
+        <Carousel setApi={setApi} opts={{ direction: "rtl", loop: true }} className="w-full">
+          <CarouselContent>
+            <CarouselItem>
+              <article className="hub-card hub-trip-ticket">
+                {trip?.image_url && <div className="hub-card-bg"><TripImage path={trip.image_url} alt="" className="size-full object-cover" /></div>}
+                <div className="hub-trip-main">
+                  <div className="hub-card-kicker"><Plane size={16} /> الرحلة القادمة</div>
+                  <h3>{trip?.title || "لا توجد رحلة قادمة"}</h3>
+                  {trip && <div className="hub-card-meta"><span><MapPin size={13}/>{trip.location || "السعودية"}</span><span><Clock size={13}/>{new Date(trip.start_date).toLocaleDateString("ar-SA", { day:"numeric", month:"long", year:"numeric" })}</span></div>}
+                </div>
+                <div className="hub-ticket-stub">
+                  {trip ? <CountdownDisplay targetDate={trip.start_date} /> : <Plane size={30}/>} 
+                  {trip && <button onClick={() => onViewTrip?.(trip)}>التفاصيل</button>}
+                </div>
+              </article>
+            </CarouselItem>
 
-        <div className="hub-tabs relative flex items-center justify-around p-3 border-b border-white/5 bg-black/20 backdrop-blur-md z-10">
-          {tabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={cn("relative flex-1 flex flex-col items-center gap-1.5 py-3 transition-all duration-500 rounded-2xl z-10", activeTab === tab.id ? "text-white scale-105" : "text-white/40 hover:text-white/60")}>
-              <tab.icon className={cn("size-5 transition-colors", activeTab === tab.id ? tab.color : "opacity-40")} />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">{tab.label}</span>
-              {activeTab === tab.id && <motion.div layoutId="hub-tab-active-bg" className="absolute inset-0 bg-white/5 rounded-2xl -z-10 border border-white/5" />}
-            </button>
-          ))}
-        </div>
+            <CarouselItem>
+              <article className="hub-card hub-meeting-card">
+                <div className="hub-meeting-date"><CalendarDays size={24}/>{meeting ? new Date(meeting.scheduled_at).toLocaleDateString("ar-SA", { day:"numeric", month:"short" }) : "—"}</div>
+                <div className="hub-meeting-copy">
+                  <div className="hub-card-kicker"><CalendarDays size={15}/> الاجتماع القادم</div>
+                  <h3>{meeting?.title || "لا توجد اجتماعات قادمة"}</h3>
+                  {meeting && <p><Clock size={13}/>{new Date(meeting.scheduled_at).toLocaleTimeString("ar-SA", { hour:"2-digit", minute:"2-digit" })}</p>}
+                  {meeting && <button onClick={() => onViewMeeting?.(meeting)}>عرض جدول الاجتماع</button>}
+                </div>
+              </article>
+            </CarouselItem>
 
-        <div className="hub-content min-h-[280px] md:min-h-[220px] relative z-10">
-          <AnimatePresence mode="wait">
-            {activeTab === "trips" && (
-              <motion.div key="trips" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="w-full h-full">
-                {upcomingTrips.length > 0 ? (
-                  <Carousel orientation="vertical" plugins={tripsPlugins} setApi={setTripApi} className="w-full hub-carousel" opts={carouselOpts}>
-                    <CarouselContent className="hub-carousel-content h-[280px] md:h-[250px]">
-                      {upcomingTrips.map((trip) => (
-                        <CarouselItem key={trip.id} className="hub-slide flex items-center p-6 md:p-12">
-                          <div className="hub-slide-layout flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10 w-full">
-                            <div className="hub-event-info space-y-4 text-center md:text-right flex-1">
-                              <div className="hub-eyebrow flex items-center justify-center md:justify-start gap-3 text-indigo-400"><Timer size={16} className="animate-pulse" /><span className="text-[10px] font-black uppercase tracking-[0.3em]">الترفيه القادم</span></div>
-                              <h3 className="hub-event-title text-2xl md:text-5xl font-black text-white leading-tight tracking-tight line-clamp-2 md:line-clamp-none">{trip.title}</h3>
-                              <div className="hub-meta flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-white/50 font-bold text-[10px] md:text-xs">
-                                <span className="flex items-center gap-2 bg-white/5 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-white/5"><MapPin size={12} className="text-indigo-400" />{trip.location || "السعودية"}</span>
-                                <span className="flex items-center gap-2 bg-white/5 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-white/5"><Clock size={12} className="text-indigo-400" />{new Date(trip.start_date).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" })}</span>
-                              </div>
-                            </div>
-                            <div className="hub-actions flex flex-row md:flex-col items-center gap-4 md:gap-6 shrink-0 w-full md:w-auto">
-                              <CountdownDisplay targetDate={trip.start_date} />
-                              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onViewTrip?.(trip)} className="hub-details btn-gold px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs shadow-xl flex-1 md:flex-none transition-all">التفاصيل</motion.button>
-                            </div>
-                          </div>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 left-4 flex-col gap-2 z-20"><CarouselPrevious className="relative top-0 left-0 translate-x-0 translate-y-0 rotate-0 bg-white/5 border-white/10 hover:bg-gold-primary hover:text-black text-white" /><CarouselNext className="relative bottom-0 left-0 translate-x-0 translate-y-0 rotate-0 bg-white/5 border-white/10 hover:bg-gold-primary hover:text-black text-white" /></div>
-                  </Carousel>
-                ) : <EmptyHub icon={Plane} message="لا توجد رحلات مجدولة حالياً" />}
-              </motion.div>
-            )}
+            <CarouselItem>
+              <article className="hub-card hub-tasks-card">
+                <div className="hub-task-score"><ListChecks size={25}/><strong>{tasksCount}</strong><span>مهمة</span></div>
+                <div className="hub-task-copy">
+                  <div className="hub-card-kicker"><ListChecks size={15}/> لوحة الإنجاز</div>
+                  <h3>مسؤولياتك العائلية</h3>
+                  <p>{nudge}</p>
+                  <Link to="/tasks">عرض المهام</Link>
+                </div>
+              </article>
+            </CarouselItem>
+          </CarouselContent>
+        </Carousel>
+        <div className="hub-dots" aria-label="مؤشر البطاقات">{[0,1,2].map(i => <button key={i} onClick={() => api?.scrollTo(i)} className={slide === i ? "active" : ""} aria-label={`بطاقة ${i+1}`} />)}</div>
+      </div>
 
-            {activeTab === "meetings" && (
-              <motion.div key="meetings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="w-full h-full">
-                {upcomingMeetings.length > 0 ? (
-                  <Carousel orientation="vertical" plugins={meetingsPlugins} className="w-full hub-carousel" opts={carouselOpts}>
-                    <CarouselContent className="hub-carousel-content h-[280px] md:h-[250px]">
-                      {upcomingMeetings.map((meeting) => meeting ? (
-                        <CarouselItem key={meeting.id} className="hub-slide flex items-center p-6 md:p-12">
-                          <div className="hub-slide-layout flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10 w-full">
-                            <div className="hub-event-info space-y-4 text-center md:text-right flex-1">
-                              <div className="hub-eyebrow flex items-center justify-center md:justify-start gap-3 text-amber-400"><CalendarDays size={16} /><span className="text-[10px] font-black uppercase tracking-[0.3em]">الاجتماع القادم</span></div>
-                              <h3 className="hub-event-title text-2xl md:text-5xl font-black text-white leading-tight tracking-tight line-clamp-2 md:line-clamp-none">{meeting.title}</h3>
-                              <div className="hub-meta flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-white/50 font-bold text-[10px] md:text-xs"><span className="flex items-center gap-2 bg-white/5 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-white/5"><Clock size={12} className="text-amber-400" />{new Date(meeting.scheduled_at).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" })}</span></div>
-                            </div>
-                            <div className="hub-actions flex flex-row md:flex-col items-center gap-4 md:gap-6 shrink-0 w-full md:w-auto"><CountdownDisplay targetDate={meeting.scheduled_at} /><motion.button whileTap={{ scale: .95 }} onClick={() => onViewMeeting?.(meeting)} className="hub-details btn-gold px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs flex-1 md:flex-none">التفاصيل</motion.button></div>
-                          </div>
-                        </CarouselItem>
-                      ) : null)}
-                    </CarouselContent>
-                  </Carousel>
-                ) : <EmptyHub icon={CalendarDays} message="لا توجد اجتماعات قادمة" />}
-              </motion.div>
-            )}
-
-            {activeTab === "tasks" && (
-              <motion.div key="tasks" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="p-8 md:p-12 text-center">
-                <ListChecks className="size-10 text-rose-400 mx-auto mb-4" />
-                <div className="text-5xl font-black text-white mb-2">{tasksCount}</div>
-                <p className="text-white/60 font-bold mb-5">مسؤوليات بانتظارك</p>
-                <p className="text-white/40 text-xs font-bold max-w-md mx-auto mb-6">{getMotivationalNudge()}</p>
-                <Link to="/tasks" className="inline-flex btn-gold px-8 py-3 rounded-xl text-xs font-black">عرض المسؤوليات</Link>
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {/* Desktop stays intentionally simple and separate from the mobile/tablet redesign. */}
+      <div className="hub-desktop-legacy">
+        <div className="grid grid-cols-3 gap-5">
+          <DesktopCard icon={Plane} label="الرحلة القادمة" title={trip?.title || "لا توجد رحلة قادمة"} />
+          <DesktopCard icon={CalendarDays} label="الاجتماع القادم" title={meeting?.title || "لا توجد اجتماعات قادمة"} />
+          <DesktopCard icon={ListChecks} label="المسؤوليات" title={`${tasksCount} مهمة بانتظارك`} />
         </div>
       </div>
     </section>
   );
 }
 
-function EmptyHub({ icon: Icon, message }: { icon: any; message: string }) {
-  return <div className="h-[260px] flex flex-col items-center justify-center gap-4 text-white/30"><Icon className="size-10" /><p className="font-black text-sm">{message}</p></div>;
+function DesktopCard({ icon: Icon, label, title }: { icon:any; label:string; title:string }) {
+  return <div className="rounded-3xl bg-[#051410] border border-white/10 p-8 text-white"><Icon className="text-gold-primary mb-5"/><div className="text-xs text-white/50 mb-2">{label}</div><div className="text-xl font-black">{title}</div></div>;
 }
