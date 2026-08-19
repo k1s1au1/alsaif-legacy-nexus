@@ -1,6 +1,5 @@
 /* AlSaif approved mobile/tablet dashboard treatment. Desktop stays untouched. */
 @media (max-width:1023px){
-/* All outer/header colors follow the live identity variables from Settings. */
 main{background:linear-gradient(180deg,var(--nav-bg,var(--primary)) 0,var(--nav-bg,var(--primary)) 500px,var(--background) 500px)!important}
 main>.z-\[80\].fixed{position:relative!important;inset:auto!important;top:auto!important;padding:0!important;transform:none!important;width:100%!important;display:block!important}
 main>.z-\[80\].fixed>header{width:100%!important;height:150px!important;max-width:none!important;border-radius:0!important;border:0!important;padding:0 20px!important;background:linear-gradient(180deg,var(--nav-bg,var(--primary)),color-mix(in srgb,var(--nav-bg,var(--primary)) 88%,black))!important;box-shadow:none!important;overflow:visible!important;backdrop-filter:none!important;position:relative!important}
@@ -18,10 +17,8 @@ main>.z-\[80\].fixed>header>.order-last{position:absolute!important;right:86px!i
 main>.z-\[80\].fixed>header>.order-last>.flex,main>.z-\[80\].fixed>header>.order-last>.hidden{display:none!important}main>.z-\[80\].fixed>header>.order-last>.md\:hidden{display:block!important}
 main>div.p-4.md\:p-8.lg\:p-12{padding-top:0!important;padding-left:0!important;padding-right:0!important;background:transparent!important}
 .max-w-6xl.mx-auto.space-y-12{max-width:none!important;padding-inline:0!important;gap:20px!important}.max-w-6xl.mx-auto.space-y-12>section:first-child{display:none!important}
-/* This is the visible gap/canvas around the banner: it now follows identity color too. */
 .max-w-6xl.mx-auto.space-y-12>section:nth-child(2){padding:10px 18px 24px!important;margin:0!important;background:linear-gradient(180deg,color-mix(in srgb,var(--nav-bg,var(--primary)) 88%,black),var(--nav-bg,var(--primary)))!important}
 .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div{width:100%!important;height:300px!important;min-height:300px!important;border-radius:28px!important;border:1px solid color-mix(in srgb,var(--gold-primary) 32%,transparent)!important;box-shadow:0 18px 34px -20px rgba(0,0,0,.62)!important;overflow:hidden!important;background:radial-gradient(ellipse at 72% 78%,color-mix(in srgb,var(--gold-primary) 18%,transparent) 0 8%,transparent 9%),linear-gradient(180deg,color-mix(in srgb,var(--nav-bg,var(--primary)) 76%,#164e63) 0%,color-mix(in srgb,var(--nav-bg,var(--primary)) 82%,#0e7490) 45%,color-mix(in srgb,var(--nav-bg,var(--primary)) 70%,black) 100%)!important}
-/* abstract Jannah-island mood; its palette is derived from the selected identity */
 .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 0 52%,color-mix(in srgb,var(--primary) 28%,#0891b2) 53%,color-mix(in srgb,var(--primary) 58%,#0e7490) 70%,color-mix(in srgb,var(--nav-bg,var(--primary)) 72%,black) 100%),radial-gradient(ellipse at 78% 55%,color-mix(in srgb,var(--gold-primary) 34%,transparent),transparent 24%);pointer-events:none;z-index:1}
 .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div::after{content:"جَنّة • الجذور التي تجمعنا";position:absolute;left:22px;bottom:18px;color:color-mix(in srgb,var(--gold-primary) 78%,white);font-size:10px;font-weight:800;letter-spacing:.04em;z-index:3}
 .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.absolute.inset-0{display:block!important;opacity:.04!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .group\/avatar{display:none!important}
@@ -33,6 +30,32 @@ main>div.p-4.md\:p-8.lg\:p-12{padding-top:0!important;padding-left:0!important;p
 .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .inline-flex.items-center.gap-3{display:none!important}
 .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .mt-6.md\:mt-8{margin-top:10px!important;justify-content:flex-start!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .h-8.overflow-hidden{height:48px!important;overflow:hidden!important;max-width:290px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .h-8.overflow-hidden p{font-size:14px!important;color:rgba(255,255,255,.82)!important;line-height:1.55!important;font-style:normal!important;text-align:right!important}
 .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .absolute.top-0.right-0{display:none!important}
+
+/* Compact upcoming-event card: mobile/tablet only. */
+.integrated-hub{padding:0 14px!important;margin-top:-2px!important}
+.integrated-hub .hub-shell{border-radius:23px!important;border-color:color-mix(in srgb,var(--gold-primary) 24%,transparent)!important;box-shadow:0 16px 32px -22px rgba(0,0,0,.75)!important}
+.integrated-hub .hub-tabs{height:58px!important;padding:5px 8px!important;background:rgba(0,0,0,.28)!important}
+.integrated-hub .hub-tabs button{padding:7px 4px!important;gap:3px!important;border-radius:14px!important;transform:none!important}
+.integrated-hub .hub-tabs button svg{width:16px!important;height:16px!important}
+.integrated-hub .hub-tabs button span{font-size:8px!important;letter-spacing:.08em!important}
+.integrated-hub .hub-content{min-height:174px!important;height:174px!important}
+.integrated-hub .hub-carousel-content{height:174px!important}
+.integrated-hub .hub-slide{padding:15px 17px!important}
+.integrated-hub .hub-slide-layout{height:100%!important;display:grid!important;grid-template-columns:minmax(0,1fr) 76px!important;grid-template-areas:'info actions'!important;gap:10px!important;align-items:center!important;direction:rtl!important}
+.integrated-hub .hub-event-info{grid-area:info!important;text-align:right!important;margin:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:7px!important}
+.integrated-hub .hub-event-info>*{margin:0!important}
+.integrated-hub .hub-eyebrow{justify-content:flex-start!important;gap:6px!important}
+.integrated-hub .hub-eyebrow svg{width:12px!important;height:12px!important}
+.integrated-hub .hub-eyebrow span{font-size:8px!important;letter-spacing:.12em!important}
+.integrated-hub .hub-event-title{font-size:21px!important;line-height:1.12!important;text-align:right!important;max-width:100%!important}
+.integrated-hub .hub-meta{justify-content:flex-start!important;gap:5px!important;width:100%!important}
+.integrated-hub .hub-meta span{font-size:8px!important;padding:5px 7px!important;gap:4px!important;white-space:nowrap!important}
+.integrated-hub .hub-meta svg{width:10px!important;height:10px!important}
+.integrated-hub .hub-actions{grid-area:actions!important;width:76px!important;display:flex!important;flex-direction:column!important;gap:7px!important;align-items:stretch!important}
+.integrated-hub .hub-countdown{width:76px!important;min-width:0!important;flex:none!important;padding:8px 4px!important;border-radius:14px!important}
+.integrated-hub .hub-countdown span:first-child{font-size:25px!important;line-height:1!important}
+.integrated-hub .hub-countdown span:last-child{font-size:7px!important;letter-spacing:.02em!important;margin-top:3px!important}
+.integrated-hub .hub-details{width:76px!important;min-width:0!important;flex:none!important;padding:9px 5px!important;border-radius:11px!important;font-size:8px!important}
 }
 @media(max-width:599px){main>.z-\[80\].fixed>header{height:142px!important}main>.z-\[80\].fixed>header::before{width:68px;height:68px;left:14px;top:31px}main>.z-\[80\].fixed>header>.absolute.inset-0{top:27px!important}main>.z-\[80\].fixed>header>.absolute.inset-0 .text-\[16px\]{font-size:22px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2){padding:8px 14px 22px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div,.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.relative.z-10{height:285px!important;min-height:285px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{right:22px!important;top:43px!important;width:82%!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:34px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div::after{left:18px;bottom:16px}}
-@media(min-width:600px) and (max-width:1023px){main>.z-\[80\].fixed>header{height:166px!important}main>.z-\[80\].fixed>header::before{left:32px;top:36px;width:84px;height:84px}main>.z-\[80\].fixed>header>.absolute.inset-0{top:35px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2){padding:12px 28px 30px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div,.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.relative.z-10{height:370px!important;min-height:370px!important;border-radius:32px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{right:38px!important;top:70px!important;width:70%!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:46px!important}}
+@media(min-width:600px) and (max-width:1023px){main>.z-\[80\].fixed>header{height:166px!important}main>.z-\[80\].fixed>header::before{left:32px;top:36px;width:84px;height:84px}main>.z-\[80\].fixed>header>.absolute.inset-0{top:35px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2){padding:12px 28px 30px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div,.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.relative.z-10{height:370px!important;min-height:370px!important;border-radius:32px!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{right:38px!important;top:70px!important;width:70%!important}.max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:46px!important}.integrated-hub{padding:0 28px!important}.integrated-hub .hub-content,.integrated-hub .hub-carousel-content{height:196px!important;min-height:196px!important}.integrated-hub .hub-slide{padding:18px 26px!important}.integrated-hub .hub-slide-layout{grid-template-columns:minmax(0,1fr) 96px!important;gap:18px!important}.integrated-hub .hub-actions{width:96px!important}.integrated-hub .hub-countdown,.integrated-hub .hub-details{width:96px!important}.integrated-hub .hub-event-title{font-size:28px!important}.integrated-hub .hub-meta span{font-size:9px!important}}
