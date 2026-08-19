@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import mobileTabletHeroCss from "../mobile-tablet-hero.css?url";
+import mobileTabletFloatingHeaderCss from "../mobile-tablet-floating-header.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
@@ -97,6 +98,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: mobileTabletHeroCss },
+      { rel: "stylesheet", href: mobileTabletFloatingHeaderCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "apple-touch-icon", href: "/logo-home.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -113,104 +115,43 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-function RootShell({ children }: { children: ReactNode }) {
+function RootComponent() {
+  return <Outlet />;
+}
+
+function RootShell({ children }: Readonly<{ children: ReactNode }>) {
+  const queryClient = new QueryClient();
+
+  useEffect(() => {
+    const syncTheme = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        let themeId = localStorage.getItem("theme-color") || "saif-green";
+        if (user) {
+          const { data } = await supabase.from("profiles").select("theme_color").eq("id", user.id).maybeSingle();
+          if (data?.theme_color) themeId = data.theme_color;
+        }
+        const theme = THEME_COLORS.find((t) => t.id === themeId) || THEME_COLORS[0];
+        applyThemeColors(theme);
+      } catch (e) {
+        console.warn("Theme sync failed", e);
+      }
+    };
+    syncTheme();
+  }, []);
+
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        {children}
+        <QueryClientProvider client={queryClient}>
+          {children}
+          <Toaster richColors position="top-center" />
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>
-  );
-}
-
-function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("theme") as "light" | "dark" | "system" | null;
-
-      const updateTheme = () => {
-        const theme = localStorage.getItem("theme");
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const isDark = theme === "dark" || (!theme && prefersDark) || (theme === "system" && prefersDark);
-
-        if (isDark) {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
-      };
-
-      updateTheme();
-
-      const savedFont = localStorage.getItem("font-style") as "modern" | "royal" | null;
-      if (savedFont === "royal") {
-        document.documentElement.classList.add("font-royal-mode");
-      } else {
-        document.documentElement.classList.remove("font-royal-mode");
-      }
-
-      const savedColorId = localStorage.getItem("app-theme-color-id") || "emerald";
-      const colorObj = THEME_COLORS.find((c) => c.id === savedColorId) || THEME_COLORS[0];
-      applyThemeColors(colorObj);
-    }
-
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        const storedToken = localStorage.getItem("fcm_token");
-        if (storedToken && session?.user) {
-          try {
-            const { Capacitor } = await import("@capacitor/core");
-            await supabase.from("push_tokens").upsert(
-              {
-                user_id: session.user.id,
-                token: storedToken,
-                platform: Capacitor.getPlatform() || "android",
-                is_active: true,
-              },
-              { onConflict: "user_id,token" },
-            );
-          } catch (e) {
-            console.warn("[Push] Failed to save stored token on login:", e);
-          }
-        }
-      }
-
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
-    });
-
-    const mediaQuery = typeof window !== "undefined" ? window.matchMedia("(prefers-color-scheme: dark)") : null;
-    const systemThemeListener = () => {
-      const currentStored = localStorage.getItem("theme");
-      if (!currentStored || currentStored === "system") {
-        const theme = localStorage.getItem("theme");
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const isDark = theme === "dark" || (!theme && prefersDark) || (theme === "system" && prefersDark);
-        if (isDark) document.documentElement.classList.add("dark");
-        else document.documentElement.classList.remove("dark");
-      }
-    };
-
-    if (mediaQuery) mediaQuery.addEventListener("change", systemThemeListener);
-
-    return () => {
-      sub.subscription.unsubscribe();
-      if (mediaQuery) mediaQuery.removeEventListener("change", systemThemeListener);
-    };
-  }, [router, queryClient]);
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster theme="dark" position="top-center" richColors />
-    </QueryClientProvider>
   );
 }
