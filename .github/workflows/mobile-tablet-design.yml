@@ -1,0 +1,98 @@
+name: Apply mobile tablet visual design layer
+
+on:
+  push:
+    paths:
+      - .github/trigger-mobile-tablet-design
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Append responsive design layer
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/styles.css')
+          s = p.read_text()
+          marker = '/* MOBILE_TABLET_DESIGN_LAYER_V1 */'
+          if marker in s:
+              raise SystemExit('design layer already exists')
+          css = r'''
+/* MOBILE_TABLET_DESIGN_LAYER_V1 */
+/* Visual-only layer: mobile/tablet only. Desktop styles are intentionally untouched. */
+@media (max-width: 1023px) {
+  html, body { overflow-x: hidden; }
+  body { -webkit-tap-highlight-color: transparent; }
+
+  /* App content: use the phone/tablet viewport instead of a desktop-like framed page. */
+  main {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+    padding-inline: 16px !important;
+  }
+
+  /* Existing premium surfaces become cleaner, larger-touch-target cards. */
+  .card-surface,
+  .glass-surface,
+  .glass-gold-surface {
+    border-radius: 22px !important;
+  }
+
+  /* Existing cards/grids: tighter mobile rhythm without creating new sections. */
+  main .grid { gap: 12px !important; }
+  main .grid > * { min-width: 0; }
+  main button, main a { -webkit-tap-highlight-color: transparent; }
+
+  /* Existing hero/banner media: preserve aspect ratio and stop fixed heights from exploding. */
+  main img { max-width: 100%; }
+  main [class*="aspect-"] { max-height: 360px; }
+
+  /* Existing headings: stronger hierarchy, without changing the content. */
+  main h1 { font-size: clamp(1.45rem, 5.5vw, 2.1rem) !important; line-height: 1.2 !important; }
+  main h2 { font-size: clamp(1.05rem, 4.2vw, 1.5rem) !important; line-height: 1.3 !important; }
+
+  /* Existing cards get consistent spacing on narrow screens. */
+  main [class*="rounded-[28px]"],
+  main [class*="rounded-[32px]"],
+  main [class*="rounded-3xl"],
+  main [class*="rounded-2xl"] {
+    border-radius: 22px !important;
+  }
+
+  /* Fixed mobile navigation: compact, safe-area aware and visually separated. */
+  body [class*="fixed"][class*="bottom-0"] {
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Keep floating controls away from the home indicator. */
+  body [class*="fixed"][class*="bottom-"] {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+  main { padding-inline: 24px !important; }
+  main .grid { gap: 16px !important; }
+  main [class*="aspect-"] { max-height: 430px; }
+}
+
+@media (max-width: 599px) {
+  main { padding-inline: 14px !important; }
+  main .grid { gap: 10px !important; }
+  main [class*="aspect-"] { max-height: 300px; }
+}
+'''
+          p.write_text(s.rstrip() + '\n\n' + css)
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/styles.css
+          git diff --cached --quiet || git commit -m "style: redesign mobile and tablet layout only"
+          git push
