@@ -1,0 +1,88 @@
+/* AlSaif mobile/tablet hero design. Desktop is intentionally untouched. */
+
+@media (max-width: 1023px) {
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) {
+    padding-inline: 0 !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div {
+    width: 100%;
+    min-height: 0 !important;
+    border-radius: 28px !important;
+    box-shadow: 0 26px 70px -28px rgba(0, 0, 0, .72) !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 {
+    padding: 26px 20px !important;
+    gap: 20px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .relative.group\/avatar > div.relative {
+    width: 104px !important;
+    height: 104px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2 {
+    font-size: clamp(2rem, 10vw, 3rem) !important;
+    line-height: 1.12 !important;
+    letter-spacing: -.045em !important;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .text-white\/60 {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 {
+    max-width: 100%;
+    padding-inline: 12px !important;
+  }
+}
+
+@media (max-width: 599px) {
+  .max-w-6xl.mx-auto.space-y-12 {
+    padding-inline: 14px !important;
+    gap: 2rem !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div {
+    border-radius: 24px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 {
+    padding: 22px 16px !important;
+    gap: 16px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .relative.group\/avatar > div.relative {
+    width: 88px !important;
+    height: 88px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2 {
+    font-size: clamp(1.9rem, 10vw, 2.5rem) !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+  .max-w-6xl.mx-auto.space-y-12 {
+    padding-inline: 24px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div {
+    border-radius: 34px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 {
+    padding: 38px 34px !important;
+    gap: 30px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .relative.group\/avatar > div.relative {
+    width: 128px !important;
+    height: 128px !important;
+  }
+}
