@@ -1,6 +1,5 @@
 /* Floating header — mobile/tablet only. Desktop remains unchanged. */
 @media (max-width:1023px){
-  /* Use fixed instead of sticky because the dashboard scroll container prevents sticky from following the viewport. */
   main>.z-\[80\].fixed{
     position:fixed!important;
     top:0!important;
@@ -11,8 +10,9 @@
     width:100%!important;
     padding:10px 14px 0!important;
     background:transparent!important;
-    transform:none!important;
+    transform-origin:top center!important;
     pointer-events:none!important;
+    transition:transform .45s cubic-bezier(.23,1,.32,1),padding .45s cubic-bezier(.23,1,.32,1)!important;
   }
   main>.z-\[80\].fixed>header{
     pointer-events:auto!important;
@@ -28,19 +28,23 @@
     backdrop-filter:blur(18px) saturate(135%)!important;
     box-shadow:0 16px 34px -20px rgba(0,0,0,.65),0 1px 0 color-mix(in srgb,var(--gold-primary) 12%,transparent) inset!important;
     overflow:visible!important;
+    transition:height .45s cubic-bezier(.23,1,.32,1),border-radius .45s cubic-bezier(.23,1,.32,1),background .45s ease!important;
   }
-  /* Reserve the header's original space so the hero is not hidden beneath the floating bar. */
   main>div.p-4.md\:p-8.lg\:p-12{padding-top:148px!important}
-  main>.z-\[80\].fixed>header::before{
-    top:25px!important;
-    left:16px!important;
-    width:70px!important;
-    height:70px!important;
-    box-shadow:0 0 0 4px color-mix(in srgb,var(--nav-bg,var(--primary)) 70%,transparent),0 10px 22px -14px rgba(0,0,0,.7)!important;
-  }
-  main>.z-\[80\].fixed>header>.absolute.inset-0{top:15px!important;height:82px!important}
-  main>.z-\[80\].fixed>header>.order-first{top:26px!important;right:16px!important}
-  main>.z-\[80\].fixed>header>.order-last{top:35px!important;right:82px!important}
+  main>.z-\[80\].fixed>header::before{top:25px!important;left:16px!important;width:70px!important;height:70px!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--nav-bg,var(--primary)) 70%,transparent),0 10px 22px -14px rgba(0,0,0,.7)!important;transition:all .45s cubic-bezier(.23,1,.32,1)!important}
+  main>.z-\[80\].fixed>header>.absolute.inset-0{top:15px!important;height:82px!important;transition:all .45s cubic-bezier(.23,1,.32,1)!important}
+  main>.z-\[80\].fixed>header>.order-first{top:26px!important;right:16px!important;transition:all .45s cubic-bezier(.23,1,.32,1)!important}
+  main>.z-\[80\].fixed>header>.order-last{top:35px!important;right:82px!important;transition:all .45s cubic-bezier(.23,1,.32,1)!important}
+
+  /* AppShell already switches headerCompact after 100px scroll. Its inline scale becomes our compact trigger. */
+  main>.z-\[80\].fixed[style*="scale(0.85)"]{padding-top:7px!important}
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header{height:72px!important;border-radius:22px!important;background:color-mix(in srgb,var(--nav-bg,var(--primary)) 92%,transparent)!important}
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header::before{width:48px!important;height:48px!important;top:11px!important;left:12px!important;border-width:1px!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--nav-bg,var(--primary)) 72%,transparent)!important}
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header>.absolute.inset-0{top:0!important;height:70px!important}
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header>.absolute.inset-0 .text-\[16px\]{font-size:18px!important}
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header>.absolute.inset-0 .text-\[9px\]{font-size:8px!important}
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header>.order-first{top:8px!important;right:12px!important;transform:scale(.78)!important;transform-origin:top right!important}
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header>.order-last{top:15px!important;right:65px!important;transform:scale(.82)!important;transform-origin:top right!important}
 }
 @media(max-width:599px){
   main>.z-\[80\].fixed{padding:8px 10px 0!important}
@@ -50,6 +54,8 @@
   main>.z-\[80\].fixed>header>.absolute.inset-0{top:14px!important;height:78px!important}
   main>.z-\[80\].fixed>header>.order-first{right:12px!important;top:25px!important}
   main>.z-\[80\].fixed>header>.order-last{right:76px!important;top:34px!important}
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header{height:68px!important;border-radius:20px!important}
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header::before{width:44px!important;height:44px!important;top:11px!important}
 }
 @media(min-width:600px) and (max-width:1023px){
   main>.z-\[80\].fixed{padding:12px 24px 0!important}
