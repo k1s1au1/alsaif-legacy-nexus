@@ -48,11 +48,34 @@ export function QuickActionsBanner() {
             padding: 18px !important;
           }
           .family-services-panel {
-            background: var(--background) !important;
-            border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent) !important;
-            border-radius: 26px !important;
-            padding: 20px 16px 16px !important;
-            box-shadow: 0 18px 34px -26px rgba(0,0,0,.45) !important;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            padding: 4px 0 10px !important;
+            box-shadow: none !important;
+          }
+          .family-services-heading h3 {
+            color: color-mix(in srgb, var(--nav-fg, white) 94%, var(--gold-primary)) !important;
+          }
+          .family-services-top-toggle {
+            color: var(--gold-primary) !important;
+          }
+          .family-service-card {
+            background: color-mix(in srgb, var(--nav-bg, var(--primary)) 9%, white 91%) !important;
+            border-color: color-mix(in srgb, var(--nav-bg, var(--primary)) 20%, transparent) !important;
+            box-shadow: 0 10px 24px -18px color-mix(in srgb, var(--nav-bg, var(--primary)) 55%, transparent) !important;
+          }
+          .family-service-label {
+            color: color-mix(in srgb, var(--nav-bg, var(--primary)) 76%, black) !important;
+          }
+          .family-service-description {
+            color: color-mix(in srgb, var(--nav-bg, var(--primary)) 55%, #6b7280) !important;
+          }
+          .family-services-toggle {
+            background: color-mix(in srgb, var(--nav-bg, var(--primary)) 88%, black 12%) !important;
+            border-color: color-mix(in srgb, var(--gold-primary) 25%, transparent) !important;
+            color: var(--nav-fg, white) !important;
+            box-shadow: none !important;
           }
           .family-services-section + section,
           .family-services-section ~ section {
@@ -61,7 +84,7 @@ export function QuickActionsBanner() {
         }
         @media (min-width: 600px) and (max-width: 1023px) {
           .family-services-section { padding: 24px 30px !important; }
-          .family-services-panel { padding: 26px 22px 20px !important; border-radius: 30px !important; }
+          .family-services-panel { padding: 6px 0 12px !important; }
         }
       `}</style>
       <section className="family-services-section animate-fade-up w-full" dir="rtl">
