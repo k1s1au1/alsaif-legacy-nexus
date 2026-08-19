@@ -40,24 +40,51 @@ export function QuickActionsBanner() {
   const visibleServices = expanded ? services : services.slice(0, 4);
 
   return (
-    <section className="family-services-section animate-fade-up w-full" dir="rtl">
-      <div className="family-services-heading flex items-center justify-between">
-        <h3>خدمات العائلة</h3>
-        <button type="button" onClick={() => setExpanded(!expanded)} className="family-services-top-toggle">
-          {expanded ? "إخفاء" : "عرض الكل"}
-        </button>
-      </div>
+    <>
+      <style>{`
+        @media (max-width: 1023px) {
+          .family-services-section {
+            background: var(--nav-bg, var(--primary)) !important;
+            padding: 18px !important;
+          }
+          .family-services-panel {
+            background: var(--background) !important;
+            border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent) !important;
+            border-radius: 26px !important;
+            padding: 20px 16px 16px !important;
+            box-shadow: 0 18px 34px -26px rgba(0,0,0,.45) !important;
+          }
+          .family-services-section + section,
+          .family-services-section ~ section {
+            margin-top: 0 !important;
+          }
+        }
+        @media (min-width: 600px) and (max-width: 1023px) {
+          .family-services-section { padding: 24px 30px !important; }
+          .family-services-panel { padding: 26px 22px 20px !important; border-radius: 30px !important; }
+        }
+      `}</style>
+      <section className="family-services-section animate-fade-up w-full" dir="rtl">
+        <div className="family-services-panel">
+          <div className="family-services-heading flex items-center justify-between">
+            <h3>خدمات العائلة</h3>
+            <button type="button" onClick={() => setExpanded(!expanded)} className="family-services-top-toggle">
+              {expanded ? "إخفاء" : "عرض الكل"}
+            </button>
+          </div>
 
-      <div className="family-services-grid">
-        {visibleServices.map((service, index) => (
-          <QuickAction key={`${service.to}-${service.label}`} {...service} color={index % 2 === 0 ? "family-service-icon-primary" : "family-service-icon-gold"} />
-        ))}
-      </div>
+          <div className="family-services-grid">
+            {visibleServices.map((service, index) => (
+              <QuickAction key={`${service.to}-${service.label}`} {...service} color={index % 2 === 0 ? "family-service-icon-primary" : "family-service-icon-gold"} />
+            ))}
+          </div>
 
-      <button type="button" onClick={() => setExpanded(!expanded)} className="family-services-toggle">
-        <span>{expanded ? "إخفاء الخدمات" : "عرض جميع الخدمات"}</span>
-        {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-      </button>
-    </section>
+          <button type="button" onClick={() => setExpanded(!expanded)} className="family-services-toggle">
+            <span>{expanded ? "إخفاء الخدمات" : "عرض جميع الخدمات"}</span>
+            {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+        </div>
+      </section>
+    </>
   );
 }
