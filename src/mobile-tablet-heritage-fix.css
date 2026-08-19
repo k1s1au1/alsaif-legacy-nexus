@@ -1,22 +1,33 @@
 /* Heritage page mobile/tablet isolation from dashboard-only layout rules. */
 @media (max-width:1023px){
-  .heritage-page-content{
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12{
     max-width:72rem!important;
     padding-left:1rem!important;
     padding-right:1rem!important;
     background:var(--nav-bg,var(--primary))!important;
     gap:1.25rem!important;
     row-gap:1.25rem!important;
+    display:flex!important;
+    flex-direction:column!important;
   }
-  .heritage-page-content>*{margin-top:0!important;margin-bottom:0!important}
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12>*{
+    margin-top:0!important;
+    margin-bottom:0!important;
+    order:4!important;
+  }
 
-  .heritage-hero-section{
+  /* Override the dashboard global rule that hides the first section. */
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12>section.heritage-hero-section:first-child{
     display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+    order:1!important;
     padding:16px 0 0!important;
     margin:0!important;
     background:transparent!important;
   }
-  .heritage-hero-section>div{
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12>section.heritage-hero-section:first-child>div{
+    display:block!important;
     width:100%!important;
     min-height:235px!important;
     height:auto!important;
@@ -27,31 +38,55 @@
     background:linear-gradient(135deg,#1a2b3c,#0f172a 55%,#000)!important;
     box-shadow:0 24px 48px -30px rgba(0,0,0,.8)!important;
   }
-  .heritage-hero-section>div::before,.heritage-hero-section>div::after{content:none!important;display:none!important}
-  .heritage-hero-section>div>.relative.z-10{position:relative!important;height:auto!important;min-height:0!important;display:flex!important;padding:0!important;z-index:10!important}
-  .heritage-hero-section .space-y-3.md\:space-y-5{position:relative!important;inset:auto!important;width:auto!important;text-align:right!important;margin:0!important}
-  .heritage-hero-section h2{font-size:2.25rem!important;line-height:1!important;margin:0!important;color:#fff!important}
-  .heritage-hero-section h2::after{display:none!important}
-  .heritage-hero-section .inline-flex.items-center.gap-3{display:flex!important}
-  .heritage-hero-section .absolute.top-0.right-0{display:block!important}
-  .heritage-hero-section .logo-alsaif-banner{display:block!important}
+  .heritage-page-content .heritage-hero-section>div::before,
+  .heritage-page-content .heritage-hero-section>div::after{content:none!important;display:none!important}
+  .heritage-page-content .heritage-hero-section>div>.relative.z-10{
+    position:relative!important;height:auto!important;min-height:0!important;display:flex!important;padding:0!important;z-index:10!important
+  }
+  .heritage-page-content .heritage-hero-section .space-y-3.md\:space-y-5{
+    position:relative!important;inset:auto!important;width:auto!important;text-align:right!important;margin:0!important
+  }
+  .heritage-page-content .heritage-hero-section h2{font-size:2.25rem!important;line-height:1!important;margin:0!important;color:#fff!important}
+  .heritage-page-content .heritage-hero-section h2::after{display:none!important}
+  .heritage-page-content .heritage-hero-section .inline-flex.items-center.gap-3{display:flex!important}
+  .heritage-page-content .heritage-hero-section .absolute.top-0.right-0{display:block!important}
+  .heritage-page-content .heritage-hero-section .logo-alsaif-banner{display:block!important}
 
-  .heritage-page-content>.family-services-section{
+  /* Services must sit immediately below the heritage banner. */
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12>.family-services-section{
     display:block!important;
+    order:2!important;
     margin-left:-1rem!important;
     margin-right:-1rem!important;
-    padding-top:18px!important;
-    padding-bottom:18px!important;
+    padding:18px!important;
+    background:var(--nav-bg,var(--primary))!important;
   }
+  /* Cancel dashboard nth-child hero styling if it lands on services. */
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12>section.family-services-section:nth-child(2),
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12>section.family-services-section:nth-child(2)>div{
+    height:auto!important;
+    min-height:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+    background:transparent!important;
+  }
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12>section.family-services-section:nth-child(2)>div::before,
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12>section.family-services-section:nth-child(2)>div::after{content:none!important;display:none!important}
 
-  .heritage-filters{padding:0!important;margin:0!important;gap:12px!important}
+  .heritage-page-content>.heritage-filters{
+    order:3!important;
+    padding:0!important;
+    margin:0!important;
+    gap:12px!important;
+  }
   .heritage-filters>div:first-child{width:100%!important;overflow-x:auto!important}
   .heritage-filters input{background:color-mix(in srgb,var(--nav-bg,var(--primary)) 88%,black)!important;border-color:color-mix(in srgb,var(--gold-primary) 18%,transparent)!important;color:#fff!important}
   .heritage-filters input::placeholder{color:rgba(255,255,255,.42)!important}
 }
 @media (min-width:600px) and (max-width:1023px){
-  .heritage-page-content{padding-left:1.875rem!important;padding-right:1.875rem!important;gap:1.5rem!important;row-gap:1.5rem!important}
-  .heritage-page-content>.family-services-section{margin-left:-1.875rem!important;margin-right:-1.875rem!important}
-  .heritage-hero-section>div{min-height:285px!important;padding:36px!important;border-radius:34px!important}
-  .heritage-hero-section h2{font-size:3rem!important}
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12{padding-left:1.875rem!important;padding-right:1.875rem!important;gap:1.5rem!important;row-gap:1.5rem!important}
+  .heritage-page-content.max-w-6xl.mx-auto.space-y-12>.family-services-section{margin-left:-1.875rem!important;margin-right:-1.875rem!important}
+  .heritage-page-content .heritage-hero-section>div{min-height:285px!important;padding:36px!important;border-radius:34px!important}
+  .heritage-page-content .heritage-hero-section h2{font-size:3rem!important}
 }
