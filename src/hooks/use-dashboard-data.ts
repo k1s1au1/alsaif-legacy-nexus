@@ -15,8 +15,6 @@ export function useProfile() {
         .eq("id", user.id)
         .maybeSingle();
 
-      // If the extended select failed (e.g. Permission Denied on some columns),
-      // fallback to a safe core selection to ensure identity is preserved.
       let profileData = p;
       if (pErr || !p) {
         const { data: coreP } = await supabase
@@ -28,7 +26,6 @@ export function useProfile() {
       }
 
       const { data: r } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-
       const rs = (r ?? []).map((x) => x.role as string);
       const profileName = profileData?.arabic_name || profileData?.full_name;
 
@@ -93,7 +90,7 @@ export function useDashboardCounts() {
         newNews: newsCount || 0,
       };
     },
-    refetchInterval: 1000 * 60 * 2, // 2 minutes
+    refetchInterval: 1000 * 60 * 2,
   });
 }
 
@@ -104,19 +101,34 @@ export function useUpcomingEvents() {
       const supabase = getSupabase();
       const now = new Date().toISOString();
 
-      const [{ data: meetings }, { data: trips }] = await Promise.all([
+      const [{ data: meetings }, { data: trips }, { data: tasks }] = await Promise.all([
         supabase
           .from("meetings")
           .select("*")
           .gte("scheduled_at", now)
           .order("scheduled_at")
           .limit(5),
-        supabase.from("trips").select("*").gte("start_date", now).order("start_date").limit(5),
+        supabase
+          .from("trips")
+          .select("*")
+          .gte("start_date", now)
+          .order("start_date")
+          .limit(5),
+        supabase
+          .from("tasks")
+          .select("id, title, description, progress, priority, due_date, assignee_id, status, created_at")
+          .neq("status", "done")
+          .order("created_at", { ascending: false })
+          .limit(5),
       ]);
 
       return {
         meetings: meetings || [],
         trips: trips || [],
+        tasks: (tasks || []).map((task: any) => ({
+          ...task,
+          progress: task.progress ?? (task.status === "in_progress" ? 40 : 0),
+        })),
       };
     },
     staleTime: 1000 * 60 * 5,
@@ -209,6 +221,6 @@ export function useHeritageSnippet() {
           .trim(),
       };
     },
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60,
   });
 }
