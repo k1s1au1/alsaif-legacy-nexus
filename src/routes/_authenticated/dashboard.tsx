@@ -587,6 +587,7 @@ function Dashboard() {
         <IntegratedHub
           upcomingMeetings={eventsData?.meetings || []}
           upcomingTrips={eventsData?.trips || []}
+          upcomingTasks={eventsData?.tasks || []}
           tasksCount={countsData?.tasks || 0}
           onViewTrip={(t) => setImmersiveItem({ type: "trip", data: t })}
           onViewMeeting={(m) => setImmersiveItem({ type: "meeting", data: m })}
