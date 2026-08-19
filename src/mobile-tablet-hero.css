@@ -2,7 +2,11 @@
    Desktop (1024px+) is intentionally untouched. */
 
 @media (max-width: 1023px) {
-  /* ---------- APP HEADER: match the approved green/gold reference ---------- */
+  /* Green mobile canvas connects header and hero with no white gutters. */
+  main {
+    background: linear-gradient(180deg, #004b38 0, #004b38 470px, var(--background) 470px) !important;
+  }
+
   main > .z-\[80\].fixed {
     position: relative !important;
     inset: auto !important;
@@ -15,7 +19,7 @@
 
   main > .z-\[80\].fixed > header {
     width: 100% !important;
-    height: 112px !important;
+    height: 150px !important;
     max-width: none !important;
     border-radius: 0 !important;
     border: 0 !important;
@@ -27,328 +31,230 @@
     position: relative !important;
   }
 
-  /* Brand title + subtitle in the center */
-  main > .z-\[80\].fixed > header::after {
-    content: "عائلة السيف\Aترابطنا .. قوتنا";
-    white-space: pre;
-    position: absolute;
-    top: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-    color: #fff;
-    font-weight: 800;
-    font-size: 15px;
-    line-height: 1.55;
-    z-index: 2;
-    pointer-events: none;
-  }
+  /* Do not add a fake title/subtitle: the real live clock/date stays visible. */
+  main > .z-\[80\].fixed > header::after { display: none !important; }
 
-  main > .z-\[80\].fixed > header::first-line {
-    color: #d9b76d;
-  }
-
-  /* Family logo on the left */
+  /* Circular family mark, no square white badge. */
   main > .z-\[80\].fixed > header::before {
     content: "";
     position: absolute;
     left: 18px;
-    top: 20px;
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
-    border: 1.5px solid #cda85c;
-    background: rgba(0, 53, 41, .55) url('/logo-home.png') center/72% no-repeat;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
-    z-index: 3;
+    top: 30px;
+    width: 76px;
+    height: 76px;
+    border-radius: 999px;
+    border: 2px solid #cda85c;
+    background-color: #fdfcf7;
+    background-image: url('/logo-home.png');
+    background-position: center;
+    background-size: 92%;
+    background-repeat: no-repeat;
+    box-shadow: 0 0 0 5px rgba(0,53,41,.45), inset 0 0 0 1px rgba(0,0,0,.04);
+    z-index: 6;
+    overflow: hidden;
   }
 
-  /* Remove the clock/date island from the approved mobile header */
+  /* Restore the REAL LiveClock/date/online-count center content. */
   main > .z-\[80\].fixed > header > .absolute.inset-0 {
-    display: none !important;
+    display: flex !important;
+    top: 25px !important;
+    bottom: auto !important;
+    height: 78px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 4 !important;
+  }
+  main > .z-\[80\].fixed > header > .absolute.inset-0 > div {
+    gap: 7px !important;
+  }
+  main > .z-\[80\].fixed > header > .absolute.inset-0 .text-\[16px\] {
+    font-size: 25px !important;
+    line-height: 1 !important;
+  }
+  main > .z-\[80\].fixed > header > .absolute.inset-0 .text-\[9px\] {
+    font-size: 10px !important;
+    color: #d9b76d !important;
+    letter-spacing: 0 !important;
   }
 
-  /* Profile: avatar only, right edge */
+  /* Avatar at far right. */
   main > .z-\[80\].fixed > header > .order-first {
     position: absolute !important;
     right: 18px !important;
-    top: 25px !important;
-    z-index: 5 !important;
+    top: 31px !important;
+    z-index: 7 !important;
     opacity: 1 !important;
     pointer-events: auto !important;
   }
-
   main > .z-\[80\].fixed > header > .order-first button {
-    width: 48px !important;
-    max-width: 48px !important;
-    height: 48px !important;
+    width: 58px !important;
+    max-width: 58px !important;
+    height: 58px !important;
     padding: 0 !important;
     background: transparent !important;
     border: 0 !important;
     overflow: visible !important;
   }
-
   main > .z-\[80\].fixed > header > .order-first button > div {
-    width: 46px !important;
-    height: 46px !important;
+    width: 56px !important;
+    height: 56px !important;
   }
-
   main > .z-\[80\].fixed > header > .order-first button > span,
-  main > .z-\[80\].fixed > header > .order-first button > svg {
-    display: none !important;
-  }
+  main > .z-\[80\].fixed > header > .order-first button > svg { display: none !important; }
 
-  /* Bell sits beside avatar, as in the reference */
+  /* Bell beside avatar. */
   main > .z-\[80\].fixed > header > .order-last {
     position: absolute !important;
-    right: 76px !important;
-    top: 28px !important;
-    z-index: 5 !important;
+    right: 86px !important;
+    top: 40px !important;
+    z-index: 7 !important;
     opacity: 1 !important;
     pointer-events: auto !important;
     padding: 0 !important;
   }
-
   main > .z-\[80\].fixed > header > .order-last > .flex,
-  main > .z-\[80\].fixed > header > .order-last > .hidden {
-    display: none !important;
-  }
+  main > .z-\[80\].fixed > header > .order-last > .hidden { display: none !important; }
+  main > .z-\[80\].fixed > header > .order-last > .md\:hidden { display: block !important; }
 
-  main > .z-\[80\].fixed > header > .order-last > .md\:hidden {
-    display: block !important;
-  }
-
-  /* Remove old top spacing created for the floating header */
   main > div.p-4.md\:p-8.lg\:p-12 {
     padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    background: transparent !important;
   }
 
-  /* ---------- DASHBOARD HERO ---------- */
   .max-w-6xl.mx-auto.space-y-12 {
-    padding-inline: 18px !important;
+    max-width: none !important;
+    padding-inline: 0 !important;
     gap: 20px !important;
   }
 
-  /* Reference has no quote strip between header and hero */
-  .max-w-6xl.mx-auto.space-y-12 > section:first-child {
-    display: none !important;
-  }
+  /* Keep the quote out of the gap, exactly like approved mockup. */
+  .max-w-6xl.mx-auto.space-y-12 > section:first-child { display: none !important; }
 
+  /* Hero sits on the SAME green canvas; no white left/right/top gap. */
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) {
-    padding-inline: 0 !important;
-    margin-top: 18px !important;
+    padding: 10px 18px 24px !important;
+    margin: 0 !important;
+    background: linear-gradient(180deg, #003f31 0%, #004b38 100%) !important;
   }
 
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div {
     width: 100% !important;
-    min-height: 295px !important;
-    height: 295px !important;
-    border-radius: 24px !important;
-    border: 1px solid rgba(255,255,255,.18) !important;
-    box-shadow: 0 16px 30px -18px rgba(0, 0, 0, .55) !important;
-    background-image:
-      linear-gradient(90deg, rgba(0,39,31,.94) 0%, rgba(0,39,31,.70) 36%, rgba(0,20,16,.12) 72%, rgba(0,0,0,.08) 100%),
-      url('https://cdn.getyourguide.com/img/tour/d4f30a9b8efbd0ab8586ae17e629a5477bc90c0b9e4678202f4490fa09743e30.jpg/98.jpg') !important;
-    background-size: cover !important;
-    background-position: center 56% !important;
-    background-repeat: no-repeat !important;
+    min-height: 300px !important;
+    height: 300px !important;
+    border-radius: 28px !important;
+    border: 1px solid rgba(255,255,255,.20) !important;
+    box-shadow: 0 18px 34px -20px rgba(0,0,0,.62) !important;
+    background: #06251d !important;
     overflow: hidden !important;
   }
 
-  /* Hide the old decorative texture and medallion */
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .absolute.inset-0,
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .group\/avatar {
-    display: none !important;
-  }
+  /* No externally-added hero photograph. Preserve the project's own dark hero surface. */
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .absolute.inset-0 { display: block !important; opacity: .05 !important; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .group\/avatar { display: none !important; }
 
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 {
     position: relative !important;
     height: 100% !important;
-    min-height: 295px !important;
+    min-height: 300px !important;
     display: block !important;
     padding: 0 !important;
   }
 
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center {
     position: absolute !important;
-    left: 22px !important;
-    bottom: 24px !important;
-    width: 54% !important;
+    right: 28px !important;
+    left: auto !important;
+    top: 62px !important;
+    bottom: auto !important;
+    width: min(72%, 360px) !important;
     text-align: right !important;
     margin: 0 !important;
-    min-width: 0 !important;
     z-index: 4 !important;
   }
-
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center::before {
     content: "أهلًا بكم في";
     display: block;
     color: rgba(255,255,255,.95);
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 600;
-    margin-bottom: 1px;
+    margin-bottom: 7px;
   }
-
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2 {
     font-size: 0 !important;
     line-height: 1 !important;
-    margin: 0 0 10px !important;
+    margin: 0 0 12px !important;
     overflow: visible !important;
   }
-
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2::after {
     content: "لوحة العائلة";
     display: block;
     color: white;
-    font-size: 34px;
-    line-height: 1.05;
+    font-size: 38px;
+    line-height: 1.08;
     font-weight: 900;
-    letter-spacing: -.04em;
     text-shadow: 0 4px 18px rgba(0,0,0,.45);
   }
 
-  /* Turn the old greeting pill into the green CTA from the reference */
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: auto !important;
-    margin-top: 12px !important;
-    padding: 9px 16px !important;
-    border-radius: 999px !important;
-    background: rgba(0,111,82,.92) !important;
-    border: 1px solid rgba(255,255,255,.08) !important;
-    box-shadow: 0 8px 22px -12px rgba(0,0,0,.65) !important;
-    backdrop-filter: blur(8px) !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 > svg {
-    display: none !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 p {
-    font-size: 0 !important;
-    letter-spacing: 0 !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 p::after {
-    content: "استكشف المزيد  ‹";
-    color: white;
-    font-size: 13px;
-    font-weight: 800;
-  }
-
-  /* Replace the rotating status line with the approved fixed intro copy */
+  /* Keep original animated status copy; do not replace it with static text. */
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .mt-6.md\:mt-8 {
-    margin-top: 0 !important;
+    margin-top: 12px !important;
     justify-content: flex-start !important;
   }
-
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .h-8.overflow-hidden {
-    height: auto !important;
-    overflow: visible !important;
+    height: 32px !important;
+    overflow: hidden !important;
   }
-
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .h-8.overflow-hidden p {
-    font-size: 0 !important;
-    line-height: 1 !important;
+    font-size: 14px !important;
+    color: rgba(255,255,255,.76) !important;
+    line-height: 1.5 !important;
   }
 
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .h-8.overflow-hidden p::after {
-    content: "منصة تجمعنا وتوثق لحظاتنا الجميلة";
-    display: block;
-    color: rgba(255,255,255,.92);
-    font-size: 12px;
-    line-height: 1.55;
-    font-weight: 600;
-    font-style: normal;
-    max-width: 170px;
+  /* CTA remains, but without adding a photo. */
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 {
+    position: absolute !important;
+    right: 28px !important;
+    bottom: 28px !important;
+    display: inline-flex !important;
+    padding: 10px 18px !important;
+    border-radius: 999px !important;
+    background: #007b5b !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
   }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .absolute.top-0.right-0 {
-    display: none !important;
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 > svg { display: none !important; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 p { font-size: 0 !important; letter-spacing: 0 !important; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 p::after {
+    content: "استكشف المزيد  ‹";
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
   }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .absolute.top-0.right-0 { display: none !important; }
 }
 
 @media (max-width: 599px) {
-  main > .z-\[80\].fixed > header {
-    height: 104px !important;
-  }
-
-  main > .z-\[80\].fixed > header::before {
-    width: 62px;
-    height: 62px;
-    left: 14px;
-    top: 20px;
-  }
-
-  main > .z-\[80\].fixed > header::after {
-    top: 22px;
-    font-size: 14px;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 {
-    padding-inline: 14px !important;
-  }
-
+  main > .z-\[80\].fixed > header { height: 142px !important; }
+  main > .z-\[80\].fixed > header::before { width: 68px; height: 68px; left: 14px; top: 31px; }
+  main > .z-\[80\].fixed > header > .absolute.inset-0 { top: 27px !important; }
+  main > .z-\[80\].fixed > header > .absolute.inset-0 .text-\[16px\] { font-size: 22px !important; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) { padding: 8px 14px 22px !important; }
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div,
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 {
-    height: 275px !important;
-    min-height: 275px !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center {
-    left: 18px !important;
-    bottom: 20px !important;
-    width: 57% !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2::after {
-    font-size: 30px;
-  }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 { height: 285px !important; min-height: 285px !important; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center { right: 22px !important; top: 48px !important; width: 76% !important; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2::after { font-size: 34px; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 { right: 22px !important; bottom: 24px !important; }
 }
 
 @media (min-width: 600px) and (max-width: 1023px) {
-  main > .z-\[80\].fixed > header {
-    height: 126px !important;
-    padding-inline: 32px !important;
-  }
-
-  main > .z-\[80\].fixed > header::before {
-    left: 32px;
-    top: 24px;
-    width: 76px;
-    height: 76px;
-  }
-
-  main > .z-\[80\].fixed > header::after {
-    top: 28px;
-    font-size: 18px;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 {
-    padding-inline: 28px !important;
-  }
-
+  main > .z-\[80\].fixed > header { height: 166px !important; }
+  main > .z-\[80\].fixed > header::before { left: 32px; top: 36px; width: 84px; height: 84px; }
+  main > .z-\[80\].fixed > header > .absolute.inset-0 { top: 35px !important; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) { padding: 12px 28px 30px !important; }
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div,
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 {
-    height: 360px !important;
-    min-height: 360px !important;
-    border-radius: 30px !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center {
-    left: 34px !important;
-    bottom: 34px !important;
-    width: 48% !important;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2::after {
-    font-size: 44px;
-  }
-
-  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .h-8.overflow-hidden p::after {
-    font-size: 15px;
-    max-width: 230px;
-  }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 { height: 370px !important; min-height: 370px !important; border-radius: 32px !important; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center { right: 38px !important; top: 78px !important; width: 62% !important; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2::after { font-size: 46px; }
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .inline-flex.items-center.gap-3 { right: 38px !important; bottom: 38px !important; }
 }
