@@ -424,6 +424,26 @@ function SettingsPage() {
               icon={<Smartphone />}
             />
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowColorPicker(true)}
+            className="w-full card-surface p-5 flex items-center justify-between gap-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-xl"
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div
+                className="size-12 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-lg"
+                style={{ background: `linear-gradient(135deg, ${currentThemeObj.primary}, ${currentThemeObj.secondary})` }}
+              >
+                <Palette className="size-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-black text-primary">ألوان الهوية</p>
+                <p className="text-xs text-muted-foreground mt-1 truncate">{currentThemeObj.name}</p>
+              </div>
+            </div>
+            <span className="btn-gold px-5 py-3 rounded-xl font-black text-xs shrink-0">تغيير</span>
+          </button>
         </section>
 
         <section className="space-y-6 animate-fade-up" style={{ animationDelay: "100ms" }}>
