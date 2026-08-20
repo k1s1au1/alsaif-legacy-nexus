@@ -21,7 +21,7 @@
     box-shadow: 0 10px 35px rgba(5, 20, 16, .06) !important;
   }
 
-  /* The existing right drawer becomes the desktop collapsible navigation panel. */
+  /* Existing navigation drawer stays on the right and acts as the desktop collapsible menu. */
   aside.fixed.inset-y-0.right-0 {
     width: 310px !important;
     max-width: 310px !important;
@@ -38,7 +38,7 @@
     border-radius: 16px !important;
   }
 
-  /* Dashboard rhythm */
+  /* Dashboard canvas */
   .max-w-6xl.mx-auto.space-y-12 {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -49,6 +49,7 @@
   .max-w-6xl.mx-auto.space-y-12 > * {
     grid-column: 1 / -1;
     margin-top: 0 !important;
+    min-width: 0;
   }
 
   /* Spiritual line stays compact above the hero. */
@@ -56,8 +57,7 @@
     margin-bottom: -8px;
   }
 
-  /* Hero deliberately keeps the same mobile visual language: vertical, centered,
-     same dark-green identity, only with desktop breathing room. */
+  /* Hero: same visual language as mobile, only adapted to the desktop canvas. */
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div {
     min-height: 360px;
     border-radius: 38px !important;
@@ -94,18 +94,135 @@
     display: none !important;
   }
 
-  /* Give quick actions and the follow-up hub proper desktop width. */
-  .max-w-6xl.mx-auto.space-y-12 > .quick-actions-banner,
-  .max-w-6xl.mx-auto.space-y-12 > .integrated-hub {
-    width: 100%;
+  /* First desktop row after the hero: family services + quick follow-up. */
+  .max-w-6xl.mx-auto.space-y-12 > .family-services-section {
+    grid-column: span 7;
+    height: 100%;
   }
 
-  .integrated-hub {
+  .max-w-6xl.mx-auto.space-y-12 > .integrated-hub {
+    grid-column: span 5;
+    width: 100%;
+    height: 100%;
     padding-inline: 0 !important;
+  }
+
+  .family-services-section,
+  .family-services-panel,
+  .integrated-hub {
+    min-height: 100%;
+  }
+
+  .family-services-panel {
+    border-radius: 30px !important;
+    padding: 26px !important;
+    background: color-mix(in srgb, var(--card) 94%, var(--primary) 6%) !important;
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent) !important;
+    box-shadow: 0 18px 55px rgba(5, 20, 16, .07) !important;
+  }
+
+  .family-services-heading {
+    margin-bottom: 20px !important;
+  }
+
+  .family-services-heading h3 {
+    font-size: 1.15rem !important;
+    font-weight: 900 !important;
+  }
+
+  .family-services-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .family-service-card {
+    min-height: 142px !important;
+    padding: 18px 12px !important;
+    justify-content: center !important;
+    border-radius: 22px !important;
+    background: color-mix(in srgb, var(--background) 95%, var(--primary) 5%) !important;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, transparent) !important;
+    box-shadow: 0 10px 30px rgba(5, 20, 16, .04) !important;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease !important;
+  }
+
+  .family-service-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--gold-primary) 36%, var(--border)) !important;
+    box-shadow: 0 18px 36px rgba(5, 20, 16, .09) !important;
+  }
+
+  .family-service-icon {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 16px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .family-service-label {
+    font-size: .9rem !important;
+  }
+
+  .family-service-description {
+    margin-top: 4px !important;
+    font-size: .7rem !important;
+    line-height: 1.45 !important;
+  }
+
+  .family-services-toggle {
+    margin-top: 18px !important;
+    min-height: 44px !important;
+  }
+
+  /* Make the quick-follow-up card feel like a proper companion panel. */
+  .integrated-hub .hub-mobile-slider {
+    display: block !important;
+    height: 100%;
+  }
+
+  .integrated-hub .hub-desktop-legacy {
+    display: none !important;
+  }
+
+  .integrated-hub .hub-quick-heading {
+    margin-bottom: 12px !important;
+  }
+
+  .integrated-hub .hub-main-carousel,
+  .integrated-hub .hub-expanded-list {
+    min-height: 285px;
+  }
+
+  .integrated-hub article {
+    min-height: 285px !important;
+    border-radius: 30px !important;
+  }
+
+  /* Second desktop content row: heritage + announcements side by side when both exist. */
+  .max-w-6xl.mx-auto.space-y-12 > section:has(.card-surface) {
+    grid-column: span 5;
+    height: 100%;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:has(.card-surface) .card-surface {
+    min-height: 100%;
+    border-radius: 30px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:has(.group > .overflow-hidden),
+  .max-w-6xl.mx-auto.space-y-12 > section:has(.group .overflow-hidden) {
+    grid-column: span 7;
+  }
+
+  /* Announcement carousel becomes a wider editorial panel. */
+  .max-w-6xl.mx-auto.space-y-12 > section .group > div[class*="overflow-hidden"] {
+    border-radius: 30px !important;
   }
 
   /* Desktop summary cards read as a dashboard row rather than enlarged phone tiles. */
   .max-w-6xl.mx-auto.space-y-12 > section.grid.grid-cols-2.lg\:grid-cols-4 {
+    grid-column: 1 / -1;
     gap: 18px !important;
   }
 
@@ -114,7 +231,11 @@
     border-radius: 26px !important;
   }
 
-  /* Secondary cards: reduce excessive vertical padding on wide screens. */
+  /* Support cards stay full width but read as a clean desktop footer row. */
+  .max-w-6xl.mx-auto.space-y-12 > section.pb-20 {
+    grid-column: 1 / -1;
+  }
+
   .glass-surface.md\:p-10 {
     padding: 28px !important;
   }
@@ -127,5 +248,13 @@
 
   .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div {
     min-height: 390px;
+  }
+
+  .family-services-grid {
+    gap: 16px !important;
+  }
+
+  .family-service-card {
+    min-height: 150px !important;
   }
 }
