@@ -121,6 +121,18 @@ export function DesktopDashboardExtras() {
 
   if (path !== "/dashboard" || !target) return null;
 
+  const toggleServices = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setServicesExpanded((v) => !v);
+  };
+
+  const toggleFollow = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFollowExpanded((v) => !v);
+  };
+
   return createPortal(
     <div className="desktop-rebuild-shell" dir="rtl">
       <div className="desktop-rebuild-root">
@@ -133,7 +145,7 @@ export function DesktopDashboardExtras() {
           <div className="desktop-services-panel">
             <div className="desktop-section-head">
               <div><h2>خدمات العائلة</h2><p>كل ما تحتاجه من مكان واحد</p></div>
-              <button type="button" onClick={() => setServicesExpanded(v => !v)}>{servicesExpanded ? "إخفاء" : "عرض الكل"}</button>
+              <button type="button" onClick={toggleServices} aria-expanded={servicesExpanded}>{servicesExpanded ? "إخفاء" : "عرض الكل"}</button>
             </div>
             <div className="desktop-services-grid">
               {visibleServices.map((item) => { const Icon = item.icon; return <Link key={`${item.to}-${item.label}`} to={item.to} className="desktop-service-card"><div className="desktop-service-icon"><Icon size={24} /></div><strong>{item.label}</strong><span>{item.desc}</span></Link>; })}
@@ -143,21 +155,21 @@ export function DesktopDashboardExtras() {
           <div className="desktop-follow-panel">
             <div className="desktop-section-head">
               <div><h2>المتابعة السريعة</h2><p>أقرب ما يحتاج انتباهك</p></div>
-              <button type="button" onClick={() => setFollowExpanded(v => !v)}>{followExpanded ? "إخفاء" : "عرض الكل"}</button>
+              <button type="button" onClick={toggleFollow} aria-expanded={followExpanded}>{followExpanded ? "إخفاء" : "عرض الكل"}</button>
             </div>
             {followExpanded ? (
               <div className="desktop-follow-list">
-                {upcoming.length ? upcoming.map((item, i) => { const Icon = item.icon; return <Link key={`${item.kind}-${i}`} to={item.to} className="desktop-follow-row"><div className="desktop-next-icon"><Icon size={20}/></div><div><b>{item.title}</b><span>{item.kind} · {fmtDate(item.date)}</span></div><ChevronLeft size={17}/></Link>; }) : <div className="desktop-next-empty"><Sparkles size={28}/><b>لا توجد عناصر قادمة</b></div>}
+                {upcoming.length ? upcoming.map((item, i) => { const Icon = item.icon; return <div key={`${item.kind}-${i}`} className="desktop-follow-row"><div className="desktop-next-icon"><Icon size={20}/></div><div><b>{item.title}</b><span>{item.kind} · {fmtDate(item.date)}</span></div><Link to={item.to} aria-label={`فتح ${item.title}`}><ChevronLeft size={17}/></Link></div>; }) : <div className="desktop-next-empty"><Sparkles size={28}/><b>لا توجد عناصر قادمة</b></div>}
               </div>
             ) : next ? (
               <div className="desktop-follow-carousel">
-                <Link to={next.to} className="desktop-next-card">
+                <div className="desktop-next-card">
                   <div className="desktop-next-top"><span>{next.kind}</span><div className="desktop-next-icon">{(() => { const Icon = next.icon; return <Icon size={22}/>; })()}</div></div>
                   <h3>{next.title}</h3>
                   <div className="desktop-next-meta"><span><CalendarDays size={15}/>{fmtDate(next.date)}</span>{next.location && <span><MapPin size={15}/>{next.location}</span>}</div>
-                  <div className="desktop-next-action">فتح التفاصيل <ChevronLeft size={16}/></div>
-                </Link>
-                {upcoming.length > 1 && <div className="desktop-follow-controls"><button type="button" onClick={() => setFollowIndex(i => (i - 1 + upcoming.length) % upcoming.length)} aria-label="السابق"><ChevronRight size={18}/></button><div className="desktop-follow-dots">{upcoming.map((_, i) => <button key={i} type="button" className={i === followIndex ? "active" : ""} onClick={() => setFollowIndex(i)} aria-label={`عنصر ${i+1}`}/>)}</div><button type="button" onClick={() => setFollowIndex(i => (i + 1) % upcoming.length)} aria-label="التالي"><ChevronLeft size={18}/></button></div>}
+                  <Link to={next.to} className="desktop-next-action">فتح التفاصيل <ChevronLeft size={16}/></Link>
+                </div>
+                {upcoming.length > 1 && <div className="desktop-follow-controls"><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFollowIndex(i => (i - 1 + upcoming.length) % upcoming.length); }} aria-label="السابق"><ChevronRight size={18}/></button><div className="desktop-follow-dots">{upcoming.map((_, i) => <button key={i} type="button" className={i === followIndex ? "active" : ""} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFollowIndex(i); }} aria-label={`عنصر ${i+1}`}/>)}</div><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFollowIndex(i => (i + 1) % upcoming.length); }} aria-label="التالي"><ChevronLeft size={18}/></button></div>}
               </div>
             ) : <div className="desktop-next-empty"><Sparkles size={28}/><b>لا توجد عناصر قادمة</b><span>ستظهر هنا المناسبات والاجتماعات والرحلات والمهام القادمة.</span></div>}
           </div>
