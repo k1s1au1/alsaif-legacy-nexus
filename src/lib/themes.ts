@@ -9,6 +9,12 @@ export const THEME_COLORS = [
     foreground: "#FFFFFF",
     navBg: "#063D31",
     darkNavBg: "#031F19",
+    space: "#E7EEE9",
+    darkSpace: "#102D27",
+    panel: "#155A4C",
+    darkPanel: "#0B3A31",
+    soft: "#F4F1E9",
+    darkSoft: "#172C27",
     isPrimary: true,
     mesh: ["rgba(198, 164, 95, 0.14)", "rgba(11, 93, 75, 0.10)"],
   },
@@ -22,6 +28,12 @@ export const THEME_COLORS = [
     foreground: "#FFFFFF",
     navBg: "#0D352F",
     darkNavBg: "#061C18",
+    space: "#E8EEEA",
+    darkSpace: "#142B27",
+    panel: "#285F55",
+    darkPanel: "#123D35",
+    soft: "#F4F0E6",
+    darkSoft: "#1A2B27",
     mesh: ["rgba(191, 160, 100, 0.14)", "rgba(23, 79, 70, 0.10)"],
   },
   {
@@ -34,6 +46,12 @@ export const THEME_COLORS = [
     foreground: "#1D342E",
     navBg: "#60471F",
     darkNavBg: "#2B1F0D",
+    space: "#F0E7D5",
+    darkSpace: "#342916",
+    panel: "#84652F",
+    darkPanel: "#4A371A",
+    soft: "#F7F0E4",
+    darkSoft: "#30281C",
     mesh: ["rgba(163, 125, 62, 0.15)", "rgba(31, 98, 83, 0.10)"],
   },
   {
@@ -46,6 +64,12 @@ export const THEME_COLORS = [
     foreground: "#FFFFFF",
     navBg: "#3B4127",
     darkNavBg: "#1B1E10",
+    space: "#E9E9DD",
+    darkSpace: "#282B1B",
+    panel: "#747B52",
+    darkPanel: "#43482C",
+    soft: "#F4F0E4",
+    darkSoft: "#2A2A20",
     mesh: ["rgba(191, 162, 97, 0.14)", "rgba(98, 107, 67, 0.10)"],
   },
   {
@@ -58,6 +82,12 @@ export const THEME_COLORS = [
     foreground: "#FFFFFF",
     navBg: "#172A2D",
     darkNavBg: "#091416",
+    space: "#E4EAEB",
+    darkSpace: "#172629",
+    panel: "#36575C",
+    darkPanel: "#203A3E",
+    soft: "#F2EFE7",
+    darkSoft: "#202B2C",
     mesh: ["rgba(184, 153, 93, 0.14)", "rgba(37, 63, 67, 0.10)"],
   },
   {
@@ -70,6 +100,12 @@ export const THEME_COLORS = [
     foreground: "#173E35",
     navBg: "#D8CDBA",
     darkNavBg: "#28231C",
+    space: "#F4EFE6",
+    darkSpace: "#2D2922",
+    panel: "#D9CDB9",
+    darkPanel: "#3D352A",
+    soft: "#FBF8F1",
+    darkSoft: "#312C24",
     mesh: ["rgba(138, 107, 63, 0.13)", "rgba(238, 229, 211, 0.18)"],
   },
   {
@@ -82,6 +118,12 @@ export const THEME_COLORS = [
     foreground: "#203A33",
     navBg: "#6A5534",
     darkNavBg: "#2A2113",
+    space: "#EFE6D7",
+    darkSpace: "#342B1D",
+    panel: "#B39A73",
+    darkPanel: "#5C4930",
+    soft: "#F7F1E8",
+    darkSoft: "#332D24",
     mesh: ["rgba(179, 148, 100, 0.15)", "rgba(49, 89, 79, 0.10)"],
   },
   {
@@ -94,6 +136,12 @@ export const THEME_COLORS = [
     foreground: "#FFFFFF",
     navBg: "#2D1F18",
     darkNavBg: "#160D09",
+    space: "#ECE4DC",
+    darkSpace: "#2B211C",
+    panel: "#5A4031",
+    darkPanel: "#35251D",
+    soft: "#F5EFE8",
+    darkSoft: "#302620",
     mesh: ["rgba(191, 162, 116, 0.15)", "rgba(68, 48, 36, 0.11)"],
   },
 ];
@@ -106,21 +154,21 @@ export function applyThemeColors(colors: (typeof THEME_COLORS)[0]) {
   const primary = isDark ? colors.darkPrimary : colors.primary;
   const accent = isDark ? (colors.darkSecondary || colors.secondary) : colors.secondary;
   const header = isDark ? colors.darkNavBg : colors.navBg;
+  const space = isDark ? colors.darkSpace : colors.space;
+  const panel = isDark ? colors.darkPanel : colors.panel;
+  const soft = isDark ? colors.darkSoft : colors.soft;
 
   root.style.setProperty("--primary", primary);
   root.style.setProperty("--gold-primary", accent);
   root.style.setProperty("--primary-foreground", colors.foreground);
   root.style.setProperty("--nav-bg", header);
 
-  // Layered identity tones: every selected identity now provides distinct tones
-  // for header, page gaps/surfaces, panels and accent text instead of painting
-  // the whole interface with one flat color.
   root.style.setProperty("--identity-header", header);
-  root.style.setProperty("--identity-space", `color-mix(in srgb, ${primary} 72%, ${accent} 28%)`);
-  root.style.setProperty("--identity-panel", `color-mix(in srgb, ${header} 78%, ${primary} 22%)`);
-  root.style.setProperty("--identity-soft", `color-mix(in srgb, ${primary} 18%, var(--background) 82%)`);
+  root.style.setProperty("--identity-space", space);
+  root.style.setProperty("--identity-panel", panel);
+  root.style.setProperty("--identity-soft", soft);
   root.style.setProperty("--identity-accent", accent);
-  root.style.setProperty("--identity-text", `color-mix(in srgb, ${accent} 78%, white 22%)`);
+  root.style.setProperty("--identity-text", accent);
 
   if (colors.mesh) {
     root.style.setProperty("--mesh-color-1", colors.mesh[0]);
