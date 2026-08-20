@@ -14,8 +14,10 @@ import {
   MapPin,
   MoonStar,
   PartyPopper,
+  Pencil,
   Plus,
   Sparkles,
+  Trash2,
   Users,
   X,
 } from "lucide-react";
@@ -169,6 +171,7 @@ function Stepper({ step }: { step: number }) {
 function FamilyOccasionsPage() {
   const [occasions, setOccasions] = useState<Occasion[]>([]);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [type, setType] = useState<OccasionType>("wedding");
   const [design, setDesign] = useState(2);
@@ -189,7 +192,13 @@ function FamilyOccasionsPage() {
 
   const selectedMeta = useMemo(() => getTypeMeta(type), [type]);
 
+  function persist(next: Occasion[]) {
+    setOccasions(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  }
+
   function startCreate() {
+    setEditingId(null);
     setStep(1);
     setType("wedding");
     setDesign(2);
@@ -201,14 +210,32 @@ function FamilyOccasionsPage() {
     setOpen(true);
   }
 
+  function startEdit(occasion: Occasion) {
+    setEditingId(occasion.id);
+    setType(occasion.type);
+    setDesign(occasion.design);
+    setTitle(occasion.title);
+    setDate(occasion.date);
+    setTime(occasion.time);
+    setLocation(occasion.location);
+    setDetails(occasion.details);
+    setStep(3);
+    setOpen(true);
+  }
+
   function chooseType(next: OccasionType) {
     setType(next);
-    setTitle(buildDefaultTitle(next));
+    if (!editingId) setTitle(buildDefaultTitle(next));
+  }
+
+  function deleteOccasion(occasion: Occasion) {
+    if (!window.confirm(`حذف مناسبة «${occasion.title}»؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+    persist(occasions.filter((item) => item.id !== occasion.id));
   }
 
   function saveOccasion() {
     const next: Occasion = {
-      id: crypto.randomUUID(),
+      id: editingId ?? crypto.randomUUID(),
       type,
       design,
       title: title.trim() || buildDefaultTitle(type),
@@ -217,9 +244,13 @@ function FamilyOccasionsPage() {
       location,
       details,
     };
-    const updated = [next, ...occasions];
-    setOccasions(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    const updated = editingId
+      ? occasions.map((item) => (item.id === editingId ? next : item))
+      : [next, ...occasions];
+
+    persist(updated);
+    setEditingId(null);
     setOpen(false);
   }
 
@@ -286,6 +317,14 @@ function FamilyOccasionsPage() {
                           {occasion.date && <div className="flex items-center gap-2"><CalendarDays className="size-3.5" />{occasion.date}{occasion.time ? ` • ${occasion.time}` : ""}</div>}
                           {occasion.location && <div className="flex items-center gap-2"><MapPin className="size-3.5" />{occasion.location}</div>}
                         </div>
+                        <div className="mt-4 flex gap-2 border-t border-border pt-3">
+                          <button onClick={() => startEdit(occasion)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-black text-primary">
+                            <Pencil className="size-3.5" /> تعديل
+                          </button>
+                          <button onClick={() => deleteOccasion(occasion)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs font-black text-red-600">
+                            <Trash2 className="size-3.5" /> حذف
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </article>
@@ -306,7 +345,7 @@ function FamilyOccasionsPage() {
             <div className="sticky top-0 z-20 border-b border-border bg-card/95 px-5 pb-4 pt-5 backdrop-blur sm:px-7">
               <div className="mb-5 flex items-center justify-between">
                 <button onClick={() => setOpen(false)} className="grid size-10 place-items-center rounded-full bg-muted text-foreground"><X className="size-5" /></button>
-                <h2 className="text-lg font-black text-foreground">إضافة مناسبة جديدة</h2>
+                <h2 className="text-lg font-black text-foreground">{editingId ? "تعديل المناسبة" : "إضافة مناسبة جديدة"}</h2>
                 <div className="size-10" />
               </div>
               <Stepper step={step} />
@@ -353,6 +392,7 @@ function FamilyOccasionsPage() {
                     <p className="mb-3 text-xs font-black text-muted-foreground">التصميم المختار</p>
                     <TemplatePreview type={type} design={design} selected />
                     <button onClick={() => setStep(2)} className="mt-3 w-full rounded-xl border border-border px-3 py-2 text-xs font-black text-primary">تغيير التصميم</button>
+                    {editingId && <button onClick={() => setStep(1)} className="mt-2 w-full rounded-xl border border-border px-3 py-2 text-xs font-black text-primary">تغيير نوع المناسبة</button>}
                   </div>
                   <div>
                     <h3 className="text-xl font-black text-foreground">تفاصيل المناسبة</h3>
@@ -388,7 +428,7 @@ function FamilyOccasionsPage() {
               {step < 4 ? (
                 <button onClick={() => setStep((value) => Math.min(4, value + 1))} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground">التالي <ChevronLeft className="size-4" /></button>
               ) : (
-                <button onClick={saveOccasion} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground"><Check className="size-4" /> حفظ المناسبة</button>
+                <button onClick={saveOccasion} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground"><Check className="size-4" /> {editingId ? "حفظ التعديلات" : "حفظ المناسبة"}</button>
               )}
             </div>
           </div>
