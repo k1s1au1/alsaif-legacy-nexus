@@ -1,5 +1,31 @@
 /* Heritage + community page mobile/tablet isolation from dashboard-only layout rules. */
 @media (max-width:1023px){
+  /* ---------------- Global family-page order ----------------
+     Any page that includes Family Services follows one mobile/tablet order:
+     page hero/banner -> Family Services -> page-specific content.
+     This prevents dashboard nth-child rules from pushing banners/services around. */
+  .max-w-6xl.mx-auto.space-y-12:has(> .family-services-section){
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12:has(> .family-services-section)>*{
+    margin-top:0!important;
+    margin-bottom:0!important;
+    order:10!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12:has(> .family-services-section)>section:not(.family-services-section):first-of-type{
+    order:1!important;
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12:has(> .family-services-section)>.family-services-section{
+    order:2!important;
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+
   /* ---------------- Heritage ---------------- */
   .heritage-page-content.max-w-6xl.mx-auto.space-y-12{
     max-width:72rem!important;
