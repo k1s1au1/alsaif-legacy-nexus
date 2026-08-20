@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, Plane, ListChecks, MapPin, Clock, Users, ChevronLeft, Sparkles } from "lucide-react";
+import { CalendarDays, Plane, ListChecks, MapPin, Clock, Users, ChevronLeft, ChevronUp, Sparkles } from "lucide-react";
 import { TripImage } from "@/components/trip-image";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 
@@ -46,6 +46,7 @@ function formatDate(value?: string | null) {
 export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], upcomingTasks = [], tasksCount = 0, onViewTrip, onViewMeeting }: HubProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [slide, setSlide] = useState(0);
+  const [expanded, setExpanded] = useState(false);
 
   const slides = useMemo<HubSlide[]>(() => {
     const items: HubSlide[] = [];
@@ -66,82 +67,96 @@ export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], upcom
   const firstTrip = upcomingTrips[0];
   const firstMeeting = upcomingMeetings[0];
 
+  const renderCard = (item: HubSlide) => (
+    <React.Fragment key={item.id}>
+      {item.type === "trip" && (
+        <article className="hub-card hub-trip-ticket">
+          {item.data.image_url && <div className="hub-card-bg"><TripImage path={item.data.image_url} alt="" className="size-full object-cover" /></div>}
+          <div className="hub-trip-main">
+            <div className="hub-card-kicker"><Plane size={16} /> الرحلة القادمة</div>
+            <h3>{item.data.title}</h3>
+            <div className="hub-card-meta">
+              <span><CalendarDays size={13} />{formatDate(item.data.start_date)}</span>
+              <span><MapPin size={13} />{item.data.location || "السعودية"}</span>
+            </div>
+            <button className="hub-outline-action" onClick={() => onViewTrip?.(item.data)}>التفاصيل <ChevronLeft size={14}/></button>
+          </div>
+          <div className="hub-ticket-stub">
+            <Plane className="hub-watermark-icon" size={54} />
+            <CountdownDisplay targetDate={item.data.start_date} />
+          </div>
+        </article>
+      )}
+
+      {item.type === "meeting" && (
+        <article className="hub-card hub-meeting-card">
+          <div className="hub-spiral" aria-hidden="true" />
+          <div className="hub-meeting-copy">
+            <div className="hub-card-kicker"><Users size={16} /> الاجتماع القادم</div>
+            <h3>{item.data.title}</h3>
+            <div className="hub-meeting-meta">
+              <span><CalendarDays size={14}/>{formatDate(item.data.scheduled_at)}</span>
+              <span><Clock size={14}/>{new Date(item.data.scheduled_at).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}</span>
+              {item.data.location && <span><MapPin size={14}/>{item.data.location}</span>}
+            </div>
+            <button className="hub-gold-action" onClick={() => onViewMeeting?.(item.data)}>عرض جدول الأعمال <ChevronLeft size={14}/></button>
+          </div>
+        </article>
+      )}
+
+      {item.type === "task" && (
+        <article className="hub-card hub-tasks-card">
+          <div className="hub-task-copy">
+            <div className="hub-card-kicker"><ListChecks size={16} /> المهمة</div>
+            <span className="hub-task-nearest">أقرب مهمة</span>
+            <h3>{item.data.title}</h3>
+            <div className="hub-task-meta">
+              <span><CalendarDays size={13}/>{item.data.due_date ? formatDate(item.data.due_date) : "بدون موعد"}</span>
+            </div>
+            <Link className="hub-outline-action" to="/tasks">عرض جميع المهام <ChevronLeft size={14}/></Link>
+          </div>
+          <div className="hub-task-score" style={{ "--progress": `${Math.max(0, Math.min(100, Number(item.data.progress ?? 0)))}%` } as React.CSSProperties}>
+            <div className="hub-progress-ring"><strong>{Math.max(0, Math.min(100, Number(item.data.progress ?? 0)))}%</strong><span>مكتملة</span></div>
+          </div>
+        </article>
+      )}
+    </React.Fragment>
+  );
+
   return (
     <section className="integrated-hub px-4 animate-fade-up" style={{ animationDelay: "250ms" }}>
       <div className="hub-mobile-slider">
         <div className="hub-quick-heading">
           <div className="hub-quick-title"><Sparkles size={16} /><span>المتابعة السريعة</span></div>
-          <Link to="/trips" className="hub-quick-all" aria-label="عرض جميع الرحلات">عرض الكل <ChevronLeft size={13} /></Link>
+          <button type="button" className="hub-quick-all" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+            {expanded ? <>طي القائمة <ChevronUp size={13} /></> : <>عرض الكل <ChevronLeft size={13} /></>}
+          </button>
         </div>
 
         {slides.length > 0 ? (
-          <>
-            <Carousel setApi={setApi} opts={{ direction: "rtl", loop: slides.length > 1, align: "center" }} className="w-full hub-main-carousel">
-              <CarouselContent className="hub-main-carousel-content">
-                {slides.map((item) => (
-                  <CarouselItem key={item.id} className="hub-carousel-item basis-[92%] md:basis-[82%]">
-                    {item.type === "trip" && (
-                      <article className="hub-card hub-trip-ticket">
-                        {item.data.image_url && <div className="hub-card-bg"><TripImage path={item.data.image_url} alt="" className="size-full object-cover" /></div>}
-                        <div className="hub-trip-main">
-                          <div className="hub-card-kicker"><Plane size={16} /> الرحلة القادمة</div>
-                          <h3>{item.data.title}</h3>
-                          <div className="hub-card-meta">
-                            <span><CalendarDays size={13} />{formatDate(item.data.start_date)}</span>
-                            <span><MapPin size={13} />{item.data.location || "السعودية"}</span>
-                          </div>
-                          <button className="hub-outline-action" onClick={() => onViewTrip?.(item.data)}>التفاصيل <ChevronLeft size={14}/></button>
-                        </div>
-                        <div className="hub-ticket-stub">
-                          <Plane className="hub-watermark-icon" size={54} />
-                          <CountdownDisplay targetDate={item.data.start_date} />
-                        </div>
-                      </article>
-                    )}
+          expanded ? (
+            <div className="hub-expanded-list" style={{ display: "grid", gap: "1rem" }}>
+              {slides.map(renderCard)}
+            </div>
+          ) : (
+            <>
+              <Carousel setApi={setApi} opts={{ direction: "rtl", loop: slides.length > 1, align: "center" }} className="w-full hub-main-carousel">
+                <CarouselContent className="hub-main-carousel-content">
+                  {slides.map((item) => (
+                    <CarouselItem key={item.id} className="hub-carousel-item basis-[92%] md:basis-[82%]">
+                      {renderCard(item)}
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
 
-                    {item.type === "meeting" && (
-                      <article className="hub-card hub-meeting-card">
-                        <div className="hub-spiral" aria-hidden="true" />
-                        <div className="hub-meeting-copy">
-                          <div className="hub-card-kicker"><Users size={16} /> الاجتماع القادم</div>
-                          <h3>{item.data.title}</h3>
-                          <div className="hub-meeting-meta">
-                            <span><CalendarDays size={14}/>{formatDate(item.data.scheduled_at)}</span>
-                            <span><Clock size={14}/>{new Date(item.data.scheduled_at).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}</span>
-                            {item.data.location && <span><MapPin size={14}/>{item.data.location}</span>}
-                          </div>
-                          <button className="hub-gold-action" onClick={() => onViewMeeting?.(item.data)}>عرض جدول الأعمال <ChevronLeft size={14}/></button>
-                        </div>
-                      </article>
-                    )}
-
-                    {item.type === "task" && (
-                      <article className="hub-card hub-tasks-card">
-                        <div className="hub-task-copy">
-                          <div className="hub-card-kicker"><ListChecks size={16} /> المهمة</div>
-                          <span className="hub-task-nearest">أقرب مهمة</span>
-                          <h3>{item.data.title}</h3>
-                          <div className="hub-task-meta">
-                            <span><CalendarDays size={13}/>{item.data.due_date ? formatDate(item.data.due_date) : "بدون موعد"}</span>
-                          </div>
-                          <Link className="hub-outline-action" to="/tasks">عرض جميع المهام <ChevronLeft size={14}/></Link>
-                        </div>
-                        <div className="hub-task-score" style={{ "--progress": `${Math.max(0, Math.min(100, Number(item.data.progress ?? 0)))}%` } as React.CSSProperties}>
-                          <div className="hub-progress-ring"><strong>{Math.max(0, Math.min(100, Number(item.data.progress ?? 0)))}%</strong><span>مكتملة</span></div>
-                        </div>
-                      </article>
-                    )}
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-
-            {slides.length > 1 && (
-              <div className="hub-dots" aria-label="مؤشر البطاقات">
-                {slides.map((item, i) => <button key={item.id} onClick={() => api?.scrollTo(i)} className={slide === i ? "active" : ""} aria-label={`بطاقة ${i + 1}`} />)}
-              </div>
-            )}
-          </>
+              {slides.length > 1 && (
+                <div className="hub-dots" aria-label="مؤشر البطاقات">
+                  {slides.map((item, i) => <button key={item.id} onClick={() => api?.scrollTo(i)} className={slide === i ? "active" : ""} aria-label={`بطاقة ${i + 1}`} />)}
+                </div>
+              )}
+            </>
+          )
         ) : (
           <article className="hub-card hub-empty-card">
             <ListChecks size={30}/><h3>لا توجد عناصر قادمة</h3><p>عند إضافة رحلة أو اجتماع أو مهمة ستظهر هنا مباشرة.</p>
