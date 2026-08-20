@@ -16,14 +16,17 @@ interface HubProps {
 type FamilyOccasion = {
   id: string;
   type: string;
+  design?: number;
   title?: string;
   date?: string;
   time?: string;
   location?: string;
   details?: string;
+  birthdayAudience?: "adult" | "child";
 };
 
 const OCCASIONS_STORAGE_KEY = "alsaif:family-occasions";
+const OCCASION_TEMPLATES_ROOT = "/occasion-templates";
 
 const OCCASION_LABELS: Record<string, string> = {
   wedding: "زواج / ملكة",
@@ -38,6 +41,18 @@ const OCCASION_LABELS: Record<string, string> = {
   eid_fitr: "عيد الفطر",
   eid_adha: "عيد الأضحى",
 };
+
+function occasionTemplatePath(occasion: FamilyOccasion) {
+  const type = occasion.type;
+  const design = occasion.design || 1;
+  if (type === "condolence") return `${OCCASION_TEMPLATES_ROOT}/condolence-1.png.png`;
+  if (type === "wedding") return `${OCCASION_TEMPLATES_ROOT}/wedding-${design}.png.jpg`;
+  if (type === "birthday" && occasion.birthdayAudience === "child") return `${OCCASION_TEMPLATES_ROOT}/kids-birthday-${design}.png`;
+  if (type === "gathering") return `${OCCASION_TEMPLATES_ROOT}/family-gathering-${design}.png`;
+  if (type === "eid_fitr") return `${OCCASION_TEMPLATES_ROOT}/eid-fitr-${design}.png`;
+  if (type === "eid_adha") return `${OCCASION_TEMPLATES_ROOT}/eid-adha-${design}.png`;
+  return `${OCCASION_TEMPLATES_ROOT}/${type}-${design}.png`;
+}
 
 function CountdownDisplay({ targetDate }: { targetDate: string }) {
   const [timeLeft, setTimeLeft] = useState({ value: "0", label: "أيام متبقية" });
@@ -186,21 +201,27 @@ export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], upcom
       )}
 
       {item.type === "occasion" && (
-        <article className="hub-card hub-meeting-card">
-          <div className="hub-spiral" aria-hidden="true" />
-          <div className="hub-meeting-copy">
-            <div className="hub-card-kicker"><PartyPopper size={16} /> مناسبة عائلية</div>
-            <span className="hub-task-nearest">{OCCASION_LABELS[item.data.type] || "مناسبة"}</span>
-            <h3>{item.data.title || OCCASION_LABELS[item.data.type] || "مناسبة عائلية"}</h3>
-            <div className="hub-meeting-meta">
-              <span><CalendarDays size={14}/>{formatDate(item.data.date)}</span>
-              {item.data.time && <span><Clock size={14}/>{item.data.time}</span>}
-              {item.data.location && <span><MapPin size={14}/>{item.data.location}</span>}
-            </div>
-            <div className="mt-3 flex items-center gap-3">
-              <Link className="hub-gold-action" to="/family-occasions">فتح المناسبة <ChevronLeft size={14}/></Link>
+        <article className="relative min-h-[250px] overflow-hidden rounded-[28px] border border-white/10 shadow-xl">
+          <img
+            src={occasionTemplatePath(item.data)}
+            alt={`قالب ${OCCASION_LABELS[item.data.type] || "المناسبة"}`}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5" />
+          <div className="relative z-10 flex min-h-[250px] flex-col justify-end p-5 text-white sm:p-6">
+            <div className="mb-auto flex items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 text-[11px] font-black backdrop-blur-md">
+                <PartyPopper size={14} /> {OCCASION_LABELS[item.data.type] || "مناسبة عائلية"}
+              </div>
               {occasionDateTime(item.data) && <CountdownDisplay targetDate={occasionDateTime(item.data)!} />}
             </div>
+            <h3 className="mt-16 text-2xl font-black drop-shadow-lg">{item.data.title || OCCASION_LABELS[item.data.type] || "مناسبة عائلية"}</h3>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold text-white/90">
+              <span className="inline-flex items-center gap-1.5"><CalendarDays size={14}/>{formatDate(item.data.date)}</span>
+              {item.data.time && <span className="inline-flex items-center gap-1.5"><Clock size={14}/>{item.data.time}</span>}
+              {item.data.location && <span className="inline-flex items-center gap-1.5"><MapPin size={14}/>{item.data.location}</span>}
+            </div>
+            <Link to="/family-occasions" className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/90 px-4 py-2 text-xs font-black text-[#183f36] shadow-lg backdrop-blur">فتح المناسبة <ChevronLeft size={14}/></Link>
           </div>
         </article>
       )}
