@@ -128,7 +128,7 @@ export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], upcom
       <div className="hub-mobile-slider">
         <div className="hub-quick-heading">
           <div className="hub-quick-title"><Sparkles size={16} /><span>المتابعة السريعة</span></div>
-          <button type="button" className="hub-quick-all" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+          <button type="button" className="hub-quick-all !text-[#b99755] font-bold opacity-100" style={{ color: "#b99755" }} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
             {expanded ? <>طي القائمة <ChevronUp size={13} /></> : <>عرض الكل <ChevronLeft size={13} /></>}
           </button>
         </div>
