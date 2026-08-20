@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Archive, CalendarDays, ChevronLeft, Image as ImageIcon, ListChecks, Newspaper, Plane, Plus, Sparkles, Users } from "lucide-react";
-import { useDashboardAnnouncements, useUpcomingEvents } from "@/hooks/use-dashboard-data";
+import { Archive, CalendarDays, ChevronLeft, Image as ImageIcon, ListChecks, Newspaper, Plane, Plus, Sparkles, Users, Wallet, Scroll } from "lucide-react";
+import { useDashboardAnnouncements, useUpcomingEvents, useDashboardCounts, useFundBalance, useHeritageSnippet, useProfile } from "@/hooks/use-dashboard-data";
+import { useSiteLogo } from "@/hooks/use-site-logo";
+import { QuickActionsBanner } from "@/components/quick-actions-banner";
+import { IntegratedHub } from "@/components/dashboard/integrated-hub";
 
 const fmtDate=(v?:string|null)=>{if(!v)return"بدون موعد";const d=new Date(v);return Number.isNaN(d.getTime())?"بدون موعد":d.toLocaleDateString("ar-SA",{weekday:"short",day:"numeric",month:"short"})};
 
@@ -10,25 +13,56 @@ export function DesktopDashboardExtras(){
  const path=useRouterState({select:s=>s.location.pathname});
  const {data:eventsData}=useUpcomingEvents();
  const {data:announcementsData}=useDashboardAnnouncements();
+ const {data:counts}=useDashboardCounts();
+ const {data:fundBalance}=useFundBalance();
+ const {data:heritage}=useHeritageSnippet();
+ const {data:profile}=useProfile();
+ const logo=useSiteLogo();
  const [target,setTarget]=useState<Element|null>(null);
  useEffect(()=>{if(path!=="/dashboard"){setTarget(null);return}const find=()=>setTarget(document.querySelector(".max-w-6xl.mx-auto.space-y-12"));find();const id=window.setTimeout(find,120);return()=>window.clearTimeout(id)},[path]);
- const upcoming=useMemo(()=>{const rows:any[]=[];(eventsData?.meetings||[]).slice(0,2).forEach((x:any)=>rows.push({kind:"اجتماع",title:x.title,date:x.scheduled_at,icon:Users,to:"/meetings"}));(eventsData?.trips||[]).slice(0,2).forEach((x:any)=>rows.push({kind:"رحلة",title:x.title,date:x.start_date,icon:Plane,to:"/trips"}));return rows.sort((a,b)=>new Date(a.date||"9999-12-31").getTime()-new Date(b.date||"9999-12-31").getTime()).slice(0,3)},[eventsData]);
- const tasks=(eventsData?.tasks||[]).slice(0,3),latest=announcementsData?.[0];
+ const upcoming=useMemo(()=>{const rows:any[]=[];(eventsData?.meetings||[]).slice(0,3).forEach((x:any)=>rows.push({kind:"اجتماع",title:x.title,date:x.scheduled_at,icon:Users,to:"/meetings"}));(eventsData?.trips||[]).slice(0,3).forEach((x:any)=>rows.push({kind:"رحلة",title:x.title,date:x.start_date,icon:Plane,to:"/trips"}));return rows.sort((a,b)=>new Date(a.date||"9999-12-31").getTime()-new Date(b.date||"9999-12-31").getTime()).slice(0,4)},[eventsData]);
+ const tasks=(eventsData?.tasks||[]).slice(0,4),latest=announcementsData?.[0];
+ const name=profile?.realName||"عضو العائلة";
  if(path!=="/dashboard"||!target)return null;
- return createPortal(<section className="desktop-command-center hidden lg:grid grid-cols-12 gap-5" dir="rtl">
-  <div className="col-span-4 rounded-[30px] border border-border bg-card p-6 shadow-[0_16px_45px_rgba(5,20,16,.06)]">
-   <div className="mb-5 flex items-center justify-between"><div className="flex items-center gap-2"><div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary"><CalendarDays size={20}/></div><div><h3 className="font-black text-primary">تقويم العائلة</h3><p className="text-[11px] font-bold text-muted-foreground">أقرب المواعيد القادمة</p></div></div><Link to="/meetings" className="text-xs font-black text-gold-primary">عرض الكل</Link></div>
-   <div className="space-y-3">{upcoming.length?upcoming.map((item:any,i:number)=>{const Icon=item.icon;return <Link key={i} to={item.to} className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/70 p-3 transition hover:-translate-x-1 hover:border-gold-primary/30"><div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon size={17}/></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-foreground">{item.title}</p><p className="text-[10px] font-bold text-muted-foreground">{item.kind} · {fmtDate(item.date)}</p></div><ChevronLeft size={16} className="text-gold-primary/60"/></Link>}):<div className="rounded-2xl border border-dashed border-border p-6 text-center text-xs font-bold text-muted-foreground">لا توجد مواعيد قريبة حاليًا</div>}</div>
-  </div>
-  <div className="col-span-4 rounded-[30px] border border-border bg-card p-6 shadow-[0_16px_45px_rgba(5,20,16,.06)]">
-   <div className="mb-5 flex items-center gap-2"><div className="flex size-10 items-center justify-center rounded-2xl bg-gold-primary/10 text-gold-primary"><Plus size={20}/></div><div><h3 className="font-black text-primary">إضافة سريعة</h3><p className="text-[11px] font-bold text-muted-foreground">ابدأ أهم أعمال العائلة مباشرة</p></div></div>
-   <div className="grid grid-cols-2 gap-3">{[{to:"/family-occasions",label:"مناسبة",icon:Sparkles},{to:"/meetings",label:"اجتماع",icon:Users},{to:"/trips",label:"رحلة",icon:Plane},{to:"/tasks",label:"مهمة",icon:ListChecks}].map(x=>{const Icon=x.icon;return <Link key={x.to+x.label} to={x.to} className="group flex min-h-[104px] flex-col items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/70 p-4 text-center transition hover:-translate-y-1 hover:border-gold-primary/35 hover:shadow-lg"><div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Icon size={18}/></div><span className="text-xs font-black text-foreground">إضافة {x.label}</span></Link>})}</div>
-  </div>
-  <div className="col-span-4 rounded-[30px] border border-border bg-card p-6 shadow-[0_16px_45px_rgba(5,20,16,.06)]">
-   <div className="mb-5 flex items-center justify-between"><div className="flex items-center gap-2"><div className="flex size-10 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600"><ListChecks size={20}/></div><div><h3 className="font-black text-primary">مهامي القادمة</h3><p className="text-[11px] font-bold text-muted-foreground">ما يحتاج انتباهك الآن</p></div></div><Link to="/tasks" className="text-xs font-black text-gold-primary">المهام</Link></div>
-   <div className="space-y-3">{tasks.length?tasks.map((t:any)=><Link key={t.id} to="/tasks" className="block rounded-2xl border border-border/60 bg-background/70 p-3 transition hover:border-primary/20"><div className="flex items-center justify-between gap-3"><p className="truncate text-sm font-black text-foreground">{t.title}</p><span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[9px] font-black text-primary">{t.due_date?fmtDate(t.due_date):"بدون موعد"}</span></div></Link>):<div className="rounded-2xl border border-dashed border-border p-6 text-center text-xs font-bold text-muted-foreground">لا توجد مهام قادمة</div>}</div>
-  </div>
-  <Link to="/majlis" className="col-span-8 group relative min-h-[190px] overflow-hidden rounded-[30px] border border-gold-primary/20 bg-gradient-to-l from-[#071d17] via-[#0d3025] to-[#123e30] p-7 text-white shadow-[0_18px_50px_rgba(5,20,16,.12)]">{latest?.imageUrl&&<img src={latest.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-25 transition duration-700 group-hover:scale-105"/>}<div className="absolute inset-0 bg-gradient-to-l from-black/55 via-black/20 to-transparent"/><div className="relative z-10 flex h-full items-center justify-between gap-8"><div className="max-w-2xl"><div className="mb-3 flex items-center gap-2 text-gold-primary"><Newspaper size={17}/><span className="text-[10px] font-black">آخر إعلان عائلي</span></div><h3 className="text-2xl font-black">{latest?.title||"مركز أخبار العائلة"}</h3><p className="mt-2 line-clamp-2 text-sm font-bold leading-7 text-white/70">{latest?.cleanBody||"تابع أخبار وإعلانات مجلس العائلة من مكان واحد."}</p></div><ChevronLeft className="size-8 shrink-0 text-gold-primary transition group-hover:-translate-x-2"/></div></Link>
-  <Link to="/archive" className="col-span-4 group flex min-h-[190px] items-center justify-between overflow-hidden rounded-[30px] border border-border bg-card p-7 shadow-[0_16px_45px_rgba(5,20,16,.06)] transition hover:-translate-y-1"><div><div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-gold-primary/10 text-gold-primary"><ImageIcon size={24}/></div><h3 className="text-xl font-black text-primary">معرض العائلة</h3><p className="mt-1 text-xs font-bold text-muted-foreground">الصور والألبومات والذكريات المحفوظة</p><div className="mt-5 inline-flex items-center gap-1 text-xs font-black text-gold-primary">فتح المعرض <ChevronLeft size={14}/></div></div><Archive className="size-20 text-primary/5 transition group-hover:scale-110"/></Link>
- </section>,target)
+ return createPortal(<div className="desktop-rebuild-root hidden lg:block" dir="rtl">
+   <section className="desktop-hero-card">
+     <div className="desktop-hero-logo">{logo?<img src={logo} alt="شعار العائلة"/>:<Sparkles size={42}/>}</div>
+     <div className="desktop-hero-copy"><span>مساء الخير، يا أهل الوفاء</span><h1>{name}</h1><p>كل خطوة تخطونها تبني مجدًا للعائلة.</p></div>
+   </section>
+
+   <section className="desktop-main-grid">
+     <div className="desktop-services-panel"><QuickActionsBanner /></div>
+     <div className="desktop-follow-panel"><IntegratedHub upcomingMeetings={eventsData?.meetings||[]} upcomingTrips={eventsData?.trips||[]} upcomingTasks={eventsData?.tasks||[]} tasksCount={counts?.tasks||0}/></div>
+   </section>
+
+   <section className="desktop-command-grid">
+    <div className="desktop-widget-card">
+      <div className="desktop-widget-head"><div><CalendarDays/><span><b>تقويم العائلة</b><small>أقرب المواعيد القادمة</small></span></div><Link to="/meetings">عرض الكل</Link></div>
+      <div className="desktop-list">{upcoming.length?upcoming.map((item:any,i:number)=>{const Icon=item.icon;return <Link key={i} to={item.to}><Icon/><span><b>{item.title}</b><small>{item.kind} · {fmtDate(item.date)}</small></span><ChevronLeft/></Link>}):<p className="desktop-empty">لا توجد مواعيد قريبة حاليًا</p>}</div>
+    </div>
+    <div className="desktop-widget-card">
+      <div className="desktop-widget-head"><div><Plus/><span><b>إضافة سريعة</b><small>ابدأ أهم أعمال العائلة</small></span></div></div>
+      <div className="desktop-quick-add">{[{to:"/family-occasions",label:"مناسبة",icon:Sparkles},{to:"/meetings",label:"اجتماع",icon:Users},{to:"/trips",label:"رحلة",icon:Plane},{to:"/tasks",label:"مهمة",icon:ListChecks}].map(x=>{const Icon=x.icon;return <Link key={x.label} to={x.to}><Icon/><span>إضافة {x.label}</span></Link>})}</div>
+    </div>
+    <div className="desktop-widget-card">
+      <div className="desktop-widget-head"><div><ListChecks/><span><b>مهامي القادمة</b><small>ما يحتاج انتباهك الآن</small></span></div><Link to="/tasks">المهام</Link></div>
+      <div className="desktop-list">{tasks.length?tasks.map((t:any)=><Link key={t.id} to="/tasks"><ListChecks/><span><b>{t.title}</b><small>{t.due_date?fmtDate(t.due_date):"بدون موعد"}</small></span><ChevronLeft/></Link>):<p className="desktop-empty">لا توجد مهام قادمة</p>}</div>
+    </div>
+   </section>
+
+   <section className="desktop-stats-row">
+    <Link to="/finance"><Wallet/><span>رصيد الصندوق</span><b>{Number(fundBalance||0).toLocaleString("ar-SA")} ر.س</b></Link>
+    <Link to="/members"><Users/><span>أفراد العائلة</span><b>{counts?.members||0} عضو</b></Link>
+    <Link to="/trips"><Plane/><span>الرحلات القادمة</span><b>{eventsData?.trips?.length||0} رحلة</b></Link>
+    <Link to="/tasks"><ListChecks/><span>المهام</span><b>{counts?.tasks||0} مهمة</b></Link>
+   </section>
+
+   <section className="desktop-editorial-grid">
+    <Link to="/majlis" className="desktop-news-card">{latest?.imageUrl&&<img src={latest.imageUrl} alt=""/>}<div><Newspaper/><span>آخر إعلان عائلي</span><h3>{latest?.title||"مركز أخبار العائلة"}</h3><p>{latest?.cleanBody||"تابع أخبار وإعلانات مجلس العائلة من مكان واحد."}</p></div></Link>
+    <div className="desktop-side-stack">
+      <Link to="/heritage" className="desktop-mini-card"><Scroll/><div><span>قبس من تاريخ السيف</span><b>{heritage?.title||"إرث العائلة"}</b><small>{heritage?.cleanBody||"تاريخنا يجمعنا."}</small></div></Link>
+      <Link to="/archive" className="desktop-mini-card"><ImageIcon/><div><span>معرض العائلة</span><b>الصور والذكريات</b><small>افتح الألبومات المحفوظة</small></div><Archive/></Link>
+    </div>
+   </section>
+ </div>,target)
 }
