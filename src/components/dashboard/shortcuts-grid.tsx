@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import {
   MessageCircle,
   CalendarDays,
-  Plane,
   Wallet,
   ListChecks,
   Sparkles,
@@ -14,6 +13,7 @@ import {
   Star,
   ArrowLeft,
   Ticket,
+  PartyPopper,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -105,6 +105,17 @@ export function ShortcutsGrid({
         cta: "استكشاف الترفيه",
         badge: badges.trips ?? null,
         stat: stats.trips ?? null,
+      },
+      {
+        key: "family-occasions",
+        to: "/family-occasions",
+        title: "مناسبات العائلة",
+        description: "أفراح ومناسبات وذكريات العائلة",
+        icon: PartyPopper,
+        accent: "from-gold-primary/20 to-transparent",
+        cta: "عرض المناسبات",
+        badge: badges["family-occasions"] ?? null,
+        stat: stats["family-occasions"] ?? null,
       },
       {
         key: "finance",
