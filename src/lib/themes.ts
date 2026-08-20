@@ -103,13 +103,24 @@ export function applyThemeColors(colors: (typeof THEME_COLORS)[0]) {
   const root = document.documentElement;
   const isDark = root.classList.contains("dark");
 
-  root.style.setProperty("--primary", isDark ? colors.darkPrimary : colors.primary);
-  root.style.setProperty(
-    "--gold-primary",
-    isDark ? (colors.darkSecondary || colors.secondary) : colors.secondary
-  );
+  const primary = isDark ? colors.darkPrimary : colors.primary;
+  const accent = isDark ? (colors.darkSecondary || colors.secondary) : colors.secondary;
+  const header = isDark ? colors.darkNavBg : colors.navBg;
+
+  root.style.setProperty("--primary", primary);
+  root.style.setProperty("--gold-primary", accent);
   root.style.setProperty("--primary-foreground", colors.foreground);
-  root.style.setProperty("--nav-bg", isDark ? colors.darkNavBg : colors.navBg);
+  root.style.setProperty("--nav-bg", header);
+
+  // Layered identity tones: every selected identity now provides distinct tones
+  // for header, page gaps/surfaces, panels and accent text instead of painting
+  // the whole interface with one flat color.
+  root.style.setProperty("--identity-header", header);
+  root.style.setProperty("--identity-space", `color-mix(in srgb, ${primary} 72%, ${accent} 28%)`);
+  root.style.setProperty("--identity-panel", `color-mix(in srgb, ${header} 78%, ${primary} 22%)`);
+  root.style.setProperty("--identity-soft", `color-mix(in srgb, ${primary} 18%, var(--background) 82%)`);
+  root.style.setProperty("--identity-accent", accent);
+  root.style.setProperty("--identity-text", `color-mix(in srgb, ${accent} 78%, white 22%)`);
 
   if (colors.mesh) {
     root.style.setProperty("--mesh-color-1", colors.mesh[0]);
