@@ -93,22 +93,45 @@ export function DesktopDashboardExtras() {
         const today = new Date();
         const y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,"0"), d = String(today.getDate()).padStart(2,"0");
         const key = `${y}-${m}-${d}`;
-        setOccasions(Array.isArray(rows) ? rows.filter((x: LocalOccasion) => x?.id && x?.date && x.date >= key) : []);
+        setOccasions(
+          Array.isArray(rows)
+            ? rows
+                .filter((x: LocalOccasion) => x?.id && x?.date && x.date >= key)
+                .sort((a: LocalOccasion, b: LocalOccasion) => new Date(`${a.date}T${a.time || "23:59"}:00`).getTime() - new Date(`${b.date}T${b.time || "23:59"}:00`).getTime())
+            : [],
+        );
       } catch { setOccasions([]); }
     };
+    const onVisibility = () => { if (!document.hidden) read(); };
     read();
+    const syncId = window.setInterval(read, 3000);
     window.addEventListener("storage", read);
     window.addEventListener("focus", read);
-    return () => { window.removeEventListener("storage", read); window.removeEventListener("focus", read); };
-  }, []);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(syncId);
+      window.removeEventListener("storage", read);
+      window.removeEventListener("focus", read);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [path]);
 
   const upcoming = useMemo(() => {
     const rows: any[] = [];
-    (eventsData?.meetings || []).forEach((x: any) => rows.push({ kind: "اجتماع", title: x.title, date: x.scheduled_at, location: x.location, icon: Users, to: "/meetings" }));
-    (eventsData?.trips || []).forEach((x: any) => rows.push({ kind: "رحلة", title: x.title, date: x.start_date, location: x.location, icon: Plane, to: "/trips" }));
-    (eventsData?.tasks || []).forEach((x: any) => rows.push({ kind: "مهمة", title: x.title, date: x.due_date, icon: ListChecks, to: "/tasks" }));
-    occasions.forEach((x) => rows.push({ kind: occasionLabels[x.type || ""] || "مناسبة", title: x.title || occasionLabels[x.type || ""] || "مناسبة عائلية", date: x.date ? `${x.date}T${x.time || "23:59"}:00` : x.date, location: x.location, icon: PartyPopper, to: "/family-occasions" }));
-    return rows.sort((a, b) => new Date(a.date || "9999-12-31").getTime() - new Date(b.date || "9999-12-31").getTime()).slice(0, 8);
+    (eventsData?.meetings || []).forEach((x: any) => rows.push({ kind: "اجتماع", title: x.title, date: x.scheduled_at, location: x.location, icon: Users, to: "/meetings", actionLabel: "فتح الاجتماع" }));
+    (eventsData?.trips || []).forEach((x: any) => rows.push({ kind: "رحلة", title: x.title, date: x.start_date, location: x.location, icon: Plane, to: "/trips", actionLabel: "فتح الرحلة" }));
+    (eventsData?.tasks || []).forEach((x: any) => rows.push({ kind: "مهمة", title: x.title, date: x.due_date, icon: ListChecks, to: "/tasks", actionLabel: "فتح المهمة" }));
+    occasions.forEach((x) => rows.push({
+      kind: occasionLabels[x.type || ""] || "مناسبة عائلية",
+      title: x.title || occasionLabels[x.type || ""] || "مناسبة عائلية",
+      date: x.date ? `${x.date}T${x.time || "23:59"}:00` : x.date,
+      location: x.location,
+      icon: PartyPopper,
+      to: "/family-occasions",
+      actionLabel: "فتح المناسبة",
+      isOccasion: true,
+    }));
+    return rows.sort((a, b) => new Date(a.date || "9999-12-31").getTime() - new Date(b.date || "9999-12-31").getTime()).slice(0, 12);
   }, [eventsData, occasions]);
 
   useEffect(() => { if (followIndex >= upcoming.length) setFollowIndex(0); }, [upcoming.length, followIndex]);
@@ -154,12 +177,12 @@ export function DesktopDashboardExtras() {
 
           <div className="desktop-follow-panel">
             <div className="desktop-section-head">
-              <div><h2>المتابعة السريعة</h2><p>أقرب ما يحتاج انتباهك</p></div>
+              <div><h2>المتابعة السريعة</h2><p>الاجتماعات والرحلات والمهام ومناسبات العائلة القادمة</p></div>
               <button type="button" onClick={toggleFollow} aria-expanded={followExpanded}>{followExpanded ? "إخفاء" : "عرض الكل"}</button>
             </div>
             {followExpanded ? (
               <div className="desktop-follow-list">
-                {upcoming.length ? upcoming.map((item, i) => { const Icon = item.icon; return <div key={`${item.kind}-${i}`} className="desktop-follow-row"><div className="desktop-next-icon"><Icon size={20}/></div><div><b>{item.title}</b><span>{item.kind} · {fmtDate(item.date)}</span></div><Link to={item.to} aria-label={`فتح ${item.title}`}><ChevronLeft size={17}/></Link></div>; }) : <div className="desktop-next-empty"><Sparkles size={28}/><b>لا توجد عناصر قادمة</b></div>}
+                {upcoming.length ? upcoming.map((item, i) => { const Icon = item.icon; return <div key={`${item.kind}-${i}`} className="desktop-follow-row"><div className="desktop-next-icon"><Icon size={20}/></div><div><b>{item.title}</b><span>{item.kind} · {fmtDate(item.date)}</span></div><Link to={item.to} aria-label={item.actionLabel || `فتح ${item.title}`}><ChevronLeft size={17}/></Link></div>; }) : <div className="desktop-next-empty"><Sparkles size={28}/><b>لا توجد عناصر قادمة</b></div>}
               </div>
             ) : next ? (
               <div className="desktop-follow-carousel">
@@ -167,7 +190,7 @@ export function DesktopDashboardExtras() {
                   <div className="desktop-next-top"><span>{next.kind}</span><div className="desktop-next-icon">{(() => { const Icon = next.icon; return <Icon size={22}/>; })()}</div></div>
                   <h3>{next.title}</h3>
                   <div className="desktop-next-meta"><span><CalendarDays size={15}/>{fmtDate(next.date)}</span>{next.location && <span><MapPin size={15}/>{next.location}</span>}</div>
-                  <Link to={next.to} className="desktop-next-action">فتح التفاصيل <ChevronLeft size={16}/></Link>
+                  <Link to={next.to} className="desktop-next-action">{next.actionLabel || "فتح التفاصيل"} <ChevronLeft size={16}/></Link>
                 </div>
                 {upcoming.length > 1 && <div className="desktop-follow-controls"><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFollowIndex(i => (i - 1 + upcoming.length) % upcoming.length); }} aria-label="السابق"><ChevronRight size={18}/></button><div className="desktop-follow-dots">{upcoming.map((_, i) => <button key={i} type="button" className={i === followIndex ? "active" : ""} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFollowIndex(i); }} aria-label={`عنصر ${i+1}`}/>)}</div><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFollowIndex(i => (i + 1) % upcoming.length); }} aria-label="التالي"><ChevronLeft size={18}/></button></div>}
               </div>
