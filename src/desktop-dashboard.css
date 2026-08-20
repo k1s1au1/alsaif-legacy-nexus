@@ -1,0 +1,131 @@
+/* Desktop dashboard pass — keep mobile/tablet behavior unchanged */
+@media (min-width: 1024px) {
+  /* Use the desktop canvas instead of a phone-width column. */
+  main > div.p-4.md\:p-8.lg\:p-12 {
+    max-width: none !important;
+    width: 100% !important;
+    padding-inline: clamp(28px, 3vw, 64px) !important;
+  }
+
+  main > div.p-4.md\:p-8.lg\:p-12 > .max-w-6xl {
+    max-width: 1480px !important;
+    width: 100% !important;
+    margin-inline: auto !important;
+  }
+
+  /* Desktop header: stable product identity, not a stretched mobile pill. */
+  main > div:first-of-type header {
+    min-height: 82px !important;
+    background: color-mix(in srgb, var(--background) 92%, transparent) !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent) !important;
+    box-shadow: 0 10px 35px rgba(5, 20, 16, .06) !important;
+  }
+
+  /* The existing right drawer becomes the desktop collapsible navigation panel. */
+  aside.fixed.inset-y-0.right-0 {
+    width: 310px !important;
+    max-width: 310px !important;
+    border-radius: 0 0 0 30px !important;
+    box-shadow: -24px 0 70px rgba(5, 20, 16, .18) !important;
+  }
+
+  aside.fixed.inset-y-0.right-0 nav {
+    padding: 22px 14px 34px !important;
+  }
+
+  aside.fixed.inset-y-0.right-0 nav a {
+    min-height: 52px;
+    border-radius: 16px !important;
+  }
+
+  /* Dashboard rhythm */
+  .max-w-6xl.mx-auto.space-y-12 {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 26px !important;
+    align-items: start;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > * {
+    grid-column: 1 / -1;
+    margin-top: 0 !important;
+  }
+
+  /* Spiritual line stays compact above the hero. */
+  .max-w-6xl.mx-auto.space-y-12 > section:first-child {
+    margin-bottom: -8px;
+  }
+
+  /* Hero deliberately keeps the same mobile visual language: vertical, centered,
+     same dark-green identity, only with desktop breathing room. */
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div {
+    min-height: 360px;
+    border-radius: 38px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div > .relative.z-10 {
+    flex-direction: column !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 22px !important;
+    padding: 42px 56px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .size-32.md\:size-48 {
+    width: 132px !important;
+    height: 132px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .flex-1.text-center.md\:text-right {
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) h2 {
+    font-size: clamp(2.25rem, 3.2vw, 4rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .md\:justify-start {
+    justify-content: center !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) .hidden.md\:block.w-1 {
+    display: none !important;
+  }
+
+  /* Give quick actions and the follow-up hub proper desktop width. */
+  .max-w-6xl.mx-auto.space-y-12 > .quick-actions-banner,
+  .max-w-6xl.mx-auto.space-y-12 > .integrated-hub {
+    width: 100%;
+  }
+
+  .integrated-hub {
+    padding-inline: 0 !important;
+  }
+
+  /* Desktop summary cards read as a dashboard row rather than enlarged phone tiles. */
+  .max-w-6xl.mx-auto.space-y-12 > section.grid.grid-cols-2.lg\:grid-cols-4 {
+    gap: 18px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section.grid.grid-cols-2.lg\:grid-cols-4 > a > div {
+    min-height: 156px;
+    border-radius: 26px !important;
+  }
+
+  /* Secondary cards: reduce excessive vertical padding on wide screens. */
+  .glass-surface.md\:p-10 {
+    padding: 28px !important;
+  }
+}
+
+@media (min-width: 1440px) {
+  main > div.p-4.md\:p-8.lg\:p-12 > .max-w-6xl {
+    max-width: 1580px !important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12 > section:nth-child(2) > div {
+    min-height: 390px;
+  }
+}
