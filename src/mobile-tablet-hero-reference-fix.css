@@ -1,0 +1,60 @@
+/* Final mobile/tablet hero alignment to approved reference image. Identity colors stay dynamic. */
+@media (max-width:1023px){
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2){
+    padding:18px 24px 24px!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div{
+    height:180px!important;
+    min-height:180px!important;
+    border-radius:20px!important;
+    overflow:hidden!important;
+    background:linear-gradient(100deg,color-mix(in srgb,var(--gold-primary) 20%,var(--nav-bg,var(--primary))) 0%,var(--nav-bg,var(--primary)) 30%,color-mix(in srgb,var(--nav-bg,var(--primary)) 82%,black) 100%)!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.relative.z-10{
+    height:180px!important;
+    min-height:180px!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{
+    right:28px!important;
+    left:auto!important;
+    top:24px!important;
+    bottom:auto!important;
+    width:52%!important;
+    text-align:right!important;
+    margin:0!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center::before{
+    font-size:14px!important;
+    line-height:1.2!important;
+    margin:0 0 7px!important;
+    color:var(--gold-primary)!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{
+    font-size:32px!important;
+    line-height:1.05!important;
+    margin:0 0 10px!important;
+    text-align:right!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .mt-6.md\:mt-8{
+    margin-top:0!important;
+    justify-content:flex-start!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .h-8.overflow-hidden{
+    height:auto!important;
+    max-width:100%!important;
+    overflow:visible!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .h-8.overflow-hidden p{
+    font-size:12px!important;
+    line-height:1.45!important;
+    text-align:right!important;
+    white-space:normal!important;
+  }
+}
+@media (max-width:599px){
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2){padding:14px 18px 22px!important}
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div,
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.relative.z-10{height:172px!important;min-height:172px!important}
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{right:22px!important;top:21px!important;width:54%!important}
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:30px!important}
+}
