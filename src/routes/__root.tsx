@@ -21,6 +21,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
+import { DesktopDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
 
 function NotFoundComponent() {
   return (
@@ -111,12 +112,14 @@ function RootShell({ children }: Readonly<{ children: ReactNode }>) {
     };
     syncTheme();
   }, []);
+  const showDesktopDashboard = typeof window !== "undefined" && window.location.pathname === "/dashboard";
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head><HeadContent /></head>
       <body>
         <QueryClientProvider client={queryClient}>
           {children}
+          {showDesktopDashboard && <DesktopDashboardExtras />}
           <Toaster richColors position="top-center" />
         </QueryClientProvider>
         <Scripts />
