@@ -21,6 +21,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
+import { DesktopDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
 
 function NotFoundComponent() {
   return (
@@ -81,7 +82,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  // T-Notify: Full Feature Restoration
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -158,6 +158,7 @@ function RootShell({ children }: Readonly<{ children: ReactNode }>) {
       <body>
         <QueryClientProvider client={queryClient}>
           {children}
+          <DesktopDashboardExtras />
           <Toaster richColors position="top-center" />
         </QueryClientProvider>
         <Scripts />
