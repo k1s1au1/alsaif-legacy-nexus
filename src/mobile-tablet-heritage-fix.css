@@ -66,60 +66,96 @@
   .heritage-filters input::placeholder{color:rgba(255,255,255,.42)!important}
 
   /* ---------------- Community / member corner ----------------
-     Scope by the page's emerald hero so dashboard-only nth-child rules cannot reorder it. */
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800){
+     Current DOM: hero is FIRST child, services second, filters third, posts fourth.
+     Isolate this page from dashboard nth-child hero overrides. */
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800){
     display:flex!important;
     flex-direction:column!important;
     gap:1.25rem!important;
     row-gap:1.25rem!important;
     background:var(--nav-bg,var(--primary))!important;
+    padding-top:0!important;
   }
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>*{
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>*{
     margin-top:0!important;
     margin-bottom:0!important;
   }
-  /* Banner first */
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>section:nth-child(2){
+
+  /* Member-corner banner always first and fully visible. */
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child{
     display:block!important;
     visibility:visible!important;
     opacity:1!important;
     order:1!important;
     padding:16px 1rem 0!important;
+    margin:0!important;
     background:transparent!important;
   }
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>section:nth-child(2)>div{
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child>div{
     display:block!important;
+    position:relative!important;
     width:100%!important;
     height:auto!important;
     min-height:220px!important;
     padding:24px!important;
     border-radius:30px!important;
     overflow:hidden!important;
-    background:linear-gradient(135deg,#065f46,#0d2620 55%,#000)!important;
+    border:1px solid color-mix(in srgb,var(--gold-primary) 22%,transparent)!important;
+    background:linear-gradient(135deg,var(--primary),color-mix(in srgb,var(--nav-bg,var(--primary)) 82%,black) 58%,#000)!important;
     box-shadow:0 24px 48px -30px rgba(0,0,0,.8)!important;
   }
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>section:nth-child(2)>div::before,
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>section:nth-child(2)>div::after{content:none!important;display:none!important}
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>section:nth-child(2)>.relative,
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>section:nth-child(2)>div>.relative.z-10{
-    position:relative!important;height:auto!important;min-height:0!important;display:flex!important;padding:0!important;z-index:10!important
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child>div::before,
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child>div::after{
+    content:none!important;
+    display:none!important;
   }
-  /* Services second */
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>.family-services-section{
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child>div>.relative.z-10{
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    display:flex!important;
+    padding:0!important;
+    z-index:10!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child .space-y-3.md\:space-y-5{
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    width:auto!important;
+    max-width:none!important;
+    text-align:right!important;
+    margin:0!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child h2{
+    position:static!important;
+    transform:none!important;
+    font-size:2.25rem!important;
+    line-height:1.05!important;
+    margin:0!important;
+    color:#fff!important;
+    white-space:normal!important;
+    overflow:visible!important;
+  }
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child h2::after{display:none!important}
+
+  /* Services, filters, posts in their intended order. */
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>.family-services-section{
     order:2!important;
     display:block!important;
     padding:18px!important;
+    margin:0!important;
     background:var(--nav-bg,var(--primary))!important;
   }
-  /* Filters/actions third, posts fourth */
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>div:nth-child(3){order:3!important}
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>div:nth-child(4){order:4!important}
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>div:nth-child(3){order:3!important}
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>div:nth-child(4){order:4!important}
 }
 @media (min-width:600px) and (max-width:1023px){
   .heritage-page-content.max-w-6xl.mx-auto.space-y-12{padding-left:1.875rem!important;padding-right:1.875rem!important;gap:1.5rem!important;row-gap:1.5rem!important}
   .heritage-page-content.max-w-6xl.mx-auto.space-y-12>.family-services-section{margin-left:-1.875rem!important;margin-right:-1.875rem!important}
   .heritage-page-content .heritage-hero-section>div{min-height:285px!important;padding:36px!important;border-radius:34px!important}
   .heritage-page-content .heritage-hero-section h2{font-size:3rem!important}
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>section:nth-child(2){padding-left:1.875rem!important;padding-right:1.875rem!important}
-  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:nth-child(2) .from-emerald-800)>section:nth-child(2)>div{min-height:270px!important;padding:36px!important;border-radius:34px!important}
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child{padding-left:1.875rem!important;padding-right:1.875rem!important}
+  .max-w-6xl.mx-auto.space-y-12.pb-24:has(> section:first-child .from-emerald-800)>section:first-child>div{min-height:270px!important;padding:36px!important;border-radius:34px!important}
 }
