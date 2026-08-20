@@ -99,19 +99,28 @@ export function useUpcomingEvents() {
     queryKey: ["upcoming-events"],
     queryFn: async () => {
       const supabase = getSupabase();
-      const now = new Date().toISOString();
+      const now = new Date();
+      const nowIso = now.toISOString();
+      // trips.start_date is a calendar date in the trips UI. Compare it with the
+      // local calendar day instead of the current timestamp so today's trips
+      // are not dropped after midnight.
+      const localToday = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"),
+      ].join("-");
 
       const [{ data: meetings }, { data: trips }, { data: tasks }] = await Promise.all([
         supabase
           .from("meetings")
           .select("*")
-          .gte("scheduled_at", now)
+          .gte("scheduled_at", nowIso)
           .order("scheduled_at")
           .limit(5),
         supabase
           .from("trips")
           .select("*")
-          .gte("start_date", now)
+          .gte("start_date", localToday)
           .order("start_date")
           .limit(5),
         supabase
@@ -131,7 +140,12 @@ export function useUpcomingEvents() {
         })),
       };
     },
-    staleTime: 1000 * 60 * 5,
+    // The dashboard must reflect newly added trips immediately instead of
+    // keeping the previous one-trip result cached for five minutes.
+    staleTime: 0,
+    refetchInterval: 30 * 1000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -221,6 +235,6 @@ export function useHeritageSnippet() {
           .trim(),
       };
     },
-    staleTime: 1000 * 60 * 60,
+    staleTime: 1000 * 60 * 10,
   });
 }
