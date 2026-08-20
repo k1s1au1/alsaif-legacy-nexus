@@ -16,6 +16,7 @@ import mobileTabletHubRedesignCss from "../mobile-tablet-hub-redesign.css?url";
 import mobileTabletHeritageFixCss from "../mobile-tablet-heritage-fix.css?url";
 import mobileTabletIdentityTonesCss from "../mobile-tablet-identity-tones.css?url";
 import mobileTabletHeroReferenceFixCss from "../mobile-tablet-hero-reference-fix.css?url";
+import desktopDashboardCss from "../desktop-dashboard.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
@@ -107,6 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: mobileTabletHeritageFixCss },
       { rel: "stylesheet", href: mobileTabletIdentityTonesCss },
       { rel: "stylesheet", href: mobileTabletHeroReferenceFixCss },
+      { rel: "stylesheet", href: desktopDashboardCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "apple-touch-icon", href: "/logo-home.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
