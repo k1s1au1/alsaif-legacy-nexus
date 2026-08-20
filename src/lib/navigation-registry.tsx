@@ -15,6 +15,7 @@ import {
   Ticket,
   Trees,
   History,
+  PartyPopper,
 } from "lucide-react";
 
 export type NavItemKey =
@@ -33,7 +34,8 @@ export type NavItemKey =
   | "admin"
   | "trips"
   | "family-tree"
-  | "heritage";
+  | "heritage"
+  | "family-occasions";
 
 export interface NavItemDef {
   id: NavItemKey;
@@ -54,6 +56,7 @@ export const NAV_REGISTRY: NavItemDef[] = [
   { id: "vault", to: "/vault", label: "الخزنة", icon: Lock },
   { id: "finance", to: "/finance", label: "الصندوق", icon: Wallet },
   { id: "archive", to: "/archive", label: "الألبوم", icon: Archive },
+  { id: "family-occasions", to: "/family-occasions", label: "مناسبات العائلة", icon: PartyPopper },
   { id: "profile", to: "/profile", label: "ملفي", icon: User },
   { id: "settings", to: "/settings", label: "إعدادات", icon: Settings },
   { id: "admin", to: "/admin", label: "الإدارة", icon: ShieldCheck, adminOnly: true },
