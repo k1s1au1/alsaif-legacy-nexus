@@ -71,7 +71,7 @@ export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], upcom
       <div className="hub-mobile-slider">
         <div className="hub-quick-heading">
           <div className="hub-quick-title"><Sparkles size={16} /><span>المتابعة السريعة</span></div>
-          <span className="hub-quick-all">عرض الكل <ChevronLeft size={13} /></span>
+          <Link to="/trips" className="hub-quick-all" aria-label="عرض جميع الرحلات">عرض الكل <ChevronLeft size={13} /></Link>
         </div>
 
         {slides.length > 0 ? (
