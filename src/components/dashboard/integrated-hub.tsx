@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, Plane, ListChecks, MapPin, Clock, Users, ChevronLeft, ChevronUp, Sparkles } from "lucide-react";
+import { CalendarDays, Plane, ListChecks, MapPin, Clock, Users, ChevronLeft, ChevronUp, Sparkles, PartyPopper } from "lucide-react";
 import { TripImage } from "@/components/trip-image";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 
@@ -12,6 +12,32 @@ interface HubProps {
   onViewTrip?: (trip: any) => void;
   onViewMeeting?: (meeting: any) => void;
 }
+
+type FamilyOccasion = {
+  id: string;
+  type: string;
+  title?: string;
+  date?: string;
+  time?: string;
+  location?: string;
+  details?: string;
+};
+
+const OCCASIONS_STORAGE_KEY = "alsaif:family-occasions";
+
+const OCCASION_LABELS: Record<string, string> = {
+  wedding: "زواج / ملكة",
+  newborn: "مولود",
+  condolence: "عزاء",
+  graduation: "تخرج",
+  birthday: "يوم ميلاد",
+  promotion: "ترقية / إنجاز",
+  recovery: "شفاء / سلامة",
+  gathering: "عزيمة / لمة عائلية",
+  ramadan: "رمضان",
+  eid_fitr: "عيد الفطر",
+  eid_adha: "عيد الأضحى",
+};
 
 function CountdownDisplay({ targetDate }: { targetDate: string }) {
   const [timeLeft, setTimeLeft] = useState({ value: "0", label: "أيام متبقية" });
@@ -36,25 +62,79 @@ function CountdownDisplay({ targetDate }: { targetDate: string }) {
 type HubSlide =
   | { id: string; type: "trip"; data: any }
   | { id: string; type: "meeting"; data: any }
-  | { id: string; type: "task"; data: any };
+  | { id: string; type: "task"; data: any }
+  | { id: string; type: "occasion"; data: FamilyOccasion };
 
 function formatDate(value?: string | null) {
   if (!value) return "بدون موعد";
   return new Date(value).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" });
 }
 
+function occasionDateTime(occasion: FamilyOccasion) {
+  if (!occasion.date) return null;
+  const time = occasion.time || "23:59";
+  return `${occasion.date}T${time}:00`;
+}
+
+function slideTime(item: HubSlide) {
+  if (item.type === "trip") return new Date(item.data.start_date || "9999-12-31").getTime();
+  if (item.type === "meeting") return new Date(item.data.scheduled_at || "9999-12-31").getTime();
+  if (item.type === "occasion") return new Date(occasionDateTime(item.data) || "9999-12-31").getTime();
+  return item.data.due_date ? new Date(item.data.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+}
+
 export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], upcomingTasks = [], tasksCount = 0, onViewTrip, onViewMeeting }: HubProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [slide, setSlide] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [upcomingOccasions, setUpcomingOccasions] = useState<FamilyOccasion[]>([]);
+
+  useEffect(() => {
+    const readOccasions = () => {
+      try {
+        const raw = localStorage.getItem(OCCASIONS_STORAGE_KEY);
+        const all = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(all)) return setUpcomingOccasions([]);
+
+        const now = new Date();
+        const today = [
+          now.getFullYear(),
+          String(now.getMonth() + 1).padStart(2, "0"),
+          String(now.getDate()).padStart(2, "0"),
+        ].join("-");
+
+        const next = all
+          .filter((item: FamilyOccasion) => item?.id && item?.date && item.date >= today)
+          .sort((a: FamilyOccasion, b: FamilyOccasion) => {
+            const av = new Date(occasionDateTime(a) || "9999-12-31").getTime();
+            const bv = new Date(occasionDateTime(b) || "9999-12-31").getTime();
+            return av - bv;
+          });
+        setUpcomingOccasions(next);
+      } catch {
+        setUpcomingOccasions([]);
+      }
+    };
+
+    readOccasions();
+    window.addEventListener("focus", readOccasions);
+    window.addEventListener("storage", readOccasions);
+    const id = window.setInterval(readOccasions, 15000);
+    return () => {
+      window.removeEventListener("focus", readOccasions);
+      window.removeEventListener("storage", readOccasions);
+      window.clearInterval(id);
+    };
+  }, []);
 
   const slides = useMemo<HubSlide[]>(() => {
     const items: HubSlide[] = [];
     upcomingTrips.forEach((trip) => trip?.id && items.push({ id: `trip-${trip.id}`, type: "trip", data: trip }));
     upcomingMeetings.forEach((meeting) => meeting?.id && items.push({ id: `meeting-${meeting.id}`, type: "meeting", data: meeting }));
+    upcomingOccasions.forEach((occasion) => occasion?.id && items.push({ id: `occasion-${occasion.id}`, type: "occasion", data: occasion }));
     upcomingTasks.forEach((task) => task?.id && items.push({ id: `task-${task.id}`, type: "task", data: task }));
-    return items;
-  }, [upcomingTrips, upcomingMeetings, upcomingTasks]);
+    return items.sort((a, b) => slideTime(a) - slideTime(b));
+  }, [upcomingTrips, upcomingMeetings, upcomingTasks, upcomingOccasions]);
 
   useEffect(() => {
     if (!api) return;
@@ -66,6 +146,7 @@ export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], upcom
 
   const firstTrip = upcomingTrips[0];
   const firstMeeting = upcomingMeetings[0];
+  const firstOccasion = upcomingOccasions[0];
 
   const renderCard = (item: HubSlide) => (
     <React.Fragment key={item.id}>
@@ -100,6 +181,26 @@ export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], upcom
               {item.data.location && <span><MapPin size={14}/>{item.data.location}</span>}
             </div>
             <button className="hub-gold-action" onClick={() => onViewMeeting?.(item.data)}>عرض جدول الأعمال <ChevronLeft size={14}/></button>
+          </div>
+        </article>
+      )}
+
+      {item.type === "occasion" && (
+        <article className="hub-card hub-meeting-card">
+          <div className="hub-spiral" aria-hidden="true" />
+          <div className="hub-meeting-copy">
+            <div className="hub-card-kicker"><PartyPopper size={16} /> مناسبة عائلية</div>
+            <span className="hub-task-nearest">{OCCASION_LABELS[item.data.type] || "مناسبة"}</span>
+            <h3>{item.data.title || OCCASION_LABELS[item.data.type] || "مناسبة عائلية"}</h3>
+            <div className="hub-meeting-meta">
+              <span><CalendarDays size={14}/>{formatDate(item.data.date)}</span>
+              {item.data.time && <span><Clock size={14}/>{item.data.time}</span>}
+              {item.data.location && <span><MapPin size={14}/>{item.data.location}</span>}
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <Link className="hub-gold-action" to="/family-occasions">فتح المناسبة <ChevronLeft size={14}/></Link>
+              {occasionDateTime(item.data) && <CountdownDisplay targetDate={occasionDateTime(item.data)!} />}
+            </div>
           </div>
         </article>
       )}
@@ -159,15 +260,16 @@ export function IntegratedHub({ upcomingMeetings = [], upcomingTrips = [], upcom
           )
         ) : (
           <article className="hub-card hub-empty-card">
-            <ListChecks size={30}/><h3>لا توجد عناصر قادمة</h3><p>عند إضافة رحلة أو اجتماع أو مهمة ستظهر هنا مباشرة.</p>
+            <ListChecks size={30}/><h3>لا توجد عناصر قادمة</h3><p>عند إضافة رحلة أو اجتماع أو مناسبة أو مهمة ستظهر هنا مباشرة.</p>
           </article>
         )}
       </div>
 
       <div className="hub-desktop-legacy">
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-4 gap-5">
           <DesktopCard icon={Plane} label="الرحلة القادمة" title={firstTrip?.title || "لا توجد رحلة قادمة"} />
           <DesktopCard icon={CalendarDays} label="الاجتماع القادم" title={firstMeeting?.title || "لا توجد اجتماعات قادمة"} />
+          <DesktopCard icon={PartyPopper} label="المناسبة القادمة" title={firstOccasion?.title || (firstOccasion ? OCCASION_LABELS[firstOccasion.type] : "لا توجد مناسبات قادمة")} />
           <DesktopCard icon={ListChecks} label="المسؤوليات" title={`${tasksCount} مهمة بانتظارك`} />
         </div>
       </div>
