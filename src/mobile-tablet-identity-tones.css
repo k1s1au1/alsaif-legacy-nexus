@@ -1,0 +1,72 @@
+/* Layered identity colors for mobile/tablet. Each selected identity supplies multiple coordinated tones. */
+@media (max-width:1023px){
+  main{
+    background:var(--identity-space,var(--nav-bg,var(--primary)))!important;
+  }
+
+  main>div.p-4.md\:p-8.lg\:p-12,
+  .max-w-6xl.mx-auto.space-y-12,
+  .integrated-hub,
+  .integrated-hub~section{
+    background:var(--identity-space,var(--nav-bg,var(--primary)))!important;
+  }
+
+  main>.z-\[80\].fixed>header{
+    background:linear-gradient(145deg,var(--identity-header,var(--nav-bg)),var(--identity-panel,var(--primary)))!important;
+    border-color:color-mix(in srgb,var(--identity-accent,var(--gold-primary)) 34%,transparent)!important;
+  }
+
+  main>.z-\[80\].fixed[style*="scale(0.85)"]>header{
+    background:color-mix(in srgb,var(--identity-header,var(--nav-bg)) 90%,transparent)!important;
+  }
+
+  main>div.p-4.md\:p-8.lg\:p-12>div,
+  main>div.p-4.md\:p-8.lg\:p-12>section{
+    --page-gap-color:var(--identity-space,var(--nav-bg,var(--primary)));
+  }
+
+  main>div.p-4.md\:p-8.lg\:p-12 .bg-background:empty,
+  main>div.p-4.md\:p-8.lg\:p-12 .bg-muted\/20:empty,
+  main>div.p-4.md\:p-8.lg\:p-12 .bg-muted\/30:empty{
+    background:var(--identity-space,var(--nav-bg,var(--primary)))!important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2){
+    background:linear-gradient(180deg,var(--identity-panel,var(--nav-bg)),var(--identity-space,var(--primary)))!important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div{
+    background:linear-gradient(180deg,
+      color-mix(in srgb,var(--identity-panel,var(--nav-bg)) 82%,black) 0%,
+      color-mix(in srgb,var(--primary) 78%,var(--identity-accent,var(--gold-primary)) 22%) 52%,
+      color-mix(in srgb,var(--identity-header,var(--nav-bg)) 82%,black) 100%)!important;
+  }
+
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center::before,
+  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div::after,
+  .family-services-top-toggle,
+  .integrated-hub .hub-eyebrow,
+  .integrated-hub .hub-countdown span:first-child{
+    color:var(--identity-text,var(--gold-primary))!important;
+  }
+
+  .family-services-section{
+    background:var(--identity-soft,var(--background))!important;
+  }
+
+  .family-service-card,
+  .family-services-toggle{
+    background:color-mix(in srgb,var(--card) 92%,var(--identity-soft) 8%)!important;
+    border-color:color-mix(in srgb,var(--identity-accent,var(--gold-primary)) 16%,transparent)!important;
+  }
+
+  .integrated-hub .hub-shell{
+    background:linear-gradient(145deg,
+      color-mix(in srgb,var(--identity-panel,var(--nav-bg)) 88%,black),
+      color-mix(in srgb,var(--primary) 70%,var(--identity-header,var(--nav-bg)) 30%))!important;
+  }
+
+  .integrated-hub .hub-tabs{
+    background:color-mix(in srgb,var(--identity-header,var(--nav-bg)) 72%,black)!important;
+  }
+}
