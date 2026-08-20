@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_KEY = "alsaif:family-occasions";
-const RELOAD_GUARD = "alsaif:family-occasions:supabase-hydrated";
 
 type LocalOccasion = {
   id: string;
@@ -88,12 +87,10 @@ const fromDb = (o: DbOccasion): LocalOccasion => ({
 const stable = (items: LocalOccasion[]) =>
   JSON.stringify([...items].sort((a, b) => a.id.localeCompare(b.id)));
 
-const mergeById = (remote: LocalOccasion[], local: LocalOccasion[]) => {
+const mergeById = (remote: LocalOccasion[], localOnly: LocalOccasion[]) => {
   const merged = new Map<string, LocalOccasion>();
   remote.forEach((x) => merged.set(x.id, x));
-  local.forEach((x) => {
-    if (!merged.has(x.id)) merged.set(x.id, x);
-  });
+  localOnly.forEach((x) => merged.set(x.id, x));
   return [...merged.values()].sort((a, b) => {
     const ad = new Date(a.date || "9999-12-31").getTime();
     const bd = new Date(b.date || "9999-12-31").getTime();
@@ -104,7 +101,7 @@ const mergeById = (remote: LocalOccasion[], local: LocalOccasion[]) => {
 export function FamilyOccasionsSync() {
   useEffect(() => {
     let disposed = false;
-    let lastLocalSignature = "";
+    let lastLocalSignature = stable(readLocal());
     let syncing = false;
 
     const writeLocal = (items: LocalOccasion[]) => {
@@ -113,6 +110,7 @@ export function FamilyOccasionsSync() {
         lastLocalSignature = stable(items);
         return false;
       }
+
       window.localStorage.setItem(STORAGE_KEY, next);
       lastLocalSignature = stable(items);
       window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, newValue: next }));
@@ -120,7 +118,33 @@ export function FamilyOccasionsSync() {
       return true;
     };
 
-    const pull = async (allowReload = false) => {
+    const pushLocal = async () => {
+      if (disposed || syncing) return;
+      const local = readLocal();
+      const signature = stable(local);
+      if (signature === lastLocalSignature) return;
+
+      syncing = true;
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        if (!auth.user) return;
+
+        const { error } = await (supabase as any)
+          .from("family_occasions")
+          .upsert(local.map((x) => toDb(x, auth.user?.id)), { onConflict: "id" });
+
+        if (error) {
+          console.warn("Family occasions Supabase upsert failed", error);
+          return;
+        }
+
+        lastLocalSignature = signature;
+      } finally {
+        syncing = false;
+      }
+    };
+
+    const pull = async () => {
       if (disposed || syncing) return;
       syncing = true;
       try {
@@ -129,6 +153,7 @@ export function FamilyOccasionsSync() {
           .select("id,type,design,title,event_date,event_time,location,details,birth_date,birthday_audience")
           .order("event_date", { ascending: true, nullsFirst: false })
           .order("created_at", { ascending: false });
+
         if (error) {
           console.warn("Family occasions Supabase pull failed", error);
           return;
@@ -139,23 +164,22 @@ export function FamilyOccasionsSync() {
         const remoteIds = new Set(remote.map((x) => x.id));
         const localOnly = local.filter((x) => !remoteIds.has(x.id));
 
+        // Preserve occasions created on a device before cloud sync was enabled.
         if (localOnly.length) {
           const { data: auth } = await supabase.auth.getUser();
-          const { error: upsertError } = await (supabase as any)
-            .from("family_occasions")
-            .upsert(localOnly.map((x) => toDb(x, auth.user?.id)), { onConflict: "id" });
-          if (upsertError) console.warn("Family occasions migration upsert failed", upsertError);
+          if (auth.user) {
+            const { error: migrationError } = await (supabase as any)
+              .from("family_occasions")
+              .upsert(localOnly.map((x) => toDb(x, auth.user?.id)), { onConflict: "id" });
+            if (migrationError) console.warn("Family occasions migration upsert failed", migrationError);
+          }
         }
 
-        const merged = mergeById(remote, localOnly);
-        const changed = writeLocal(merged);
-        if (
-          changed &&
-          allowReload &&
-          window.location.pathname === "/family-occasions" &&
-          !window.sessionStorage.getItem(RELOAD_GUARD)
-        ) {
-          window.sessionStorage.setItem(RELOAD_GUARD, "1");
+        const changed = writeLocal(mergeById(remote, localOnly));
+
+        // The occasions page keeps its own React state. Reload only when remote data
+        // really changed so an already-open phone page immediately reflects laptop edits.
+        if (changed && window.location.pathname === "/family-occasions") {
           window.location.reload();
         }
       } finally {
@@ -163,37 +187,25 @@ export function FamilyOccasionsSync() {
       }
     };
 
-    const pushLocal = async () => {
-      if (disposed || syncing) return;
-      const local = readLocal();
-      const signature = stable(local);
-      if (signature === lastLocalSignature) return;
-      syncing = true;
-      try {
-        const { data: auth } = await supabase.auth.getUser();
-        if (local.length > 0) {
-          const { error } = await (supabase as any)
-            .from("family_occasions")
-            .upsert(local.map((x) => toDb(x, auth.user?.id)), { onConflict: "id" });
-          if (error) {
-            console.warn("Family occasions Supabase upsert failed", error);
-            return;
-          }
-        }
-        lastLocalSignature = signature;
-      } finally {
-        syncing = false;
-      }
+    const syncNow = async () => {
+      await pushLocal();
+      await pull();
     };
 
-    void pull(true);
-    const timer = window.setInterval(() => {
-      void pushLocal().then(() => pull(false));
-    }, 2000);
+    void syncNow();
 
-    const onFocus = () => void pull(false);
-    const onUpdated = () => void pushLocal();
+    // Polling is intentional as a fallback for installed PWAs/backgrounded tabs where
+    // realtime delivery can be delayed by the browser.
+    const timer = window.setInterval(() => void syncNow(), 1000);
+
+    const onFocus = () => void syncNow();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void syncNow();
+    };
+    const onUpdated = () => void pushLocal().then(() => pull());
+
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("family-occasions:updated", onUpdated as EventListener);
 
     const channel = (supabase as any)
@@ -201,7 +213,7 @@ export function FamilyOccasionsSync() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "family_occasions" },
-        () => void pull(false),
+        () => void pull(),
       )
       .subscribe();
 
@@ -209,6 +221,7 @@ export function FamilyOccasionsSync() {
       disposed = true;
       window.clearInterval(timer);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("family-occasions:updated", onUpdated as EventListener);
       void (supabase as any).removeChannel(channel);
     };
