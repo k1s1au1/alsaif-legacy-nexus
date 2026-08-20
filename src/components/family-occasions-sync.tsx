@@ -88,6 +88,19 @@ const fromDb = (o: DbOccasion): LocalOccasion => ({
 const stable = (items: LocalOccasion[]) =>
   JSON.stringify([...items].sort((a, b) => a.id.localeCompare(b.id)));
 
+const mergeById = (remote: LocalOccasion[], local: LocalOccasion[]) => {
+  const merged = new Map<string, LocalOccasion>();
+  remote.forEach((x) => merged.set(x.id, x));
+  local.forEach((x) => {
+    if (!merged.has(x.id)) merged.set(x.id, x);
+  });
+  return [...merged.values()].sort((a, b) => {
+    const ad = new Date(a.date || "9999-12-31").getTime();
+    const bd = new Date(b.date || "9999-12-31").getTime();
+    return ad - bd;
+  });
+};
+
 export function FamilyOccasionsSync() {
   useEffect(() => {
     let disposed = false;
@@ -96,7 +109,10 @@ export function FamilyOccasionsSync() {
 
     const writeLocal = (items: LocalOccasion[]) => {
       const next = JSON.stringify(items);
-      if (window.localStorage.getItem(STORAGE_KEY) === next) return false;
+      if (window.localStorage.getItem(STORAGE_KEY) === next) {
+        lastLocalSignature = stable(items);
+        return false;
+      }
       window.localStorage.setItem(STORAGE_KEY, next);
       lastLocalSignature = stable(items);
       window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, newValue: next }));
@@ -117,21 +133,22 @@ export function FamilyOccasionsSync() {
           console.warn("Family occasions Supabase pull failed", error);
           return;
         }
+
         const remote = ((data || []) as DbOccasion[]).map(fromDb);
         const local = readLocal();
+        const remoteIds = new Set(remote.map((x) => x.id));
+        const localOnly = local.filter((x) => !remoteIds.has(x.id));
 
-        // First device after the migration: preserve existing mobile/local occasions by uploading them.
-        if (remote.length === 0 && local.length > 0) {
+        if (localOnly.length) {
           const { data: auth } = await supabase.auth.getUser();
-          await (supabase as any).from("family_occasions").upsert(
-            local.map((x) => toDb(x, auth.user?.id)),
-            { onConflict: "id" },
-          );
-          lastLocalSignature = stable(local);
-          return;
+          const { error: upsertError } = await (supabase as any)
+            .from("family_occasions")
+            .upsert(localOnly.map((x) => toDb(x, auth.user?.id)), { onConflict: "id" });
+          if (upsertError) console.warn("Family occasions migration upsert failed", upsertError);
         }
 
-        const changed = writeLocal(remote);
+        const merged = mergeById(remote, localOnly);
+        const changed = writeLocal(merged);
         if (
           changed &&
           allowReload &&
@@ -154,30 +171,14 @@ export function FamilyOccasionsSync() {
       syncing = true;
       try {
         const { data: auth } = await supabase.auth.getUser();
-        const { data: remoteRows, error: remoteError } = await (supabase as any)
-          .from("family_occasions")
-          .select("id");
-        if (remoteError) {
-          console.warn("Family occasions Supabase read-before-sync failed", remoteError);
-          return;
-        }
-
         if (local.length > 0) {
-          const { error } = await (supabase as any).from("family_occasions").upsert(
-            local.map((x) => toDb(x, auth.user?.id)),
-            { onConflict: "id" },
-          );
+          const { error } = await (supabase as any)
+            .from("family_occasions")
+            .upsert(local.map((x) => toDb(x, auth.user?.id)), { onConflict: "id" });
           if (error) {
             console.warn("Family occasions Supabase upsert failed", error);
             return;
           }
-        }
-
-        const localIds = new Set(local.map((x) => x.id));
-        const deletedIds = (remoteRows || []).map((x: { id: string }) => x.id).filter((id: string) => !localIds.has(id));
-        if (deletedIds.length) {
-          const { error } = await (supabase as any).from("family_occasions").delete().in("id", deletedIds);
-          if (error) console.warn("Family occasions Supabase delete sync failed", error);
         }
         lastLocalSignature = signature;
       } finally {
