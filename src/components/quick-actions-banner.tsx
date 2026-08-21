@@ -43,7 +43,7 @@ export function QuickActionsBanner() {
   return (
     <>
       <style>{`
-        @media (max-width: 1023px) {
+        @media (max-width: 1199px) {
           .family-services-section {
             background: var(--nav-bg, var(--primary)) !important;
             padding: 18px !important;
@@ -58,20 +58,16 @@ export function QuickActionsBanner() {
           .family-services-heading h3 {
             color: color-mix(in srgb, var(--nav-fg, white) 94%, var(--gold-primary)) !important;
           }
-          .family-services-top-toggle {
-            color: var(--gold-primary) !important;
-          }
+          .family-services-top-toggle { color: var(--gold-primary) !important; }
           .family-service-card {
-            background: color-mix(in srgb, var(--nav-bg, var(--primary)) 9%, white 91%) !important;
-            border-color: color-mix(in srgb, var(--nav-bg, var(--primary)) 20%, transparent) !important;
-            box-shadow: 0 10px 24px -18px color-mix(in srgb, var(--nav-bg, var(--primary)) 55%, transparent) !important;
+            background: color-mix(in srgb, var(--nav-bg, var(--primary)) 7%, white 93%) !important;
+            border: 1px solid color-mix(in srgb, var(--nav-bg, var(--primary)) 18%, transparent) !important;
+            border-radius: 28px !important;
+            box-shadow: 0 12px 28px -20px rgba(0,0,0,.34) !important;
+            justify-content: center !important;
           }
-          .family-service-label {
-            color: color-mix(in srgb, var(--nav-bg, var(--primary)) 76%, black) !important;
-          }
-          .family-service-description {
-            color: color-mix(in srgb, var(--nav-bg, var(--primary)) 55%, #6b7280) !important;
-          }
+          .family-service-label { color: color-mix(in srgb, var(--nav-bg, var(--primary)) 78%, black) !important; }
+          .family-service-description { color: color-mix(in srgb, var(--nav-bg, var(--primary)) 52%, #6b7280) !important; }
           .family-services-toggle {
             background: color-mix(in srgb, var(--nav-bg, var(--primary)) 88%, black 12%) !important;
             border-color: color-mix(in srgb, var(--gold-primary) 25%, transparent) !important;
@@ -79,13 +75,45 @@ export function QuickActionsBanner() {
             box-shadow: none !important;
           }
           .family-services-section + section,
-          .family-services-section ~ section {
-            margin-top: 0 !important;
-          }
+          .family-services-section ~ section { margin-top: 0 !important; }
         }
-        @media (min-width: 600px) and (max-width: 1023px) {
-          .family-services-section { padding: 24px 30px !important; }
+
+        /* iPad / tablet: exactly four compact, tall service cards per row like the mobile reference. */
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .family-services-section { padding: 24px clamp(24px,3.5vw,44px) 30px !important; }
           .family-services-panel { padding: 6px 0 12px !important; }
+          .family-services-heading { margin-bottom: 18px !important; }
+          .family-services-heading h3 { font-size: 25px !important; }
+          .family-services-grid {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 16px !important;
+            align-items: stretch !important;
+          }
+          .family-service-card {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 215px !important;
+            padding: 24px 14px 20px !important;
+            gap: 10px !important;
+          }
+          .family-service-icon {
+            width: 64px !important;
+            height: 64px !important;
+            border-radius: 20px !important;
+            margin-bottom: 4px !important;
+            box-shadow: 0 10px 18px -12px rgba(0,0,0,.55) !important;
+          }
+          .family-service-icon svg { width: 31px !important; height: 31px !important; }
+          .family-service-card:nth-child(4n+1) .family-service-icon,
+          .family-service-card:nth-child(4n+4) .family-service-icon { background: var(--nav-bg, var(--primary)) !important; }
+          .family-service-card:nth-child(4n+2) .family-service-icon,
+          .family-service-card:nth-child(4n+3) .family-service-icon {
+            background: linear-gradient(145deg, color-mix(in srgb,var(--gold-primary) 88%,white), color-mix(in srgb,var(--gold-primary) 75%,#725b2f)) !important;
+          }
+          .family-service-label { font-size: 18px !important; line-height: 1.35 !important; }
+          .family-service-description { font-size: 13px !important; line-height: 1.65 !important; max-width: 190px !important; }
+          .family-services-toggle { margin-top: 18px !important; min-height: 58px !important; border-radius: 20px !important; }
         }
       `}</style>
       <section className="family-services-section animate-fade-up w-full" dir="rtl">
