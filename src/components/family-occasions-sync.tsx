@@ -28,6 +28,11 @@ type EventRow = {
   created_by: string;
 };
 
+type RemoteSnapshot = {
+  active: LocalOccasion[];
+  knownIds: Set<string>;
+};
+
 const readLocal = (): LocalOccasion[] => {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -37,6 +42,8 @@ const readLocal = (): LocalOccasion[] => {
     return [];
   }
 };
+
+const itemSignature = (item: LocalOccasion) => JSON.stringify(item);
 
 const stable = (items: LocalOccasion[]) =>
   JSON.stringify([...items].sort((a, b) => a.id.localeCompare(b.id)));
@@ -74,7 +81,12 @@ const decodeOccasion = (row: EventRow): LocalOccasion | null => {
     const payload = row.description ? JSON.parse(row.description) : null;
     if (!payload || payload[MARKER] !== true || !payload.occasion) return null;
     const o = payload.occasion as LocalOccasion;
-    return { ...o, id: row.id, title: o.title ?? row.title ?? "", location: o.location ?? row.location ?? "" };
+    return {
+      ...o,
+      id: row.id,
+      title: o.title ?? row.title ?? "",
+      location: o.location ?? row.location ?? "",
+    };
   } catch {
     return null;
   }
@@ -100,6 +112,12 @@ export function FamilyOccasionsSync() {
     let bootstrapped = false;
     let lastLocalSignature = "";
     let lastCloudIds = new Set<string>();
+    let lastLocalById = new Map<string, string>();
+
+    const rememberLocal = (items: LocalOccasion[]) => {
+      lastLocalSignature = stable(items);
+      lastLocalById = new Map(items.map((item) => [item.id, itemSignature(item)]));
+    };
 
     const writeLocal = (items: LocalOccasion[]) => {
       const sorted = mergeById(items);
@@ -110,26 +128,53 @@ export function FamilyOccasionsSync() {
         window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, newValue: next }));
         window.dispatchEvent(new CustomEvent("family-occasions:updated"));
       }
-      lastLocalSignature = stable(sorted);
+      rememberLocal(sorted);
       return changed;
     };
 
-    const fetchRemote = async () => {
+    const fetchRemote = async (): Promise<RemoteSnapshot> => {
       const { data, error } = await supabase
         .from("events")
         .select("id,title,description,event_type,location,starts_at,status,created_by")
         .order("starts_at", { ascending: true });
       if (error) throw error;
-      const occasions = ((data || []) as EventRow[]).map(decodeOccasion).filter((x): x is LocalOccasion => Boolean(x));
-      lastCloudIds = new Set(occasions.map((x) => x.id));
-      return occasions;
+
+      const active: LocalOccasion[] = [];
+      const knownIds = new Set<string>();
+
+      for (const row of (data || []) as EventRow[]) {
+        const occasion = decodeOccasion(row);
+        if (!occasion) continue;
+        knownIds.add(row.id);
+        // A cancelled row is a tombstone. Keeping its ID in knownIds prevents an
+        // older device cache from re-uploading a deleted occasion.
+        if (row.status !== "cancelled") active.push(occasion);
+      }
+
+      return { active, knownIds };
+    };
+
+    const getCurrentUserId = async () => {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw authError || new Error("No authenticated user");
+      return auth.user.id;
     };
 
     const pushItems = async (items: LocalOccasion[]) => {
       if (!items.length) return;
-      const { data: auth, error: authError } = await supabase.auth.getUser();
-      if (authError || !auth.user) throw authError || new Error("No authenticated user");
-      const { error } = await supabase.from("events").upsert(items.map((x) => toEventRow(x, auth.user.id)), { onConflict: "id" });
+      const userId = await getCurrentUserId();
+      const { error } = await supabase
+        .from("events")
+        .upsert(items.map((x) => toEventRow(x, userId)), { onConflict: "id" });
+      if (error) throw error;
+    };
+
+    const cancelItems = async (ids: string[]) => {
+      if (!ids.length) return;
+      const { error } = await supabase
+        .from("events")
+        .update({ status: "cancelled" })
+        .in("id", ids);
       if (error) throw error;
     };
 
@@ -139,16 +184,15 @@ export function FamilyOccasionsSync() {
       try {
         const remote = await fetchRemote();
         const local = readLocal();
-        const remoteIds = new Set(remote.map((x) => x.id));
-        const localOnly = local.filter((x) => !remoteIds.has(x.id));
 
-        // Important: every device may already contain occasions created before cloud sync.
-        // Upload those first instead of overwriting them with whatever another device has.
+        // Migrate only genuinely local legacy occasions. IDs that already exist
+        // remotely — including cancelled tombstones — must never be resurrected.
+        const localOnly = local.filter((x) => !remote.knownIds.has(x.id));
         if (localOnly.length) await pushItems(localOnly);
 
-        const merged = mergeById(remote, localOnly);
-        writeLocal(merged);
-        lastCloudIds = new Set(merged.map((x) => x.id));
+        const finalRemote = localOnly.length ? await fetchRemote() : remote;
+        writeLocal(finalRemote.active);
+        lastCloudIds = new Set(finalRemote.active.map((x) => x.id));
         bootstrapped = true;
       } catch (error) {
         console.warn("Family occasions bootstrap sync failed", error);
@@ -162,16 +206,30 @@ export function FamilyOccasionsSync() {
       syncing = true;
       try {
         const local = readLocal();
+        const localSignature = stable(local);
+        const localChanged = localSignature !== lastLocalSignature;
+
+        if (localChanged) {
+          const localIds = new Set(local.map((x) => x.id));
+
+          // Deletions are based on the last cloud state that this device actually
+          // displayed. This avoids deleting an occasion another device added just
+          // before this sync cycle.
+          const deletedIds = [...lastCloudIds].filter((id) => !localIds.has(id));
+
+          // Only upload records the user changed locally. This prevents an edit to
+          // one occasion from overwriting newer remote edits to unrelated occasions.
+          const changedItems = local.filter(
+            (item) => lastLocalById.get(item.id) !== itemSignature(item),
+          );
+
+          if (deletedIds.length) await cancelItems(deletedIds);
+          if (changedItems.length) await pushItems(changedItems);
+        }
+
         const remote = await fetchRemote();
-        const remoteIds = new Set(remote.map((x) => x.id));
-        const localOnly = local.filter((x) => !remoteIds.has(x.id));
-
-        if (localOnly.length) await pushItems(localOnly);
-
-        // Cloud wins for matching IDs; local-only records are migrated, never discarded.
-        const merged = mergeById(localOnly, remote);
-        writeLocal(merged);
-        lastCloudIds = new Set(merged.map((x) => x.id));
+        writeLocal(remote.active);
+        lastCloudIds = new Set(remote.active.map((x) => x.id));
       } catch (error) {
         console.warn("Family occasions Supabase events sync failed", error);
       } finally {
@@ -183,7 +241,9 @@ export function FamilyOccasionsSync() {
 
     const timer = window.setInterval(() => void syncNow(), 1200);
     const onFocus = () => void syncNow();
-    const onVisible = () => { if (document.visibilityState === "visible") void syncNow(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void syncNow();
+    };
     const onUpdated = () => void syncNow();
 
     window.addEventListener("focus", onFocus);
