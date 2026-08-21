@@ -1,0 +1,54 @@
+/* Tablet-only polish: keep the approved mobile dashboard language at iPad sizes. */
+@media (min-width:600px) and (max-width:1199.98px){
+  /* Header: restore the profile avatar on the right, while keeping a single bell on the left. */
+  main header>.order-first{display:flex!important;align-items:center!important;justify-content:center!important;right:28px!important;top:28px!important;width:58px!important;height:58px!important;overflow:visible!important}
+  main header>.order-first>div{display:none!important}
+  main header>.order-first>button:last-of-type{display:flex!important;width:58px!important;height:58px!important;min-width:58px!important;min-height:58px!important;padding:0!important;align-items:center!important;justify-content:center!important;border:0!important;background:transparent!important;overflow:visible!important}
+  main header>.order-first>button:last-of-type>div{display:flex!important;width:58px!important;height:58px!important;min-width:58px!important;min-height:58px!important;border-radius:999px!important;overflow:hidden!important}
+  main header>.order-first>button:last-of-type>div>div{display:flex!important;width:100%!important;height:100%!important}
+  main header>.order-first>button:last-of-type img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;border-radius:999px!important}
+  main header>.order-first>button:last-of-type>span,main header>.order-first>button:last-of-type>svg{display:none!important}
+
+  /* Family services: same structure as mobile, scaled for tablet. */
+  .family-services-section{display:block!important;width:100%!important;margin:0!important;padding:28px clamp(26px,3vw,38px) 30px!important;background:var(--nav-bg,var(--primary))!important;overflow:hidden!important}
+  .family-services-panel{display:block!important;width:100%!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+  .family-services-heading{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;margin:0 0 18px!important;color:#fff!important}
+  .family-services-heading h3{display:block!important;margin:0!important;font-size:clamp(20px,2.2vw,26px)!important;line-height:1.25!important;font-weight:900!important;color:#fff!important}
+  .family-services-top-toggle{display:inline-flex!important;align-items:center!important;gap:5px!important;font-size:13px!important;font-weight:900!important;color:var(--gold-primary)!important;white-space:nowrap!important}
+  .family-services-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:clamp(12px,1.6vw,20px)!important;width:100%!important;align-items:stretch!important}
+  .family-service-card{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;min-width:0!important;min-height:176px!important;height:auto!important;padding:20px 12px 18px!important;gap:10px!important;border-radius:22px!important;background:var(--card)!important;border:1px solid color-mix(in srgb,var(--gold-primary) 16%,var(--border) 84%)!important;box-shadow:0 10px 26px -20px rgba(0,0,0,.35)!important;overflow:hidden!important}
+  .family-service-icon{display:flex!important;align-items:center!important;justify-content:center!important;width:56px!important;height:56px!important;min-width:56px!important;min-height:56px!important;border-radius:17px!important;background:var(--primary)!important;color:#fff!important;overflow:visible!important}
+  .family-service-icon svg{display:block!important;width:27px!important;height:27px!important;opacity:1!important;visibility:visible!important;color:currentColor!important;stroke:currentColor!important}
+  .family-service-label{display:block!important;font-size:clamp(12px,1.45vw,16px)!important;line-height:1.25!important;font-weight:900!important;color:var(--primary)!important}
+  .family-service-description{display:block!important;max-width:100%!important;font-size:clamp(9px,1.05vw,12px)!important;line-height:1.45!important;color:var(--muted-foreground)!important;overflow:hidden!important;display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important}
+  .family-services-toggle{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;width:100%!important;height:52px!important;margin:14px 0 0!important;border-radius:16px!important;background:transparent!important;border:1px solid color-mix(in srgb,var(--gold-primary) 32%,transparent)!important;color:#fff!important;font-size:12px!important;font-weight:900!important}
+
+  /* Quick follow-up: force the mobile carousel on every tablet width, including landscape iPad. */
+  .integrated-hub{display:block!important;width:100%!important;margin:0!important;padding:0 0 26px!important;background:var(--background)!important;overflow:hidden!important}
+  .integrated-hub .hub-desktop-legacy{display:none!important}
+  .integrated-hub .hub-mobile-slider{display:block!important;width:100%!important;padding:0!important;margin:0!important}
+  .integrated-hub .hub-quick-heading{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;width:100%!important;padding:18px clamp(28px,3vw,40px) 12px!important}
+  .integrated-hub .hub-quick-title{display:flex!important;align-items:center!important;gap:7px!important;color:var(--gold-primary)!important;font-weight:900!important}
+  .integrated-hub .hub-quick-title span{font-size:clamp(16px,1.8vw,21px)!important}
+  .integrated-hub .hub-quick-all{display:flex!important;align-items:center!important;gap:4px!important;font-size:12px!important;font-weight:900!important;color:var(--gold-primary)!important;white-space:nowrap!important}
+  .integrated-hub .hub-main-carousel{display:block!important;width:100%!important;overflow:visible!important}
+  .integrated-hub .hub-main-carousel>.overflow-hidden{overflow:visible!important}
+  .integrated-hub .hub-main-carousel-content{display:flex!important;align-items:stretch!important;margin-left:-8px!important;margin-right:-8px!important}
+  .integrated-hub .hub-carousel-item{flex:0 0 82%!important;min-width:0!important;padding-left:8px!important;padding-right:8px!important}
+  .integrated-hub .hub-card{display:block!important;position:relative!important;width:100%!important;height:310px!important;min-height:310px!important;overflow:hidden!important;border-radius:26px!important;border:1px solid color-mix(in srgb,var(--gold-primary) 42%,transparent)!important;color:#fff!important;box-shadow:0 22px 42px -26px rgba(0,0,0,.75)!important}
+  .integrated-hub .hub-trip-ticket{display:grid!important;grid-template-columns:minmax(0,1fr) 126px!important;direction:rtl!important;background:linear-gradient(145deg,color-mix(in srgb,var(--primary) 86%,#092b20),color-mix(in srgb,var(--primary) 70%,black))!important}
+  .integrated-hub .hub-trip-main{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-start!important;text-align:right!important;padding:34px!important;position:relative!important;z-index:2!important}
+  .integrated-hub .hub-ticket-stub{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:14px!important;padding:14px 8px!important;border-right:1px dashed color-mix(in srgb,var(--gold-primary) 62%,transparent)!important;background:rgba(0,0,0,.10)!important;position:relative!important;z-index:2!important}
+  .integrated-hub .hub-meeting-card{display:block!important;padding:32px 30px 24px!important;background:linear-gradient(145deg,#3a281c 0%,#21160f 55%,#160f0b 100%)!important}
+  .integrated-hub .hub-meeting-copy{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;text-align:right!important;height:100%!important;position:relative!important;z-index:3!important}
+  .integrated-hub .hub-tasks-card{display:grid!important;grid-template-columns:minmax(0,1fr) 132px!important;direction:rtl!important;background:linear-gradient(145deg,#0e4549,#092f35 62%,#071f25)!important}
+  .integrated-hub .hub-task-copy{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-start!important;text-align:right!important;padding:32px 28px!important;position:relative!important;z-index:2!important}
+  .integrated-hub .hub-task-score{display:flex!important;align-items:center!important;justify-content:center!important;padding:12px!important;border-right:1px solid color-mix(in srgb,var(--gold-primary) 22%,transparent)!important;position:relative!important;z-index:2!important}
+  .integrated-hub .hub-card h3{display:block!important;margin:0 0 14px!important;font-size:clamp(28px,3.4vw,38px)!important;line-height:1.18!important;font-weight:900!important;color:#fff!important}
+  .integrated-hub .hub-card-meta,.integrated-hub .hub-meeting-meta,.integrated-hub .hub-task-meta{display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin-bottom:16px!important}
+  .integrated-hub .hub-meeting-meta{flex-direction:column!important;width:100%!important}
+  .integrated-hub .hub-card-meta span,.integrated-hub .hub-meeting-meta span,.integrated-hub .hub-task-meta span{display:flex!important;align-items:center!important;gap:6px!important;font-size:10px!important;color:rgba(255,255,255,.72)!important}
+  .integrated-hub .hub-dots{display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;height:30px!important;margin-top:12px!important;direction:ltr!important}
+  .integrated-hub .hub-dots button{display:block!important;width:7px!important;height:7px!important;padding:0!important;border:0!important;border-radius:999px!important;background:color-mix(in srgb,var(--gold-primary) 22%,transparent)!important}
+  .integrated-hub .hub-dots button.active{width:24px!important;background:var(--gold-primary)!important}
+}
