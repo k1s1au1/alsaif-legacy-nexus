@@ -6,36 +6,78 @@
 
   main{background:var(--background)!important}
   .max-w-6xl.mx-auto.space-y-12{display:flex!important;flex-direction:column!important;max-width:none!important;width:100%!important;margin:0!important;gap:0!important;padding:0!important;background:transparent!important}
-  main>div.p-4.md\:p-8.lg\:p-12{max-width:none!important;width:100%!important;margin:0!important;padding:148px 0 150px!important;background:transparent!important}
+  main>div.p-4.md\:p-8.lg\:p-12{max-width:none!important;width:100%!important;margin:0!important;padding:152px 0 150px!important;background:transparent!important}
 
-  /* Header: logo + menu LEFT, clock/date CENTER, bell + profile RIGHT. */
-  main>.z-\[80\].fixed,main>.z-\[80\].sticky{position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:90!important;width:100%!important;padding:12px clamp(22px,3vw,34px) 0!important;display:flex!important;justify-content:center!important;background:transparent!important;transform:none!important}
-  main>.z-\[80\].fixed>header,main>.z-\[80\].sticky>header{position:relative!important;width:100%!important;max-width:none!important;height:118px!important;min-height:118px!important;border-radius:30px!important;padding:0 30px!important;background:linear-gradient(135deg,color-mix(in srgb,var(--nav-bg,var(--primary)) 96%,#fff 4%),var(--nav-bg,var(--primary)))!important;border:1px solid color-mix(in srgb,var(--gold-primary) 28%,transparent)!important;box-shadow:0 18px 38px -22px rgba(0,0,0,.52)!important;backdrop-filter:blur(18px) saturate(135%)!important;overflow:visible!important}
+  /* Tablet header: one stable row in both orientations. */
+  main>.z-\[80\].fixed,main>.z-\[80\].sticky{
+    position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:90!important;
+    width:100%!important;padding:12px clamp(22px,3vw,34px) 0!important;display:flex!important;justify-content:center!important;
+    background:transparent!important;transform:none!important
+  }
+  main>.z-\[80\].fixed>header,main>.z-\[80\].sticky>header{
+    position:relative!important;width:100%!important;max-width:none!important;height:112px!important;min-height:112px!important;
+    border-radius:28px!important;padding:0 28px!important;
+    background:linear-gradient(135deg,color-mix(in srgb,var(--nav-bg,var(--primary)) 96%,#fff 4%),var(--nav-bg,var(--primary)))!important;
+    border:1px solid color-mix(in srgb,var(--gold-primary) 24%,transparent)!important;
+    box-shadow:0 16px 34px -22px rgba(0,0,0,.52)!important;backdrop-filter:blur(18px) saturate(135%)!important;
+    overflow:hidden!important
+  }
 
-  /* Never expose desktop clock/title furniture on tablet. */
+  /* Hide every desktop-only header fragment on tablet. */
   main header .hidden.lg\:flex{display:none!important}
 
-  /* CENTER: force the mobile clock/date block visible on tablet. */
-  main header>.absolute.inset-0{display:flex!important;align-items:center!important;justify-content:center!important;pointer-events:none!important;z-index:4!important}
-  main header>.absolute.inset-0>div{display:flex!important;flex-direction:column!important;align-items:center!important;gap:6px!important}
-  main header>.absolute.inset-0 .text-\[16px\]{font-size:clamp(24px,2.8vw,32px)!important;line-height:1!important;font-weight:900!important;color:white!important}
-  main header>.absolute.inset-0 .text-\[9px\]{font-size:11px!important;color:var(--gold-primary)!important}
-  main header>.absolute.inset-0 .hidden.md\:flex,main header>.absolute.inset-0 img,main header>.absolute.inset-0 [class*="avatar"]{display:none!important}
+  /* CENTER: clock/date only. */
+  main header>.absolute.inset-0{
+    display:flex!important;align-items:center!important;justify-content:center!important;pointer-events:none!important;z-index:3!important
+  }
+  main header>.absolute.inset-0>div{display:flex!important;flex-direction:column!important;align-items:center!important;gap:5px!important}
+  main header>.absolute.inset-0 .text-\[16px\]{font-size:clamp(23px,2.8vw,30px)!important;line-height:1!important;font-weight:900!important;color:white!important}
+  main header>.absolute.inset-0 .text-\[9px\]{font-size:10px!important;color:var(--gold-primary)!important}
+  main header>.absolute.inset-0 .hidden.md\:flex,
+  main header>.absolute.inset-0 img,
+  main header>.absolute.inset-0 [class*="avatar"]{display:none!important}
 
-  /* RIGHT: exactly one notification bell + profile. */
-  main header>.order-first{position:absolute!important;right:28px!important;top:28px!important;display:flex!important;align-items:center!important;gap:16px!important;z-index:8!important;direction:rtl!important}
+  /* RIGHT: profile + one compact bell. */
+  main header>.order-first{
+    position:absolute!important;right:26px!important;top:50%!important;transform:translateY(-50%)!important;
+    display:flex!important;align-items:center!important;gap:14px!important;z-index:8!important;direction:rtl!important
+  }
   main header>.order-first>.hidden.lg\:flex{display:none!important}
-  main header>.order-first>div.hidden.md\:block{display:block!important;margin:0!important;order:2!important}
-  main header>.order-first>div.hidden.md\:block button{display:flex!important;width:48px!important;height:48px!important;align-items:center!important;justify-content:center!important}
-  main header>.order-first>div.hidden.md\:block button svg{width:27px!important;height:27px!important}
-  main header>.order-first>button{display:flex!important;order:1!important;width:58px!important;height:58px!important;padding:0!important;background:transparent!important;border:0!important;overflow:visible!important}
+  main header>.order-first>button{
+    display:flex!important;order:1!important;width:58px!important;height:58px!important;padding:0!important;
+    background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important;border-radius:999px!important
+  }
   main header>.order-first>button>div{width:58px!important;height:58px!important}
+  main header>.order-first>div.hidden.md\:block{
+    display:block!important;order:2!important;margin:0!important;position:relative!important;width:44px!important;height:44px!important
+  }
+  main header>.order-first>div.hidden.md\:block button{
+    position:relative!important;display:flex!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;
+    align-items:center!important;justify-content:center!important;padding:0!important;margin:0!important;
+    background:transparent!important;border:0!important;box-shadow:none!important;border-radius:14px!important;color:rgba(255,255,255,.55)!important
+  }
+  main header>.order-first>div.hidden.md\:block button:hover{background:rgba(255,255,255,.06)!important;color:white!important}
+  main header>.order-first>div.hidden.md\:block button svg{width:26px!important;height:26px!important;max-width:26px!important;max-height:26px!important}
+  /* notification count must stay a small badge, never become the button itself */
+  main header>.order-first>div.hidden.md\:block [class*="absolute"][class*="rounded-full"]{
+    min-width:18px!important;width:auto!important;height:18px!important;min-height:18px!important;padding:0 5px!important;
+    border-radius:999px!important;font-size:10px!important;line-height:18px!important;transform:none!important
+  }
+  main header>.order-first>*:nth-child(n+3){display:none!important}
 
-  /* LEFT: menu + actual family medallion. Hide page title only. */
-  main header>.order-last{position:absolute!important;left:28px!important;right:auto!important;top:27px!important;display:flex!important;align-items:center!important;gap:14px!important;z-index:8!important;opacity:1!important;pointer-events:auto!important}
-  main header>.order-last>button.hidden.md\:flex{display:flex!important;order:1!important;width:52px!important;height:52px!important;margin:0!important;border-radius:17px!important}
+  /* LEFT: menu then family logo. */
+  main header>.order-last{
+    position:absolute!important;left:26px!important;right:auto!important;top:50%!important;transform:translateY(-50%)!important;
+    display:flex!important;align-items:center!important;gap:14px!important;z-index:8!important;opacity:1!important;pointer-events:auto!important
+  }
+  main header>.order-last>button.hidden.md\:flex{
+    display:flex!important;order:1!important;width:48px!important;height:48px!important;margin:0!important;border-radius:16px!important;
+    align-items:center!important;justify-content:center!important;background:color-mix(in srgb,var(--primary) 88%,black 12%)!important
+  }
   main header>.order-last>div.flex.items-center{display:flex!important;align-items:center!important;gap:0!important;padding:0!important;height:auto!important;order:2!important}
-  main header>.order-last>div.flex.items-center>.hidden.md\:flex:first-child{display:flex!important;width:58px!important;height:58px!important;padding:3px!important;margin:0!important;border-radius:999px!important}
+  main header>.order-last>div.flex.items-center>.hidden.md\:flex:first-child{
+    display:flex!important;width:56px!important;height:56px!important;padding:3px!important;margin:0!important;border-radius:999px!important;overflow:hidden!important
+  }
   main header>.order-last>div.flex.items-center>.hidden.md\:flex:first-child>div{padding:6px!important}
   main header>.order-last>div.flex.items-center>.hidden.md\:flex.md\:pr-4{display:none!important}
   main header>.order-last>.md\:hidden{display:none!important}
@@ -58,7 +100,7 @@
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .h-8.overflow-hidden{height:52px!important;max-width:460px!important}
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .h-8.overflow-hidden p{font-size:clamp(14px,1.8vw,18px)!important;line-height:1.55!important;text-align:right!important;color:rgba(255,255,255,.8)!important;font-style:normal!important}
 
-  /* Services: 4 compact/tall cards per row, identical visual language to mobile. */
+  /* Services */
   .family-services-section{display:block!important;width:100%!important;padding:30px clamp(28px,3vw,40px) 34px!important;margin:0!important;background:var(--nav-bg,var(--primary))!important}
   .family-services-heading{margin-bottom:20px!important}
   .family-services-heading h3{font-size:clamp(20px,2.2vw,26px)!important;color:#fff!important;font-weight:900!important}
