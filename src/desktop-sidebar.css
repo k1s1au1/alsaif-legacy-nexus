@@ -1,0 +1,158 @@
+/* Desktop-only sidebar redesign. Mobile/tablet remain untouched. */
+@media (min-width:1200px){
+  /* Dimmed page backdrop while drawer is open */
+  body:has(aside.translate-x-0) main{filter:none}
+
+  /* Drawer */
+  aside.fixed.inset-y-0.right-0.z-\[120\]{
+    width:390px!important;
+    max-width:390px!important;
+    right:72px!important;
+    border-left:1px solid rgba(6,78,59,.10)!important;
+    border-radius:34px 0 0 34px!important;
+    background:rgba(255,255,255,.98)!important;
+    box-shadow:-28px 0 70px rgba(2,36,29,.18)!important;
+    overflow:visible!important;
+  }
+
+  /* Slim green rail kept on the far right */
+  aside.fixed.inset-y-0.right-0.z-\[120\]::after{
+    content:"‹";
+    position:absolute;
+    top:0;
+    right:-72px;
+    width:72px;
+    height:100%;
+    background:linear-gradient(180deg,#073f34 0%,#0b5b49 52%,#073f34 100%);
+    color:#d6b45d;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding-top:30px;
+    font-size:48px;
+    line-height:1;
+    font-weight:300;
+    border-left:1px solid rgba(255,255,255,.08);
+    box-shadow:-8px 0 24px rgba(0,0,0,.10) inset;
+    pointer-events:none;
+  }
+
+  /* Profile section: compact, no finance/statistics block */
+  aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child{
+    padding:42px 28px 26px!important;
+    min-height:218px!important;
+    gap:10px!important;
+    background:#fff!important;
+    border-bottom:1px solid rgba(6,78,59,.08)!important;
+    border-radius:34px 0 0 0!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child>div:first-of-type{
+    width:92px!important;
+    height:92px!important;
+    padding:3px!important;
+    border-width:2px!important;
+    box-shadow:0 10px 28px rgba(15,118,94,.12)!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child>div:nth-of-type(2){
+    text-align:center!important;
+    flex:none!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child h3{
+    font-size:22px!important;
+    color:#075443!important;
+    margin-top:2px!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child p{
+    color:#b28b35!important;
+    letter-spacing:.04em!important;
+    font-size:11px!important;
+    margin-top:5px!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child button{
+    left:18px!important;
+    top:18px!important;
+    width:38px!important;
+    height:38px!important;
+    border-radius:12px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    color:#075443!important;
+    transition:.2s ease!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child button:hover{background:#f1f7f4!important}
+
+  /* Navigation */
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav{
+    position:relative!important;
+    padding:64px 24px 28px!important;
+    margin:0!important;
+    background:#fff!important;
+    overflow-y:auto!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav::before{
+    content:"التنقل الرئيسي";
+    position:absolute;
+    top:26px;
+    right:28px;
+    color:#7b827f;
+    font-size:12px;
+    font-weight:800;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a{
+    min-height:54px!important;
+    padding:0 18px!important;
+    margin-bottom:4px!important;
+    border-radius:14px!important;
+    gap:14px!important;
+    font-size:15px!important;
+    color:#1f2926!important;
+    flex-direction:row-reverse!important;
+    transition:background .18s ease,color .18s ease,transform .18s ease!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a:hover{
+    background:#f3f7f5!important;
+    transform:translateX(-2px)!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a.bg-primary{
+    position:relative!important;
+    color:#fff!important;
+    background:linear-gradient(90deg,#0b624f,#075443)!important;
+    box-shadow:0 10px 24px rgba(7,84,67,.16)!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a.bg-primary::before{
+    content:"";
+    position:absolute;
+    top:0;
+    bottom:0;
+    right:0;
+    width:4px;
+    border-radius:0 14px 14px 0;
+    background:#c8a24a;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a svg{width:20px!important;height:20px!important;stroke-width:2!important}
+
+  /* Visual quick-access section (functional navigation remains in the primary list above). */
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav::after{
+    content:"الوصول السريع   ·   المناسبات   ·   الاجتماعات   ·   المهام   ·   الصندوق المالي";
+    display:block;
+    margin-top:28px;
+    padding:22px 18px;
+    border-top:1px solid rgba(6,78,59,.09);
+    border-bottom:1px solid rgba(6,78,59,.09);
+    color:#075443;
+    background:linear-gradient(180deg,#fbfdfc,#f6faf8);
+    border-radius:18px;
+    font-size:12px;
+    font-weight:800;
+    line-height:2;
+    text-align:right;
+    white-space:normal;
+  }
+
+  /* Prevent any legacy stats/finance summary from appearing under the profile. */
+  aside.fixed.inset-y-0.right-0.z-\[120\] [data-sidebar-stats],
+  aside.fixed.inset-y-0.right-0.z-\[120\] .sidebar-stats,
+  aside.fixed.inset-y-0.right-0.z-\[120\] .sidebar-summary,
+  aside.fixed.inset-y-0.right-0.z-\[120\] .sidebar-balance{display:none!important}
+}
