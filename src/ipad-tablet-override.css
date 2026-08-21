@@ -1,41 +1,43 @@
-/* iPad / large-tablet override.
-   Use one stable tablet composition in both portrait and landscape. */
-@media (min-width:768px) and (max-width:1199.98px){
+/* Mobile / tablet dashboard lock.
+   Keep the same UI hierarchy and visual model in portrait and landscape.
+   Only desktop (>=1200px) is allowed to switch to the desktop rebuild. */
+@media (min-width:600px) and (max-width:1199.98px){
   .desktop-rebuild-shell,.desktop-rebuild-root{display:none!important}
+  .hub-desktop-legacy{display:none!important}
+  .hub-mobile-slider{display:block!important}
 
   .max-w-6xl.mx-auto.space-y-12{display:flex!important;flex-direction:column!important;max-width:none!important;width:100%!important;margin:0!important;gap:0!important}
   main>div.p-4.md\:p-8.lg\:p-12{max-width:none!important;width:100%!important;margin:0!important;padding:156px clamp(22px,3vw,34px) 150px!important}
 
-  /* One header model for every iPad orientation. */
-  main>.z-\[80\].fixed,main>.z-\[80\].sticky{position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:90!important;width:100%!important;padding:12px clamp(18px,2.5vw,30px) 0!important;display:flex!important;justify-content:center!important;background:transparent!important}
+  /* Same floating header in portrait and landscape. */
+  main>.z-\[80\].fixed,main>.z-\[80\].sticky{position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:90!important;width:100%!important;padding:12px clamp(18px,2.5vw,30px) 0!important;display:flex!important;justify-content:center!important;background:transparent!important;transform:none!important}
   main>.z-\[80\].fixed>header,main>.z-\[80\].sticky>header{position:relative!important;width:100%!important;max-width:none!important;min-height:0!important;height:116px!important;border-radius:30px!important;padding:0 28px!important;background:color-mix(in srgb,var(--nav-bg,var(--primary)) 91%,transparent)!important;border:1px solid color-mix(in srgb,var(--gold-primary) 22%,transparent)!important;box-shadow:0 16px 34px -20px rgba(0,0,0,.55)!important;backdrop-filter:blur(18px) saturate(135%)!important;overflow:visible!important}
 
-  /* Remove every desktop-only label/secondary strip. */
+  /* No desktop header furniture and no orientation-dependent secondary strip. */
   main header .hidden.lg\:flex,main header .hidden.md\:flex,main header .hidden.md\:block{display:none!important}
 
-  /* Profile on right, exactly one real notification bell beside it. */
+  /* Profile + one bell on the right. */
   main header>.order-first{position:absolute!important;right:26px!important;top:26px!important;display:flex!important;align-items:center!important;gap:16px!important;z-index:8!important}
   main header>.order-first>button{width:58px!important;height:58px!important;padding:0!important;background:transparent!important;border:0!important;overflow:visible!important}
   main header>.order-first>button>div{width:56px!important;height:56px!important}
   main header>.order-first>button>span,main header>.order-first>button>svg{display:none!important}
   main header>.order-first>div.hidden.md\:block{display:block!important;margin:0!important}
   main header>.order-first>div.hidden.md\:block button{width:46px!important;height:46px!important}
-  /* Kill duplicate notification controls/badges accidentally exposed by desktop/tablet breakpoint rules. */
   main header>.order-first>div.hidden.md\:block~div,main header>.order-first>button~button{display:none!important}
 
-  /* Clock/date always centered; no avatar/presence under date. */
+  /* Clock/date remain centered. */
   main header>.absolute.inset-0{display:flex!important;align-items:center!important;justify-content:center!important;pointer-events:none!important;z-index:4!important}
   main header>.absolute.inset-0>div{gap:6px!important}
   main header>.absolute.inset-0 .hidden.md\:flex{display:none!important}
   main header>.absolute.inset-0 img,main header>.absolute.inset-0 [class*="avatar"]{display:none!important}
 
-  /* Left side: family logo + menu, consistently in portrait/landscape. */
+  /* Family logo/menu stay on the left in both orientations. */
   main header>.order-last{position:absolute!important;left:26px!important;right:auto!important;top:27px!important;display:flex!important;align-items:center!important;gap:16px!important;z-index:8!important}
   main header>.order-last>.hidden.md\:flex:first-of-type{display:flex!important}
   main header>.order-last>.hidden.md\:flex.md\:pr-4{display:none!important}
   main header>.order-last>.md\:hidden{display:block!important}
 
-  /* Hero has the same proportions in either orientation instead of switching to desktop styling. */
+  /* Keep the dashboard order exactly: quote -> hero -> services -> quick follow-up. */
   .max-w-6xl.mx-auto.space-y-12>section:first-child{display:none!important}
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2){padding:20px 0 28px!important;margin:0!important}
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div{width:100%!important;height:300px!important;min-height:300px!important;border-radius:30px!important}
@@ -43,16 +45,13 @@
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{right:clamp(28px,5vw,58px)!important;top:55px!important;width:min(68%,520px)!important;text-align:right!important}
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:clamp(38px,5vw,52px)!important}
 
-  /* Bottom navigation is an iPad feature in both orientations. */
+  .family-services-section{display:block!important;width:100%!important}
+  .family-services-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .integrated-hub{display:block!important;width:100%!important}
+
+  /* Bottom navigation never changes when rotating the device. */
   main>div.md\:hidden.fixed.bottom-8.inset-x-6.z-\[100\]{display:flex!important;left:clamp(54px,10vw,150px)!important;right:clamp(54px,10vw,150px)!important;bottom:26px!important;justify-content:center!important;z-index:100!important}
   main>div.md\:hidden.fixed.bottom-8.inset-x-6.z-\[100\]>nav{width:100%!important;max-width:680px!important;height:70px!important;padding-inline:30px!important}
   main.relative.min-h-screen{padding-bottom:10rem!important}
   aside.fixed.inset-y-0.right-0{max-width:320px!important}
-}
-
-/* Portrait only: slightly tighter spacing, same components and hierarchy. */
-@media (min-width:768px) and (max-width:1199.98px) and (orientation:portrait){
-  main>div.p-4.md\:p-8.lg\:p-12{padding-top:152px!important}
-  main>.z-\[80\].fixed>header,main>.z-\[80\].sticky>header{height:112px!important}
-  .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div,.max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div>.relative.z-10{height:285px!important;min-height:285px!important}
 }
