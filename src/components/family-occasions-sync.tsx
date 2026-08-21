@@ -127,6 +127,14 @@ export function FamilyOccasionsSync() {
         window.localStorage.setItem(STORAGE_KEY, next);
         window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, newValue: next }));
         window.dispatchEvent(new CustomEvent("family-occasions:updated"));
+
+        // The occasions route currently owns its own React state and only reads
+        // localStorage on mount. When another device changes Supabase, refresh this
+        // route once so remote deletions/edits are reflected immediately instead of
+        // leaving stale cards visible until the user navigates away and back.
+        if (window.location.pathname === "/family-occasions") {
+          window.setTimeout(() => window.location.reload(), 0);
+        }
       }
       rememberLocal(sorted);
       return changed;
@@ -146,8 +154,6 @@ export function FamilyOccasionsSync() {
         const occasion = decodeOccasion(row);
         if (!occasion) continue;
         knownIds.add(row.id);
-        // A cancelled row is a tombstone. Keeping its ID in knownIds prevents an
-        // older device cache from re-uploading a deleted occasion.
         if (row.status !== "cancelled") active.push(occasion);
       }
 
@@ -184,9 +190,6 @@ export function FamilyOccasionsSync() {
       try {
         const remote = await fetchRemote();
         const local = readLocal();
-
-        // Migrate only genuinely local legacy occasions. IDs that already exist
-        // remotely — including cancelled tombstones — must never be resurrected.
         const localOnly = local.filter((x) => !remote.knownIds.has(x.id));
         if (localOnly.length) await pushItems(localOnly);
 
@@ -211,14 +214,7 @@ export function FamilyOccasionsSync() {
 
         if (localChanged) {
           const localIds = new Set(local.map((x) => x.id));
-
-          // Deletions are based on the last cloud state that this device actually
-          // displayed. This avoids deleting an occasion another device added just
-          // before this sync cycle.
           const deletedIds = [...lastCloudIds].filter((id) => !localIds.has(id));
-
-          // Only upload records the user changed locally. This prevents an edit to
-          // one occasion from overwriting newer remote edits to unrelated occasions.
           const changedItems = local.filter(
             (item) => lastLocalById.get(item.id) !== itemSignature(item),
           );
