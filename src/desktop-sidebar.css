@@ -1,35 +1,37 @@
 /* Desktop-only sidebar redesign. Mobile/tablet remain untouched. */
 @media (min-width:1200px){
-  /* Dimmed page backdrop while drawer is open */
-  body:has(aside.translate-x-0) main{filter:none}
-
-  /* Drawer */
+  /* Drawer is one viewport-safe unit: white panel + slim green rail. */
   aside.fixed.inset-y-0.right-0.z-\[120\]{
-    width:390px!important;
-    max-width:390px!important;
-    right:72px!important;
-    border-left:1px solid rgba(6,78,59,.10)!important;
+    box-sizing:border-box!important;
+    width:454px!important;
+    max-width:min(454px,calc(100vw - 16px))!important;
+    right:0!important;
+    padding-right:64px!important;
+    border:0!important;
     border-radius:34px 0 0 34px!important;
-    background:rgba(255,255,255,.98)!important;
+    background:transparent!important;
     box-shadow:-28px 0 70px rgba(2,36,29,.18)!important;
     overflow:visible!important;
+    direction:rtl!important;
   }
 
-  /* Slim green rail kept on the far right */
+  /* Keep the green rail INSIDE the viewport instead of outside the drawer. */
   aside.fixed.inset-y-0.right-0.z-\[120\]::after{
     content:"‹";
     position:absolute;
+    z-index:4;
     top:0;
-    right:-72px;
-    width:72px;
+    right:0;
+    width:64px;
     height:100%;
+    box-sizing:border-box;
     background:linear-gradient(180deg,#073f34 0%,#0b5b49 52%,#073f34 100%);
     color:#d6b45d;
     display:flex;
     align-items:flex-start;
     justify-content:center;
     padding-top:30px;
-    font-size:48px;
+    font-size:44px;
     line-height:1;
     font-weight:300;
     border-left:1px solid rgba(255,255,255,.08);
@@ -37,40 +39,64 @@
     pointer-events:none;
   }
 
-  /* Profile section: compact, no finance/statistics block */
+  /* Both real drawer sections occupy only the white-panel area. */
+  aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child,
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+    direction:rtl!important;
+  }
+
+  /* Profile section: compact, no finance/statistics block. */
   aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child{
-    padding:42px 28px 26px!important;
-    min-height:218px!important;
-    gap:10px!important;
+    padding:38px 28px 24px!important;
+    min-height:208px!important;
+    gap:9px!important;
     background:#fff!important;
     border-bottom:1px solid rgba(6,78,59,.08)!important;
     border-radius:34px 0 0 0!important;
+    overflow:hidden!important;
   }
   aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child>div:first-of-type{
-    width:92px!important;
-    height:92px!important;
+    width:88px!important;
+    height:88px!important;
     padding:3px!important;
     border-width:2px!important;
     box-shadow:0 10px 28px rgba(15,118,94,.12)!important;
+    flex:0 0 auto!important;
   }
   aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child>div:nth-of-type(2){
+    width:100%!important;
+    min-width:0!important;
     text-align:center!important;
     flex:none!important;
   }
   aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child h3{
-    font-size:22px!important;
+    max-width:100%!important;
+    font-size:21px!important;
+    line-height:1.35!important;
     color:#075443!important;
     margin-top:2px!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
   }
   aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child p{
+    max-width:100%!important;
     color:#b28b35!important;
     letter-spacing:.04em!important;
     font-size:11px!important;
     margin-top:5px!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
   }
   aside.fixed.inset-y-0.right-0.z-\[120\]>div:first-child button{
-    left:18px!important;
-    top:18px!important;
+    left:16px!important;
+    right:auto!important;
+    top:16px!important;
     width:38px!important;
     height:38px!important;
     border-radius:12px!important;
@@ -85,30 +111,47 @@
   /* Navigation */
   aside.fixed.inset-y-0.right-0.z-\[120\]>nav{
     position:relative!important;
-    padding:64px 24px 28px!important;
+    padding:62px 22px 28px!important;
     margin:0!important;
     background:#fff!important;
+    overflow-x:hidden!important;
     overflow-y:auto!important;
+    border-radius:0 0 0 34px!important;
   }
   aside.fixed.inset-y-0.right-0.z-\[120\]>nav::before{
     content:"التنقل الرئيسي";
     position:absolute;
-    top:26px;
-    right:28px;
+    top:25px;
+    right:26px;
+    left:auto;
     color:#7b827f;
     font-size:12px;
     font-weight:800;
+    white-space:nowrap;
   }
   aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a{
+    width:100%!important;
+    min-width:0!important;
     min-height:54px!important;
+    box-sizing:border-box!important;
     padding:0 18px!important;
-    margin-bottom:4px!important;
+    margin:0 0 4px!important;
     border-radius:14px!important;
     gap:14px!important;
     font-size:15px!important;
     color:#1f2926!important;
     flex-direction:row-reverse!important;
+    justify-content:flex-start!important;
+    overflow:hidden!important;
     transition:background .18s ease,color .18s ease,transform .18s ease!important;
+  }
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a>span{
+    min-width:0!important;
+    margin-right:0!important;
+    margin-left:auto!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
   }
   aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a:hover{
     background:#f3f7f5!important;
@@ -130,14 +173,21 @@
     border-radius:0 14px 14px 0;
     background:#c8a24a;
   }
-  aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a svg{width:20px!important;height:20px!important;stroke-width:2!important}
+  aside.fixed.inset-y-0.right-0.z-\[120\]>nav>a svg{
+    width:20px!important;
+    height:20px!important;
+    flex:0 0 20px!important;
+    stroke-width:2!important;
+  }
 
-  /* Visual quick-access section (functional navigation remains in the primary list above). */
+  /* Keep the agreed quick-access strip; no stats/balance block. */
   aside.fixed.inset-y-0.right-0.z-\[120\]>nav::after{
     content:"الوصول السريع   ·   المناسبات   ·   الاجتماعات   ·   المهام   ·   الصندوق المالي";
     display:block;
-    margin-top:28px;
-    padding:22px 18px;
+    width:100%;
+    box-sizing:border-box;
+    margin-top:26px;
+    padding:18px 16px;
     border-top:1px solid rgba(6,78,59,.09);
     border-bottom:1px solid rgba(6,78,59,.09);
     color:#075443;
@@ -148,11 +198,17 @@
     line-height:2;
     text-align:right;
     white-space:normal;
+    overflow-wrap:anywhere;
   }
 
-  /* Prevent any legacy stats/finance summary from appearing under the profile. */
   aside.fixed.inset-y-0.right-0.z-\[120\] [data-sidebar-stats],
   aside.fixed.inset-y-0.right-0.z-\[120\] .sidebar-stats,
   aside.fixed.inset-y-0.right-0.z-\[120\] .sidebar-summary,
   aside.fixed.inset-y-0.right-0.z-\[120\] .sidebar-balance{display:none!important}
+
+  /* The component was originally animated by a fixed 350px offset. With the wider
+     desktop drawer, move the closed state fully off-canvas so no clipped sliver remains. */
+  aside.fixed.inset-y-0.right-0.z-\[120\][style*="translateX(350px)"]{
+    transform:translateX(454px)!important;
+  }
 }
