@@ -7,7 +7,7 @@ export interface BiometricAuthPlugin {
 }
 
 export interface FamilySharingPlugin {
-  shareInvitation(options: { title: string; date: string; location: string }): Promise<void>;
+  shareInvitation(options: { title: string; date: string; location: string; templatePath?: string }): Promise<void>;
   shareImage(options: { base64Data: string }): Promise<void>;
 }
 
@@ -37,98 +37,107 @@ export const FamilySharing = {
     title,
     date,
     location,
+    templatePath,
   }: {
     title: string;
     date: string;
     location: string;
+    templatePath?: string;
   }) {
     /*
-       Royal Update: We now use the Web Canvas implementation for BOTH web and native platforms.
-       This ensures the invitation always includes the official Alsaif Logo/Seal and
-       the premium ivory-gold design, which is more easily managed via the web bridge.
+       Royal Update v2: Direct on Template Printing
+       We now load the EXACT selected template image and draw text directly on it.
     */
 
-    // Web Fallback: Generate Canvas Image (Royal Edition)
     const canvas = document.createElement("canvas");
     canvas.width = 1200;
-    canvas.height = 1500; // Taller for better proportions
+    canvas.height = 2000; // Perfect 3:5 Aspect Ratio for Invitations
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // 1. Draw Background (Royal Ivory Texture)
-    const grad = ctx.createLinearGradient(0, 0, 1200, 1500);
-    grad.addColorStop(0, "#FDFCF7"); // Ivory White
-    grad.addColorStop(1, "#F2F1EA"); // Off-white
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 1200, 1500);
-
-    // 2. Draw Borders (Gold Frame)
-    ctx.strokeStyle = "#8E7745"; // Gold
-    ctx.lineWidth = 20;
-    ctx.strokeRect(40, 40, 1120, 1420);
-    ctx.lineWidth = 5;
-    ctx.strokeRect(70, 70, 1060, 1360);
-
-    // 3. Load and Draw Logo as a "Seal/Stamp"
-    const loadLogo = () => new Promise<HTMLImageElement>((res) => {
+    // Helper to load images
+    const loadImage = (src: string) => new Promise<HTMLImageElement>((res) => {
       const img = new Image();
-      img.src = "/logo-home.png";
+      img.crossOrigin = "anonymous";
+      img.src = src;
       img.onload = () => res(img);
-      img.onerror = () => res(new Image()); // Fallback if failed
+      img.onerror = () => res(new Image());
     });
 
-    const logo = await loadLogo();
-    if (logo.width > 0) {
-      // Draw watermark logo (Large & Subtle in center)
-      ctx.globalAlpha = 0.04;
-      ctx.drawImage(logo, 300, 450, 600, 600);
-      ctx.globalAlpha = 1.0;
+    // 1. Draw Background Template
+    if (templatePath) {
+      const bg = await loadImage(templatePath);
+      if (bg.width > 0) {
+        ctx.drawImage(bg, 0, 0, 1200, 2000);
+      } else {
+        // Fallback if template fails to load
+        ctx.fillStyle = "#FDFCF7";
+        ctx.fillRect(0, 0, 1200, 2000);
+      }
+    } else {
+      // Default Royal Design
+      const grad = ctx.createLinearGradient(0, 0, 1200, 2000);
+      grad.addColorStop(0, "#FDFCF7");
+      grad.addColorStop(1, "#F2F1EA");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1200, 2000);
 
-      // Draw official seal logo (Top Center)
-      ctx.drawImage(logo, 500, 100, 200, 200);
+      ctx.strokeStyle = "#8E7745";
+      ctx.lineWidth = 30;
+      ctx.strokeRect(50, 50, 1100, 1900);
     }
 
-    // 4. Draw Typography
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#064E3B"; // Diamond Green
-    ctx.font = 'bold 100px "Amiri", serif';
-    ctx.fillText("دعوة عائلية", 600, 420);
+    // 2. Load Logo for Watermark / Seal
+    const logo = await loadImage("/logo-home.png");
+    if (logo.width > 0) {
+      ctx.globalAlpha = 0.8;
+      ctx.drawImage(logo, 500, 100, 200, 200);
+      ctx.globalAlpha = 1.0;
+    }
 
-    // Decorative Line
-    ctx.strokeStyle = "#8E7745";
-    ctx.lineWidth = 3;
+    // 3. Draw Typography (Emerald & Gold)
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#183f36"; // Match UI emerald
+
+    // Header
+    ctx.font = 'bold 90px "Amiri", serif';
+    ctx.fillText("دعوة عائلية", 600, 450);
+
+    // Decorative Separator
+    ctx.strokeStyle = "#D4AF37";
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(400, 460);
-    ctx.lineTo(800, 460);
+    ctx.moveTo(400, 480);
+    ctx.lineTo(800, 480);
     ctx.stroke();
 
-    ctx.fillStyle = "#1A1C1E";
-    ctx.font = 'bold 80px "Tajawal", sans-serif';
-    ctx.fillText(title, 600, 600);
+    // Event Title (Primary Focus)
+    ctx.fillStyle = "#064E3B";
+    ctx.font = 'bold 110px "Tajawal", sans-serif';
+    ctx.fillText(title, 600, 750);
 
-    // Details Section
-    const drawDetail = (label: string, value: string, y: number) => {
+    // Details Styling
+    const drawSection = (label: string, value: string, y: number) => {
       ctx.fillStyle = "#8E7745";
-      ctx.font = 'bold 45px "Tajawal", sans-serif';
+      ctx.font = 'bold 50px "Tajawal", sans-serif';
       ctx.fillText(label, 600, y);
-      ctx.fillStyle = "#064E3B";
-      ctx.font = 'bold 60px "Tajawal", sans-serif';
-      ctx.fillText(value, 600, y + 80);
+
+      ctx.fillStyle = "#1A1C1E";
+      ctx.font = '800 70px "Tajawal", sans-serif';
+      ctx.fillText(value, 600, y + 100);
     };
 
-    drawDetail("📅 الموعد والتاريخ", date, 800);
-    drawDetail("📍 الموقع والمكان", location, 1050);
+    drawSection("📅 الموعد والتاريخ", date, 1050);
+    drawSection("📍 الموقع والمكان", location, 1350);
 
-    // Footer - Official Stamp Style
-    ctx.fillStyle = "rgba(6, 78, 59, 0.4)";
+    // Footer Signature
+    ctx.fillStyle = "rgba(24, 63, 54, 0.5)";
     ctx.font = 'italic 35px "Amiri", serif';
-    ctx.fillText("صُدرت من مجلس عائلة السيف الرقمي", 600, 1350);
-    ctx.fillText("نصل العائلة، نحفظ الإرث، ونبني المستقبل", 600, 1410);
+    ctx.fillText("صُدرت من مجلس عائلة السيف الرقمي", 600, 1800);
+    ctx.fillText("نصل العائلة، نحفظ الإرث، ونبني المستقبل", 600, 1860);
 
-    // Handle Native Sharing via Bridge
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const dataUrl = canvas.toDataURL("image/png");
+    // Finalize
+    const dataUrl = canvas.toDataURL("image/png");
         await FamilySharingRaw.shareImage({ base64Data: dataUrl });
         return;
       } catch (e) {

@@ -33,14 +33,14 @@ function Preview({type,design,birthDate,eventDate,birthdayAudience="adult",name,
  return <div className={`relative aspect-[3/5] w-full overflow-hidden rounded-[24px] bg-muted shadow-md ${selected?"ring-2 ring-primary ring-offset-2":"border border-border"}`}>
   <img src={path(type,design,birthdayAudience)} className="absolute inset-0 h-full w-full object-cover" alt="قالب المناسبة"/>
   {logo&&<div className="absolute left-1/2 top-[4%] z-10 -translate-x-1/2"><div className="grid size-10 place-items-center overflow-hidden rounded-full bg-white/90 p-1 shadow-sm sm:size-12"><img src="/logo-home.png" className="h-full w-full object-contain" alt="شعار العائلة"/></div></div>}
-  {show&&<div className={`absolute inset-x-[8%] top-[14%] bottom-[8%] z-10 flex flex-col items-center justify-center overflow-hidden px-[7%] py-[7%] text-center ${cond?"text-white":"rounded-[22px] bg-white/72 text-[#183f36] shadow-sm backdrop-blur-[1px]"}`}>
+  {show&&<div className={`absolute inset-x-[10%] top-[18%] bottom-[12%] z-10 flex flex-col items-center justify-center overflow-hidden px-4 py-4 text-center ${cond?"text-white":"text-[#183f36]"}`}>
    <div className="w-full max-w-[92%] space-y-[clamp(6px,1.5vw,14px)]">
-    <h3 className="text-[clamp(14px,3.8vw,24px)] font-black leading-tight tracking-wide">{c.heading}</h3>
-    {parts[0]&&<p className="text-[clamp(10px,2.4vw,15px)] font-black leading-relaxed">{parts[0]}</p>}
-    {parts[1]&&<p className="mx-auto max-w-[95%] text-[clamp(9px,2.1vw,14px)] font-bold leading-[1.75]">{parts[1]}</p>}
-    {x.inviteMode==="private"&&x.guestName&&<div className="py-1 text-[clamp(11px,2.6vw,17px)] font-black">المكرم/ {x.guestName}</div>}
-    {parts.slice(2).map((p,i)=><p key={i} className="text-[clamp(9px,2vw,14px)] font-semibold leading-[1.85] opacity-95">{p}</p>)}
-    {type==="wedding"?<div className="space-y-2 pt-1">{x.groomFamily&&x.brideFamily&&<p className="text-[clamp(10px,2.2vw,15px)] font-black leading-relaxed">تتشرف عائلتا {x.groomFamily} و {x.brideFamily}<br/>بدعوتكم لحضور حفل زواج</p>}<div className="text-[clamp(15px,3.6vw,25px)] font-black leading-tight">{x.groomName||name}{x.brideName?` و ${x.brideName}`:""}</div></div>:name?.trim()&&<div className="pt-1 text-[clamp(15px,3.4vw,24px)] font-black leading-tight">{name}</div>}
+    <h3 className="text-[clamp(14px,3.8vw,24px)] font-black leading-tight tracking-wide drop-shadow-sm">{c.heading}</h3>
+    {parts[0]&&<p className="text-[clamp(10px,2.4vw,15px)] font-black leading-relaxed opacity-90">{parts[0]}</p>}
+    {parts[1]&&<p className="mx-auto max-w-[95%] text-[clamp(9px,2.1vw,14px)] font-bold leading-[1.75] opacity-85">{parts[1]}</p>}
+    {x.inviteMode==="private"&&x.guestName&&<div className="py-1 text-[clamp(11px,2.6vw,17px)] font-black border-y border-current/10 my-1">المكرم/ {x.guestName}</div>}
+    {parts.slice(2).map((p,i)=><p key={i} className="text-[clamp(9px,2vw,14px)] font-semibold leading-[1.85] opacity-80">{p}</p>)}
+    {type==="wedding"?<div className="space-y-2 pt-1">{x.groomFamily&&x.brideFamily&&<p className="text-[clamp(10px,2.2vw,15px)] font-black leading-relaxed">تتشرف عائلتا {x.groomFamily} و {x.brideFamily}<br/>بدعوتكم لحضور حفل زواج</p>}<div className="text-[clamp(15px,3.6vw,25px)] font-black leading-tight text-primary">{x.groomName||name}{x.brideName?` و ${x.brideName}`:""}</div></div>:name?.trim()&&<div className="pt-1 text-[clamp(15px,3.4vw,24px)] font-black leading-tight text-primary">{name}</div>}
     {type==="birthday"&&a!==null&&<div className="text-[clamp(30px,8vw,48px)] font-black leading-none">{a}<span className="mr-1 text-[clamp(10px,2.2vw,15px)]">عامًا</span></div>}
     {(eventDate||time||x.dayName||x.hijriDate)&&<div className={`mx-auto mt-2 w-full rounded-xl px-2 py-2 text-[clamp(9px,2.1vw,14px)] font-black leading-relaxed ${cond?"bg-white/10":"bg-[#183f36]/7"}`}>{x.dayName&&<div>{x.dayName}</div>}<div>{eventDate||""}{x.hijriDate?` • ${x.hijriDate}`:""}{time?` • ${time}`:""}</div></div>}
     {(x.venue||location||x.city)&&<div className="text-[clamp(9px,2.1vw,14px)] font-black leading-relaxed">{x.venue||location}{x.city?` — ${x.city}`:""}</div>}
@@ -60,7 +60,8 @@ return <AppShell><main dir="rtl" className="mx-auto w-full max-w-7xl px-4 pb-28 
                           FamilySharing.shareInvitation({
                             title: o.title || COPY[o.type].heading,
                             date: dateStr,
-                            location: o.location || "مجلس العائلة"
+                            location: o.location || "مجلس العائلة",
+                            templatePath: path(o.type, o.design, o.birthdayAudience)
                           });
                         }} className="flex-1 rounded-xl bg-gold-primary/10 py-2 text-gold-primary" title="مشاركة"><Share2 className="mx-auto size-4"/></button><button onClick={()=>window.confirm("حذف المناسبة؟")&&persist(items.filter(v=>v.id!==o.id))} className="flex-1 rounded-xl bg-red-500/5 py-2 text-red-600" title="حذف"><Trash2 className="mx-auto size-4"/></button></div></div></div></article>})}</section>}</main>
 {open&&<div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/55 sm:items-center sm:p-5" dir="rtl"><div className="max-h-[96dvh] w-full max-w-4xl overflow-y-auto rounded-t-[32px] bg-card sm:rounded-[32px]"><div className="sticky top-0 z-20 border-b border-border bg-card/95 px-5 pb-4 pt-5"><div className="mb-5 flex items-center justify-between"><button onClick={()=>setOpen(false)} className="grid size-10 place-items-center rounded-full bg-muted"><X className="size-5"/></button><h2 className="text-lg font-black">{editing?"تعديل المناسبة":"إضافة مناسبة جديدة"}</h2><div className="size-10"/></div><Stepper step={step}/></div><div className="p-5 sm:p-7">
