@@ -548,7 +548,7 @@ function AdminPage() {
               <div className="space-y-3 md:space-y-5 text-center md:text-right">
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <div className="h-0.5 w-8 md:w-12 bg-gold-primary shadow-[0_0_10px_rgba(212,175,55,0.6)]" />
-                  <span className="text-[9px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
+                  <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
                     إدارة المجلس
                   </span>
                 </div>
@@ -1145,7 +1145,7 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
                           {t.assignee?.arabic_name || "غير معين"}
                         </span>
                       </div>
-                      <span className="text-[9px] font-black text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] font-black text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                         مكتمل
                       </span>
                     </div>
@@ -1177,7 +1177,7 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
                           {t.assignee?.arabic_name || "غير معين"}
                         </span>
                       </div>
-                      <span className="text-[9px] font-black text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] font-black text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">
                         {t.status === "todo" ? "قيد الانتظار" : "جاري العمل"}
                       </span>
                     </div>

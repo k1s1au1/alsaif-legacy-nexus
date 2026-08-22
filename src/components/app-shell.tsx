@@ -82,7 +82,7 @@ function BottomNavItem({
   const content = (
     <>
       {icon}
-      <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+      <span className="text-[11px] font-black uppercase tracking-widest">{label}</span>
     </>
   );
 
@@ -527,7 +527,7 @@ export function AppShell({
                       <LiveClock variant="time" />
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="text-[9px] font-bold text-gold-primary uppercase tracking-[0.2em] leading-none opacity-90">
+                      <div className="text-[11px] font-bold text-gold-primary uppercase tracking-[0.2em] leading-none opacity-90">
                         <LiveClock variant="date" />
                       </div>
                       <div className="h-2 w-px bg-white/20 md:hidden" />
@@ -699,7 +699,7 @@ export function AppShell({
               )}
             >
               <MoreHorizontal size={20} />
-              <span className="text-[9px] font-black uppercase">المزيد</span>
+              <span className="text-[11px] font-black uppercase">المزيد</span>
             </button>
           </nav>
         </motion.div>
@@ -766,7 +766,7 @@ export function AppShell({
                     <div className="mt-2">
                       <ConnectionStatus state={myPresenceState} dark />
                     </div>
-                    <div className="inline-flex px-2.5 py-0.5 rounded-full bg-gold-primary/20 border border-gold-primary/20 text-gold-primary text-[9px] font-black uppercase tracking-widest">
+                    <div className="inline-flex px-2.5 py-0.5 rounded-full bg-gold-primary/20 border border-gold-primary/20 text-gold-primary text-[11px] font-black uppercase tracking-widest">
                       {safeUser.role}
                     </div>
                   </div>
@@ -870,7 +870,7 @@ export function AppShell({
 
                 <div className="relative z-10 text-center space-y-1">
                   <h3 className="text-2xl font-black text-white">الوصول السريع</h3>
-                  <p className="text-white/40 font-bold uppercase tracking-widest text-[9px]">
+                  <p className="text-white/40 font-bold uppercase tracking-widest text-[11px]">
                     بوابة مجلس السيف الرقمية
                   </p>
                 </div>

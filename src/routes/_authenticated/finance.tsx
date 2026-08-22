@@ -191,8 +191,8 @@ function FinancePage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const amt = Number(form.amount);
-    if (!amt || amt <= 0) return toast.error("ادخل مبلغًا صحيحًا");
-    if (!form.description.trim()) return toast.error("ادخل وصفًا");
+    if (!amt || amt <= 0) return toast.error("يرجى إدخال مبلغ صحيح");
+    if (!form.description.trim()) return toast.error("يرجى إدخال وصف للمعاملة");
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     const { error } = await supabase.from("fund_transactions").insert({
@@ -201,24 +201,24 @@ function FinancePage() {
       description: form.description.trim(),
       created_by: u.user.id,
     });
-    if (error) return toast.error(error.message);
-    toast.success("تم إضافة المعاملة");
+    if (error) return toast.error("فشل حفظ المعاملة", { description: "تأكد من استقرار الاتصال وصلاحياتك." });
+    toast.success("تم إضافة المعاملة بنجاح");
     setForm({ type: "contribution", amount: "", description: "" });
     setShowForm(false);
   }
 
   async function remove(id: string) {
-    if (!confirm("حذف هذه المعاملة؟")) return;
+    if (!confirm("هل أنت متأكد من حذف هذه المعاملة؟")) return;
     const { error } = await supabase.from("fund_transactions").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("تم الحذف");
+    if (error) return toast.error("فشل الحذف");
+    toast.success("تم حذف المعاملة");
   }
 
   async function submitTransfer(e: React.FormEvent) {
     e.preventDefault();
     const amt = Number(transferForm.amount);
-    if (!amt || amt <= 0) return toast.error("ادخل مبلغًا صحيحًا");
-    if (!transferForm.sender_name.trim()) return toast.error("ادخل اسم المُرسل");
+    if (!amt || amt <= 0) return toast.error("يرجى إدخال مبلغ صحيح");
+    if (!transferForm.sender_name.trim()) return toast.error("يرجى إدخال اسم المُرسل");
     if (!userId) return;
     const { error } = await supabase.from("bank_transfers").insert({
       submitted_by: userId,
@@ -229,10 +229,10 @@ function FinancePage() {
       note: transferForm.note.trim() || null,
     });
     if (error) {
-      if (error.code === "23505") return toast.error("الرقم المرجعي مُسجّل مسبقًا");
-      return toast.error(error.message);
+      if (error.code === "23505") return toast.error("هذا الرقم المرجعي مسجل مسبقاً");
+      return toast.error("فشل إرسال الطلب", { description: "يرجى المحاولة لاحقاً." });
     }
-    toast.success("تم إرسال طلب التحويل للمراجعة");
+    toast.success("تم إرسال طلب التحويل للمراجعة", { description: "سيتم تحديث الرصيد فور اعتماد الإدارة." });
     setTransferForm({
       amount: "",
       sender_name: "",

@@ -122,7 +122,11 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      toast.error("تعذّر الدخول", { description: "يرجى التحقق من بيانات الاعتماد." });
+      let msg = "تأكد من صحة البريد وكلمة المرور";
+      if (error.message.includes("Invalid login credentials")) msg = "بيانات الدخول غير صحيحة";
+      if (error.message.includes("Email not confirmed")) msg = "يرجى تأكيد بريدك الإلكتروني أولاً";
+
+      toast.error("عذراً، فشل الدخول", { description: msg });
       return;
     }
     navigate({ to: "/dashboard", replace: true });
@@ -131,7 +135,7 @@ function AuthPage() {
   async function onForgot(e: React.FormEvent) {
     e.preventDefault();
     if (!email) {
-      toast.error("أدخل بريدك الإلكتروني أولاً");
+      toast.error("يرجى إدخال البريد الإلكتروني أولاً");
       return;
     }
     setLoading(true);
@@ -140,10 +144,10 @@ function AuthPage() {
     });
     setLoading(false);
     if (error) {
-      toast.error("تعذّر إرسال الرابط", { description: error.message });
+      toast.error("فشل إرسال الرابط", { description: "تأكد من صحة البريد الإلكتروني المحفوظ." });
       return;
     }
-    toast.success("تم إرسال رابط استعادة كلمة المرور إلى بريدك");
+    toast.success("تم إرسال رابط الاستعادة", { description: "تفقّد صندوق الوارد في بريدك الإلكتروني." });
     setAuthMode("login");
   }
 
@@ -162,7 +166,7 @@ function AuthPage() {
 
     if (error) {
       setLoading(false);
-      toast.error("فشل إرسال الطلب", { description: error.message });
+      toast.error("لم نتمكن من إرسال الطلب", { description: "يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع المدير مباشرة." });
       return;
     }
 
@@ -192,7 +196,7 @@ function AuthPage() {
           <div className="absolute inset-x-10 bottom-10 h-px bg-gradient-to-l from-transparent via-[#0B5D4B]/20 to-transparent" />
           <div className="absolute top-8 left-8 right-8 flex items-center gap-3 opacity-70">
             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#0B5D4B]/20" />
-            <span className="text-[9px] font-black tracking-[0.35em] text-[#0B5D4B]/55">إرثٌ يجمعنا</span>
+            <span className="text-[11px] font-black tracking-[0.35em] text-[#0B5D4B]/55">إرثٌ يجمعنا</span>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#0B5D4B]/20" />
           </div>
         </div>
@@ -340,15 +344,18 @@ function AuthPage() {
 
                 <div className="pt-12 text-center border-t border-[#0B3F3A]/10 mt-6">
                   <p className="text-xs font-bold text-[#0B3F3A]/60 mb-6 uppercase tracking-widest">
-                    ليس لديك حساب رسمي؟
+                    منصة خاصة وحصرية لأفراد العائلة
                   </p>
                   <button
                     type="button"
                     onClick={() => setAuthMode("request")}
                     className="w-full h-14 rounded-2xl bg-[#0B5D4B]/5 text-[#0B3F3A] font-black text-xs hover:bg-[#0B5D4B]/10 transition-all border border-[#0B5D4B]/15 shadow-sm"
                   >
-                    تقديم طلب انضمام للعائلة
+                    إرسال طلب فتح حساب جديد
                   </button>
+                  <p className="mt-4 text-[10px] text-muted-foreground font-bold leading-relaxed">
+                    الدخول متاح فقط للمدعوين رسمياً. سيتم مراجعة طلبك من قبل إدارة المجلس والرد عليك عبر الجوال.
+                  </p>
                 </div>
               </motion.form>
             ) : mode === "forgot" ? (
@@ -495,7 +502,7 @@ function AuthPage() {
           </AnimatePresence>
 
           <div className="mt-12 pt-8 border-t border-[#0B3F3A]/10 flex flex-col items-center gap-2 opacity-35">
-            <p className="text-[9px] font-black tracking-[0.5em] text-[#0B3F3A] uppercase">
+            <p className="text-[11px] font-black tracking-[0.5em] text-[#0B3F3A] uppercase">
               Alsaif Family • 2026
             </p>
           </div>

@@ -675,7 +675,7 @@ function MeetingsPage() {
                     ) : (
                       <div className="flex flex-col items-center">
                         <span>{editing ? "حفظ التعديلات" : "تأكيد الجدولة"}</span>
-                        {!canManage && <span className="text-[9px] opacity-70">غير مصرح لك بالإدارة</span>}
+                        {!canManage && <span className="text-[11px] opacity-70">غير مصرح لك بالإدارة</span>}
                       </div>
                     )}
                   </button>
@@ -753,10 +753,10 @@ function MeetingInteractiveCard({
         {/* Floating Date Stamp - Mobile & Desktop Positioned Smartly */}
         <div className="absolute top-6 left-6 md:top-10 md:right-10 z-20 flex flex-col items-center">
            <div className="bg-gold-primary/20 backdrop-blur-xl border-2 border-gold-primary/40 rounded-[24px] md:rounded-[32px] p-3 md:p-5 min-w-[70px] md:min-w-[110px] text-center shadow-2xl scale-90 sm:scale-100 transition-transform hover:scale-110 duration-500">
-              <p className="text-[9px] md:text-sm font-black text-gold-primary uppercase tracking-widest mb-1">{date.month}</p>
+              <p className="text-[11px] md:text-sm font-black text-gold-primary uppercase tracking-widest mb-1">{date.month}</p>
               <p className="text-3xl md:text-6xl font-black text-white leading-none">{date.day}</p>
               <div className="h-0.5 w-5 md:w-10 bg-gold-primary/40 mx-auto my-1 md:my-2" />
-              <p className="text-[8px] md:text-xs font-bold text-white/60">{date.weekday}</p>
+              <p className="text-[11px] md:text-xs font-bold text-white/60">{date.weekday}</p>
            </div>
         </div>
 
@@ -801,8 +801,8 @@ function MeetingInteractiveCard({
                <div className="space-y-8 pt-4 md:pt-32">
                   <div className="space-y-4 max-w-[75%] md:max-w-none pr-2">
                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-3 py-1 rounded-full bg-gold-primary/20 text-gold-primary border border-gold-primary/30 text-[9px] font-black uppercase tracking-widest backdrop-blur-md">مناسبة رسمية</span>
-                        <span className="px-3 py-1 rounded-full bg-white/5 text-white/60 border border-white/10 text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full bg-gold-primary/20 text-gold-primary border border-gold-primary/30 text-[11px] font-black uppercase tracking-widest backdrop-blur-md">مناسبة رسمية</span>
+                        <span className="px-3 py-1 rounded-full bg-white/5 text-white/60 border border-white/10 text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
                            <Clock size={12} /> {meeting.duration_minutes || 60} د
                         </span>
                      </div>
@@ -833,6 +833,14 @@ function MeetingInteractiveCard({
 
                {/* Action Buttons for Info View */}
                <div className="pt-4 flex items-center gap-3">
+                  {meeting.minutes && (
+                    <button
+                      onClick={() => setShowMinutes(meeting)}
+                      className="flex-1 flex items-center justify-center gap-3 h-14 rounded-2xl bg-gold-primary/20 text-gold-primary font-black text-xs hover:bg-gold-primary/30 transition-all border border-gold-primary/30"
+                    >
+                      <FileText size={18} /> محضر الاجتماع
+                    </button>
+                  )}
                   <button
                     onClick={() => addToCalendar({ title: meeting.title, description: meeting.description || "", location: meeting.location || "", startTime: meeting.scheduled_at })}
                     className="flex-1 flex items-center justify-center gap-3 h-14 rounded-2xl bg-white/10 text-white font-black text-xs hover:bg-white/20 transition-all border border-white/10"
