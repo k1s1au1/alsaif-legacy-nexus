@@ -138,6 +138,9 @@ export const FamilySharing = {
 
     // Finalize
     const dataUrl = canvas.toDataURL("image/png");
+
+    if (Capacitor.isNativePlatform()) {
+      try {
         await FamilySharingRaw.shareImage({ base64Data: dataUrl });
         return;
       } catch (e) {
