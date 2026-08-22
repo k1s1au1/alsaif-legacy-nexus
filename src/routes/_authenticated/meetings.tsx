@@ -22,6 +22,7 @@ import {
   Share2,
   Calendar,
   Users,
+  Download,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -43,7 +44,6 @@ import { MeetingPresentations } from "@/components/meeting-presentations";
 import { addToCalendar } from "@/lib/calendar";
 import { FamilySharing } from "@/lib/native-bridge";
 import { OfflineCache } from "@/lib/offline-cache";
-import { FileText, Download } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
   ssr: false,
