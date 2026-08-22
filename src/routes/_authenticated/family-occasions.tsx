@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { Baby,Cake,CalendarDays,Check,ChevronLeft,ChevronRight,Flower2,GraduationCap,Heart,MapPin,MoonStar,Pencil,Plus,ShieldPlus,Sparkles,Trash2,Trophy,Users,X, Share2, Download } from "lucide-react";
+import { Baby,Cake,CalendarDays,Check,ChevronLeft,ChevronRight,Flower2,GraduationCap,Heart,MapPin,MoonStar,Pencil,Plus,Search,ShieldPlus,Sparkles,Trash2,Trophy,Users,X, Share2, Download } from "lucide-react";
 import { FamilySharing } from "@/lib/native-bridge";
 import { toast } from "sonner";
 

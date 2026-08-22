@@ -6,6 +6,7 @@ import {
   CalendarDays,
   MapPin,
   Clock,
+  FileText,
   X,
   Trash2,
   Pencil,
