@@ -896,5 +896,3 @@ function FamilyOccasionsPage() {
     </AppShell>
   );
 }
-
-export default FamilyOccasionsPage;
