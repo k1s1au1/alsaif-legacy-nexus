@@ -306,8 +306,9 @@ export function NotificationsBell() {
 
       <DropdownMenuContent
         align="end"
-        sideOffset={12}
-        className="w-[340px] p-0 rounded-[28px] border-border bg-card/95 backdrop-blur-2xl shadow-[0_30px_60px_rgba(0,0,0,0.3)] overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        sideOffset={8}
+        collisionPadding={12}
+        className="w-[min(340px,calc(100vw-24px))] p-0 rounded-[28px] border-border bg-card shadow-[0_30px_60px_rgba(0,0,0,0.3)] overflow-hidden animate-in fade-in zoom-in-95 duration-200"
       >
         <div className="px-6 py-5 flex items-center justify-between bg-primary/5">
           <div className="flex items-center gap-3">
