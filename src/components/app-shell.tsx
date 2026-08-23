@@ -638,19 +638,19 @@ export function AppShell({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {!bottomNavKeys.includes("meetings") && (
+              {!bottomNavKeys.includes("calendar") && (
                 <Link
-                  to="/meetings"
+                  to="/calendar"
                   className={cn(
                     "relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black transition-all duration-200",
-                    path === "/meetings"
+                    path === "/calendar"
                       ? "text-gold-primary bg-gold-primary/10"
                       : "text-primary/65 hover:text-primary hover:bg-primary/5",
                   )}
                 >
-                  <CalendarDays size={19} strokeWidth={path === "/meetings" ? 2.5 : 2} />
+                  <CalendarDays size={19} strokeWidth={path === "/calendar" ? 2.5 : 2} />
                   <span>التقويم</span>
-                  {path === "/meetings" && (
+                  {path === "/calendar" && (
                     <span className="absolute bottom-0 h-0.5 w-7 rounded-full bg-gold-primary" />
                   )}
                 </Link>
