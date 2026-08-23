@@ -28,7 +28,7 @@ const services = [
   { to: "/family-occasions", label: "مناسبات العائلة", description: "أفراح ومناسبات وذكريات العائلة", icon: <PartyPopper /> },
   { to: "/majlis", label: "المستندات", description: "أخبار ووثائق العائلة", icon: <Newspaper /> },
   { to: "/archive", label: "الألبومات", description: "ذكرياتنا في صور جميلة", icon: <Archive /> },
-  { to: "/meetings", label: "التقويم", description: "المواعيد والمناسبات", icon: <CalendarDays /> },
+  { to: "/calendar", label: "تقويم العائلة", description: "المواعيد والمناسبات", icon: <CalendarDays /> },
   { to: "/chat", label: "المحادثات", description: "تواصل خاص بالعائلة", icon: <MessageCircle /> },
   { to: "/community", label: "ركن الأعضاء", description: "مجتمع أفراد العائلة", icon: <Users /> },
   { to: "/heritage", label: "الإرث", description: "تاريخ وإرث العائلة", icon: <History /> },

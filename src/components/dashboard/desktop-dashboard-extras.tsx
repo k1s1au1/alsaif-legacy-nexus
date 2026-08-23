@@ -73,7 +73,7 @@ const services = [
   },
   { to: "/majlis", label: "المستندات", desc: "أخبار ووثائق العائلة", icon: Newspaper },
   { to: "/archive", label: "الألبومات", desc: "ذكرياتنا في صور جميلة", icon: Archive },
-  { to: "/meetings", label: "التقويم", desc: "المواعيد والمناسبات", icon: CalendarDays },
+  { to: "/calendar", label: "تقويم العائلة", desc: "المواعيد والمناسبات", icon: CalendarDays },
   { to: "/chat", label: "المحادثات", desc: "تواصل خاص بالعائلة", icon: MessageCircle },
   { to: "/community", label: "ركن الأعضاء", desc: "مجتمع أفراد العائلة", icon: Users },
   { to: "/heritage", label: "الإرث", desc: "تاريخ وإرث العائلة", icon: History },
@@ -522,7 +522,7 @@ export function DesktopDashboardExtras() {
                   <small>أقرب المواعيد القادمة</small>
                 </span>
               </div>
-              <Link to="/meetings">عرض الكل</Link>
+              <Link to="/calendar">عرض الكل</Link>
             </div>
             <div className="desktop-list">
               {upcoming.length ? (
