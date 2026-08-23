@@ -273,7 +273,7 @@ function FamilyTreePage() {
       const myAncestors = getAncestors(me.id);
       const targetAncestors = getAncestors(memberId);
 
-      let lca = null;
+      let lca: string | null = null;
       for (const id of myAncestors) {
         if (targetAncestors.includes(id)) {
           lca = id;

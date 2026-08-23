@@ -7,7 +7,9 @@
     padding: 28px clamp(24px, 3vw, 48px) 76px !important;
   }
 
-  .max-w-6xl.mx-auto.space-y-12 {
+  /* Only hide the legacy wrapper on /dashboard (where the rebuild shell is mounted).
+     Other pages (e.g. /admin) reuse the same class combo and must stay visible. */
+  body:has(.desktop-rebuild-shell) .max-w-6xl.mx-auto.space-y-12 {
     display: none !important;
   }
 

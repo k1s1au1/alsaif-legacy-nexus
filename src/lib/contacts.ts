@@ -7,13 +7,23 @@ import { toast } from "sonner";
  */
 export async function syncFamilyContacts(selectedUserIds?: string[]) {
   try {
-    let query = supabase.from("profiles").select("id, arabic_name, full_name, phone");
+    // Phone numbers are restricted at the column level; fetch them via the
+    // security-definer RPC (admins/chairman/self only).
+    let query = supabase.from("profiles").select("id, arabic_name, full_name");
 
     if (selectedUserIds && selectedUserIds.length > 0) {
       query = query.in("id", selectedUserIds);
     }
 
-    const { data: profiles, error } = await query;
+    const { data: rows, error } = await query;
+    if (error) throw error;
+
+    const profiles = await Promise.all(
+      (rows ?? []).map(async (p) => {
+        const { data: phone } = await supabase.rpc("get_member_phone", { _user: p.id });
+        return { ...p, phone: (phone as string | null) ?? null };
+      }),
+    );
 
     let vcfContent = "";
 
