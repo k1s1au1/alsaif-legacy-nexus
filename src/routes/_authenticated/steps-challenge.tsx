@@ -446,7 +446,7 @@ function StepsChallengePage() {
                     </div>
                     <div>
                       <p className="font-black text-primary leading-none">{user.arabic_name || user.full_name}</p>
-                      {user.id === meId && <span className="text-[9px] font-black uppercase text-gold-primary tracking-widest mt-1 block">أنت</span>}
+                      {user.id === meId && <span className="text-[11px] font-black uppercase text-gold-primary tracking-widest mt-1 block">أنت</span>}
                     </div>
                   </div>
                   <div className="text-left">

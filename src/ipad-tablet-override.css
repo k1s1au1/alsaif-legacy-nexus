@@ -1,6 +1,6 @@
 /* Tablet dashboard = mobile visual language, scaled for touch screens.
    Portrait and landscape share one hierarchy. Desktop rebuild starts at 1200px. */
-@media (min-width:600px) and (max-width:1199.98px){
+@media (min-width:600px) and (max-width:969.98px){
   .desktop-rebuild-shell,.desktop-rebuild-root,.hub-desktop-legacy{display:none!important}
   .hub-mobile-slider{display:block!important}
 
@@ -96,7 +96,7 @@
   aside.fixed.inset-y-0.right-0{max-width:320px!important}
 }
 
-@media (min-width:600px) and (max-width:1199.98px) and (orientation:landscape){
+@media (min-width:600px) and (max-width:969.98px) and (orientation:landscape){
   .family-services-grid{gap:18px!important}
   .family-service-card{min-height:205px!important}
   .integrated-hub .hub-carousel-item{flex-basis:78%!important}

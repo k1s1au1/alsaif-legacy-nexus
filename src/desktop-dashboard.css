@@ -1,5 +1,5 @@
 /* Desktop dashboard rebuild — mobile/tablet remain untouched */
-@media (min-width:1024px){
+@media (min-width:970px){
   main > div.p-4.md\:p-8.lg\:p-12{max-width:none!important;width:100%!important;padding:26px clamp(32px,3vw,58px) 72px!important;margin:0!important}
   .max-w-6xl.mx-auto.space-y-12{display:none!important}
   .desktop-rebuild-shell{display:block!important;width:100%;padding:0;margin:0;background:transparent}

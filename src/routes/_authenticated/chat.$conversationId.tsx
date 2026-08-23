@@ -622,7 +622,7 @@ function ConversationRoute() {
               <h2 className="text-sm lg:text-base font-black tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
                 {title}
               </h2>
-              <p className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">
+              <p className="text-[11px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">
                 {statusLabel}
               </p>
             </div>
@@ -714,7 +714,7 @@ function ConversationRoute() {
               className="mb-2 bg-muted/50 backdrop-blur-xl border border-border rounded-xl lg:rounded-2xl p-3 lg:p-4 flex items-center gap-3 shadow-sm border-r-4 border-r-gold-primary"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-[8px] lg:text-[9px] font-black uppercase text-gold-primary tracking-widest mb-0.5 lg:mb-1">
+                <p className="text-[10px] lg:text-[11px] font-black uppercase text-gold-primary tracking-widest mb-0.5 lg:mb-1">
                   الرد على {displayName(profiles[replyTo.sender_id])}
                 </p>
                 <p className="text-[11px] lg:text-xs font-bold text-muted-foreground truncate">
@@ -909,7 +909,7 @@ function renderGroupedMessages(opts: any) {
       nodes.push(
         <div key={`day-${day}`} className="flex justify-center my-8 relative">
           <div className="h-px w-full bg-border absolute top-1/2 left-0" />
-          <span className="relative z-10 text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground bg-background px-6 rounded-full border border-border">
+          <span className="relative z-10 text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground bg-background px-6 rounded-full border border-border">
             {dayLabel(m.created_at)}
           </span>
         </div>,
@@ -1007,7 +1007,7 @@ function MessageBubble({
         )}
       >
         {!mine && (
-          <span className="text-[9px] font-black text-primary opacity-40 mr-1 tracking-widest uppercase">
+          <span className="text-[11px] font-black text-primary opacity-40 mr-1 tracking-widest uppercase">
             {name}
           </span>
         )}
@@ -1069,7 +1069,7 @@ function MessageBubble({
                     </div>
                     <div className="flex-1 min-w-0 text-right">
                       <p className="text-xs font-black truncate">{m.attachment_name}</p>
-                      <p className="text-[9px] opacity-60 uppercase font-black">
+                      <p className="text-[11px] opacity-60 uppercase font-black">
                         {formatBytes(m.attachment_size)}
                       </p>
                     </div>
@@ -1083,7 +1083,7 @@ function MessageBubble({
 
           <div
             className={cn(
-              "flex items-center gap-2 mt-2 text-[8px] font-black uppercase tracking-widest",
+              "flex items-center gap-2 mt-2 text-[10px] font-black uppercase tracking-widest",
               mine ? "text-white/40 justify-end" : "text-muted-foreground opacity-30",
             )}
           >
@@ -1296,7 +1296,7 @@ function InfoDrawer({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-black text-foreground truncate">{name}</p>
-                      <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase mt-0.5">
                         {p.role === "owner" ? "مؤسس" : "عضو"}
                       </p>
                     </div>
@@ -1372,7 +1372,7 @@ function AudioPlayer({
         <div className="h-1 bg-current opacity-10 rounded-full overflow-hidden">
           <div className="h-full bg-current transition-all" style={{ width: `${progress}%` }} />
         </div>
-        <div className="flex justify-between text-[9px] font-black opacity-60 tabular-nums text-right">
+        <div className="flex justify-between text-[11px] font-black opacity-60 tabular-nums text-right">
           <span>{formatDuration(duration)}</span>
           <span>
             {formatDuration(

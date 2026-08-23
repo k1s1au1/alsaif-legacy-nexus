@@ -1,5 +1,5 @@
 /* Desktop-only sidebar redesign. Mobile/tablet remain untouched. */
-@media (min-width:1200px){
+@media (min-width:970px){
   /* Drawer is one viewport-safe unit: white panel + slim green rail. */
   aside.fixed.inset-y-0.right-0.z-\[120\]{
     box-sizing:border-box!important;

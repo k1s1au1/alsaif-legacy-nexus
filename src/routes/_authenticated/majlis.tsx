@@ -252,7 +252,7 @@ function MajlisPage() {
               <div className="space-y-3 md:space-y-5 text-center md:text-right">
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <div className="h-0.5 w-8 md:w-12 bg-gold-primary shadow-[0_0_10px_rgba(212,175,55,0.6)]" />
-                  <span className="text-[9px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
+                  <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
                     أخبار السيف
                   </span>
                 </div>

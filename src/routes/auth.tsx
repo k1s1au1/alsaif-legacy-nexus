@@ -247,7 +247,7 @@ function AuthPage() {
                 ) : (
                   <div className="flex flex-col items-center gap-3 opacity-20">
                     <Sparkles className="size-16 text-gold-primary animate-pulse" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-gold-primary">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gold-primary">
                       ارفع الشعار
                     </span>
                   </div>

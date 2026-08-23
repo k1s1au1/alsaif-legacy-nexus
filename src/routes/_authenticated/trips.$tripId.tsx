@@ -473,7 +473,7 @@ function TripDetail() {
                 <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 text-gold-primary/40 pointer-events-none">
                   <div className="w-16 md:w-24 border-t border-dashed border-gold-primary/30" />
                   <Navigation className="size-4 md:size-5" />
-                  <span className="text-[9px] md:text-[10px] font-black tracking-[0.3em] whitespace-nowrap">رحلة تجمعنا</span>
+                  <span className="text-[11px] md:text-[10px] font-black tracking-[0.3em] whitespace-nowrap">رحلة تجمعنا</span>
                   <div className="w-16 md:w-24 border-t border-dashed border-gold-primary/30" />
                 </div>
 
@@ -500,7 +500,7 @@ function TripDetail() {
                       {attendanceStatus === "going" && (
                         <div className="flex flex-col gap-2 md:gap-3 animate-fade-up bg-white/10 p-4 md:p-5 rounded-[24px] md:rounded-[32px] border border-white/10 shadow-inner">
                           <div className="flex items-center justify-between px-1">
-                            <p className="text-[9px] md:text-[10px] font-black text-gold-primary uppercase tracking-widest">عدد المرافقين معك؟</p>
+                            <p className="text-[11px] md:text-[10px] font-black text-gold-primary uppercase tracking-widest">عدد المرافقين معك؟</p>
                             <div className="text-center bg-gold-primary/20 px-2 py-0.5 md:px-3 md:py-1 rounded-lg border border-gold-primary/20">
                               <span className="text-[12px] md:text-[14px] font-black leading-none text-gold-primary">{1 + companionsCount} حاضرين</span>
                             </div>
@@ -556,10 +556,10 @@ function TripDetail() {
 
                   <div className="space-y-3 md:space-y-4 pt-4 md:pt-0">
                     <div className="flex items-center justify-between border-t border-white/10 pt-4 md:pt-6">
-                      <div className="flex items-center gap-2 text-gold-primary font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px]">
+                      <div className="flex items-center gap-2 text-gold-primary font-black uppercase tracking-[0.2em] text-[11px] md:text-[10px]">
                         <Users className="size-3.5 md:size-4" /> المشاركون
                       </div>
-                      <span className="text-[9px] md:text-[10px] font-black bg-white/10 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full">
+                      <span className="text-[11px] md:text-[10px] font-black bg-white/10 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full">
                         {(() => {
                            const meInList = attendees.some(a => a.user_id === userId);
                            const othersSum = attendees
@@ -582,16 +582,16 @@ function TripDetail() {
                                <UserAvatar path={a.avatarPath} name={a.name} initial={a.initial} className="size-full" userId={a.user_id} />
                             </div>
                             {(a.user_id === userId ? companionsCount : a.companions_count) > 0 && (
-                              <div className="absolute -top-1 -right-1 size-4 md:size-5 bg-gold-primary text-black text-[7px] md:text-[9px] font-black rounded-full flex items-center justify-center border border-emerald-950 z-10 shadow-lg">
+                              <div className="absolute -top-1 -right-1 size-4 md:size-5 bg-gold-primary text-black text-[7px] md:text-[11px] font-black rounded-full flex items-center justify-center border border-emerald-950 z-10 shadow-lg">
                                 +{a.user_id === userId ? companionsCount : a.companions_count}
                               </div>
                             )}
                          </div>
                        ))}
                        {attendees.length > 5 && (
-                         <div className="size-8 md:size-10 rounded-lg md:rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[9px] md:text-[10px] font-black text-white">+{attendees.length - 5}</div>
+                         <div className="size-8 md:size-10 rounded-lg md:rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[11px] md:text-[10px] font-black text-white">+{attendees.length - 5}</div>
                        )}
-                       {attendees.length === 0 && <p className="text-[9px] md:text-[10px] font-bold text-white/30 italic">لا يوجد حضور مؤكد بعد</p>}
+                       {attendees.length === 0 && <p className="text-[11px] md:text-[10px] font-bold text-white/30 italic">لا يوجد حضور مؤكد بعد</p>}
                     </div>
                   </div>
                 </div>
@@ -619,14 +619,14 @@ function TripDetail() {
                           <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10">
                              <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary shadow-xl shrink-0"><Tent className="size-[18px] md:size-[22px]" /></div>
                              <div>
-                                <p className="text-[8px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">نوع الإقامة</p>
+                                <p className="text-[10px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">نوع الإقامة</p>
                                 <p className="text-xs md:text-sm font-black text-white">{trip.accommodation_type || "غير محدد"}</p>
                              </div>
                           </div>
                           <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10">
                              <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary shadow-xl shrink-0"><Clock className="size-[18px] md:size-[22px]" /></div>
                              <div>
-                                <p className="text-[8px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">آخر موعد للتسجيل</p>
+                                <p className="text-[10px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">آخر موعد للتسجيل</p>
                                 <p className="text-xs md:text-sm font-black text-white">{formatDate(trip.start_date)}</p>
                              </div>
                           </div>

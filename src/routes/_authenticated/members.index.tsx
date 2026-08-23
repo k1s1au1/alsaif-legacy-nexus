@@ -375,7 +375,7 @@ function MemberCard({
               {member.phone && (
                 <button
                   onClick={handleSaveContact}
-                  className="mt-2 inline-flex items-center gap-2 text-[9px] font-black text-gold-primary hover:text-gold-primary/80 transition-all bg-gold-primary/5 px-3 py-1.5 rounded-full border border-gold-primary/10"
+                  className="mt-2 inline-flex items-center gap-2 text-[11px] font-black text-gold-primary hover:text-gold-primary/80 transition-all bg-gold-primary/5 px-3 py-1.5 rounded-full border border-gold-primary/10"
                 >
                   <UserPlus size={12} />
                   حفظ في الجوال

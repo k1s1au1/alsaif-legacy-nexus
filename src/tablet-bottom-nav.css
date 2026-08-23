@@ -1,5 +1,5 @@
 /* Keep the mobile navigation model on tablets. Desktop starts at lg (1024px). */
-@media (min-width:768px) and (max-width:1023.98px){
+@media (min-width:768px) and (max-width:969.98px){
   /* AppShell bottom dock currently carries Tailwind's md:hidden. Override only the unique dock. */
   main > div.md\:hidden.fixed.bottom-8.inset-x-6.z-\[100\]{
     display:flex!important;

@@ -266,7 +266,7 @@ function ChatLayout() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-gold-primary">
                   <Sparkles className="size-3 animate-pulse" />
-                  <span className="text-[9px] font-black uppercase tracking-[0.3em]">الرسائل</span>
+                  <span className="text-[11px] font-black uppercase tracking-[0.3em]">الرسائل</span>
                 </div>
                 <h2 className="text-2xl font-black text-primary tracking-tighter">مجلس السيف</h2>
               </div>
@@ -417,7 +417,7 @@ function ConversationRow({
           <div className="size-10 rounded-full flex items-center justify-center bg-emerald-500/10 shadow-sm">
             <Archive className="size-5" />
           </div>
-          <span className="text-[9px] font-black uppercase">
+          <span className="text-[11px] font-black uppercase">
             {isArchived ? "استعادة" : "أرشفة"}
           </span>
         </div>
@@ -428,7 +428,7 @@ function ConversationRow({
           <div className="size-10 rounded-full flex items-center justify-center bg-red-500/10 shadow-sm">
             <Trash2 className="size-5" />
           </div>
-          <span className="text-[9px] font-black uppercase">حذف</span>
+          <span className="text-[11px] font-black uppercase">حذف</span>
         </div>
       </div>
 
@@ -477,7 +477,7 @@ function ConversationRow({
               )}
             </div>
             {!active && item.unread > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-4.5 px-1.5 rounded-full bg-red-500 text-white text-[9px] font-black grid place-items-center border-2 border-card shadow-lg z-30">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-4.5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-black grid place-items-center border-2 border-card shadow-lg z-30">
                 {item.unread}
               </span>
             )}
@@ -494,7 +494,7 @@ function ConversationRow({
               </h3>
               <span
                 className={cn(
-                  "text-[9px] font-bold opacity-40",
+                  "text-[11px] font-bold opacity-40",
                   active ? "text-white" : "text-muted-foreground",
                 )}
               >

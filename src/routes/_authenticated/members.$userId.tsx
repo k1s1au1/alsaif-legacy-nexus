@@ -310,7 +310,7 @@ function MemberProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm font-black text-primary">{roleLabel(role)}</p>
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase">
+                    <p className="text-[11px] font-bold text-muted-foreground uppercase">
                       عضوية رسمية مفعلة
                     </p>
                   </div>

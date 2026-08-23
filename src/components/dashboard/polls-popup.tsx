@@ -314,7 +314,7 @@ export function PollsPopup({ userId }: { userId: string | null }) {
                           {isManagerPoll && <ShieldCheck className="size-4 text-emerald-600" />}
                           <h4 className="font-black text-primary line-clamp-1">{post.title}</h4>
                           {expired && (
-                            <span className="text-[9px] font-black bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                            <span className="text-[11px] font-black bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded-full uppercase tracking-tighter">
                               انتهى الوقت
                             </span>
                           )}

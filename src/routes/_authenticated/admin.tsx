@@ -1685,7 +1685,7 @@ function PollsManager({ list, meId, onRefresh }: any) {
                       </h4>
                       <span
                         className={cn(
-                          "text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter",
+                          "text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter",
                           pType === "chairman"
                             ? "bg-gold-primary text-emerald-950"
                             : pType === "manager"

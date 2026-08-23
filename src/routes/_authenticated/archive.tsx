@@ -549,14 +549,14 @@ function MediaCard({ item, index, onView, canManage, onTogglePin, onDelete }: an
       {/* Badges */}
       <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
         {item.pinned && (
-          <div className="px-3 py-1 rounded-full bg-gold-primary text-black text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1.5 animate-bounce">
+          <div className="px-3 py-1 rounded-full bg-gold-primary text-black text-[11px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1.5 animate-bounce">
             <Pin size={10} fill="currentColor" /> مثبت
           </div>
         )}
         {left !== null && (
           <div
             className={cn(
-              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md border",
+              "px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md border",
               left <= 1
                 ? "bg-rose-500 text-white border-rose-400"
                 : "bg-white/10 text-white border-white/20",
@@ -606,7 +606,7 @@ function MediaCard({ item, index, onView, canManage, onTogglePin, onDelete }: an
             />
           </div>
           <div className="min-w-0">
-            <p className="text-[8px] font-black text-white/40 uppercase tracking-widest">بواسطة</p>
+            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">بواسطة</p>
             <p className="text-xs font-black text-white truncate drop-shadow-md">
               {item.uploaderName}
             </p>

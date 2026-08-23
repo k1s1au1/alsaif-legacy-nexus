@@ -362,7 +362,7 @@ function SecureVaultPage() {
             <div className="relative z-10 space-y-4 md:space-y-6 text-center md:text-right flex-1">
               <div className="flex items-center justify-center md:justify-start gap-3 md:gap-4">
                 <div className="h-0.5 w-8 md:w-12 bg-gold-primary shadow-[0_0_15px_rgba(212,175,55,0.4)]" />
-                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-gold-primary">
+                <span className="text-[10px] md:text-[10px] font-black uppercase tracking-[0.4em] text-gold-primary">
                   النظام الأمني المشفر
                 </span>
               </div>
@@ -462,7 +462,7 @@ function SecureVaultPage() {
                 بأعلى درجات الخصوصية.
               </p>
               <div className="pt-4 flex flex-col items-center gap-2 opacity-50">
-                <div className="flex items-center gap-2 text-[8px] md:text-[10px] font-black uppercase text-gold-primary tracking-widest">
+                <div className="flex items-center gap-2 text-[10px] md:text-[10px] font-black uppercase text-gold-primary tracking-widest">
                   <ShieldCheck size={14} /> حماية مشفرة 256-bit
                 </div>
               </div>
@@ -493,7 +493,7 @@ function SecureVaultPage() {
               <h4 className="text-[10px] md:text-sm font-black text-primary uppercase tracking-[0.4em]">
                 Family Security Protocol
               </h4>
-              <p className="text-[9px] md:text-xs font-bold text-muted-foreground max-w-md leading-relaxed">
+              <p className="text-[11px] md:text-xs font-bold text-muted-foreground max-w-md leading-relaxed">
                 كافة الوثائق المرفوعة في هذه الخزنة تخضع لقوانين الخصوصية العائلية المشددة ولا يحق
                 لأي جهة برمجية الاطلاع على محتواها.
               </p>
@@ -643,7 +643,7 @@ function SecureVaultPage() {
                                 </div>
                                 <span
                                   className={cn(
-                                    "text-[8px] font-black truncate w-full text-center",
+                                    "text-[10px] font-black truncate w-full text-center",
                                     isSelected ? "text-primary" : "text-muted-foreground",
                                   )}
                                 >
@@ -862,7 +862,7 @@ function VaultCard({
             />
           </div>
           <div className="text-right min-w-0">
-            <p className="text-[7px] md:text-[8px] font-black uppercase text-primary/30 tracking-[0.2em] leading-none mb-1">
+            <p className="text-[7px] md:text-[10px] font-black uppercase text-primary/30 tracking-[0.2em] leading-none mb-1">
               المودع
             </p>
             <h5 className="text-[10px] md:text-[13px] font-black text-primary/70 truncate tracking-tight">
@@ -873,7 +873,7 @@ function VaultCard({
           </div>
         </div>
         <div className="flex items-center gap-2 text-gold-primary group/link">
-          <span className="text-[9px] md:text-[12px] font-black uppercase tracking-[0.2em]">
+          <span className="text-[11px] md:text-[12px] font-black uppercase tracking-[0.2em]">
             {isLocked ? "مغلق" : "عرض"}
           </span>
           <ChevronLeft
@@ -898,7 +898,7 @@ function VaultCard({
           <div className="space-y-2">
             <p className="text-sm md:text-xl font-black text-white tracking-tight">وثيقة موقوتة</p>
             <div className="inline-flex px-3 py-1 rounded-full bg-white/5 border border-white/10">
-              <p className="text-[9px] md:text-[11px] font-bold text-white/50 tracking-wider flex items-center gap-2">
+              <p className="text-[11px] md:text-[11px] font-bold text-white/50 tracking-wider flex items-center gap-2">
                 <Clock size={12} className="text-gold-primary" />
                 <span>
                   {new Date(item.unlock_at!).toLocaleDateString("ar-SA", {

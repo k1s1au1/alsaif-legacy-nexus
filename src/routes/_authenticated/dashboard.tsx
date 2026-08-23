@@ -116,7 +116,7 @@ function ImmersiveView({
                 ) : (
                   <Newspaper size={14} />
                 )}
-                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.25em]">
+                <span className="text-[11px] md:text-[10px] font-black uppercase tracking-[0.25em]">
                   {type === "trip"
                     ? "ترفيه عائلي"
                     : type === "meeting"
@@ -136,7 +136,7 @@ function ImmersiveView({
                   <Clock size={24} />
                 </div>
                 <div>
-                  <p className="text-[9px] font-black uppercase opacity-40 mb-0.5">
+                  <p className="text-[11px] font-black uppercase opacity-40 mb-0.5">
                     الموعد والتاريخ
                   </p>
                   <p className="text-sm md:text-xl font-black text-white">
@@ -156,7 +156,7 @@ function ImmersiveView({
                     <MapPin size={24} />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase opacity-40 mb-0.5">
+                    <p className="text-[11px] font-black uppercase opacity-40 mb-0.5">
                       الموقع / المكان
                     </p>
                     <p className="text-sm md:text-xl font-black text-white">{data.location}</p>
@@ -167,7 +167,7 @@ function ImmersiveView({
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-white/10" />
-                <h4 className="text-[9px] font-black uppercase tracking-[0.35em] text-gold-primary/60">
+                <h4 className="text-[11px] font-black uppercase tracking-[0.35em] text-gold-primary/60">
                   تفاصيل الحدث
                 </h4>
                 <div className="h-px flex-1 bg-white/10" />
@@ -498,7 +498,7 @@ function Dashboard() {
               "{spiritualQuote.text}"
             </p>
             <div className="h-2 w-px bg-primary/20 mx-1" />
-            <span className="text-[9px] font-bold text-primary/60">
+            <span className="text-[11px] font-bold text-primary/60">
               {spiritualQuote.source}
             </span>
           </div>
@@ -541,7 +541,7 @@ function Dashboard() {
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
                     <Sparkles className="size-3 text-gold-primary animate-bounce" />
-                    <p className="text-gold-primary font-black uppercase tracking-[0.4em] text-[9px] md:text-xs">
+                    <p className="text-gold-primary font-black uppercase tracking-[0.4em] text-[11px] md:text-xs">
                       {getGreeting()}، يا أهل الوفاء
                     </p>
                   </div>
@@ -652,7 +652,7 @@ function Dashboard() {
                             <Newspaper size={28} className="md:size-[40px]" />
                           </div>
                           <div className="space-y-2 md:space-y-1 w-full">
-                            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] text-gold-primary opacity-80">
+                            <span className="text-[11px] md:text-[10px] font-black uppercase tracking-[0.4em] text-gold-primary opacity-80">
                               {a._label}
                             </span>
                             <h3 className="text-2xl md:text-4xl font-black text-white tracking-tight drop-shadow-lg">

@@ -547,7 +547,7 @@ function SettingsPage() {
                     onChange={(e) => handleFontScaleChange(parseFloat(e.target.value))}
                     className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                   />
-                  <div className="flex justify-between mt-2 px-1 text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+                  <div className="flex justify-between mt-2 px-1 text-[11px] font-black text-muted-foreground uppercase tracking-widest">
                     <span>افتراضي</span>
                     <span>كبير</span>
                     <span>ضخم</span>
@@ -841,7 +841,7 @@ function SettingsPage() {
                     <div className="flex-1">
                       <span className="font-black text-sm block text-primary">{c.name}</span>
                       {c.isPrimary && (
-                        <span className="text-[9px] font-black text-gold-primary uppercase tracking-widest mt-0.5">
+                        <span className="text-[11px] font-black text-gold-primary uppercase tracking-widest mt-0.5">
                           الهوية الأساسية
                         </span>
                       )}

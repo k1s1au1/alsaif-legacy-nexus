@@ -197,7 +197,7 @@ function TripsPage() {
                     <div className="space-y-3 md:space-y-5 text-center md:text-right">
                       <div className="flex items-center justify-center md:justify-start gap-3">
                         <div className="h-0.5 w-8 md:w-12 bg-gold-primary shadow-[0_0_10px_rgba(212,175,55,0.6)]" />
-                        <span className="text-[9px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
+                        <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
                           استكشاف السعادة
                         </span>
                       </div>
@@ -275,7 +275,7 @@ function TripsPage() {
                     <div className="space-y-3 md:space-y-5 text-center md:text-right">
                       <div className="flex items-center justify-center md:justify-start gap-3">
                         <div className="h-0.5 w-8 md:w-12 bg-gold-primary shadow-[0_0_10px_rgba(212,175,55,0.6)]" />
-                        <span className="text-[9px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
+                        <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
                           ميدان التنافس
                         </span>
                       </div>
@@ -580,7 +580,7 @@ function TripDialog({ trip, onClose, onSaved }: any) {
                 placeholder="المدينة أو الدولة"
               />
               <div className="space-y-2">
-                <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
+                <label className="text-[11px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
                   نوع الإقامة
                 </label>
                 <select
@@ -599,7 +599,7 @@ function TripDialog({ trip, onClose, onSaved }: any) {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
+                <label className="text-[11px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
                   الحالة
                 </label>
                 <select
@@ -627,7 +627,7 @@ function TripDialog({ trip, onClose, onSaved }: any) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
+              <label className="text-[11px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
                 رابط الموقع
               </label>
               <input
@@ -640,7 +640,7 @@ function TripDialog({ trip, onClose, onSaved }: any) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
+              <label className="text-[11px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
                 وصف الرحلة
               </label>
               <textarea
@@ -653,7 +653,7 @@ function TripDialog({ trip, onClose, onSaved }: any) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
+              <label className="text-[11px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
                 صورة الوجهة
               </label>
               <label className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-border/60 rounded-[24px] md:rounded-[32px] cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all bg-muted/20">

@@ -207,7 +207,7 @@ function TasksPage() {
               <div className="space-y-3 md:space-y-5 text-center md:text-right">
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <div className="h-0.5 w-8 md:w-12 bg-gold-primary shadow-[0_0_10px_rgba(212,175,55,0.6)]" />
-                  <span className="text-[9px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
+                  <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
                     نظام إدارة المهام
                   </span>
                 </div>
@@ -534,7 +534,7 @@ function ModernTaskCard({
                 />
               </div>
               <div className="space-y-0.5">
-                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest opacity-80">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-80">
                   المسؤول عن المهمة
                 </p>
                 <p className="text-xs font-black text-foreground">{assignee.name}</p>
@@ -547,7 +547,7 @@ function ModernTaskCard({
           )}
 
           <div className="text-left bg-muted/40 px-4 py-2 rounded-2xl border border-border/30">
-            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest opacity-80">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-80">
               تاريخ الاستحقاق
             </p>
             <div className="flex items-center gap-2">
@@ -589,7 +589,7 @@ function FilterTab({ active, onClick, label, count, color }: any) {
       {count !== undefined && (
         <span
           className={cn(
-            "min-w-[18px] h-4 px-1 rounded-md text-[8px] flex items-center justify-center",
+            "min-w-[18px] h-4 px-1 rounded-md text-[10px] flex items-center justify-center",
             active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground",
           )}
         >
@@ -606,7 +606,7 @@ function StatusStep({ active, disabled, onClick, label }: any) {
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex-1 py-2 px-1 rounded-xl text-[9px] font-black uppercase tracking-tighter transition-all",
+        "flex-1 py-2 px-1 rounded-xl text-[11px] font-black uppercase tracking-tighter transition-all",
         active
           ? "bg-white dark:bg-card text-primary shadow-sm"
           : "text-muted-foreground opacity-60 hover:opacity-100 disabled:cursor-not-allowed",
