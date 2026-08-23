@@ -44,6 +44,22 @@ const fmtDate = (value?: string | null) => {
       });
 };
 
+const fmtMeetingDay = (value?: string | null) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleDateString("ar-SA", { day: "numeric" });
+};
+
+const fmtMeetingMonth = (value?: string | null) => {
+  if (!value) return "موعد";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "موعد"
+    : date.toLocaleDateString("ar-SA", { month: "short" });
+};
+
 const services = [
   { to: "/finance", label: "الصندوق المالي", desc: "إدارة الموارد المالية للعائلة", icon: Wallet },
   { to: "/tasks", label: "المهام", desc: "إدارة ومتابعة المهام", icon: ListChecks },
@@ -404,9 +420,9 @@ export function DesktopDashboardExtras() {
                         >
                           {item.cardType === "meeting" && (
                             <>
-                              <span />
-                              <span />
-                              <span />
+                              <CalendarDays />
+                              <strong>{fmtMeetingDay(item.date)}</strong>
+                              <small>{fmtMeetingMonth(item.date)}</small>
                             </>
                           )}
                           {item.cardType === "trip" && (
