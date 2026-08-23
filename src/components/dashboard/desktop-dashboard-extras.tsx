@@ -44,6 +44,22 @@ const fmtDate = (value?: string | null) => {
       });
 };
 
+const fmtMeetingDay = (value?: string | null) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleDateString("ar-SA", { day: "numeric" });
+};
+
+const fmtMeetingMonth = (value?: string | null) => {
+  if (!value) return "موعد";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "موعد"
+    : date.toLocaleDateString("ar-SA", { month: "short" });
+};
+
 const services = [
   { to: "/finance", label: "الصندوق المالي", desc: "إدارة الموارد المالية للعائلة", icon: Wallet },
   { to: "/tasks", label: "المهام", desc: "إدارة ومتابعة المهام", icon: ListChecks },
@@ -68,10 +84,12 @@ const services = [
 type LocalOccasion = {
   id: string;
   type?: string;
+  design?: number;
   title?: string;
   date?: string;
   time?: string;
   location?: string;
+  birthdayAudience?: "adult" | "child";
 };
 
 const occasionLabels: Record<string, string> = {
@@ -86,6 +104,24 @@ const occasionLabels: Record<string, string> = {
   ramadan: "رمضان",
   eid_fitr: "عيد الفطر",
   eid_adha: "عيد الأضحى",
+};
+
+const occasionTemplatePath = (item: LocalOccasion) => {
+  const rawType = item.type || "gathering";
+  const type = Object.prototype.hasOwnProperty.call(occasionLabels, rawType)
+    ? rawType
+    : "gathering";
+  const design = Math.min(3, Math.max(1, Number(item.design) || 1));
+
+  if (type === "condolence") return "/occasion-templates/condolence-1.png.png";
+  if (type === "wedding") return `/occasion-templates/wedding-${design}.png.jpg`;
+  if (type === "birthday" && item.birthdayAudience === "child") {
+    return `/occasion-templates/kids-birthday-${design}.png`;
+  }
+  if (type === "gathering") return `/occasion-templates/family-gathering-${design}.png`;
+  if (type === "eid_fitr") return `/occasion-templates/eid-fitr-${design}.png`;
+  if (type === "eid_adha") return `/occasion-templates/eid-adha-${design}.png`;
+  return `/occasion-templates/${type}-${design}.png`;
 };
 
 export function DesktopDashboardExtras() {
@@ -178,6 +214,7 @@ export function DesktopDashboardExtras() {
         date: item.scheduled_at,
         location: item.location,
         icon: Users,
+        cardType: "meeting",
         to: "/meetings",
         actionLabel: "فتح الاجتماع",
       }),
@@ -189,6 +226,7 @@ export function DesktopDashboardExtras() {
         date: item.start_date,
         location: item.location,
         icon: Plane,
+        cardType: "trip",
         to: "/trips",
         actionLabel: "فتح الرحلة",
       }),
@@ -199,6 +237,7 @@ export function DesktopDashboardExtras() {
         title: item.title,
         date: item.due_date,
         icon: ListChecks,
+        cardType: "task",
         to: "/tasks",
         actionLabel: "فتح المهمة",
       }),
@@ -210,6 +249,8 @@ export function DesktopDashboardExtras() {
         date: item.date ? `${item.date}T${item.time || "23:59"}:00` : item.date,
         location: item.location,
         icon: PartyPopper,
+        cardType: "occasion",
+        templateUrl: occasionTemplatePath(item),
         to: "/family-occasions",
         actionLabel: "فتح المناسبة",
       }),
@@ -359,7 +400,48 @@ export function DesktopDashboardExtras() {
                 {featuredUpcoming.map((item, index) => {
                   const Icon = item.icon;
                   return (
-                    <article key={`${item.kind}-${item.title}-${index}`} className="desktop-next-card">
+                    <article
+                      key={`${item.kind}-${item.title}-${index}`}
+                      className={`desktop-next-card desktop-next-card--${item.cardType || "default"}`}
+                    >
+                      {item.cardType === "occasion" && item.templateUrl && (
+                        <img
+                          src={item.templateUrl}
+                          alt=""
+                          aria-hidden="true"
+                          className="desktop-occasion-template"
+                        />
+                      )}
+
+                      {item.cardType !== "occasion" && (
+                        <div
+                          className={`desktop-card-motif desktop-card-motif--${item.cardType || "default"}`}
+                          aria-hidden="true"
+                        >
+                          {item.cardType === "meeting" && (
+                            <>
+                              <CalendarDays />
+                              <strong>{fmtMeetingDay(item.date)}</strong>
+                              <small>{fmtMeetingMonth(item.date)}</small>
+                            </>
+                          )}
+                          {item.cardType === "trip" && (
+                            <>
+                              <Plane />
+                              <span>ALS</span>
+                              <small>BOARDING</small>
+                            </>
+                          )}
+                          {item.cardType === "task" && (
+                            <>
+                              <span />
+                              <span />
+                              <span />
+                            </>
+                          )}
+                        </div>
+                      )}
+
                       <div className="desktop-next-top">
                         <span>{item.kind}</span>
                         <div className="desktop-next-icon">
