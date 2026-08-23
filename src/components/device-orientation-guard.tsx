@@ -1,10 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
 import { Smartphone, Tablet, RotateCw } from "lucide-react";
+import { DesktopDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
 
 type DeviceKind = "mobile" | "tablet" | "desktop";
 
+function smallestPhysicalSide() {
+  if (typeof window === "undefined") return 9999;
+  return Math.min(
+    window.screen?.width || window.innerWidth,
+    window.screen?.height || window.innerHeight,
+  );
+}
+
+/**
+ * Chrome/Android's "Desktop site" keeps the device physically phone-sized but
+ * exposes a desktop-like CSS viewport (normally ~980px). Detect that combination
+ * instead of relying on UA alone, because modern Chrome may keep a mobile UA hint.
+ */
+function isBrowserDesktopSiteRequest() {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+  const touchPoints = navigator.maxTouchPoints || 0;
+  const touch = touchPoints > 0 || "ontouchstart" in window;
+  const phoneHardware = smallestPhysicalSide() <= 600;
+  const desktopLikeViewport = window.innerWidth >= 900;
+  return touch && phoneHardware && desktopLikeViewport;
+}
+
 function detectDeviceKind(): DeviceKind {
   if (typeof window === "undefined" || typeof navigator === "undefined") return "desktop";
+
+  // If the user explicitly requested the browser's desktop-site mode, respect it.
+  if (isBrowserDesktopSiteRequest()) return "desktop";
 
   const ua = navigator.userAgent || "";
   const platform = navigator.platform || "";
@@ -20,7 +46,7 @@ function detectDeviceKind(): DeviceKind {
 
   // Fallback for touch devices with phone/tablet-like dimensions. Use the smallest
   // screen side so rotating a phone does not suddenly reclassify it as a tablet.
-  const smallestScreenSide = Math.min(window.screen?.width || window.innerWidth, window.screen?.height || window.innerHeight);
+  const smallestScreenSide = smallestPhysicalSide();
   const isTouchDevice = touchPoints > 0 || "ontouchstart" in window;
   if (isTouchDevice && smallestScreenSide <= 600) return "mobile";
   if (isTouchDevice && smallestScreenSide > 600 && smallestScreenSide <= 1100) return "tablet";
@@ -46,8 +72,35 @@ async function tryOrientationLock(device: DeviceKind) {
 }
 
 export function DeviceOrientationGuard() {
-  const device = useMemo(() => detectDeviceKind(), []);
+  const initialDesktopRequest = useMemo(() => isBrowserDesktopSiteRequest(), []);
+  const [desktopRequest, setDesktopRequest] = useState(initialDesktopRequest);
+  const device = useMemo(() => detectDeviceKind(), [desktopRequest]);
   const [portrait, setPortrait] = useState(true);
+
+  // Browser desktop-site compatibility: promote the CSS viewport to a real desktop
+  // width so Tailwind lg/xl breakpoints and the desktop dashboard are both activated.
+  useEffect(() => {
+    const syncDesktopRequest = () => {
+      const requested = isBrowserDesktopSiteRequest();
+      setDesktopRequest(requested);
+
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (requested) {
+        document.documentElement.dataset.desktopSite = "true";
+        viewport?.setAttribute("content", "width=1440, initial-scale=1, viewport-fit=cover");
+      } else {
+        delete document.documentElement.dataset.desktopSite;
+      }
+    };
+
+    syncDesktopRequest();
+    window.addEventListener("resize", syncDesktopRequest);
+    window.addEventListener("orientationchange", syncDesktopRequest);
+    return () => {
+      window.removeEventListener("resize", syncDesktopRequest);
+      window.removeEventListener("orientationchange", syncDesktopRequest);
+    };
+  }, []);
 
   useEffect(() => {
     if (device === "desktop") return;
@@ -67,6 +120,14 @@ export function DeviceOrientationGuard() {
       mq?.removeEventListener?.("change", sync);
     };
   }, [device]);
+
+  // Desktop-site mode on a phone should behave like a real desktop, including the
+  // desktop-only dashboard additions that otherwise depend on window.innerWidth.
+  if (desktopRequest) {
+    return typeof window !== "undefined" && window.location.pathname === "/dashboard"
+      ? <DesktopDashboardExtras />
+      : null;
+  }
 
   if (device === "desktop") return null;
 
