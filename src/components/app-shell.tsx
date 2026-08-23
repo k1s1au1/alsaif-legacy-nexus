@@ -66,6 +66,21 @@ const navItems: { to: string; label: string; icon: any; adminOnly?: boolean }[] 
   { to: "/profile", label: "ملفي الشخصي", icon: User },
 ];
 
+const desktopServiceItems: { id: NavItemKey; label: string; description: string }[] = [
+  { id: "finance", label: "الصندوق المالي", description: "إدارة موارد العائلة" },
+  { id: "tasks", label: "المهام", description: "تنظيم ومتابعة المهام" },
+  { id: "trips", label: "الرحلات", description: "تخطيط الرحلات العائلية" },
+  { id: "meetings", label: "الاجتماعات", description: "المواعيد واجتماعات العائلة" },
+  { id: "family-occasions", label: "المناسبات", description: "أفراح ومناسبات العائلة" },
+  { id: "news", label: "الأخبار", description: "آخر أخبار العائلة" },
+  { id: "archive", label: "الألبومات", description: "الصور والذكريات" },
+  { id: "members", label: "ركن الأعضاء", description: "مجتمع أفراد العائلة" },
+  { id: "heritage", label: "الإرث", description: "تاريخ العائلة وإرثها" },
+  { id: "family-tree", label: "شجرة العائلة", description: "الأجيال وروابط القرابة" },
+  { id: "vault", label: "الخزنة", description: "المحتوى العائلي الخاص" },
+  { id: "steps", label: "تحدي الخطوات", description: "النشاط والتحديات" },
+];
+
 function BottomNavItem({
   to,
   label,
@@ -537,17 +552,91 @@ export function AppShell({
                 );
               })}
 
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setSidebarOpen(true);
-                }}
-                className="relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black text-primary/65 hover:text-primary hover:bg-primary/5 transition-all duration-200"
-              >
-                <LayoutGrid size={19} />
-                <span>الخدمات</span>
-              </button>
+              <DropdownMenu dir="rtl">
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="group relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black text-primary/65 hover:text-primary hover:bg-primary/5 data-[state=open]:text-gold-primary data-[state=open]:bg-gold-primary/10 transition-all duration-200 outline-none"
+                    aria-label="فتح قائمة الخدمات"
+                  >
+                    <LayoutGrid size={19} />
+                    <span className="flex items-center gap-1">
+                      الخدمات
+                      <ChevronDown
+                        size={12}
+                        className="transition-transform duration-200 group-data-[state=open]:rotate-180"
+                      />
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                  align="center"
+                  sideOffset={10}
+                  className="w-[min(720px,calc(100vw-32px))] rounded-[28px] border border-primary/10 bg-card/95 p-3 text-right shadow-[0_24px_70px_rgba(5,54,39,0.22)] backdrop-blur-2xl"
+                >
+                  <DropdownMenuLabel className="flex items-center justify-between gap-4 px-4 py-3">
+                    <div>
+                      <p className="text-[15px] font-black text-primary">خدمات العائلة</p>
+                      <p className="mt-1 text-[10px] font-bold text-muted-foreground">
+                        اختر الخدمة التي ترغب في فتحها
+                      </p>
+                    </div>
+                    <div className="flex size-10 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/15">
+                      <LayoutGrid size={19} />
+                    </div>
+                  </DropdownMenuLabel>
+
+                  <DropdownMenuSeparator className="mx-2 mb-2 bg-primary/10" />
+
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {desktopServiceItems.map((service) => {
+                      const def = NAV_REGISTRY.find((item) => item.id === service.id);
+                      if (!def || (def.adminOnly && !isAdmin)) return null;
+
+                      if (isGuest) {
+                        const publicKeys = ["dashboard", "profile", "settings", "members"];
+                        if (!publicKeys.includes(def.id) && !allowedSections.includes(def.id)) {
+                          return null;
+                        }
+                      }
+
+                      const Icon = def.icon;
+                      const active = path === def.to;
+
+                      return (
+                        <Link key={service.id} to={def.to}>
+                          <DropdownMenuItem
+                            className={cn(
+                              "group min-h-[72px] cursor-pointer rounded-2xl px-3 py-3 text-right focus:bg-primary/10 focus:text-primary",
+                              "flex flex-row items-center gap-3 transition-colors",
+                              active ? "bg-gold-primary/10 text-primary" : "text-foreground",
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "flex size-10 shrink-0 items-center justify-center rounded-2xl transition-colors",
+                                active
+                                  ? "bg-gold-primary text-primary"
+                                  : "bg-primary/[0.08] text-primary group-hover:bg-primary group-hover:text-white",
+                              )}
+                            >
+                              <Icon size={19} strokeWidth={2.2} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[13px] font-black">{service.label}</p>
+                              <p className="mt-1 truncate text-[9px] font-bold text-muted-foreground">
+                                {service.description}
+                              </p>
+                            </div>
+                            {active && <span className="size-1.5 shrink-0 rounded-full bg-gold-primary" />}
+                          </DropdownMenuItem>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {!bottomNavKeys.includes("meetings") && (
                 <Link
