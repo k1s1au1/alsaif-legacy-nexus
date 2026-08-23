@@ -43,6 +43,11 @@ export function QuickActionsBanner() {
   return (
     <>
       <style>{`
+        /* Hide the services banner entirely on desktop / wide screens */
+        @media (min-width: 1200px) {
+          .family-services-section { display: none !important; }
+        }
+
         .family-service-icon-primary {
           background: var(--nav-bg, var(--primary)) !important;
           color: white !important;
