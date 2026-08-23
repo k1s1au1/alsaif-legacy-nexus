@@ -3,6 +3,12 @@ import { Smartphone, Tablet, RotateCw } from "lucide-react";
 
 type DeviceKind = "mobile" | "tablet" | "desktop";
 
+declare global {
+  interface Window {
+    __ALSAIF_DESKTOP_SITE__?: boolean;
+  }
+}
+
 function smallestPhysicalSide() {
   if (typeof window === "undefined") return 9999;
   return Math.min(
@@ -13,11 +19,19 @@ function smallestPhysicalSide() {
 
 function isBrowserDesktopSiteRequest() {
   if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+  if (window.__ALSAIF_DESKTOP_SITE__ || document.documentElement.dataset.desktopSite === "true") return true;
+
+  const ua = navigator.userAgent || "";
+  const phoneHardware = smallestPhysicalSide() <= 600;
+  const mobileUa = /iPhone|iPod|Android.*Mobile|Windows Phone|IEMobile|Opera Mini/i.test(ua);
+  const desktopUaOnPhone = phoneHardware && !mobileUa;
+
+  // Older Chrome variants expose a wide desktop viewport while keeping touch hints.
   const touchPoints = navigator.maxTouchPoints || 0;
   const touch = touchPoints > 0 || "ontouchstart" in window;
-  const phoneHardware = smallestPhysicalSide() <= 600;
-  const desktopLikeViewport = window.innerWidth >= 900;
-  return touch && phoneHardware && desktopLikeViewport;
+  const wideDesktopViewport = touch && phoneHardware && window.innerWidth >= 900;
+
+  return desktopUaOnPhone || wideDesktopViewport;
 }
 
 function detectDeviceKind(): DeviceKind {
@@ -53,6 +67,18 @@ async function tryOrientationLock(device: DeviceKind) {
   } catch {}
 }
 
+function forceDesktopViewport() {
+  const content = "width=1440, initial-scale=1, viewport-fit=cover";
+  let metas = Array.from(document.querySelectorAll<HTMLMetaElement>('meta[name="viewport"]'));
+  if (!metas.length) {
+    const meta = document.createElement("meta");
+    meta.name = "viewport";
+    document.head.appendChild(meta);
+    metas = [meta];
+  }
+  metas.forEach((meta) => meta.setAttribute("content", content));
+}
+
 export function DeviceOrientationGuard() {
   const initialDesktopRequest = useMemo(() => isBrowserDesktopSiteRequest(), []);
   const [desktopRequest, setDesktopRequest] = useState(initialDesktopRequest);
@@ -63,8 +89,13 @@ export function DeviceOrientationGuard() {
     const syncDesktopRequest = () => {
       const requested = isBrowserDesktopSiteRequest();
       setDesktopRequest(requested);
-      if (requested) document.documentElement.dataset.desktopSite = "true";
-      else delete document.documentElement.dataset.desktopSite;
+      if (requested) {
+        window.__ALSAIF_DESKTOP_SITE__ = true;
+        document.documentElement.dataset.desktopSite = "true";
+        forceDesktopViewport();
+      } else {
+        delete document.documentElement.dataset.desktopSite;
+      }
     };
     syncDesktopRequest();
     window.addEventListener("resize", syncDesktopRequest);
