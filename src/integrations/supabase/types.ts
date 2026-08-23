@@ -1451,6 +1451,13 @@ export type Database = {
     }
     Functions: {
       archive_cleanup_expired: { Args: never; Returns: undefined }
+      assign_user_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
       call_send_push: {
         Args: { _body: string; _exclude: string; _title: string; _url: string }
         Returns: undefined
