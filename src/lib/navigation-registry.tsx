@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ListChecks,
   Users,
+  UsersRound,
   Lock,
   Wallet,
   Archive,
