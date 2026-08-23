@@ -24,6 +24,7 @@ export type NavItemKey =
   | "chat"
   | "steps"
   | "meetings"
+  | "calendar"
   | "tasks"
   | "members"
   | "vault"
@@ -51,6 +52,7 @@ export const NAV_REGISTRY: NavItemDef[] = [
   { id: "chat", to: "/chat", label: "محادثة", icon: MessageCircle },
   { id: "steps", to: "/steps-challenge", label: "خطواتي", icon: Footprints },
   { id: "meetings", to: "/meetings", label: "اجتماعات", icon: CalendarDays },
+  { id: "calendar", to: "/calendar", label: "التقويم", icon: CalendarDays },
   { id: "tasks", to: "/tasks", label: "مهامي", icon: ListChecks },
   { id: "members", to: "/community", label: "الأعضاء", icon: Users },
   { id: "vault", to: "/vault", label: "الخزنة", icon: Lock },
