@@ -26,6 +26,7 @@ import { Route as AuthenticatedMajlisRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedHeritageRouteImport } from './routes/_authenticated/heritage'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
 import { Route as AuthenticatedFamilyTreeRouteImport } from './routes/_authenticated/family-tree'
+import { Route as AuthenticatedFamilyOccasionsRouteImport } from './routes/_authenticated/family-occasions'
 import { Route as AuthenticatedEventsRouteImport } from './routes/_authenticated/events'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
@@ -126,6 +127,12 @@ const AuthenticatedFamilyTreeRoute = AuthenticatedFamilyTreeRouteImport.update({
   path: '/family-tree',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFamilyOccasionsRoute =
+  AuthenticatedFamilyOccasionsRouteImport.update({
+    id: '/family-occasions',
+    path: '/family-occasions',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEventsRoute = AuthenticatedEventsRouteImport.update({
   id: '/events',
   path: '/events',
@@ -201,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/events': typeof AuthenticatedEventsRoute
+  '/family-occasions': typeof AuthenticatedFamilyOccasionsRoute
   '/family-tree': typeof AuthenticatedFamilyTreeRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/heritage': typeof AuthenticatedHeritageRoute
@@ -230,6 +238,7 @@ export interface FileRoutesByTo {
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/events': typeof AuthenticatedEventsRoute
+  '/family-occasions': typeof AuthenticatedFamilyOccasionsRoute
   '/family-tree': typeof AuthenticatedFamilyTreeRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/heritage': typeof AuthenticatedHeritageRoute
@@ -262,6 +271,7 @@ export interface FileRoutesById {
   '/_authenticated/community': typeof AuthenticatedCommunityRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/events': typeof AuthenticatedEventsRoute
+  '/_authenticated/family-occasions': typeof AuthenticatedFamilyOccasionsRoute
   '/_authenticated/family-tree': typeof AuthenticatedFamilyTreeRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/heritage': typeof AuthenticatedHeritageRoute
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/events'
+    | '/family-occasions'
     | '/family-tree'
     | '/finance'
     | '/heritage'
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/events'
+    | '/family-occasions'
     | '/family-tree'
     | '/finance'
     | '/heritage'
@@ -354,6 +366,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community'
     | '/_authenticated/dashboard'
     | '/_authenticated/events'
+    | '/_authenticated/family-occasions'
     | '/_authenticated/family-tree'
     | '/_authenticated/finance'
     | '/_authenticated/heritage'
@@ -503,6 +516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFamilyTreeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/family-occasions': {
+      id: '/_authenticated/family-occasions'
+      path: '/family-occasions'
+      fullPath: '/family-occasions'
+      preLoaderRoute: typeof AuthenticatedFamilyOccasionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/events': {
       id: '/_authenticated/events'
       path: '/events'
@@ -610,6 +630,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEventsRoute: typeof AuthenticatedEventsRoute
+  AuthenticatedFamilyOccasionsRoute: typeof AuthenticatedFamilyOccasionsRoute
   AuthenticatedFamilyTreeRoute: typeof AuthenticatedFamilyTreeRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedHeritageRoute: typeof AuthenticatedHeritageRoute
@@ -636,6 +657,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCommunityRoute: AuthenticatedCommunityRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEventsRoute: AuthenticatedEventsRoute,
+  AuthenticatedFamilyOccasionsRoute: AuthenticatedFamilyOccasionsRoute,
   AuthenticatedFamilyTreeRoute: AuthenticatedFamilyTreeRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedHeritageRoute: AuthenticatedHeritageRoute,

@@ -443,7 +443,7 @@ function FamilyOccasionsPage() {
   );
 
   return (
-    <AppShell>
+    <AppShell title="مناسبات العائلة" user={{ name: "", role: "", initial: "س" }}>
       <main dir="rtl" className="mx-auto w-full max-w-7xl px-4 pb-28 pt-5 sm:px-6">
         <section className="rounded-[32px] border border-border bg-card p-7 shadow-sm">
           <Sparkles className="size-8 text-gold-primary" />

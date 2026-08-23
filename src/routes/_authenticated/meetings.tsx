@@ -482,6 +482,7 @@ function MeetingsPage() {
                         ready={!rolesLoading && !!userId}
                         dynamicLogo={dynamicLogo}
                         userId={userId}
+                        onShowMinutes={setShowMinutes}
                       />
                     </CarouselItem>
                   ))}
@@ -712,6 +713,7 @@ function MeetingInteractiveCard({
   dynamicLogo,
   userId,
   onRemind,
+  onShowMinutes,
 }: any) {
   const date = formatDate(meeting?.scheduled_at);
   const going = (attendeesList || [])
@@ -836,7 +838,7 @@ function MeetingInteractiveCard({
                <div className="pt-4 flex items-center gap-3">
                   {meeting.minutes && (
                     <button
-                      onClick={() => setShowMinutes(meeting)}
+                      onClick={() => onShowMinutes?.(meeting)}
                       className="flex-1 flex items-center justify-center gap-3 h-14 rounded-2xl bg-gold-primary/20 text-gold-primary font-black text-xs hover:bg-gold-primary/30 transition-all border border-gold-primary/30"
                     >
                       <FileText size={18} /> محضر الاجتماع

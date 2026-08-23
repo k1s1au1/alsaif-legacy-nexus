@@ -1058,8 +1058,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allowed_sections: Json | null
           arabic_name: string | null
           avatar_url: string | null
+          bottom_nav_prefs: Json | null
           created_at: string
           father_name: string | null
           fcm_token: string | null
@@ -1071,11 +1073,14 @@ export type Database = {
           parent_id: string | null
           phone: string | null
           terms_accepted_at: string | null
+          theme_color: string | null
           updated_at: string
         }
         Insert: {
+          allowed_sections?: Json | null
           arabic_name?: string | null
           avatar_url?: string | null
+          bottom_nav_prefs?: Json | null
           created_at?: string
           father_name?: string | null
           fcm_token?: string | null
@@ -1087,11 +1092,14 @@ export type Database = {
           parent_id?: string | null
           phone?: string | null
           terms_accepted_at?: string | null
+          theme_color?: string | null
           updated_at?: string
         }
         Update: {
+          allowed_sections?: Json | null
           arabic_name?: string | null
           avatar_url?: string | null
+          bottom_nav_prefs?: Json | null
           created_at?: string
           father_name?: string | null
           fcm_token?: string | null
@@ -1103,6 +1111,7 @@ export type Database = {
           parent_id?: string | null
           phone?: string | null
           terms_accepted_at?: string | null
+          theme_color?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1460,8 +1469,10 @@ export type Database = {
       get_my_profile: {
         Args: never
         Returns: {
+          allowed_sections: Json | null
           arabic_name: string | null
           avatar_url: string | null
+          bottom_nav_prefs: Json | null
           created_at: string
           father_name: string | null
           fcm_token: string | null
@@ -1473,6 +1484,7 @@ export type Database = {
           parent_id: string | null
           phone: string | null
           terms_accepted_at: string | null
+          theme_color: string | null
           updated_at: string
         }
         SetofOptions: {
@@ -1497,6 +1509,7 @@ export type Database = {
         Args: { _conv: string; _user: string }
         Returns: boolean
       }
+      is_guest: { Args: { _user_id: string }; Returns: boolean }
       mark_conversation_read: {
         Args: { _conversation_id: string }
         Returns: undefined
@@ -1683,6 +1696,7 @@ export const Constants = {
         "head_trips",
         "head_finance",
         "head_heritage",
+        "guest",
       ],
       archive_media_type: ["image", "video"],
       archive_section: ["family", "meetings", "events", "trips"],

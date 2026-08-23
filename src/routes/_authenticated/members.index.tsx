@@ -93,7 +93,19 @@ function MembersPage() {
         .select("id, arabic_name, full_name, avatar_url, father_name")
         .order("arabic_name", { ascending: true });
 
-      if (!error && data) setMembers(data as MemberRow[]);
+      if (!error && data) {
+        let rows = data as MemberRow[];
+        // Phone numbers are column-restricted; privileged users fetch them via RPC
+        if (rs.includes("admin") || rs.includes("chairman")) {
+          rows = await Promise.all(
+            rows.map(async (m) => {
+              const { data: ph } = await supabase.rpc("get_member_phone", { _user: m.id });
+              return { ...m, phone: (ph as string | null) ?? null };
+            }),
+          );
+        }
+        setMembers(rows);
+      }
 
       const mine = (data as MemberRow[] | null)?.find((m) => m.id === userId);
       const name = mine?.arabic_name?.trim() || mine?.full_name?.trim() || "عضو";
