@@ -51,6 +51,7 @@ import { useProfile } from "@/hooks/use-dashboard-data";
 import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
 import {
   DropdownMenu,
+  DropdownMenuArrow,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -211,6 +212,7 @@ function UserDropdown({ safeUser, connectionState, signOut, logo }: any) {
         collisionPadding={12}
         className="w-[min(260px,calc(100vw-24px))] rounded-[24px] border-border bg-card p-2 text-right shadow-2xl"
       >
+        <DropdownMenuArrow className="fill-card" width={16} height={8} />
         <DropdownMenuLabel className="px-5 py-5 border-b border-muted mb-2">
           <p className="text-[16px] font-black text-primary leading-tight">{safeUser.name}</p>
           <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-1">
