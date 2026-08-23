@@ -382,32 +382,34 @@
   }
 
   .desktop-next-card--meeting {
-    border-top: 5px solid #d2ae59;
-    border-radius: 30px 30px 18px 18px;
+    padding-top: 42px;
+    padding-left: 122px;
+    border: 1px solid rgba(214, 183, 106, 0.34);
+    border-radius: 20px 20px 30px 30px;
     background:
-      radial-gradient(circle at 12% 90%, rgba(202, 170, 92, 0.19), transparent 30%),
-      linear-gradient(145deg, #073d31, #0b5a47);
+      radial-gradient(circle at 12% 88%, rgba(202, 170, 92, 0.17), transparent 29%),
+      linear-gradient(145deg, #063d30, #0a5441);
   }
 
   .desktop-next-card--meeting::before {
-    inset: 0;
-    background:
-      linear-gradient(90deg, transparent 49.8%, rgba(255, 255, 255, 0.055) 50%, transparent 50.2%),
-      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 42px;
+    inset: 0 0 auto;
+    height: 28px;
+    background: linear-gradient(90deg, #a9873f, #d8b966 48%, #af8c43);
+    box-shadow: 0 6px 18px rgba(2, 32, 24, 0.2);
   }
 
   .desktop-next-card--meeting::after {
-    top: 12px;
-    left: 22px;
-    width: 70px;
-    height: 8px;
-    border-radius: 999px;
+    top: -5px;
+    right: 46px;
+    left: 46px;
+    height: 20px;
     background: repeating-linear-gradient(
       90deg,
-      rgba(226, 199, 127, 0.88) 0 8px,
-      transparent 8px 15px
+      transparent 0 50px,
+      #f0dfae 50px 58px,
+      transparent 58px 106px
     );
+    filter: drop-shadow(0 3px 2px rgba(3, 28, 21, 0.35));
   }
 
   .desktop-next-card--trip {
@@ -524,37 +526,60 @@
   }
 
   .desktop-card-motif--meeting {
-    bottom: 22px;
-    left: 24px;
+    bottom: 24px;
+    left: 22px;
     width: 82px;
-    height: 48px;
-    border: 1px solid rgba(230, 202, 132, 0.34);
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.13);
+    height: 104px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 18px;
+    color: #083b2f;
+    background: #f7f2e6;
+    box-shadow: 0 12px 24px rgba(2, 30, 23, 0.28);
   }
 
-  .desktop-card-motif--meeting span {
+  .desktop-card-motif--meeting::before {
+    content: "موعد";
     position: absolute;
-    width: 15px;
-    height: 15px;
-    border: 2px solid rgba(230, 202, 132, 0.75);
-    border-radius: 50%;
-    background: #0a493a;
+    inset: 0 0 auto;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-inline: 9px;
+    color: #183c31;
+    background: #d6b45e;
+    font-size: 0.55rem;
+    font-weight: 950;
   }
 
-  .desktop-card-motif--meeting span:nth-child(1) {
-    top: -9px;
-    left: 33px;
+  .desktop-card-motif--meeting svg {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    z-index: 1;
+    width: 14px;
+    height: 14px;
+    color: #183c31;
   }
 
-  .desktop-card-motif--meeting span:nth-child(2) {
-    right: -8px;
-    bottom: 8px;
+  .desktop-card-motif--meeting strong {
+    margin-top: 4px;
+    font-size: 2rem;
+    font-weight: 950;
+    line-height: 1;
   }
 
-  .desktop-card-motif--meeting span:nth-child(3) {
-    bottom: 8px;
-    left: -8px;
+  .desktop-card-motif--meeting small {
+    margin-top: 7px;
+    color: #7f6937;
+    font-size: 0.67rem;
+    font-weight: 900;
   }
 
   .desktop-card-motif--trip {
