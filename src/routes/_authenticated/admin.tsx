@@ -44,7 +44,6 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { approveAccountRequest } from "@/lib/api/account-requests.functions";
 import { deleteMemberAccount } from "@/lib/api/members-admin.functions";
-import { assignUserRole } from "@/lib/api/roles.functions";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
@@ -137,7 +136,6 @@ function AdminPage() {
 
   const approveFn = useServerFn(approveAccountRequest);
   const deleteMemberFn = useServerFn(deleteMemberAccount);
-  const assignRoleFn = useServerFn(assignUserRole);
   const sendFcm = useServerFn(sendFcmNotification);
 
   const loadData = useCallback(async () => {
@@ -376,7 +374,11 @@ function AdminPage() {
 
     setUpdatingRole(uid);
     try {
-      await assignRoleFn({ data: { userId: uid, role } });
+      const { error } = await (supabase.rpc as any)("assign_user_role", {
+        _user_id: uid,
+        _role: role,
+      });
+      if (error) throw error;
       toast.success("تم تحديث الصلاحية بنجاح");
 
       // Update local state immediately for better UX
