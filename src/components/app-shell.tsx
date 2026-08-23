@@ -51,6 +51,7 @@ import { useProfile } from "@/hooks/use-dashboard-data";
 import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
 import {
   DropdownMenu,
+  DropdownMenuArrow,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -207,9 +208,11 @@ function UserDropdown({ safeUser, connectionState, signOut, logo }: any) {
 
       <DropdownMenuContent
         align="end"
-        sideOffset={15}
-        className="min-w-[240px] rounded-[24px] border-border bg-card/80 backdrop-blur-2xl p-2 text-right shadow-2xl"
+        sideOffset={8}
+        collisionPadding={12}
+        className="w-[min(260px,calc(100vw-24px))] rounded-[24px] border-border bg-card p-2 text-right shadow-2xl"
       >
+        <DropdownMenuArrow className="fill-card" width={16} height={8} />
         <DropdownMenuLabel className="px-5 py-5 border-b border-muted mb-2">
           <p className="text-[16px] font-black text-primary leading-tight">{safeUser.name}</p>
           <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-1">
@@ -572,8 +575,9 @@ export function AppShell({
 
                 <DropdownMenuContent
                   align="center"
-                  sideOffset={10}
-                  className="w-[min(720px,calc(100vw-32px))] rounded-[28px] border border-primary/10 bg-card/95 p-3 text-right shadow-[0_24px_70px_rgba(5,54,39,0.22)] backdrop-blur-2xl"
+                  sideOffset={8}
+                  collisionPadding={12}
+                  className="w-[min(720px,calc(100vw-24px))] rounded-[28px] border border-primary/10 bg-card p-3 text-right shadow-[0_24px_70px_rgba(5,54,39,0.22)]"
                 >
                   <DropdownMenuLabel className="flex items-center justify-between gap-4 px-4 py-3">
                     <div>
