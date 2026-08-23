@@ -501,6 +501,73 @@ export function AppShell({
               />
             </div>
 
+            {/* Desktop navigation mirrors the mobile bottom navigation. */}
+            <nav
+              className="hidden min-[1200px]:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-1 h-16"
+              aria-label="التنقل الرئيسي"
+            >
+              {bottomNavKeys.map((key) => {
+                const def = NAV_REGISTRY.find((item) => item.id === key);
+                if (!def || (def.adminOnly && !isAdmin)) return null;
+
+                if (isGuest) {
+                  const publicKeys = ["dashboard", "profile", "settings", "members"];
+                  if (!publicKeys.includes(def.id) && !allowedSections.includes(def.id)) return null;
+                }
+
+                const Icon = def.icon;
+                const active = path === def.to;
+                return (
+                  <Link
+                    key={def.id}
+                    to={def.to}
+                    className={cn(
+                      "relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black transition-all duration-200",
+                      active
+                        ? "text-gold-primary bg-gold-primary/10"
+                        : "text-primary/65 hover:text-primary hover:bg-primary/5",
+                    )}
+                  >
+                    <Icon size={19} strokeWidth={active ? 2.5 : 2} />
+                    <span>{def.label}</span>
+                    {active && (
+                      <span className="absolute bottom-0 h-0.5 w-7 rounded-full bg-gold-primary" />
+                    )}
+                  </Link>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setSidebarOpen(true);
+                }}
+                className="relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black text-primary/65 hover:text-primary hover:bg-primary/5 transition-all duration-200"
+              >
+                <LayoutGrid size={19} />
+                <span>الخدمات</span>
+              </button>
+
+              {!bottomNavKeys.includes("meetings") && (
+                <Link
+                  to="/meetings"
+                  className={cn(
+                    "relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black transition-all duration-200",
+                    path === "/meetings"
+                      ? "text-gold-primary bg-gold-primary/10"
+                      : "text-primary/65 hover:text-primary hover:bg-primary/5",
+                  )}
+                >
+                  <CalendarDays size={19} strokeWidth={path === "/meetings" ? 2.5 : 2} />
+                  <span>التقويم</span>
+                  {path === "/meetings" && (
+                    <span className="absolute bottom-0 h-0.5 w-7 rounded-full bg-gold-primary" />
+                  )}
+                </Link>
+              )}
+            </nav>
+
             {/* DYNAMIC ISLAND CENTER CONTENT - Hidden on Desktop */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none md:hidden">
               <AnimatePresence mode="wait">
