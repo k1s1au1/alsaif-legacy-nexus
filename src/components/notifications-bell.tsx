@@ -288,16 +288,16 @@ export function NotificationsBell() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <button className="relative size-12 flex items-center justify-center rounded-2xl hover:bg-primary/5 transition-all outline-none group active:scale-95">
+        <button className="relative size-10 md:size-12 -mt-1 md:mt-0 flex items-center justify-center rounded-2xl hover:bg-primary/5 transition-all outline-none group active:scale-95">
           <Bell
             className={cn(
-              "size-6 transition-all",
+              "size-5 md:size-6 transition-all",
               open ? "text-primary scale-110" : "text-muted-foreground group-hover:text-primary",
             )}
             strokeWidth={1.8}
           />
           {count > 0 && (
-            <div className="absolute top-1.5 right-1.5 flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-600 text-white text-[10px] font-black border-2 border-background shadow-lg animate-in zoom-in duration-300">
+            <div className="absolute top-1 right-1 md:top-1.5 md:right-1.5 flex items-center justify-center min-w-[18px] md:min-w-[20px] h-[18px] md:h-5 px-1 md:px-1.5 rounded-full bg-red-600 text-white text-[9px] md:text-[10px] font-black border-2 border-background shadow-lg animate-in zoom-in duration-300">
               {count > 99 ? "99+" : count}
             </div>
           )}
