@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Smartphone, Tablet, RotateCw } from "lucide-react";
-import { DesktopDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
 
 type DeviceKind = "mobile" | "tablet" | "desktop";
 
@@ -92,12 +91,7 @@ export function DeviceOrientationGuard() {
     };
   }, [device]);
 
-  if (desktopRequest) {
-    return typeof window !== "undefined" && window.location.pathname === "/dashboard"
-      ? <DesktopDashboardExtras />
-      : null;
-  }
-  if (device === "desktop") return null;
+  if (desktopRequest || device === "desktop") return null;
   const wrongOrientation = device === "mobile" ? !portrait : portrait;
   if (!wrongOrientation) return null;
   const mobile = device === "mobile";
