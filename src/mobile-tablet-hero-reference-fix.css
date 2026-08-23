@@ -103,13 +103,14 @@
     padding:0!important;
   }
 
-  /* Copy is pinned high-right and kept clear of the left geometry. */
+  /* Copy is vertically centered on the right and kept clear of the left geometry. */
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{
     position:absolute!important;
     right:28px!important;
     left:auto!important;
-    top:25px!important;
+    top:50%!important;
     bottom:auto!important;
+    transform:translateY(-50%)!important;
     width:55%!important;
     max-width:390px!important;
     text-align:right!important;
@@ -173,7 +174,8 @@
   }
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .flex-1.text-center{
     right:20px!important;
-    top:21px!important;
+    top:50%!important;
+    transform:translateY(-50%)!important;
     width:56%!important;
   }
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:30px!important}
