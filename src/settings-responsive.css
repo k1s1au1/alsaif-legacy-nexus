@@ -184,7 +184,7 @@
   display: none;
 }
 
-.settings-nav-links a {
+.settings-nav-links button {
   min-width: max-content;
   display: inline-flex;
   align-items: center;
@@ -196,18 +196,41 @@
   color: var(--muted-foreground);
   background: color-mix(in srgb, var(--muted) 54%, transparent);
   font-size: 0.7rem;
+  font-family: inherit;
   font-weight: 900;
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
   transition: 0.2s ease;
 }
 
-.settings-nav-links a:hover,
-.settings-nav-links a:focus-visible {
+.settings-nav-links button:hover,
+.settings-nav-links button:focus-visible {
   border-color: color-mix(in srgb, var(--gold-primary) 34%, transparent);
   color: var(--primary);
   background: color-mix(in srgb, var(--primary) 9%, var(--card));
   outline: none;
+}
+
+.settings-nav-links button.is-active {
+  border-color: color-mix(in srgb, var(--gold-primary) 72%, transparent);
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 82%, #061d16));
+  box-shadow: 0 0.6rem 1.3rem color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.settings-nav-links button.is-active:hover,
+.settings-nav-links button.is-active:focus-visible {
+  color: #fff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 92%, #fff), var(--primary));
+}
+
+.settings-nav-links button.is-active svg {
+  color: var(--gold-primary);
+}
+
+.settings-nav-check {
+  display: none;
 }
 
 .settings-nav-links svg {
@@ -220,6 +243,17 @@
   min-width: 0;
   display: grid;
   gap: 1rem;
+}
+
+.settings-tab-panel {
+  min-width: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.settings-sections [role="tabpanel"] {
+  scroll-margin-top: 6.5rem;
+  outline: none;
 }
 
 .settings-panel {
@@ -426,7 +460,7 @@
     overflow: visible;
   }
 
-  .settings-nav-links a {
+  .settings-nav-links button {
     min-width: 0;
     flex-direction: column;
     gap: 0.35rem;
@@ -551,7 +585,7 @@
     margin-top: 0.8rem;
   }
 
-  .settings-nav-links a {
+  .settings-nav-links button {
     width: 100%;
     flex-direction: row;
     justify-content: flex-start;
@@ -564,6 +598,11 @@
   .settings-nav-links svg {
     width: 1.15rem;
     height: 1.15rem;
+  }
+
+  .settings-nav-check {
+    display: block;
+    margin-inline-start: auto;
   }
 
   .settings-nav-note {
@@ -586,6 +625,10 @@
   }
 
   .settings-sections {
+    gap: 1.25rem;
+  }
+
+  .settings-tab-panel {
     gap: 1.25rem;
   }
 
