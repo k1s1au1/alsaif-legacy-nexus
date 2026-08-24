@@ -230,6 +230,19 @@ function SettingsPage() {
     applyThemeColors(selected);
     toast.success(`تم تفعيل ${selected.name}`);
     setShowColorPicker(false);
+    // Persist to the profile so the choice syncs across devices/sessions
+    void (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("profiles").update({ theme_color: colorId }).eq("id", user.id);
+        }
+      } catch {
+        // Local choice already applied; profile sync is best-effort
+      }
+    })();
   };
 
   const handleBiometricChange = async () => {
