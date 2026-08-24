@@ -19,7 +19,7 @@ const positions = new Map<unknown, Pos>();
 export function RouteScrollManager() {
   const router = useRouter();
   const location = useRouterState({ select: (s) => s.location });
-  const state = (location.state ?? {}) as Record<string, unknown>;
+  const state = (location.state ?? {}) as unknown as Record<string, unknown>;
   const key = state["__TSR_key"] ?? location.href;
   const keyRef = useRef(key);
   keyRef.current = key;
@@ -56,7 +56,8 @@ export function RouteScrollManager() {
     const prevBehavior = html.style.scrollBehavior;
     html.style.scrollBehavior = "auto"; // never smooth-scroll during route changes
 
-    const isPop = router.history.action === "POP";
+    const action = (router.history as unknown as { action?: string }).action;
+    const isPop = action === "POP";
     const saved = isPop ? positions.get(key) : undefined;
 
     if (saved) {
