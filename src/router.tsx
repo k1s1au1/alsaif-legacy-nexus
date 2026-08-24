@@ -8,7 +8,9 @@ export const getRouter = () => {
   const router = createRouter({
     routeTree,
     context: { queryClient },
-    scrollRestoration: true,
+    // Built-in scroll restoration is disabled: RouteScrollManager handles all
+    // route-change scrolling pre-paint (single handler, no duplicates).
+    scrollRestoration: false,
     defaultPreloadStaleTime: 0,
   });
 
