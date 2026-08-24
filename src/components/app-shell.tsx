@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
@@ -348,10 +348,10 @@ function AppShellChrome({
 
   // Final stabilized user identity
   const safeUser = {
-    name: globalProfile?.realName || initialUser?.name || "أبو الوليد", // Abu Al-Waleed as final fallback if we know them
-    role: globalProfile?.role || initialUser?.role || "عضو",
-    initial: (globalProfile?.realName || initialUser?.name || "أ")[0].toUpperCase(),
-    avatarPath: globalProfile?.avatarPath || initialUser?.avatarPath,
+    name: globalProfile?.realName || "أبو الوليد", // Abu Al-Waleed as final fallback if we know them
+    role: globalProfile?.role || "عضو",
+    initial: (globalProfile?.realName || "أ")[0].toUpperCase(),
+    avatarPath: globalProfile?.avatarPath,
   };
 
   const allowedSections = globalProfile?.allowedSections || [];
