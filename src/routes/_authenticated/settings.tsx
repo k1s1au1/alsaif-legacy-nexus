@@ -22,13 +22,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useSiteLogo } from "@/hooks/use-site-logo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { BiometricAuth } from "@/lib/native-bridge";
 import { setupPushNotifications } from "@/lib/pushNotifications";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
 import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
+import "@/settings-responsive.css";
 
 const FONTS = [
   { id: "Tajawal", name: "تجوال (عصري)", family: "'Tajawal', sans-serif", desc: "خط ناعم وأنيق" },
@@ -56,6 +56,22 @@ const FONTS = [
   },
 ];
 
+type SettingsSectionId = "appearance" | "typography" | "notifications" | "security" | "brand";
+
+const SETTINGS_SECTIONS: {
+  id: SettingsSectionId;
+  label: string;
+  icon: any;
+  nativeOnly?: boolean;
+  adminOnly?: boolean;
+}[] = [
+  { id: "appearance", label: "المظهر والهوية", icon: Palette },
+  { id: "typography", label: "الخطوط والتنقل", icon: Type },
+  { id: "notifications", label: "الإشعارات", icon: Bell },
+  { id: "security", label: "حماية التطبيق", icon: Fingerprint, nativeOnly: true },
+  { id: "brand", label: "إدارة الواجهة", icon: ImagePlus, adminOnly: true },
+];
+
 export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
   component: SettingsPage,
@@ -68,7 +84,7 @@ function SettingsPage() {
   const [fontStyle, setFontStyle] = useState<"modern" | "royal">("modern");
   const [fontScale, setFontScale] = useState(1);
   const [themeColor, setThemeColor] = useState("emerald");
-  const [isNative, setIsNative] = useState(false);
+  const [isNative, setIsNative] = useState(() => Capacitor.isNativePlatform());
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [showNavPicker, setShowNavPicker] = useState(false);
@@ -89,7 +105,13 @@ function SettingsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
-  const dynamicLogo = useSiteLogo();
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>(() => {
+    if (typeof window === "undefined") return "appearance";
+    const requestedSection = window.location.hash.replace("#", "") as SettingsSectionId;
+    return SETTINGS_SECTIONS.some((section) => section.id === requestedSection)
+      ? requestedSection
+      : "appearance";
+  });
 
   useEffect(() => {
     (async () => {
@@ -316,6 +338,43 @@ function SettingsPage() {
 
   const currentThemeObj = THEME_COLORS.find((c) => c.id === themeColor) || THEME_COLORS[0];
   const currentFontObj = FONTS.find((f) => f.id === font) || FONTS[0];
+  const visibleSettingsSections = SETTINGS_SECTIONS.filter(
+    (section) => (!section.nativeOnly || isNative) && (!section.adminOnly || canCustomizeBg),
+  );
+
+  useEffect(() => {
+    const activeSectionIsAvailable = SETTINGS_SECTIONS.some(
+      (section) =>
+        section.id === activeSection &&
+        (!section.nativeOnly || isNative) &&
+        (!section.adminOnly || canCustomizeBg),
+    );
+
+    if (!activeSectionIsAvailable) {
+      setActiveSection("appearance");
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#appearance`);
+      }
+    }
+  }, [activeSection, isNative, canCustomizeBg]);
+
+  const handleSectionChange = (sectionId: SettingsSectionId) => {
+    setActiveSection(sectionId);
+
+    if (typeof window === "undefined") return;
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#${sectionId}`,
+    );
+
+    window.requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  };
 
   const handleDeviceLinking = async () => {
     console.log("[Push] Linking button clicked v2");
@@ -407,9 +466,82 @@ function SettingsPage() {
   };
 
   return (
-    <AppShell title="الإعدادات" user={{ name: "", role: "", initial: "إ" }}>
-      <div className="max-w-4xl mx-auto space-y-12 pb-24" dir="rtl">
-        <section className="space-y-6 animate-fade-up">
+    <AppShell title="الإعدادات" user={{ name: "", role: "", initial: "إ" }} fullWidth>
+      <div className="settings-page" dir="rtl">
+        <header className="settings-hero animate-fade-up">
+          <div className="settings-hero-mark" aria-hidden="true">
+            <Palette />
+          </div>
+          <div className="settings-hero-copy">
+            <span>لوحة التحكم الشخصية</span>
+            <h1>الإعدادات والتخصيص</h1>
+            <p>اضبط مظهر المنصة والخطوط والإشعارات بما يناسبك على جميع أجهزتك.</p>
+          </div>
+          <div className="settings-hero-summary">
+            <div>
+              <Smartphone />
+              <span>
+                <small>واجهة متجاوبة</small>
+                <b>جوال · لوحي · كمبيوتر</b>
+              </span>
+            </div>
+            <div>
+              <i
+                aria-hidden="true"
+                style={{
+                  background: `linear-gradient(135deg, ${currentThemeObj.primary}, ${currentThemeObj.secondary})`,
+                }}
+              />
+              <span>
+                <small>الهوية الحالية</small>
+                <b>{currentThemeObj.name}</b>
+              </span>
+            </div>
+          </div>
+        </header>
+
+        <div className="settings-layout">
+          <nav className="settings-section-nav" aria-label="أقسام الإعدادات">
+            <div className="settings-nav-title">
+              <span>أقسام الإعدادات</span>
+              <small>اختر قسمًا لعرض إعداداته</small>
+            </div>
+            <div className="settings-nav-links" role="tablist">
+              {visibleSettingsSections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    id={`settings-tab-${section.id}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeSection === section.id}
+                    aria-controls={section.id}
+                    className={cn(activeSection === section.id && "is-active")}
+                    onClick={() => handleSectionChange(section.id)}
+                  >
+                    <Icon />
+                    <span>{section.label}</span>
+                    {activeSection === section.id && <Check className="settings-nav-check" />}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="settings-nav-note">
+              <Check />
+              <span>تُحفظ اختياراتك مباشرة</span>
+            </div>
+          </nav>
+
+          <div className="settings-sections">
+        {activeSection === "appearance" && (
+        <section
+          id="appearance"
+          role="tabpanel"
+          aria-labelledby="settings-tab-appearance"
+          tabIndex={0}
+          className="settings-panel space-y-6 animate-fade-up"
+        >
           <div className="flex items-center gap-4">
             <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
               مظهر المنصة
@@ -417,7 +549,7 @@ function SettingsPage() {
             <div className="h-px flex-1 bg-border/60" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="settings-theme-grid grid grid-cols-1 md:grid-cols-3 gap-4">
             <ThemeCard
               active={darkMode === "light"}
               onClick={() => handleThemeChange("light")}
@@ -441,7 +573,7 @@ function SettingsPage() {
           <button
             type="button"
             onClick={() => setShowColorPicker(true)}
-            className="w-full card-surface p-5 flex items-center justify-between gap-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-xl"
+            className="settings-identity-card w-full card-surface p-5 flex items-center justify-between gap-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-xl"
           >
             <div className="flex items-center gap-4 min-w-0">
               <div
@@ -458,8 +590,16 @@ function SettingsPage() {
             <span className="btn-gold px-5 py-3 rounded-xl font-black text-xs shrink-0">تغيير</span>
           </button>
         </section>
+        )}
 
-        <section className="space-y-6 animate-fade-up" style={{ animationDelay: "100ms" }}>
+        {activeSection === "typography" && (
+        <section
+          id="typography"
+          role="tabpanel"
+          aria-labelledby="settings-tab-typography"
+          tabIndex={0}
+          className="settings-panel space-y-6 animate-fade-up"
+        >
           <div className="flex items-center gap-4">
             <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
               النمط والخطوط
@@ -467,7 +607,7 @@ function SettingsPage() {
             <div className="h-px flex-1 bg-border/60" />
           </div>
 
-          <div className="card-surface p-8 space-y-8">
+          <div className="settings-control-card card-surface p-8 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -577,8 +717,8 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="card-surface p-8 space-y-6 group">
+          <div className="settings-single-grid grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="settings-shortcuts-card card-surface p-8 space-y-6 group">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
@@ -599,10 +739,17 @@ function SettingsPage() {
             </div>
           </div>
         </section>
+        )}
 
 
-        {isNative && (
-          <section className="space-y-6 animate-fade-up" style={{ animationDelay: "250ms" }}>
+        {isNative && activeSection === "security" && (
+          <section
+            id="security"
+            role="tabpanel"
+            aria-labelledby="settings-tab-security"
+            tabIndex={0}
+            className="settings-panel space-y-6 animate-fade-up"
+          >
             <div className="flex items-center gap-4">
               <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
                 حماية التطبيق
@@ -610,7 +757,7 @@ function SettingsPage() {
               <div className="h-px flex-1 bg-border/60" />
             </div>
 
-            <div className="card-surface p-6 flex items-center justify-between gap-5">
+            <div className="settings-switch-card card-surface p-6 flex items-center justify-between gap-5">
               <div className="flex items-center gap-4 min-w-0">
                 <div className="size-12 shrink-0 rounded-2xl bg-gold-primary/10 text-gold-primary flex items-center justify-center">
                   <Fingerprint className="size-6" />
@@ -647,16 +794,24 @@ function SettingsPage() {
           </section>
         )}
 
+        {activeSection === "notifications" && (
+        <div
+          id="notifications"
+          role="tabpanel"
+          aria-labelledby="settings-tab-notifications"
+          tabIndex={0}
+          className="settings-tab-panel"
+        >
         <NotificationPreferencesSection />
 
-        <section className="space-y-6 animate-fade-up">
+        <section className="settings-panel settings-panel--notification-test space-y-6 animate-fade-up">
           <div className="flex items-center gap-4">
             <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
               تجربة الإشعارات ({isNative ? "تطبيق الجوال" : "المتصفح"})
             </h3>
             <div className="h-px flex-1 bg-border/60" />
           </div>
-          <div className="card-surface p-8 space-y-4">
+          <div className="settings-notification-test-card card-surface p-8 space-y-4">
             <p className="text-sm font-bold text-muted-foreground">
               إذا لم تكن الإشعارات تصلك، يمكنك محاولة إعادة طلب الإذن يدوياً من هنا.
             </p>
@@ -701,23 +856,31 @@ function SettingsPage() {
                     toast.error("خطأ تقني: " + e.message);
                   }
                 }}
-                className="px-8 py-4 rounded-2xl bg-white/5 text-white font-black text-sm border border-white/10 hover:bg-white/10 transition-all"
+                className="settings-secondary-action px-8 py-4 rounded-2xl font-black text-sm transition-all"
               >
                 إرسال تجربة
               </button>
             </div>
           </div>
         </section>
+        </div>
+        )}
 
-        {canCustomizeBg && (
-          <section className="space-y-6 animate-fade-up" style={{ animationDelay: "300ms" }}>
+        {canCustomizeBg && activeSection === "brand" && (
+          <section
+            id="brand"
+            role="tabpanel"
+            aria-labelledby="settings-tab-brand"
+            tabIndex={0}
+            className="settings-panel space-y-6 animate-fade-up"
+          >
             <div className="flex items-center gap-4">
               <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
                 خلفيات الواجهة
               </h3>
               <div className="h-px flex-1 bg-border/60" />
             </div>
-            <div className="card-surface p-8 space-y-6">
+            <div className="settings-admin-card card-surface p-8 space-y-6">
               <div className="flex items-center gap-3">
                 <div className="size-12 rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary">
                   <ImagePlus className="size-6" />
@@ -746,6 +909,8 @@ function SettingsPage() {
             </div>
           </section>
         )}
+          </div>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -758,7 +923,7 @@ function SettingsPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="card-surface w-full max-w-lg p-8 space-y-8 shadow-2xl rounded-[48px]"
+              className="settings-modal card-surface w-full max-w-lg p-8 space-y-8 shadow-2xl rounded-[48px]"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -820,7 +985,7 @@ function SettingsPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="card-surface w-full max-w-lg p-8 space-y-8 shadow-2xl rounded-[48px]"
+              className="settings-modal card-surface w-full max-w-lg p-8 space-y-8 shadow-2xl rounded-[48px]"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-black text-primary tracking-tight">
@@ -882,7 +1047,7 @@ function SettingsPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="card-surface w-full max-w-lg p-6 space-y-6 shadow-2xl rounded-[40px]"
+              className="settings-modal card-surface w-full max-w-lg p-6 space-y-6 shadow-2xl rounded-[40px]"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-black text-primary tracking-tight">تخصيص الخط</h3>
@@ -929,7 +1094,7 @@ function ThemeCard({ active, label, icon, onClick }: any) {
     <button
       onClick={onClick}
       className={cn(
-        "p-6 md:p-8 rounded-[32px] md:rounded-[40px] border-4 transition-all duration-500 flex flex-col items-center gap-3 md:gap-4 text-center",
+        "settings-theme-card p-6 md:p-8 rounded-[32px] md:rounded-[40px] border-4 transition-all duration-500 flex flex-col items-center gap-3 md:gap-4 text-center",
         active
           ? "bg-primary border-gold-primary text-primary-foreground shadow-2xl scale-105"
           : "bg-card border-transparent text-muted-foreground hover:bg-muted",
@@ -937,7 +1102,7 @@ function ThemeCard({ active, label, icon, onClick }: any) {
     >
       <div
         className={cn(
-          "size-12 md:size-16 rounded-[22px] md:rounded-[28px] flex items-center justify-center transition-all duration-700",
+          "settings-theme-icon size-12 md:size-16 rounded-[22px] md:rounded-[28px] flex items-center justify-center transition-all duration-700",
           active ? "bg-white/10 text-gold-primary rotate-12" : "bg-muted text-primary",
         )}
       >
@@ -1004,16 +1169,21 @@ function NotificationPreferencesSection() {
   };
 
   return (
-    <section className="space-y-6 animate-fade-up" style={{ animationDelay: "250ms" }}>
+    <section
+      className="settings-panel settings-panel--notifications space-y-6 animate-fade-up"
+    >
       <div className="flex items-center gap-4">
         <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
           إعدادات الإشعارات
         </h3>
         <div className="h-px flex-1 bg-border/60" />
       </div>
-      <div className="card-surface overflow-hidden divide-y divide-border/40">
+      <div className="settings-notification-list card-surface overflow-hidden divide-y divide-border/40">
         {NOTIF_OPTIONS.map((o) => (
-          <div key={o.key} className="p-6 md:p-8 flex items-center justify-between gap-4">
+          <div
+            key={o.key}
+            className="settings-notification-row p-6 md:p-8 flex items-center justify-between gap-4"
+          >
             <div className="flex items-center gap-4 md:gap-6 min-w-0">
               <div className="size-11 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shrink-0">
                 <Bell className="size-5" />
