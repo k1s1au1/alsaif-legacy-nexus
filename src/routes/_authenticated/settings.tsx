@@ -56,8 +56,10 @@ const FONTS = [
   },
 ];
 
+type SettingsSectionId = "appearance" | "typography" | "notifications" | "security" | "brand";
+
 const SETTINGS_SECTIONS: {
-  id: string;
+  id: SettingsSectionId;
   label: string;
   icon: any;
   nativeOnly?: boolean;
@@ -82,7 +84,7 @@ function SettingsPage() {
   const [fontStyle, setFontStyle] = useState<"modern" | "royal">("modern");
   const [fontScale, setFontScale] = useState(1);
   const [themeColor, setThemeColor] = useState("emerald");
-  const [isNative, setIsNative] = useState(false);
+  const [isNative, setIsNative] = useState(() => Capacitor.isNativePlatform());
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [showNavPicker, setShowNavPicker] = useState(false);
@@ -103,6 +105,13 @@ function SettingsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>(() => {
+    if (typeof window === "undefined") return "appearance";
+    const requestedSection = window.location.hash.replace("#", "") as SettingsSectionId;
+    return SETTINGS_SECTIONS.some((section) => section.id === requestedSection)
+      ? requestedSection
+      : "appearance";
+  });
 
   useEffect(() => {
     (async () => {
@@ -333,6 +342,40 @@ function SettingsPage() {
     (section) => (!section.nativeOnly || isNative) && (!section.adminOnly || canCustomizeBg),
   );
 
+  useEffect(() => {
+    const activeSectionIsAvailable = SETTINGS_SECTIONS.some(
+      (section) =>
+        section.id === activeSection &&
+        (!section.nativeOnly || isNative) &&
+        (!section.adminOnly || canCustomizeBg),
+    );
+
+    if (!activeSectionIsAvailable) {
+      setActiveSection("appearance");
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#appearance`);
+      }
+    }
+  }, [activeSection, isNative, canCustomizeBg]);
+
+  const handleSectionChange = (sectionId: SettingsSectionId) => {
+    setActiveSection(sectionId);
+
+    if (typeof window === "undefined") return;
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#${sectionId}`,
+    );
+
+    window.requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  };
+
   const handleDeviceLinking = async () => {
     console.log("[Push] Linking button clicked v2");
     const tId = toast.loading("جاري ربط جهازك بالنظام...");
@@ -461,16 +504,26 @@ function SettingsPage() {
           <nav className="settings-section-nav" aria-label="أقسام الإعدادات">
             <div className="settings-nav-title">
               <span>أقسام الإعدادات</span>
-              <small>انتقل للقسم المطلوب</small>
+              <small>اختر قسمًا لعرض إعداداته</small>
             </div>
-            <div className="settings-nav-links">
+            <div className="settings-nav-links" role="tablist">
               {visibleSettingsSections.map((section) => {
                 const Icon = section.icon;
                 return (
-                  <a key={section.id} href={`#${section.id}`}>
+                  <button
+                    key={section.id}
+                    id={`settings-tab-${section.id}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeSection === section.id}
+                    aria-controls={section.id}
+                    className={cn(activeSection === section.id && "is-active")}
+                    onClick={() => handleSectionChange(section.id)}
+                  >
                     <Icon />
                     <span>{section.label}</span>
-                  </a>
+                    {activeSection === section.id && <Check className="settings-nav-check" />}
+                  </button>
                 );
               })}
             </div>
@@ -481,7 +534,14 @@ function SettingsPage() {
           </nav>
 
           <div className="settings-sections">
-        <section id="appearance" className="settings-panel space-y-6 animate-fade-up">
+        {activeSection === "appearance" && (
+        <section
+          id="appearance"
+          role="tabpanel"
+          aria-labelledby="settings-tab-appearance"
+          tabIndex={0}
+          className="settings-panel space-y-6 animate-fade-up"
+        >
           <div className="flex items-center gap-4">
             <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
               مظهر المنصة
@@ -530,11 +590,15 @@ function SettingsPage() {
             <span className="btn-gold px-5 py-3 rounded-xl font-black text-xs shrink-0">تغيير</span>
           </button>
         </section>
+        )}
 
+        {activeSection === "typography" && (
         <section
           id="typography"
+          role="tabpanel"
+          aria-labelledby="settings-tab-typography"
+          tabIndex={0}
           className="settings-panel space-y-6 animate-fade-up"
-          style={{ animationDelay: "100ms" }}
         >
           <div className="flex items-center gap-4">
             <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
@@ -675,13 +739,16 @@ function SettingsPage() {
             </div>
           </div>
         </section>
+        )}
 
 
-        {isNative && (
+        {isNative && activeSection === "security" && (
           <section
             id="security"
+            role="tabpanel"
+            aria-labelledby="settings-tab-security"
+            tabIndex={0}
             className="settings-panel space-y-6 animate-fade-up"
-            style={{ animationDelay: "250ms" }}
           >
             <div className="flex items-center gap-4">
               <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
@@ -727,6 +794,14 @@ function SettingsPage() {
           </section>
         )}
 
+        {activeSection === "notifications" && (
+        <div
+          id="notifications"
+          role="tabpanel"
+          aria-labelledby="settings-tab-notifications"
+          tabIndex={0}
+          className="settings-tab-panel"
+        >
         <NotificationPreferencesSection />
 
         <section className="settings-panel settings-panel--notification-test space-y-6 animate-fade-up">
@@ -788,12 +863,16 @@ function SettingsPage() {
             </div>
           </div>
         </section>
+        </div>
+        )}
 
-        {canCustomizeBg && (
+        {canCustomizeBg && activeSection === "brand" && (
           <section
             id="brand"
+            role="tabpanel"
+            aria-labelledby="settings-tab-brand"
+            tabIndex={0}
             className="settings-panel space-y-6 animate-fade-up"
-            style={{ animationDelay: "300ms" }}
           >
             <div className="flex items-center gap-4">
               <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
@@ -1091,9 +1170,7 @@ function NotificationPreferencesSection() {
 
   return (
     <section
-      id="notifications"
       className="settings-panel settings-panel--notifications space-y-6 animate-fade-up"
-      style={{ animationDelay: "250ms" }}
     >
       <div className="flex items-center gap-4">
         <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
