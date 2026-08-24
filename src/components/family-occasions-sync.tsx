@@ -133,7 +133,9 @@ export function FamilyOccasionsSync() {
         // route once so remote deletions/edits are reflected immediately instead of
         // leaving stale cards visible until the user navigates away and back.
         if (window.location.pathname === "/family-occasions") {
-          window.setTimeout(() => window.location.reload(), 0);
+          // Soft refresh: the page listens for this event and re-reads storage —
+          // never reload the whole application.
+          window.setTimeout(() => window.dispatchEvent(new CustomEvent("family-occasions:updated")), 0);
         }
       }
       rememberLocal(sorted);

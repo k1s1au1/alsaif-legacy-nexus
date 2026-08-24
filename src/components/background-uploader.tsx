@@ -97,8 +97,8 @@ export function BackgroundUploader({
       if (setErr) throw setErr;
 
       toast.success("تم تحديث الخلفية");
-      // Force refresh to show new background
-      window.location.reload();
+      // The realtime app_settings subscription in useAppBackground applies the
+      // new background live — no full page reload needed.
     } catch (err: any) {
       toast.error("فشل رفع الصورة", { description: err?.message });
     } finally {

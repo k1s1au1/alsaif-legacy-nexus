@@ -365,10 +365,16 @@ function FamilyOccasionsPage() {
   const [x, setX] = useState<Extra>({ inviteMode: "public", showLogo: true });
 
   useEffect(() => {
-    try {
-      const r = localStorage.getItem(STORAGE);
-      if (r) setItems(JSON.parse(r));
-    } catch {}
+    const load = () => {
+      try {
+        const r = localStorage.getItem(STORAGE);
+        if (r) setItems(JSON.parse(r));
+      } catch {}
+    };
+    load();
+    // Remote sync updates storage and notifies via this event (no page reload).
+    window.addEventListener("family-occasions:updated", load);
+    return () => window.removeEventListener("family-occasions:updated", load);
   }, []);
 
   const selected = useMemo(() => meta(type), [type]);
