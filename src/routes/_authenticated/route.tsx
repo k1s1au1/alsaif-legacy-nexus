@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { TermsGate } from "@/components/terms-gate";
 import { AlertCircle, Home, RefreshCcw } from "lucide-react";
+import { AppShellLayout } from "@/components/app-shell";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -77,7 +78,9 @@ export const Route = createFileRoute("/_authenticated")({
   },
   component: () => (
     <TermsGate>
-      <Outlet />
+      <AppShellLayout>
+        <Outlet />
+      </AppShellLayout>
     </TermsGate>
   ),
 });

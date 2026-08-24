@@ -1223,3 +1223,81 @@ function AppShellChrome({
     </BiometricGate>
   );
 }
+
+// ================= Persistent shell layout =================
+// The app chrome (header, nav, hooks) mounts ONCE here instead of per page,
+// so internal navigation only swaps page content — no shell re-mount, no
+// animation replay, no flicker.
+interface ShellConfig {
+  title?: string;
+  fullWidth?: boolean;
+}
+
+const ShellConfigContext = createContext<ShellConfig & { setConfig: (c: ShellConfig) => void }>({
+  setConfig: () => {},
+});
+
+const SHELL_TITLE_MAP: [RegExp, string][] = [
+  [/^\/dashboard/, "لوحة العائلة"],
+  [/^\/admin/, "الإدارة"],
+  [/^\/members/, "ركن الأعضاء"],
+  [/^\/community/, "ركن الأعضاء"],
+  [/^\/settings/, "الإعدادات"],
+  [/^\/profile/, "الملف الشخصي"],
+  [/^\/majlis/, "الأخبار"],
+  [/^\/trips/, "الترفيه"],
+  [/^\/meetings/, "الاجتماعات"],
+  [/^\/tasks/, "المسؤوليات"],
+  [/^\/events/, "المهام"],
+  [/^\/finance/, "صندوق العائلة"],
+  [/^\/archive/, "الألبوم العائلي"],
+  [/^\/calendar/, "تقويم العائلة"],
+  [/^\/heritage/, "إرث السيف"],
+  [/^\/family-tree/, "شجرة عائلة السيف"],
+  [/^\/family-occasions/, "مناسبات العائلة"],
+  [/^\/vault/, "الخزنة"],
+  [/^\/steps-challenge/, "تحدي الخطوات"],
+  [/^\/suggestions/, "صندوق المقترحات"],
+  [/^\/notifications/, "مركز الإشعارات"],
+  [/^\/chat/, "المحادثات"],
+];
+
+// Full-screen routes that intentionally render without the app chrome.
+const isBareRoute = (path: string) => path === "/onboarding" || /^\/chat\/[^/]+/.test(path);
+
+export function AppShellLayout({ children }: { children: ReactNode }) {
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const [config, setConfig] = useState<ShellConfig>({});
+
+  if (isBareRoute(path)) return <>{children}</>;
+
+  const title = config.title ?? SHELL_TITLE_MAP.find(([re]) => re.test(path))?.[1] ?? "السيف";
+
+  return (
+    <ShellConfigContext.Provider value={{ ...config, setConfig }}>
+      <AppShellChrome title={title} fullWidth={config.fullWidth}>
+        {children}
+      </AppShellChrome>
+    </ShellConfigContext.Provider>
+  );
+}
+
+// Lightweight per-page wrapper with the SAME props API as before: pages only
+// publish their title/fullWidth to the persistent chrome and render children.
+export function AppShell({
+  children,
+  title,
+  fullWidth = false,
+}: {
+  children: ReactNode;
+  title: string;
+  user?: { name: string; role: string; initial: string; avatarPath?: string | null };
+  fullWidth?: boolean;
+}) {
+  const { setConfig } = useContext(ShellConfigContext);
+  useLayoutEffect(() => {
+    setConfig({ title, fullWidth });
+    return () => setConfig({});
+  }, [title, fullWidth, setConfig]);
+  return <>{children}</>;
+}
