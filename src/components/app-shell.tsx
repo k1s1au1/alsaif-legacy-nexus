@@ -247,15 +247,13 @@ function UserDropdown({ safeUser, connectionState, signOut, logo }: any) {
   );
 }
 
-export function AppShell({
+function AppShellChrome({
   children,
   title,
-  user: initialUser,
   fullWidth = false,
 }: {
   children: ReactNode;
   title: string;
-  user: { name: string; role: string; initial: string; avatarPath?: string | null };
   fullWidth?: boolean;
 }) {
   const navigate = useNavigate();
