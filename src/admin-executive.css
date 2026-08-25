@@ -1,0 +1,860 @@
+/* Executive administration workspace — formal, responsive and RTL-first. */
+.admin-executive-page {
+  width: min(100%, 1440px);
+  min-width: 0;
+  margin-inline: auto;
+  padding: 0 0.75rem 6rem;
+}
+
+.admin-executive-hero {
+  position: relative;
+  min-height: 16rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(202, 165, 91, 0.35);
+  border-radius: 1.75rem;
+  color: #fff;
+  background:
+    radial-gradient(circle at 14% 20%, rgba(202, 165, 91, 0.17), transparent 28%),
+    linear-gradient(125deg, #06291f 0%, #074634 56%, #021812 100%);
+  box-shadow: 0 1.5rem 3.5rem rgba(2, 28, 21, 0.18);
+}
+
+.admin-executive-hero::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background: linear-gradient(90deg, transparent 48%, rgba(255, 255, 255, 0.035) 48%, rgba(255, 255, 255, 0.035) 48.2%, transparent 48.2%);
+  pointer-events: none;
+}
+
+.admin-hero-pattern {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.16;
+  background-image:
+    linear-gradient(30deg, rgba(220, 185, 112, 0.24) 12%, transparent 12.5%, transparent 87%, rgba(220, 185, 112, 0.24) 87.5%),
+    linear-gradient(150deg, rgba(220, 185, 112, 0.24) 12%, transparent 12.5%, transparent 87%, rgba(220, 185, 112, 0.24) 87.5%);
+  background-position: 0 0, 1rem 1.75rem;
+  background-size: 2rem 3.5rem;
+  mask-image: linear-gradient(90deg, #000, transparent 64%);
+  pointer-events: none;
+}
+
+.admin-hero-watermark {
+  position: absolute;
+  z-index: -1;
+  inset-inline-start: -2.5rem;
+  top: 50%;
+  width: 15rem;
+  height: 15rem;
+  padding: 1rem;
+  opacity: 0.08;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.admin-hero-watermark .logo-alsaif-banner {
+  width: 100%;
+  height: 100%;
+}
+
+.admin-hero-main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+}
+
+.admin-hero-brand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-official-seal {
+  position: relative;
+  width: 4.6rem;
+  height: 4.6rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(226, 194, 127, 0.42);
+  border-radius: 1.35rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 1rem 2rem rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(14px);
+}
+
+.admin-official-seal .logo-alsaif-banner {
+  width: 3.75rem;
+  height: 3.75rem;
+  opacity: 0.78;
+}
+
+.admin-official-seal > svg {
+  position: absolute;
+  inset-inline-end: 0.35rem;
+  bottom: 0.35rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0.18rem;
+  border-radius: 50%;
+  color: #0b3d2f;
+  background: #d8b670;
+  box-shadow: 0 0.25rem 0.8rem rgba(0, 0, 0, 0.25);
+}
+
+.admin-hero-copy {
+  min-width: 0;
+}
+
+.admin-hero-copy > span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #d8b670;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.admin-hero-copy h1 {
+  margin: 0;
+  font-size: clamp(2rem, 8vw, 3.75rem);
+  font-weight: 950;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
+.admin-hero-copy p {
+  max-width: 43rem;
+  margin: 0.65rem 0 0;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.8;
+}
+
+.admin-role-card {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(222, 190, 124, 0.28);
+  border-radius: 1.15rem;
+  background: rgba(1, 22, 16, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+}
+
+.admin-role-card > svg {
+  width: 2.65rem;
+  height: 2.65rem;
+  flex: 0 0 auto;
+  padding: 0.72rem;
+  border-radius: 0.85rem;
+  color: #e1c17d;
+  background: rgba(216, 182, 112, 0.12);
+}
+
+.admin-role-card > span {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.admin-role-card small {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.56rem;
+  font-weight: 800;
+}
+
+.admin-role-card b {
+  overflow: hidden;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-role-card > i,
+.admin-system-status > i {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  border: 2px solid rgba(126, 220, 173, 0.26);
+  border-radius: 50%;
+  background: #61d092;
+  box-shadow: 0 0 0.8rem rgba(97, 208, 146, 0.65);
+}
+
+.admin-hero-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.61rem;
+  font-weight: 800;
+}
+
+.admin-hero-footer > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.admin-hero-footer svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #d8b670;
+}
+
+.admin-system-status {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.admin-restricted-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: clamp(2rem, 8vw, 5rem) 1rem;
+  border: 1px dashed color-mix(in srgb, var(--primary) 25%, var(--border));
+  border-radius: 1.6rem;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--card) 94%, var(--primary));
+}
+
+.admin-restricted-card > div {
+  width: 4rem;
+  height: 4rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--primary) 9%, transparent);
+}
+
+.admin-restricted-card > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-restricted-card small {
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.admin-restricted-card b {
+  font-size: 0.95rem;
+  font-weight: 950;
+}
+
+.admin-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.admin-metric-card {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--card) 96%, var(--primary));
+  box-shadow: 0 0.75rem 2rem rgba(4, 31, 24, 0.05);
+}
+
+.admin-metric-card > div {
+  width: 2.65rem;
+  height: 2.65rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.85rem;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.admin-metric-card > div svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.admin-metric-card > span {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 0.35rem;
+}
+
+.admin-metric-card small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.52rem;
+  font-style: normal;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-metric-card b {
+  color: var(--primary);
+  font-size: 1.35rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.admin-metric-card em {
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-metric-card.is-attention > div {
+  color: #9b7022;
+  background: rgba(202, 165, 91, 0.15);
+}
+
+.admin-metric-card.is-alert > div {
+  color: #d14343;
+  background: rgba(209, 67, 67, 0.1);
+}
+
+.admin-workspace {
+  min-width: 0;
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+
+.admin-navigation {
+  position: sticky;
+  z-index: 30;
+  top: 4.8rem;
+  min-width: 0;
+  padding: 0.55rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 1.2rem;
+  background: color-mix(in srgb, var(--background) 91%, transparent);
+  box-shadow: 0 0.8rem 2rem rgba(4, 31, 24, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.admin-navigation-title,
+.admin-navigation-note {
+  display: none;
+}
+
+.admin-navigation nav {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+
+.admin-navigation nav::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-navigation nav > button {
+  min-width: max-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.9rem;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted) 54%, transparent);
+  font-family: inherit;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.admin-navigation nav > button:hover,
+.admin-navigation nav > button:focus-visible {
+  border-color: color-mix(in srgb, var(--gold-primary) 36%, transparent);
+  color: var(--primary);
+  outline: none;
+}
+
+.admin-navigation nav > button.is-active {
+  border-color: color-mix(in srgb, var(--gold-primary) 66%, transparent);
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 76%, #011b14));
+  box-shadow: 0 0.65rem 1.25rem color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.admin-nav-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.55rem;
+  color: currentColor;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+
+.admin-nav-icon svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.admin-navigation button.is-active .admin-nav-icon {
+  color: #e2c27f;
+  background: rgba(226, 194, 127, 0.12);
+}
+
+.admin-nav-copy {
+  display: flex;
+  flex-direction: column;
+  text-align: start;
+}
+
+.admin-nav-copy b {
+  font-size: 0.68rem;
+  font-weight: 950;
+}
+
+.admin-nav-copy small {
+  display: none;
+  font-size: 0.52rem;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+.admin-navigation nav em {
+  min-width: 1.3rem;
+  height: 1.3rem;
+  display: grid;
+  place-items: center;
+  padding-inline: 0.25rem;
+  border-radius: 999px;
+  color: currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 0.55rem;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.admin-navigation nav button.is-active em {
+  color: #123d30;
+  background: #e2c27f;
+}
+
+.admin-content-shell {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 1.45rem;
+  background: color-mix(in srgb, var(--card) 95%, var(--background));
+  box-shadow: 0 1.1rem 3rem rgba(4, 31, 24, 0.055);
+}
+
+.admin-content-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 6%, transparent), transparent 45%),
+    color-mix(in srgb, var(--card) 97%, var(--primary));
+}
+
+.admin-content-icon {
+  width: 3.25rem;
+  height: 3.25rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--gold-primary) 30%, transparent);
+  border-radius: 1rem;
+  color: var(--gold-primary);
+  background: color-mix(in srgb, var(--primary) 92%, #031b14);
+  box-shadow: 0 0.65rem 1.5rem color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+.admin-content-icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.admin-content-heading > div:last-child {
+  min-width: 0;
+}
+
+.admin-content-heading span {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--gold-primary);
+  font-size: 0.53rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.admin-content-heading h2 {
+  margin: 0;
+  color: var(--primary);
+  font-size: 1.2rem;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.admin-content-heading p {
+  margin: 0.25rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.admin-content-body {
+  min-width: 0;
+  padding: 0.8rem;
+}
+
+.admin-content-body .p-20,
+.admin-content-body .p-16 {
+  padding: clamp(2.5rem, 9vw, 5rem) 1rem !important;
+}
+
+.admin-content-body .rounded-\[40px\],
+.admin-content-body .rounded-\[36px\] {
+  border-radius: 1.3rem !important;
+}
+
+.admin-content-body input {
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .admin-executive-page {
+    padding-inline: 1rem;
+  }
+
+  .admin-executive-hero {
+    min-height: 15rem;
+    padding: 1.5rem;
+    border-radius: 2rem;
+  }
+
+  .admin-hero-main {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .admin-role-card {
+    min-width: 13rem;
+  }
+
+  .admin-metric-card {
+    padding: 1rem;
+  }
+
+  .admin-content-body {
+    padding: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-executive-page {
+    padding-inline: clamp(1rem, 2vw, 1.75rem);
+  }
+
+  .admin-executive-hero {
+    min-height: 16.5rem;
+    padding: 1.8rem 2rem;
+    border-radius: 2.35rem;
+  }
+
+  .admin-official-seal {
+    width: 5.5rem;
+    height: 5.5rem;
+    border-radius: 1.55rem;
+  }
+
+  .admin-official-seal .logo-alsaif-banner {
+    width: 4.55rem;
+    height: 4.55rem;
+  }
+
+  .admin-hero-copy p {
+    font-size: 0.84rem;
+  }
+
+  .admin-role-card {
+    min-width: 15rem;
+    padding: 0.95rem;
+  }
+
+  .admin-metrics-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  .admin-metric-card > div {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .admin-metric-card b {
+    font-size: 1.55rem;
+  }
+
+  .admin-navigation {
+    top: 5.2rem;
+  }
+
+  .admin-navigation nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .admin-navigation nav > button {
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .admin-navigation nav em {
+    display: none;
+  }
+
+  .admin-content-shell {
+    border-radius: 1.8rem;
+  }
+
+  .admin-content-heading {
+    padding: 1.3rem 1.5rem;
+  }
+
+  .admin-content-heading h2 {
+    font-size: 1.45rem;
+  }
+
+  .admin-content-heading p {
+    font-size: 0.72rem;
+  }
+
+  .admin-content-body {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .admin-executive-page {
+    padding-inline: clamp(1rem, 2vw, 2rem);
+  }
+
+  .admin-executive-hero {
+    min-height: 17.5rem;
+    padding: 2rem 2.4rem;
+  }
+
+  .admin-hero-watermark {
+    width: 20rem;
+    height: 20rem;
+  }
+
+  .admin-hero-copy h1 {
+    font-size: 4rem;
+  }
+
+  .admin-metrics-grid {
+    gap: 1rem;
+    margin-top: 1.2rem;
+  }
+
+  .admin-metric-card {
+    gap: 0.9rem;
+    padding: 1.1rem 1.2rem;
+    border-radius: 1.35rem;
+  }
+
+  .admin-metric-card > div {
+    width: 3.4rem;
+    height: 3.4rem;
+    border-radius: 1rem;
+  }
+
+  .admin-metric-card > div svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .admin-workspace {
+    grid-template-columns: 17.5rem minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+    margin-top: 1.2rem;
+  }
+
+  .admin-navigation {
+    top: 6rem;
+    padding: 1rem;
+    border-radius: 1.55rem;
+  }
+
+  .admin-navigation-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.3rem 0.4rem 1rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  }
+
+  .admin-navigation-title span {
+    color: var(--primary);
+    font-size: 0.92rem;
+    font-weight: 950;
+  }
+
+  .admin-navigation-title small {
+    color: var(--muted-foreground);
+    font-size: 0.61rem;
+    font-weight: 750;
+  }
+
+  .admin-navigation nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.8rem;
+  }
+
+  .admin-navigation nav > button {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.7rem;
+    padding: 0.72rem;
+    border-radius: 1rem;
+  }
+
+  .admin-nav-icon {
+    width: 2.15rem;
+    height: 2.15rem;
+    border-radius: 0.7rem;
+  }
+
+  .admin-nav-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .admin-nav-copy b {
+    font-size: 0.72rem;
+  }
+
+  .admin-nav-copy small {
+    display: block;
+  }
+
+  .admin-navigation nav em {
+    display: grid;
+  }
+
+  .admin-navigation-note {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    padding: 0.8rem;
+    border-radius: 0.95rem;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 7%, transparent);
+  }
+
+  .admin-navigation-note > svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex: 0 0 auto;
+    color: var(--gold-primary);
+  }
+
+  .admin-navigation-note > span {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .admin-navigation-note b {
+    font-size: 0.63rem;
+    font-weight: 950;
+  }
+
+  .admin-navigation-note small {
+    color: var(--muted-foreground);
+    font-size: 0.5rem;
+    font-weight: 700;
+  }
+
+  .admin-content-shell {
+    border-radius: 2rem;
+  }
+
+  .admin-content-heading {
+    padding: 1.5rem 1.75rem;
+  }
+
+  .admin-content-body {
+    padding: 1.75rem;
+  }
+}
+
+.dark .admin-metric-card,
+.dark .admin-content-shell {
+  background: color-mix(in srgb, var(--card) 96%, #061c15);
+}
+
+.dark .admin-navigation {
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-executive-page *,
+  .admin-executive-page *::before,
+  .admin-executive-page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
