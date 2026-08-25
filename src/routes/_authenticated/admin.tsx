@@ -53,6 +53,7 @@ import { IntegratedHub } from "@/components/dashboard/integrated-hub";
 import { sendFcmNotification } from "@/lib/fcm.functions";
 import { finalizePoll } from "@/lib/api/shura.functions";
 import { SuggestionsManager } from "@/components/admin/suggestions-manager";
+import "@/admin-executive.css";
 
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -77,6 +78,15 @@ type ReqRow = {
   note: string | null;
   created_at: string;
 };
+
+type AdminTab =
+  | "requests"
+  | "members"
+  | "member_requests"
+  | "polls"
+  | "bugs"
+  | "master_archive"
+  | "suggestions";
 
 const REQ_TABS = [
   { key: "pending", label: "بانتظار المراجعة" },
@@ -114,9 +124,7 @@ function AdminPage() {
     community: [] as any[],
   });
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"requests" | "members" | "member_requests" | "polls" | "bugs" | "master_archive" | "suggestions">(
-    "requests",
-  );
+  const [tab, setTab] = useState<AdminTab>("requests");
   const [reqCounts, setReqCounts] = useState<Record<string, number>>({
     pending: 0,
     approved: 0,
@@ -532,148 +540,215 @@ function AdminPage() {
     return fn.includes(s) || an.includes(s);
   });
 
+  const openBugCount = bugReports.filter((report: any) => report.status === "open").length;
+  const archiveCount = Object.values(archiveData).reduce(
+    (total, entries) => total + entries.length,
+    0,
+  );
+  const adminSections: Array<{
+    key: AdminTab;
+    label: string;
+    shortLabel: string;
+    description: string;
+    icon: any;
+    count?: number;
+    visible: boolean;
+  }> = [
+    {
+      key: "requests",
+      label: "طلبات العضوية",
+      shortLabel: "العضوية",
+      description: "مراجعة طلبات الانضمام واعتماد الأعضاء الجدد.",
+      icon: UserPlus,
+      count: reqCounts.pending,
+      visible: true,
+    },
+    {
+      key: "members",
+      label: "سجل الأعضاء",
+      shortLabel: "الأعضاء",
+      description: "إدارة السجل الرسمي للأعضاء والأدوار والصلاحيات.",
+      icon: Users,
+      count: members.length,
+      visible: true,
+    },
+    {
+      key: "polls",
+      label: "مجلس الشورى",
+      shortLabel: "الشورى",
+      description: "إدارة الاستفتاءات والقرارات ومتابعة نتائج التصويت.",
+      icon: BarChart3,
+      count: polls.length,
+      visible: true,
+    },
+    {
+      key: "member_requests",
+      label: "طلبات الأعضاء",
+      shortLabel: "الطلبات",
+      description: "متابعة الطلبات والمبادرات المرفوعة لرئيس المجلس.",
+      icon: Megaphone,
+      count: memberRequests.length,
+      visible: isSiteChairman,
+    },
+    {
+      key: "master_archive",
+      label: "الأرشيف المركزي",
+      shortLabel: "الأرشيف",
+      description: "الرجوع إلى السجلات التاريخية لجميع أعمال المجلس.",
+      icon: Archive,
+      count: archiveCount,
+      visible: isSystemAdmin || isSiteChairman,
+    },
+    {
+      key: "bugs",
+      label: "الدعم التقني",
+      shortLabel: "الدعم",
+      description: "متابعة البلاغات التقنية وإغلاق الحالات المعالجة.",
+      icon: Shield,
+      count: openBugCount,
+      visible: isSystemAdmin || isSiteChairman,
+    },
+    {
+      key: "suggestions",
+      label: "المقترحات",
+      shortLabel: "المقترحات",
+      description: "استقبال أفكار الأعضاء وفرز المقترحات التطويرية.",
+      icon: Inbox,
+      visible: isSystemAdmin || isSiteChairman,
+    },
+  ].filter((section) => section.visible);
+
+  const activeAdminSection =
+    adminSections.find((section) => section.key === tab) || adminSections[0];
+  const ActiveAdminIcon = activeAdminSection?.icon || Shield;
+  const todayLabel = new Intl.DateTimeFormat("ar-SA", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+
   return (
-    <AppShell title="الإدارة" user={{ name: "", role: "", initial: "ص" }}>
-      <div className="max-w-6xl mx-auto space-y-12 pb-24" dir="rtl">
-        <section className="animate-fade-up px-4 md:px-0">
-          <div className="relative overflow-hidden rounded-[32px] md:rounded-[48px] bg-gradient-to-br from-primary via-emerald-950 to-black p-6 md:p-12 text-white shadow-2xl border border-white/5 group">
-            <div className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none z-1 transition-transform duration-1000 group-hover:scale-110 group-hover:opacity-40">
-              <div
-                className="size-28 md:size-64 logo-alsaif-banner"
-                style={{ "--logo-url": `url(${dynamicLogo || ""})` } as any}
-              />
+    <AppShell title="الإدارة" user={{ name: "", role: "", initial: "ص" }} fullWidth>
+      <div className="admin-executive-page" dir="rtl">
+        <header className="admin-executive-hero animate-fade-up">
+          <div className="admin-hero-pattern" aria-hidden="true" />
+          <div className="admin-hero-watermark" aria-hidden="true">
+            <div
+              className="logo-alsaif-banner"
+              style={{ "--logo-url": `url(${dynamicLogo || ""})` } as any}
+            />
+          </div>
+
+          <div className="admin-hero-main">
+            <div className="admin-hero-brand">
+              <div className="admin-official-seal" aria-hidden="true">
+                <div
+                  className="logo-alsaif-banner"
+                  style={{ "--logo-url": `url(${dynamicLogo || ""})` } as any}
+                />
+                <ShieldCheck />
+              </div>
+              <div className="admin-hero-copy">
+                <span>ديوان عائلة السيف · مركز الحوكمة</span>
+                <h1>مجلس الإدارة</h1>
+                <p>إدارة العضوية والقرارات والصلاحيات والسجلات من مركز موحّد وآمن.</p>
+              </div>
             </div>
 
-            <div className="absolute top-0 right-0 size-64 bg-gold-primary/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
-
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-10">
-              <div className="space-y-3 md:space-y-5 text-center md:text-right">
-                <div className="flex items-center justify-center md:justify-start gap-3">
-                  <div className="h-0.5 w-8 md:w-12 bg-gold-primary shadow-[0_0_10px_rgba(212,175,55,0.6)]" />
-                  <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
-                    إدارة المجلس
-                  </span>
-                </div>
-                <h2 className="text-3xl md:text-6xl font-black tracking-tighter leading-tight drop-shadow-2xl">
-                  لوحة الإدارة
-                </h2>
-                <p className="text-white/60 font-bold text-sm md:text-xl max-w-xl">
-                  إدارة طلبات الانضمام، الصلاحيات، ونظام الشورى.
-                </p>
-              </div>
-              <div className="size-16 md:size-28 rounded-2xl md:rounded-[36px] bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl self-center md:self-auto shrink-0 group-hover:rotate-12 transition-transform duration-700">
-                <Shield className="size-8 md:size-14 text-gold-primary" strokeWidth={1.5} />
-              </div>
+            <div className="admin-role-card">
+              <Crown aria-hidden="true" />
+              <span>
+                <small>صفة الدخول الحالية</small>
+                <b>{profile.role || "مسؤول المجلس"}</b>
+              </span>
+              <i aria-hidden="true" />
             </div>
           </div>
-        </section>
+
+          <div className="admin-hero-footer">
+            <span><CalendarDays /> {todayLabel}</span>
+            <span className="admin-system-status"><i /> النظام يعمل بصورة طبيعية وآمنة</span>
+          </div>
+        </header>
 
         {!isA ? (
-          <div className="card-surface p-20 flex flex-col items-center text-center gap-6 border-dashed opacity-60 animate-fade-up">
-            <div className="size-20 rounded-[40px] bg-muted/50 flex items-center justify-center text-muted-foreground">
-              <Shield size={40} />
+          <div className="admin-restricted-card animate-fade-up">
+            <div>
+              <Shield size={36} />
             </div>
-            <p className="text-xl font-black">الدخول محدود لمسؤولي النظام فقط.</p>
+            <span>
+              <small>منطقة إدارية محمية</small>
+              <b>الدخول محدود لمسؤولي المجلس والنظام فقط.</b>
+            </span>
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2 p-1.5 bg-muted/40 rounded-3xl border border-border/40 overflow-x-auto no-scrollbar mx-4 md:mx-0">
-              <button
-                onClick={() => setTab("requests")}
-                className={cn(
-                  "px-8 py-3 rounded-[22px] text-sm font-black transition-all flex items-center gap-2 shrink-0",
-                  tab === "requests"
-                    ? "bg-primary text-white shadow-xl"
-                    : "text-muted-foreground hover:bg-muted",
-                )}
-              >
-                <UserPlus size={18} /> طلبات العضوية
-              </button>
-              <button
-                onClick={() => setTab("members")}
-                className={cn(
-                  "px-8 py-3 rounded-[22px] text-sm font-black transition-all flex items-center gap-2 shrink-0",
-                  tab === "members"
-                    ? "bg-primary text-white shadow-xl"
-                    : "text-muted-foreground hover:bg-muted",
-                )}
-              >
-                <Users size={18} /> إدارة الأعضاء
-              </button>
-              <button
-                onClick={() => setTab("polls")}
-                className={cn(
-                  "px-8 py-3 rounded-[22px] text-sm font-black transition-all flex items-center gap-2 shrink-0",
-                  tab === "polls"
-                    ? "bg-primary text-white shadow-xl"
-                    : "text-muted-foreground hover:bg-muted",
-                )}
-              >
-                <BarChart3 size={18} /> الشورى
-              </button>
-              {isSiteChairman && (
-                <button
-                  onClick={() => setTab("member_requests")}
-                  className={cn(
-                    "px-8 py-3 rounded-[22px] text-sm font-black transition-all flex items-center gap-2 shrink-0",
-                    tab === "member_requests"
-                      ? "bg-primary text-white shadow-xl"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  <Megaphone size={18} /> طلبات
-                  {memberRequests.length > 0 && (
-                    <span className="ms-1 size-5 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center">
-                      {memberRequests.length}
-                    </span>
-                  )}
-                </button>
-              )}
-              {(isSystemAdmin || isSiteChairman) && (
-                <button
-                  onClick={() => setTab("master_archive")}
-                  className={cn(
-                    "px-8 py-3 rounded-[22px] text-sm font-black transition-all flex items-center gap-2 shrink-0",
-                    tab === "master_archive"
-                      ? "bg-primary text-white shadow-xl"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  <Archive size={18} /> الأرشيف الشامل
-                </button>
-              )}
-              {(isSystemAdmin || isSiteChairman) && (
-                <button
-                  onClick={() => setTab("bugs")}
-                  className={cn(
-                    "px-8 py-3 rounded-[22px] text-sm font-black transition-all flex items-center gap-2 shrink-0",
-                    tab === "bugs"
-                      ? "bg-primary text-white shadow-xl"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  <Shield size={18} /> بلاغات تقنية
-                  {bugReports.filter((b: any) => b.status === "open").length > 0 && (
-                    <span className="ms-1 size-5 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center">
-                      {bugReports.filter((b: any) => b.status === "open").length}
-                    </span>
-                  )}
-                </button>
-              )}
-              {(isSystemAdmin || isSiteChairman) && (
-                <button
-                  onClick={() => setTab("suggestions")}
-                  className={cn(
-                    "px-8 py-3 rounded-[22px] text-sm font-black transition-all flex items-center gap-2 shrink-0",
-                    tab === "suggestions"
-                      ? "bg-primary text-white shadow-xl"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  <Inbox size={18} /> المقترحات
-                </button>
-              )}
-            </div>
+            <section className="admin-metrics-grid animate-fade-up" aria-label="ملخص الإدارة">
+              <article className="admin-metric-card is-attention">
+                <div><Clock /></div>
+                <span><small>تحتاج إلى مراجعة</small><b>{reqCounts.pending}</b><em>طلب عضوية</em></span>
+              </article>
+              <article className="admin-metric-card">
+                <div><Users /></div>
+                <span><small>السجل الرسمي</small><b>{members.length}</b><em>عضو مسجل</em></span>
+              </article>
+              <article className="admin-metric-card">
+                <div><BarChart3 /></div>
+                <span><small>ملفات الشورى</small><b>{polls.length}</b><em>قرار واستفتاء</em></span>
+              </article>
+              <article className={cn("admin-metric-card", openBugCount > 0 && "is-alert")}>
+                <div><ShieldCheck /></div>
+                <span><small>حالة الدعم</small><b>{openBugCount}</b><em>بلاغ مفتوح</em></span>
+              </article>
+            </section>
+
+            <div className="admin-workspace">
+              <aside className="admin-navigation" aria-label="أقسام الإدارة">
+                <div className="admin-navigation-title">
+                  <span>أقسام الديوان</span>
+                  <small>اختر الوحدة الإدارية</small>
+                </div>
+                <nav role="tablist">
+                  {adminSections.map((section) => {
+                    const Icon = section.icon;
+                    return (
+                      <button
+                        key={section.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === section.key}
+                        onClick={() => setTab(section.key)}
+                        className={cn(tab === section.key && "is-active")}
+                      >
+                        <span className="admin-nav-icon"><Icon /></span>
+                        <span className="admin-nav-copy">
+                          <b>{section.label}</b>
+                          <small>{section.shortLabel}</small>
+                        </span>
+                        {section.count !== undefined && (
+                          <em className={cn(section.count > 0 && "has-items")}>{section.count}</em>
+                        )}
+                      </button>
+                    );
+                  })}
+                </nav>
+                <div className="admin-navigation-note">
+                  <ShieldCheck />
+                  <span><b>وصول محمي</b><small>تُسجّل الإجراءات الإدارية</small></span>
+                </div>
+              </aside>
+
+              <main className="admin-content-shell">
+                <header className="admin-content-heading">
+                  <div className="admin-content-icon"><ActiveAdminIcon /></div>
+                  <div>
+                    <span>ديوان الإدارة / {activeAdminSection.shortLabel}</span>
+                    <h2>{activeAdminSection.label}</h2>
+                    <p>{activeAdminSection.description}</p>
+                  </div>
+                </header>
+                <div className="admin-content-body">
 
             {tab === "suggestions" && (isSystemAdmin || isSiteChairman) && <SuggestionsManager />}
 
@@ -976,6 +1051,9 @@ function AdminPage() {
                 </div>
               </section>
             )}
+                </div>
+              </main>
+            </div>
           </>
         )}
       </div>
