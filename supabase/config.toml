@@ -2,3 +2,8 @@ project_id = "zqllblksdyutspauafgi"
 
 [functions.send-push]
 verify_jwt = false
+
+[functions.system-health]
+# The function validates the caller and administrative role internally so that
+# CORS preflight and projects using newer JWT signing keys remain compatible.
+verify_jwt = false

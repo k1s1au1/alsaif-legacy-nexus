@@ -37,6 +37,13 @@ import {
   CheckCircle2,
   MapPin,
   Inbox,
+  Database,
+  HardDrive,
+  BellRing,
+  Server,
+  RefreshCw,
+  AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
 
 
@@ -88,6 +95,52 @@ type AdminTab =
   | "master_archive"
   | "suggestions";
 
+type SystemHealthStatus = "operational" | "degraded" | "down";
+type SystemHealthCheckKey = "edge" | "auth" | "database" | "storage" | "notifications";
+
+type SystemHealthCheck = {
+  key: SystemHealthCheckKey;
+  label: string;
+  status: SystemHealthStatus;
+  message: string;
+  latency_ms: number;
+};
+
+type SystemHealthResponse = {
+  success: true;
+  overall: SystemHealthStatus;
+  checked_at: string;
+  duration_ms: number;
+  checks: SystemHealthCheck[];
+};
+
+const HEALTH_ICONS: Record<SystemHealthCheckKey, any> = {
+  edge: Server,
+  auth: ShieldCheck,
+  database: Database,
+  storage: HardDrive,
+  notifications: BellRing,
+};
+
+const HEALTH_COPY = {
+  operational: {
+    label: "الخدمات الأساسية تعمل بصورة طبيعية",
+    detail: "اكتملت جميع فحوصات التشغيل بنجاح.",
+  },
+  degraded: {
+    label: "يوجد بطء أو عطل جزئي",
+    detail: "بعض الخدمات تحتاج إلى مراجعة، بينما النظام الأساسي ما زال متاحًا.",
+  },
+  down: {
+    label: "يوجد عطل يحتاج إلى تدخل",
+    detail: "تعذر الوصول إلى خدمة أساسية واحدة أو أكثر.",
+  },
+  unknown: {
+    label: "تعذر إجراء فحص الحالة",
+    detail: "لم تصل نتيجة موثوقة من خدمة الفحص.",
+  },
+} as const;
+
 const REQ_TABS = [
   { key: "pending", label: "بانتظار المراجعة" },
   { key: "approved", label: "طلبات مقبولة" },
@@ -133,6 +186,10 @@ function AdminPage() {
   const [fcmTokenCount, setFcmTokenCount] = useState(0);
   const [memberSearch, setMemberSearch] = useState("");
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+  const [systemHealth, setSystemHealth] = useState<SystemHealthResponse | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthError, setHealthError] = useState<string | null>(null);
+  const [showHealthDetails, setShowHealthDetails] = useState(false);
   const dynamicLogo = useSiteLogo();
 
   // Announcement State
@@ -145,6 +202,29 @@ function AdminPage() {
   const approveFn = useServerFn(approveAccountRequest);
   const deleteMemberFn = useServerFn(deleteMemberAccount);
   const sendFcm = useServerFn(sendFcmNotification);
+
+  const fetchSystemHealth = useCallback(async () => {
+    setHealthLoading(true);
+    setHealthError(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("system-health", {
+        body: { source: "admin-dashboard" },
+      });
+
+      if (error) throw error;
+      if (!data?.success || !Array.isArray(data?.checks)) {
+        throw new Error(data?.error || "لم تصل نتيجة صحيحة من خدمة الفحص");
+      }
+
+      setSystemHealth(data as SystemHealthResponse);
+    } catch (error: any) {
+      console.error("System health check failed:", error);
+      setHealthError(error?.message || "تعذر الاتصال بخدمة الفحص");
+    } finally {
+      setHealthLoading(false);
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!meId) return;
@@ -320,6 +400,14 @@ function AdminPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!isA) return;
+
+    fetchSystemHealth();
+    const intervalId = window.setInterval(fetchSystemHealth, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, [isA, fetchSystemHealth]);
 
   // "Member requests" tab is chairman-only; fall back to requests if not chairman
   useEffect(() => {
@@ -627,6 +715,19 @@ function AdminPage() {
     month: "long",
     year: "numeric",
   }).format(new Date());
+  const displayedHealthStatus: keyof typeof HEALTH_COPY = healthError
+    ? "unknown"
+    : systemHealth?.overall || "unknown";
+  const displayedHealthCopy = HEALTH_COPY[displayedHealthStatus];
+  const healthIndicatorLabel =
+    healthLoading && !systemHealth ? "جاري فحص الخدمات الأساسية..." : displayedHealthCopy.label;
+  const lastHealthCheckLabel = systemHealth
+    ? new Intl.DateTimeFormat("ar-SA", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }).format(new Date(systemHealth.checked_at))
+    : "لم يكتمل الفحص بعد";
 
   return (
     <AppShell title="الإدارة" user={{ name: "", role: "", initial: "ص" }} fullWidth>
@@ -668,7 +769,25 @@ function AdminPage() {
 
           <div className="admin-hero-footer">
             <span><CalendarDays /> {todayLabel}</span>
-            <span className="admin-system-status"><i /> النظام يعمل بصورة طبيعية وآمنة</span>
+            {isA ? (
+              <button
+                type="button"
+                onClick={() => setShowHealthDetails(true)}
+                className={cn(
+                  "admin-system-status",
+                  healthLoading && !systemHealth
+                    ? "is-checking"
+                    : `is-${displayedHealthStatus}`,
+                )}
+                aria-label={`${healthIndicatorLabel}. عرض تفاصيل حالة النظام`}
+              >
+                {healthLoading && !systemHealth ? <Loader2 className="animate-spin" /> : <i />}
+                <span>{healthIndicatorLabel}</span>
+                <ChevronDown className="admin-status-chevron" />
+              </button>
+            ) : (
+              <span className="admin-system-status is-unknown"><i /> حالة النظام متاحة للمسؤولين</span>
+            )}
           </div>
         </header>
 
@@ -1057,6 +1176,107 @@ function AdminPage() {
           </>
         )}
       </div>
+
+      <AnimatePresence>
+        {showHealthDetails && (
+          <div
+            className="admin-health-overlay"
+            dir="rtl"
+            onMouseDown={(event) => {
+              if (event.currentTarget === event.target) setShowHealthDetails(false);
+            }}
+          >
+            <motion.section
+              initial={{ opacity: 0, scale: 0.96, y: 18 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 12 }}
+              transition={{ duration: 0.2 }}
+              className="admin-health-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="system-health-title"
+            >
+              <header className="admin-health-dialog-header">
+                <div>
+                  <span>مراقبة التشغيل</span>
+                  <h2 id="system-health-title">حالة خدمات النظام</h2>
+                  <p>فحص مباشر وآمن للخدمات الأساسية — لا يتضمن فحصًا أمنيًا شاملًا.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowHealthDetails(false)}
+                  aria-label="إغلاق"
+                >
+                  <X />
+                </button>
+              </header>
+
+              <div className={cn("admin-health-summary", `is-${displayedHealthStatus}`)}>
+                <div>
+                  {displayedHealthStatus === "operational" ? <CheckCircle2 /> : <AlertTriangle />}
+                </div>
+                <span>
+                  <b>{healthIndicatorLabel}</b>
+                  <small>{displayedHealthCopy.detail}</small>
+                </span>
+                {systemHealth && <em>{systemHealth.duration_ms} ms</em>}
+              </div>
+
+              {healthError && !systemHealth ? (
+                <div className="admin-health-error">
+                  <AlertTriangle />
+                  <span>
+                    <b>لم تكتمل عملية الفحص</b>
+                    <small>{healthError}</small>
+                  </span>
+                </div>
+              ) : (
+                <div className="admin-health-checks">
+                  {(systemHealth?.checks || []).map((check) => {
+                    const CheckIcon = HEALTH_ICONS[check.key] || Server;
+                    return (
+                      <article key={check.key} className={cn("admin-health-check", `is-${check.status}`)}>
+                        <div className="admin-health-check-icon"><CheckIcon /></div>
+                        <span>
+                          <b>{check.label}</b>
+                          <small>{check.message}</small>
+                        </span>
+                        <div className="admin-health-check-result">
+                          <i />
+                          <em>
+                            {check.status === "operational"
+                              ? "يعمل"
+                              : check.status === "degraded"
+                                ? "جزئي"
+                                : "متوقف"}
+                          </em>
+                          <small>{check.latency_ms} ms</small>
+                        </div>
+                      </article>
+                    );
+                  })}
+                  {healthLoading && !systemHealth && (
+                    <div className="admin-health-loading">
+                      <Loader2 className="animate-spin" /> جاري تنفيذ الفحوصات...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <footer className="admin-health-dialog-footer">
+                <span>
+                  آخر فحص: <b>{lastHealthCheckLabel}</b>
+                  {systemHealth && <> · يتجدد تلقائيًا كل دقيقة</>}
+                </span>
+                <button type="button" onClick={fetchSystemHealth} disabled={healthLoading}>
+                  <RefreshCw className={cn(healthLoading && "animate-spin")} />
+                  {healthLoading ? "جاري الفحص" : "إعادة الفحص"}
+                </button>
+              </footer>
+            </motion.section>
+          </div>
+        )}
+      </AnimatePresence>
     </AppShell>
   );
 }
