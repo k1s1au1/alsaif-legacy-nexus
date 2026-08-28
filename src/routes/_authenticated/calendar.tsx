@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
+import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 import {
   CalendarDays,
   ChevronRight,
@@ -144,6 +145,7 @@ function FamilyCalendarPage() {
   const [selectedKey, setSelectedKey] = useState(dayKey(today));
   const [items, setItems] = useState<CalItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -259,7 +261,9 @@ function FamilyCalendarPage() {
       setItems(out);
       setLoading(false);
     })();
-  }, []);
+  }, [refreshKey]);
+
+  useRealtimeSync(["meetings", "events", "trips", "tasks"], () => setRefreshKey((k) => k + 1));
 
   const itemsByDay = useMemo(() => {
     const map = new Map<string, CalItem[]>();
