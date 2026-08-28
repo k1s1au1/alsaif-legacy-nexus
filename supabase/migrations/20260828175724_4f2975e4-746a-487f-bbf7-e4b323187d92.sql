@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "All members view transfers" ON public.bank_transfers;
