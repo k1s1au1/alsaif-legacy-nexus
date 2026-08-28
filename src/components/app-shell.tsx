@@ -559,7 +559,7 @@ function AppShellChrome({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="group relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black text-primary/65 hover:text-primary hover:bg-primary/5 data-[state=open]:text-gold-primary data-[state=open]:bg-gold-primary/10 transition-all duration-200 outline-none"
+                    className="group relative min-w-[58px] min-[1200px]:min-w-[76px] h-14 px-2 min-[1200px]:px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[10px] min-[1200px]:text-[11px] font-black text-primary/65 hover:text-primary hover:bg-primary/5 data-[state=open]:text-gold-primary data-[state=open]:bg-gold-primary/10 transition-all duration-200 outline-none"
                     aria-label="فتح قائمة الخدمات"
                   >
                     <LayoutGrid size={19} />
