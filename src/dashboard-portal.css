@@ -14,7 +14,7 @@
   min-height: 320px;
   isolation: isolate;
   outline: none;
-  pointer-events: none;
+  perspective: 1200px;
 }
 
 .heritage-portal-glow {
@@ -36,8 +36,12 @@
   align-items: flex-end;
   justify-content: center;
   width: 100%;
-  animation: diwan-gate-float 14s ease-in-out infinite;
-  will-change: transform;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+  animation:
+    diwan-gate-enter 1.35s cubic-bezier(0.22, 0.9, 0.28, 1.08) 0.05s both,
+    diwan-gate-idle 16s ease-in-out 1.45s infinite;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 .heritage-portal-frame {
@@ -57,6 +61,52 @@
   filter: drop-shadow(0 26px 34px rgba(0, 0, 0, 0.5));
   user-select: none;
   -webkit-user-select: none;
+  transition: filter 0.5s ease;
+}
+
+/* Golden pulse rising from the door / column base area. */
+.heritage-portal-frame::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 6%;
+  width: 46%;
+  height: 42%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 78%,
+    rgba(255, 205, 118, 0.34),
+    rgba(255, 205, 118, 0.12) 45%,
+    transparent 72%
+  );
+  filter: blur(14px);
+  mix-blend-mode: screen;
+  transform: translateX(-50%);
+  animation: diwan-gate-doorlight 7.5s ease-in-out 1.4s infinite;
+  pointer-events: none;
+}
+
+/* Traveling golden sheen that sweeps across the ornaments. */
+.heritage-portal-frame::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 2% 4%;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 231, 178, 0.22) 47%,
+    rgba(255, 231, 178, 0.34) 50%,
+    rgba(255, 231, 178, 0.22) 53%,
+    transparent 62%
+  );
+  background-size: 260% 260%;
+  background-position: 120% 0;
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: diwan-gate-sweep 9s ease-in-out 2s infinite;
+  pointer-events: none;
 }
 
 .heritage-portal-sheen {
@@ -83,15 +133,34 @@
   place-items: center;
   width: 14.4%;
   aspect-ratio: 1;
-  overflow: hidden;
+  overflow: visible;
   border-radius: 50%;
   transform: translate(-50%, -50%);
+  animation:
+    diwan-crest-enter 0.85s cubic-bezier(0.3, 1.15, 0.4, 1.05) 1.75s both;
+}
+
+/* Short golden glint that fades once the crest settles. */
+.heritage-portal-crest::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 224, 158, 0.85),
+    rgba(255, 224, 158, 0) 65%
+  );
+  mix-blend-mode: screen;
+  animation: diwan-crest-glint 1.5s ease-out 1.75s both;
+  pointer-events: none;
 }
 
 .heritage-portal-crest img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  border-radius: 50%;
 }
 
 .heritage-portal-ground {
@@ -109,15 +178,151 @@
   );
   filter: blur(10px);
   transform: translateX(-50%);
+  animation:
+    diwan-gate-ground-enter 1.35s ease-out 0.05s both,
+    diwan-gate-ground 16s ease-in-out 1.45s infinite;
 }
 
-@keyframes diwan-gate-float {
-  0%,
+/* Precise-pointer devices: subtle micro-tilt + deeper shadow on hover. */
+@media (hover: hover) and (pointer: fine) {
+  .heritage-portal-3d {
+    pointer-events: auto;
+  }
+
+  .heritage-portal-3d:hover .heritage-portal-float {
+    transform: rotateX(1.4deg) rotateY(-1.2deg) translateY(-2px);
+  }
+
+  .heritage-portal-3d:hover .heritage-portal-gate {
+    filter: drop-shadow(0 32px 42px rgba(0, 0, 0, 0.62));
+  }
+
+  .heritage-portal-3d:hover .heritage-portal-ground {
+    filter: blur(9px);
+    transform: translateX(-50%) scaleX(1.06);
+  }
+}
+
+/* Cinematic one-time entrance. */
+@keyframes diwan-gate-enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.94);
+  }
+  62% {
+    opacity: 1;
+    transform: translate3d(0, -3px, 0) scale(1.006);
+  }
+  82% {
+    transform: translate3d(0, 1px, 0) scale(0.998);
+  }
   100% {
+    opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
+}
+
+/* Crest delayed reveal: scale from .72 with slight overshoot. */
+@keyframes diwan-crest-enter {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes diwan-crest-glint {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+/* Luxurious idle: tiny rise + sub-degree 3D sway, never a full rotation. */
+@keyframes diwan-gate-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
+  }
+  30% {
+    transform: translate3d(0, -4px, 0) rotateX(0.9deg) rotateY(-0.8deg);
+  }
+  65% {
+    transform: translate3d(0, -2px, 0) rotateX(-0.6deg) rotateY(0.7deg);
+  }
+}
+
+@keyframes diwan-gate-ground-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scaleX(0.82);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+  }
+}
+
+@keyframes diwan-gate-ground {
+  0%,
+  100% {
+    transform: translateX(-50%) scaleX(1);
+    opacity: 1;
+  }
+  30% {
+    transform: translateX(-50%) scaleX(1.05);
+    opacity: 0.85;
+  }
+  65% {
+    transform: translateX(-50%) scaleX(1.02);
+    opacity: 0.92;
+  }
+}
+
+@keyframes diwan-gate-doorlight {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateX(-50%) scale(1);
+  }
   50% {
-    transform: translate3d(0, -6px, 0) scale(1.007);
+    opacity: 0.95;
+    transform: translateX(-50%) scale(1.08);
+  }
+}
+
+@keyframes diwan-gate-sweep {
+  0%,
+  62% {
+    opacity: 0;
+    background-position: 120% 0;
+  }
+  70% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+    background-position: -60% 0;
+  }
+  90%,
+  100% {
+    opacity: 0;
+    background-position: -80% 0;
   }
 }
 
@@ -684,8 +889,23 @@ body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after {
 @media (prefers-reduced-motion: reduce) {
   .heritage-portal-float,
   .heritage-portal-glow,
-  .heritage-portal-sheen {
+  .heritage-portal-sheen,
+  .heritage-portal-ground,
+  .heritage-portal-crest,
+  .heritage-portal-crest::before,
+  .heritage-portal-frame::before,
+  .heritage-portal-frame::after {
     animation: none !important;
+    transition: none !important;
+  }
+
+  .heritage-portal-float,
+  .heritage-portal-crest {
+    opacity: 1 !important;
+  }
+
+  .heritage-portal-frame::after {
+    display: none !important;
   }
 }
 
