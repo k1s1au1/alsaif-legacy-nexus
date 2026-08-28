@@ -4,267 +4,144 @@
  * and the mobile bottom navigation are not targeted here.
  */
 
+/* Diwan gate: architectural transparent artwork with a calm ambient motion. */
 .heritage-portal-3d {
-  --portal-rx: -4deg;
-  --portal-ry: -7deg;
   position: relative;
-  display: block;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   width: 100%;
-  min-height: 290px;
-  aspect-ratio: 1.22 / 1;
-  perspective: 1200px;
-  perspective-origin: 50% 44%;
+  min-height: 320px;
   isolation: isolate;
-  cursor: grab;
-  touch-action: pan-y;
-  user-select: none;
-  -webkit-user-select: none;
   outline: none;
-}
-
-.heritage-portal-3d[data-dragging="true"] {
-  cursor: grabbing;
-}
-
-.heritage-portal-3d:focus-visible {
-  border-radius: 28px;
-  box-shadow: 0 0 0 3px rgba(218, 181, 104, 0.72);
-}
-
-.heritage-portal-aura {
-  position: absolute;
-  inset: 13% 9% 12%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 52%, rgba(222, 184, 102, 0.25), transparent 31%),
-    radial-gradient(circle at 50% 74%, rgba(32, 160, 112, 0.22), transparent 45%);
-  filter: blur(23px);
   pointer-events: none;
 }
 
-.heritage-portal-stage {
+.heritage-portal-glow {
   position: absolute;
-  inset: 3% 5% 7%;
-  transform-style: preserve-3d;
-  transform: rotateX(var(--portal-rx)) rotateY(var(--portal-ry));
-  transform-origin: 50% 64%;
-  transition: transform 180ms ease-out;
+  z-index: 0;
+  inset: 6% 8% 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(226, 189, 108, 0.22), transparent 46%),
+    radial-gradient(circle at 50% 70%, rgba(32, 160, 112, 0.18), transparent 58%);
+  filter: blur(26px);
+  animation: diwan-gate-glow 11s ease-in-out infinite;
+}
+
+.heritage-portal-float {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  animation: diwan-gate-float 14s ease-in-out infinite;
   will-change: transform;
 }
 
-.heritage-portal-3d[data-dragging="true"] .heritage-portal-stage {
-  transition: none;
-}
-
-.heritage-portal-orbit {
-  position: absolute;
-  z-index: 0;
-  left: 50%;
-  top: 45%;
-  border: 1px solid rgba(217, 179, 101, 0.38);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.heritage-portal-orbit::before,
-.heritage-portal-orbit::after {
-  content: "";
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #dfbd78;
-  box-shadow: 0 0 14px rgba(235, 204, 135, 0.9);
-}
-
-.heritage-portal-orbit::before {
-  left: 12%;
-  top: 12%;
-}
-
-.heritage-portal-orbit::after {
-  right: 12%;
-  bottom: 12%;
-}
-
-.heritage-portal-orbit-one {
-  width: 76%;
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%) rotateX(67deg) rotateZ(8deg) translateZ(-18px);
-  animation: heritage-orbit-one 17s linear infinite;
-}
-
-.heritage-portal-orbit-two {
-  width: 61%;
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%) rotateX(72deg) rotateZ(74deg) translateZ(16px);
-  animation: heritage-orbit-two 12s linear infinite reverse;
-}
-
-.heritage-portal-arch {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  top: 47%;
-  width: min(79%, 470px);
-  height: auto;
-  overflow: visible;
-  transform-origin: 50% 78%;
-  pointer-events: none;
-}
-
-.heritage-portal-arch-back {
-  fill: #020f0c;
-  opacity: 0.84;
-  filter: drop-shadow(0 24px 17px rgba(0, 0, 0, 0.5));
-  transform: translate(-50%, -50%) translate3d(-17px, 17px, -52px);
-}
-
-.heritage-portal-arch-mid {
-  fill: #80602d;
-  opacity: 0.78;
-  transform: translate(-50%, -50%) translate3d(-9px, 9px, -25px);
-}
-
-.heritage-portal-arch-front {
-  transform: translate(-50%, -50%) translateZ(20px);
-  filter: drop-shadow(0 25px 20px rgba(0, 0, 0, 0.34));
-}
-
-.heritage-portal-medallion {
-  position: absolute;
-  z-index: 4;
-  left: 50%;
-  top: 40%;
-  width: clamp(78px, 20%, 122px);
-  aspect-ratio: 1;
-  padding: 5px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #f4d58f, #a47c36 48%, #f0d697);
-  box-shadow:
-    0 18px 35px rgba(0, 0, 0, 0.42),
-    0 0 30px rgba(225, 186, 105, 0.26);
-  transform: translate(-50%, -50%) translateZ(68px);
-  pointer-events: none;
-}
-
-.heritage-portal-medallion::before {
-  content: "";
-  position: absolute;
-  inset: -9px;
-  border: 1px solid rgba(236, 205, 137, 0.56);
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 3px rgba(2, 37, 29, 0.5);
-}
-
-.heritage-portal-medallion-inner {
+.heritage-portal-frame {
   position: relative;
-  display: grid;
-  place-items: center;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 1053 / 1258;
+}
+
+.heritage-portal-gate {
+  display: block;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  color: #0b513d;
-  border: 2px solid rgba(10, 70, 53, 0.22);
-  border-radius: 50%;
-  background: #f7f3e8;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 26px 34px rgba(0, 0, 0, 0.5));
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.heritage-portal-medallion-inner img {
-  width: 86%;
-  height: 86%;
+.heritage-portal-sheen {
+  position: absolute;
+  inset: 4% 8% 12%;
+  border-radius: 40% 40% 12% 12% / 30% 30% 8% 8%;
+  background: radial-gradient(
+    ellipse at 42% 22%,
+    rgba(255, 232, 176, 0.16),
+    transparent 62%
+  );
+  mix-blend-mode: screen;
+  animation: diwan-gate-sheen 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Real family logo placed exactly over the empty crest medallion. */
+.heritage-portal-crest {
+  position: absolute;
+  z-index: 3;
+  left: 47.5%;
+  top: 12.6%;
+  display: grid;
+  place-items: center;
+  width: 14.4%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.heritage-portal-crest img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
-.heritage-portal-plinth {
+.heritage-portal-ground {
   position: absolute;
-  z-index: 3;
+  z-index: 1;
   left: 50%;
-  bottom: 7.5%;
-  width: min(61%, 360px);
-  height: 18%;
-  transform: translateX(-50%) translateZ(40px);
-  pointer-events: none;
-}
-
-.heritage-portal-plinth::before,
-.heritage-portal-plinth::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  border-radius: 50%;
-  transform: translateX(-50%);
-}
-
-.heritage-portal-plinth::before {
   bottom: 2%;
-  width: 112%;
-  height: 50%;
-  background: radial-gradient(ellipse, rgba(225, 183, 96, 0.38), rgba(1, 19, 15, 0) 70%);
-  filter: blur(8px);
-}
-
-.heritage-portal-plinth::after {
-  top: 25%;
-  width: 100%;
-  height: 62%;
-  border: 1px solid rgba(221, 184, 104, 0.55);
-  background: linear-gradient(180deg, #b88d44 0%, #4d3516 18%, #061b16 50%, #020d0b 100%);
-  box-shadow: 0 20px 24px rgba(0, 0, 0, 0.48);
-}
-
-.heritage-portal-plinth-top {
-  position: absolute;
-  z-index: 2;
-  inset: 6% 3% auto;
-  height: 47%;
-  border: 2px solid rgba(234, 201, 130, 0.72);
+  width: min(74%, 460px);
+  height: 8%;
   border-radius: 50%;
-  background:
-    radial-gradient(ellipse at 50% 35%, rgba(24, 108, 79, 0.9), #052e24 54%, #02120e 75%);
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.65);
-}
-
-.heritage-portal-plinth-name {
-  position: absolute;
-  z-index: 3;
-  left: 50%;
-  bottom: 12%;
-  min-width: 46%;
-  padding: 4px 14px 5px;
-  border: 1px solid rgba(224, 187, 108, 0.55);
-  border-radius: 999px;
-  color: #efd18e;
-  background: rgba(3, 25, 20, 0.94);
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.45);
-  font-family: "Reem Kufi", "Tajawal", sans-serif;
-  font-size: clamp(10px, 1.6vw, 13px);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-align: center;
-  white-space: nowrap;
+  background: radial-gradient(
+    ellipse,
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0) 72%
+  );
+  filter: blur(10px);
   transform: translateX(-50%);
 }
 
-.heritage-portal-hint {
-  position: absolute;
-  z-index: 6;
-  left: 50%;
-  bottom: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border: 1px solid rgba(222, 184, 105, 0.2);
-  border-radius: 999px;
-  color: rgba(240, 218, 170, 0.68);
-  background: rgba(2, 24, 18, 0.42);
-  font-size: 10px;
-  font-weight: 700;
-  white-space: nowrap;
-  transform: translateX(-50%);
-  pointer-events: none;
+@keyframes diwan-gate-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0) scale(1.007);
+  }
 }
+
+@keyframes diwan-gate-glow {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes diwan-gate-sheen {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
 
 /* Spiritual reminder: a visible, independent content strip */
 body .dashboard-page > .dashboard-faith-strip {
