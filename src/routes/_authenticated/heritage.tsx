@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { useUserRole } from "@/hooks/use-user-role";
+import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 
 export const Route = createFileRoute("/_authenticated/heritage")({
   ssr: false,
@@ -106,6 +107,8 @@ function HeritagePage() {
       await loadAll();
     })();
   }, [loadAll, userId, isAdmin, isChairman]);
+
+  useRealtimeSync(["majlis_posts"], loadAll);
 
   const submitHeritage = async () => {
     if (!userId) return;

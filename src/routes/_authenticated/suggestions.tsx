@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/use-user-role";
+import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 
 export const Route = createFileRoute("/_authenticated/suggestions")({
   ssr: false,
@@ -47,6 +48,8 @@ function SuggestionsPage() {
   useEffect(() => {
     loadSuggestions();
   }, [isManagement]);
+
+  useRealtimeSync(["anonymous_suggestions"], loadSuggestions, isManagement);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

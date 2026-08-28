@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/user-avatar";
 import { BiometricAuth } from "@/lib/native-bridge";
+import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 
 export const Route = createFileRoute("/_authenticated/vault")({
   ssr: false,
@@ -188,6 +189,8 @@ function SecureVaultPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useRealtimeSync(["secure_vault"], load);
 
   const filteredItems = items.filter(
     (it) =>

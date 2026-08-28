@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
+import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 import { sendPushNotification } from "@/lib/api/push.functions";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
@@ -144,6 +145,8 @@ function TasksPage() {
       await loadAll();
     })();
   }, [loadAll, userId, primaryRole]);
+
+  useRealtimeSync(["tasks"], loadAll);
 
   const filteredTasks = useMemo(() => {
     let list = tasks;
