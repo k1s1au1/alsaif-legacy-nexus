@@ -195,13 +195,22 @@ export function RouteScrollManager() {
           mutation.target instanceof HTMLElement
         ) {
           const element = mutation.target;
-          if (
-            element.matches(
-              'section, [role="tabpanel"], [data-transition-section]',
-            ) &&
-            element.dataset.sectionReveal !== "visible"
-          ) {
-            observer?.observe(element);
+          const isTransitionTarget = element.matches(
+            'section, [role="tabpanel"], [data-transition-section]',
+          );
+          const isNowVisible =
+            !element.hidden && element.getAttribute("aria-hidden") !== "true";
+
+          if (isTransitionTarget && isNowVisible) {
+            if (!observer) {
+              reveal(element);
+              return;
+            }
+
+            // Re-run the reveal when a tab or collapsible section is activated.
+            element.dataset.sectionReveal = "pending";
+            void element.offsetWidth;
+            observer.observe(element);
           }
         }
       });
