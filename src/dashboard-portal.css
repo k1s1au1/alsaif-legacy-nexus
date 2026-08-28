@@ -574,31 +574,9 @@ body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after {
 
 @media (max-width: 599px) {
   .heritage-portal-3d {
-    min-height: 270px;
-    aspect-ratio: 1.08 / 1;
+    min-height: 300px;
   }
 
-  .heritage-portal-stage {
-    inset: 0 0 7%;
-  }
-
-  .heritage-portal-arch {
-    width: min(88%, 410px);
-  }
-
-  .heritage-portal-medallion {
-    width: clamp(72px, 24%, 94px);
-  }
-
-  .heritage-portal-plinth {
-    width: min(70%, 300px);
-    bottom: 6.5%;
-  }
-
-  .heritage-portal-hint {
-    bottom: -1px;
-    font-size: 9px;
-  }
 
   body .dashboard-page > .dashboard-faith-strip {
     grid-template-columns: minmax(0, 1fr) auto;
