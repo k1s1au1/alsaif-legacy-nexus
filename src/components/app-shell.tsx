@@ -496,14 +496,15 @@ function AppShellChrome({
               )}
             >
               {/* Desktop specific: Clock -> Bell -> Profile */}
-              <div className="hidden lg:flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/5 mr-2">
+              <div className="hidden md:flex items-center gap-2 lg:gap-3 px-2.5 lg:px-4 py-1.5 rounded-full bg-primary/5 border border-primary/5 mr-1 lg:mr-2">
                 <Clock className="size-3.5 text-gold-primary" />
-                <div className="flex items-baseline gap-2 text-[11px] font-black text-primary">
+                <div className="flex items-baseline gap-1.5 lg:gap-2 text-[10px] lg:text-[11px] font-black text-primary whitespace-nowrap">
                   <LiveClock variant="time" />
                   <div className="w-px h-3 bg-primary/10" />
                   <LiveClock variant="date" />
                 </div>
               </div>
+
 
               <div className="hidden md:block mr-2">
                 <NotificationsBell />
