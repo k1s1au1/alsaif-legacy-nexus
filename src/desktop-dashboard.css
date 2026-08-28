@@ -1,5 +1,5 @@
 /* Desktop dashboard continuity redesign — mobile and tablet remain untouched. */
-@media (min-width: 1200px) {
+@media (min-width: 970px) {
   main > div.p-4.md\:p-8.lg\:p-12 {
     width: 100% !important;
     max-width: none !important;
