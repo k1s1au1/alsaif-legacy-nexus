@@ -496,14 +496,15 @@ function AppShellChrome({
               )}
             >
               {/* Desktop specific: Clock -> Bell -> Profile */}
-              <div className="hidden lg:flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/5 mr-2">
+              <div className="hidden md:flex items-center gap-2 lg:gap-3 px-2.5 lg:px-4 py-1.5 rounded-full bg-primary/5 border border-primary/5 mr-1 lg:mr-2">
                 <Clock className="size-3.5 text-gold-primary" />
-                <div className="flex items-baseline gap-2 text-[11px] font-black text-primary">
+                <div className="flex items-baseline gap-1.5 lg:gap-2 text-[10px] lg:text-[11px] font-black text-primary whitespace-nowrap">
                   <LiveClock variant="time" />
                   <div className="w-px h-3 bg-primary/10" />
                   <LiveClock variant="date" />
                 </div>
               </div>
+
 
               <div className="hidden md:block mr-2">
                 <NotificationsBell />
@@ -519,7 +520,7 @@ function AppShellChrome({
 
             {/* Desktop navigation mirrors the mobile bottom navigation. */}
             <nav
-              className="hidden min-[1200px]:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-1 h-16"
+              className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-0.5 min-[1200px]:gap-1 h-16"
               aria-label="التنقل الرئيسي"
             >
               {bottomNavKeys.map((key) => {
@@ -538,7 +539,8 @@ function AppShellChrome({
                     key={def.id}
                     to={def.to}
                     className={cn(
-                      "relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black transition-all duration-200",
+                      "relative min-w-[58px] min-[1200px]:min-w-[76px] h-14 px-2 min-[1200px]:px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[10px] min-[1200px]:text-[11px] font-black transition-all duration-200",
+
                       active
                         ? "text-gold-primary bg-gold-primary/10"
                         : "text-primary/65 hover:text-primary hover:bg-primary/5",
@@ -557,7 +559,7 @@ function AppShellChrome({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="group relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black text-primary/65 hover:text-primary hover:bg-primary/5 data-[state=open]:text-gold-primary data-[state=open]:bg-gold-primary/10 transition-all duration-200 outline-none"
+                    className="group relative min-w-[58px] min-[1200px]:min-w-[76px] h-14 px-2 min-[1200px]:px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[10px] min-[1200px]:text-[11px] font-black text-primary/65 hover:text-primary hover:bg-primary/5 data-[state=open]:text-gold-primary data-[state=open]:bg-gold-primary/10 transition-all duration-200 outline-none"
                     aria-label="فتح قائمة الخدمات"
                   >
                     <LayoutGrid size={19} />
