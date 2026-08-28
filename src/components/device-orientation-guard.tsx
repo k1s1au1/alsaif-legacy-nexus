@@ -59,11 +59,12 @@ function isPortrait() {
 }
 
 async function tryOrientationLock(device: DeviceKind) {
-  if (device === "desktop" || typeof screen === "undefined") return;
+  // Tablets/iPad are free to rotate: both portrait and landscape are supported.
+  if (device !== "mobile" || typeof screen === "undefined") return;
   const orientation = (screen as Screen & { orientation?: ScreenOrientation & { lock?: (value: string) => Promise<void> } }).orientation;
   if (!orientation?.lock) return;
   try {
-    await orientation.lock(device === "mobile" ? "portrait-primary" : "landscape-primary");
+    await orientation.lock("portrait-primary");
   } catch {}
 }
 
@@ -122,8 +123,9 @@ export function DeviceOrientationGuard() {
     };
   }, [device]);
 
-  if (desktopRequest || device === "desktop") return null;
-  const wrongOrientation = device === "mobile" ? !portrait : portrait;
+  // iPad/tablets work in both orientations, so only phones get the rotate hint.
+  if (desktopRequest || device !== "mobile") return null;
+  const wrongOrientation = !portrait;
   if (!wrongOrientation) return null;
   const mobile = device === "mobile";
   return (
