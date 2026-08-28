@@ -633,7 +633,7 @@ function AdminPage() {
     (total, entries) => total + entries.length,
     0,
   );
-  const adminSections: Array<{
+  type AdminSection = {
     key: AdminTab;
     label: string;
     shortLabel: string;
@@ -641,7 +641,9 @@ function AdminPage() {
     icon: any;
     count?: number;
     visible: boolean;
-  }> = [
+  };
+  const adminSections: AdminSection[] = ([
+
     {
       key: "requests",
       label: "طلبات العضوية",
