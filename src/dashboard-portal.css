@@ -717,12 +717,10 @@ body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .heritage-portal-stage {
-    transition: none;
-  }
-
-  .heritage-portal-orbit {
-    animation: none;
+  .heritage-portal-float,
+  .heritage-portal-glow,
+  .heritage-portal-sheen {
+    animation: none !important;
   }
 }
 
