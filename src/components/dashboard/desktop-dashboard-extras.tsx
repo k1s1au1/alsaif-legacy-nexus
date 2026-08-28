@@ -31,6 +31,7 @@ import {
   useProfile,
 } from "@/hooks/use-dashboard-data";
 import { useSiteLogo } from "@/hooks/use-site-logo";
+import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -289,19 +290,33 @@ export function DesktopDashboardExtras() {
   return createPortal(
     <div className="desktop-rebuild-shell" dir="rtl">
       <div className="desktop-rebuild-root">
+        <div className="desktop-faith-strip">
+          <div className="desktop-faith-label">
+            <Scroll size={16} aria-hidden="true" />
+            <b>نفحات إيمانية</b>
+          </div>
+          <p style={{ fontFamily: "'Amiri', serif" }}>
+            "وَاعْتَصِمُوا بِحَبْلِ اللَّهِ جَمِيعًا وَلَا تَفَرَّقُوا"
+          </p>
+          <span>سورة آل عمران</span>
+        </div>
+
         <section className="desktop-overview-shell">
-          <div className="desktop-hero-card">
-            <div className="desktop-hero-logo">
-              {logo ? <img src={logo} alt="شعار العائلة" /> : <Sparkles size={42} />}
-            </div>
-            <div className="desktop-hero-copy">
-              <span>
-                <Sparkles size={14} /> {greeting}، يا أهل الوفاء
+          <div className="desktop-portal-stage">
+            <div className="desktop-portal-copy">
+              <span className="desktop-portal-eyebrow">
+                <Sparkles size={15} aria-hidden="true" />
+                {greeting}، يا أهل الوفاء
               </span>
-              <h1>{name}</h1>
+              <h1>
+                <small>حيّاك الله،</small>
+                <strong>{name}</strong>
+              </h1>
               <p>نصل العائلة، نحفظ الإرث، ونبني المستقبل.</p>
+              <div className="desktop-portal-rule" aria-hidden="true" />
             </div>
-            <div className="desktop-hero-ornament" aria-hidden="true" />
+
+            <HeritagePortal3D logoUrl={logo} className="desktop-portal-model" />
           </div>
 
           <div className={`desktop-services-panel${servicesExpanded ? " is-expanded" : ""}`}>
