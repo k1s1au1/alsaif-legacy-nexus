@@ -4,8 +4,14 @@
  * and the mobile bottom navigation are not targeted here.
  */
 
-/* Diwan gate: architectural transparent artwork with a calm ambient motion. */
+/* Diwan gate: layered perspective scene with pointer parallax and mobile auto-orbit. */
 .heritage-portal-3d {
+  --gate-rx: 0deg;
+  --gate-ry: 0deg;
+  --gate-shift-x: 0px;
+  --gate-shift-y: 0px;
+  --gate-light-x: 50%;
+  --gate-light-y: 30%;
   position: relative;
   display: flex;
   align-items: flex-end;
@@ -14,19 +20,33 @@
   min-height: 320px;
   isolation: isolate;
   outline: none;
-  perspective: 1200px;
+  perspective: 1450px;
+  perspective-origin: 50% 42%;
+  touch-action: pan-y;
 }
 
 .heritage-portal-glow {
   position: absolute;
   z-index: 0;
-  inset: 6% 8% 8%;
+  inset: 5% 6% 7%;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 24%, rgba(226, 189, 108, 0.22), transparent 46%),
-    radial-gradient(circle at 50% 70%, rgba(32, 160, 112, 0.18), transparent 58%);
-  filter: blur(26px);
-  animation: diwan-gate-glow 11s ease-in-out infinite;
+    radial-gradient(
+      circle at var(--gate-light-x) var(--gate-light-y),
+      rgba(255, 222, 151, 0.27),
+      transparent 33%
+    ),
+    radial-gradient(circle at 50% 72%, rgba(27, 170, 116, 0.22), transparent 58%);
+  filter: blur(28px);
+  opacity: 0.82;
+  transform: translate3d(
+    calc(var(--gate-shift-x) * -0.45),
+    calc(var(--gate-shift-y) * -0.45),
+    -80px
+  );
+  transition: transform 0.22s ease-out;
+  animation: diwan-gate-glow 8.5s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .heritage-portal-float {
@@ -39,120 +59,164 @@
   transform-style: preserve-3d;
   will-change: transform, opacity;
   animation:
-    diwan-gate-enter 1.35s cubic-bezier(0.22, 0.9, 0.28, 1.08) 0.05s both,
-    diwan-gate-idle 16s ease-in-out 1.45s infinite;
-  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.3, 1);
+    diwan-gate-enter 1.2s cubic-bezier(0.22, 0.9, 0.28, 1.08) 0.04s both,
+    diwan-gate-breathe 9s ease-in-out 1.3s infinite;
 }
 
-.heritage-portal-frame {
+.heritage-portal-scene {
   position: relative;
   width: min(100%, var(--gate-width, 340px));
-  height: auto;
   aspect-ratio: 1053 / 1258;
+  transform: translate3d(
+      var(--gate-shift-x),
+      var(--gate-shift-y),
+      0
+    )
+    rotateX(var(--gate-rx))
+    rotateY(var(--gate-ry));
+  transform-style: preserve-3d;
+  transform-origin: 50% 72%;
+  transition: transform 0.12s linear;
+  will-change: transform;
 }
 
-
+.heritage-portal-depth,
 .heritage-portal-gate {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: center bottom;
-  filter: drop-shadow(0 26px 34px rgba(0, 0, 0, 0.5));
   user-select: none;
   -webkit-user-select: none;
-  transition: filter 0.5s ease;
-}
-
-/* Golden pulse rising from the door / column base area. */
-.heritage-portal-frame::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  left: 50%;
-  bottom: 6%;
-  width: 46%;
-  height: 42%;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at 50% 78%,
-    rgba(255, 205, 118, 0.34),
-    rgba(255, 205, 118, 0.12) 45%,
-    transparent 72%
-  );
-  filter: blur(14px);
-  mix-blend-mode: screen;
-  transform: translateX(-50%);
-  animation: diwan-gate-doorlight 7.5s ease-in-out 1.4s infinite;
   pointer-events: none;
+  backface-visibility: hidden;
 }
 
-/* Traveling golden sheen that sweeps across the ornaments. */
-.heritage-portal-frame::after {
-  content: "";
+.heritage-portal-depth {
+  z-index: 0;
+}
+
+.heritage-portal-depth-far {
+  opacity: 0.16;
+  filter: brightness(0.2) saturate(0.72) blur(1.1px);
+  transform: translate3d(13px, 11px, -72px) scale(1.02);
+}
+
+.heritage-portal-depth-near {
+  opacity: 0.3;
+  filter: brightness(0.38) saturate(0.86);
+  transform: translate3d(7px, 6px, -34px) scale(1.01);
+}
+
+.heritage-portal-frame {
   position: absolute;
+  z-index: 3;
+  inset: 0;
+  transform: translateZ(28px);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.heritage-portal-gate {
   z-index: 2;
-  inset: 2% 4%;
-  background: linear-gradient(
-    115deg,
-    transparent 38%,
-    rgba(255, 231, 178, 0.22) 47%,
-    rgba(255, 231, 178, 0.34) 50%,
-    rgba(255, 231, 178, 0.22) 53%,
-    transparent 62%
-  );
-  background-size: 260% 260%;
-  background-position: 120% 0;
+  filter: drop-shadow(0 27px 34px rgba(0, 0, 0, 0.52));
+  transform: translateZ(2px);
+  transition: filter 0.28s ease;
+}
+
+.heritage-portal-door-light {
+  position: absolute;
+  z-index: 3;
+  top: 47%;
+  left: 38.8%;
+  width: 18.5%;
+  height: 31.5%;
+  clip-path: polygon(50% 0, 90% 18%, 96% 100%, 4% 100%, 10% 18%);
+  background:
+    linear-gradient(180deg, rgba(255, 236, 191, 0.08), rgba(255, 198, 99, 0.38)),
+    radial-gradient(ellipse at 50% 82%, rgba(255, 229, 168, 0.72), transparent 66%);
+  filter: blur(5px);
   mix-blend-mode: screen;
-  opacity: 0;
-  animation: diwan-gate-sweep 9s ease-in-out 2s infinite;
+  transform: translateZ(54px);
+  animation: diwan-gate-doorlight 5.8s ease-in-out 1.25s infinite;
   pointer-events: none;
 }
 
 .heritage-portal-sheen {
   position: absolute;
-  inset: 4% 8% 12%;
-  border-radius: 40% 40% 12% 12% / 30% 30% 8% 8%;
+  z-index: 4;
+  inset: 3% 6% 10%;
+  border-radius: 42% 42% 13% 13% / 30% 30% 9% 9%;
   background: radial-gradient(
-    ellipse at 42% 22%,
-    rgba(255, 232, 176, 0.16),
-    transparent 62%
+    ellipse at var(--gate-light-x) var(--gate-light-y),
+    rgba(255, 239, 202, 0.26),
+    rgba(255, 226, 159, 0.07) 28%,
+    transparent 57%
   );
   mix-blend-mode: screen;
-  animation: diwan-gate-sheen 9s ease-in-out infinite;
+  opacity: 0.7;
+  transform: translateZ(61px);
+  transition: background-position 0.2s ease-out;
+  animation: diwan-gate-sheen 7.2s ease-in-out infinite;
   pointer-events: none;
 }
 
-/* Real family logo placed exactly over the empty crest medallion. */
+.heritage-portal-sweep {
+  position: absolute;
+  z-index: 5;
+  inset: 2% 4%;
+  overflow: hidden;
+  background: linear-gradient(
+    112deg,
+    transparent 37%,
+    rgba(255, 237, 197, 0.12) 45%,
+    rgba(255, 236, 191, 0.42) 50%,
+    rgba(255, 237, 197, 0.12) 55%,
+    transparent 63%
+  );
+  background-position: 125% 0;
+  background-size: 270% 270%;
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translateZ(68px);
+  animation: diwan-gate-sweep 8.2s ease-in-out 1.8s infinite;
+  pointer-events: none;
+}
+
+/* The family crest floats in front of the architectural frame. */
 .heritage-portal-crest {
   position: absolute;
-  z-index: 3;
-  left: 47.5%;
+  z-index: 7;
   top: 12.6%;
+  left: 47.5%;
   display: grid;
   place-items: center;
   width: 14.4%;
   aspect-ratio: 1;
   overflow: visible;
   border-radius: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate3d(-50%, -50%, 94px);
   animation:
-    diwan-crest-enter 0.85s cubic-bezier(0.3, 1.15, 0.4, 1.05) 1.75s both;
+    diwan-crest-enter 0.9s cubic-bezier(0.3, 1.15, 0.4, 1.05) 1.15s both,
+    diwan-crest-hover 5.4s ease-in-out 2.1s infinite;
+  backface-visibility: hidden;
 }
 
-/* Short golden glint that fades once the crest settles. */
 .heritage-portal-crest::before {
   content: "";
   position: absolute;
-  inset: -30%;
+  inset: -34%;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(255, 224, 158, 0.85),
-    rgba(255, 224, 158, 0) 65%
+    rgba(255, 224, 158, 0.72),
+    rgba(255, 224, 158, 0) 66%
   );
   mix-blend-mode: screen;
-  animation: diwan-crest-glint 1.5s ease-out 1.75s both;
+  animation: diwan-crest-glint 1.55s ease-out 1.15s both;
   pointer-events: none;
 }
 
@@ -161,116 +225,132 @@
   height: 100%;
   object-fit: contain;
   border-radius: 50%;
+  filter: drop-shadow(0 9px 8px rgba(0, 0, 0, 0.42));
 }
 
 .heritage-portal-ground {
   position: absolute;
   z-index: 1;
-  left: 50%;
-  bottom: 2%;
-  width: min(74%, 460px);
-  height: 8%;
+  bottom: 1.5%;
+  left: calc(50% - var(--gate-shift-x));
+  width: min(76%, 470px);
+  height: 9%;
   border-radius: 50%;
-  background: radial-gradient(
-    ellipse,
-    rgba(0, 0, 0, 0.55),
-    rgba(0, 0, 0, 0) 72%
-  );
+  background:
+    radial-gradient(ellipse, rgba(219, 180, 96, 0.18), transparent 50%),
+    radial-gradient(ellipse, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0) 72%);
   filter: blur(10px);
-  transform: translateX(-50%);
+  transform: translateX(-50%) scaleX(1);
+  transition:
+    left 0.22s ease-out,
+    filter 0.28s ease,
+    transform 0.28s ease;
   animation:
-    diwan-gate-ground-enter 1.35s ease-out 0.05s both,
-    diwan-gate-ground 16s ease-in-out 1.45s infinite;
+    diwan-gate-ground-enter 1.2s ease-out 0.04s both,
+    diwan-gate-ground 9s ease-in-out 1.3s infinite;
+  pointer-events: none;
 }
 
-/* Precise-pointer devices: subtle micro-tilt + deeper shadow on hover. */
 @media (hover: hover) and (pointer: fine) {
-  .heritage-portal-3d {
-    pointer-events: auto;
+  .heritage-portal-3d[data-interacting="true"] .heritage-portal-gate {
+    filter: drop-shadow(0 35px 43px rgba(0, 0, 0, 0.66));
   }
 
-  .heritage-portal-3d:hover .heritage-portal-float {
-    transform: rotateX(1.4deg) rotateY(-1.2deg) translateY(-2px);
-  }
-
-  .heritage-portal-3d:hover .heritage-portal-gate {
-    filter: drop-shadow(0 32px 42px rgba(0, 0, 0, 0.62));
-  }
-
-  .heritage-portal-3d:hover .heritage-portal-ground {
-    filter: blur(9px);
-    transform: translateX(-50%) scaleX(1.06);
+  .heritage-portal-3d[data-interacting="true"] .heritage-portal-ground {
+    filter: blur(8px);
+    transform: translateX(-50%) scaleX(1.07);
   }
 }
 
-/* Cinematic one-time entrance. */
+/* Touch devices receive an automatic, restrained orbit instead of drag controls. */
+@media (hover: none), (pointer: coarse) {
+  .heritage-portal-scene {
+    animation: diwan-gate-mobile-orbit 9s ease-in-out 1.35s infinite;
+  }
+}
+
 @keyframes diwan-gate-enter {
   0% {
     opacity: 0;
-    transform: translate3d(0, 24px, 0) scale(0.94);
+    transform: translate3d(0, 30px, -80px) rotateX(5deg) scale(0.91);
   }
-  62% {
+  64% {
     opacity: 1;
-    transform: translate3d(0, -3px, 0) scale(1.006);
+    transform: translate3d(0, -4px, 8px) rotateX(-0.7deg) scale(1.012);
   }
-  82% {
-    transform: translate3d(0, 1px, 0) scale(0.998);
+  84% {
+    transform: translate3d(0, 2px, 0) rotateX(0.3deg) scale(0.998);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0) rotateX(0deg) scale(1);
   }
 }
 
-/* Crest delayed reveal: scale from .72 with slight overshoot. */
+@keyframes diwan-gate-breathe {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -5px, 0);
+  }
+}
+
+@keyframes diwan-gate-mobile-orbit {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(-2.7deg);
+  }
+  50% {
+    transform: translate3d(0, -2px, 0) rotateX(1.1deg) rotateY(2.7deg);
+  }
+}
+
 @keyframes diwan-crest-enter {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.72);
+    transform: translate3d(-50%, -50%, 94px) scale(0.62);
   }
-  70% {
+  72% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.05);
+    transform: translate3d(-50%, -50%, 94px) scale(1.07);
   }
   100% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate3d(-50%, -50%, 94px) scale(1);
+  }
+}
+
+@keyframes diwan-crest-hover {
+  0%,
+  100% {
+    transform: translate3d(-50%, -50%, 94px) scale(1);
+  }
+  50% {
+    transform: translate3d(-50%, calc(-50% - 2px), 102px) scale(1.025);
   }
 }
 
 @keyframes diwan-crest-glint {
   0% {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.55);
   }
-  35% {
+  38% {
     opacity: 1;
     transform: scale(1);
   }
   100% {
     opacity: 0;
-    transform: scale(1.35);
-  }
-}
-
-/* Luxurious idle: tiny rise + sub-degree 3D sway, never a full rotation. */
-@keyframes diwan-gate-idle {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
-  }
-  30% {
-    transform: translate3d(0, -4px, 0) rotateX(0.9deg) rotateY(-0.8deg);
-  }
-  65% {
-    transform: translate3d(0, -2px, 0) rotateX(-0.6deg) rotateY(0.7deg);
+    transform: scale(1.4);
   }
 }
 
 @keyframes diwan-gate-ground-enter {
   0% {
     opacity: 0;
-    transform: translateX(-50%) scaleX(0.82);
+    transform: translateX(-50%) scaleX(0.78);
   }
   100% {
     opacity: 1;
@@ -281,68 +361,109 @@
 @keyframes diwan-gate-ground {
   0%,
   100% {
+    opacity: 0.9;
     transform: translateX(-50%) scaleX(1);
-    opacity: 1;
   }
-  30% {
+  50% {
+    opacity: 0.72;
     transform: translateX(-50%) scaleX(1.05);
-    opacity: 0.85;
-  }
-  65% {
-    transform: translateX(-50%) scaleX(1.02);
-    opacity: 0.92;
   }
 }
 
 @keyframes diwan-gate-doorlight {
   0%,
   100% {
-    opacity: 0.45;
-    transform: translateX(-50%) scale(1);
+    opacity: 0.32;
+    filter: blur(6px);
+    transform: translateZ(54px) scale(0.96);
   }
   50% {
-    opacity: 0.95;
-    transform: translateX(-50%) scale(1.08);
+    opacity: 0.92;
+    filter: blur(4px);
+    transform: translateZ(59px) scale(1.07);
   }
 }
 
 @keyframes diwan-gate-sweep {
   0%,
-  62% {
+  58% {
     opacity: 0;
-    background-position: 120% 0;
+    background-position: 125% 0;
   }
-  70% {
-    opacity: 1;
+  67% {
+    opacity: 0.95;
   }
   82% {
-    opacity: 1;
-    background-position: -60% 0;
+    opacity: 0.9;
+    background-position: -65% 0;
   }
-  90%,
+  91%,
   100% {
     opacity: 0;
-    background-position: -80% 0;
+    background-position: -85% 0;
   }
 }
 
 @keyframes diwan-gate-glow {
   0%,
   100% {
-    opacity: 0.72;
+    opacity: 0.68;
+    transform: translate3d(
+      calc(var(--gate-shift-x) * -0.45),
+      calc(var(--gate-shift-y) * -0.45),
+      -80px
+    ) scale(0.96);
   }
   50% {
-    opacity: 1;
+    opacity: 0.96;
+    transform: translate3d(
+      calc(var(--gate-shift-x) * -0.45),
+      calc(var(--gate-shift-y) * -0.45),
+      -80px
+    ) scale(1.04);
   }
 }
 
 @keyframes diwan-gate-sheen {
   0%,
   100% {
-    opacity: 0.5;
+    opacity: 0.48;
   }
   50% {
-    opacity: 0.95;
+    opacity: 0.82;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heritage-portal-float,
+  .heritage-portal-scene,
+  .heritage-portal-glow,
+  .heritage-portal-door-light,
+  .heritage-portal-sheen,
+  .heritage-portal-sweep,
+  .heritage-portal-ground,
+  .heritage-portal-crest,
+  .heritage-portal-crest::before {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .heritage-portal-float {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .heritage-portal-scene {
+    transform: none !important;
+  }
+
+  .heritage-portal-crest {
+    opacity: 1 !important;
+    transform: translate3d(-50%, -50%, 94px) !important;
+  }
+
+  .heritage-portal-sweep {
+    display: none !important;
   }
 }
 
