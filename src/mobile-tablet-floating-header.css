@@ -1,5 +1,5 @@
 /* Floating header — mobile/tablet only. Desktop remains unchanged. */
-@media (max-width:1023px){
+@media (max-width:969.98px){
   /* The page canvas itself follows the live identity color. Existing cards keep their own surfaces, so only surrounding gaps inherit this color. */
   main{
     background:var(--nav-bg,var(--primary))!important;
@@ -104,7 +104,7 @@
   main>.z-\[80\].fixed[style*="scale(0.85)"]>header{height:68px!important;border-radius:20px!important}
   main>.z-\[80\].fixed[style*="scale(0.85)"]>header::before{width:44px!important;height:44px!important;top:11px!important}
 }
-@media(min-width:600px) and (max-width:1023px){
+@media(min-width:600px) and (max-width:969.98px){
   main>.z-\[80\].fixed{padding:12px 24px 0!important}
   main>.z-\[80\].fixed>header{height:132px!important;border-radius:30px!important;padding-inline:30px!important}
   main>div.p-4.md\:p-8.lg\:p-12:not(:has(.max-w-6xl.mx-auto.space-y-12)){
