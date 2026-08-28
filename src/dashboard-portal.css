@@ -558,8 +558,11 @@ body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after {
 
 @media (max-width: 599px) {
   .heritage-portal-3d {
+    --gate-width: 250px;
     min-height: 300px;
   }
+
+
 
 
   body .dashboard-page > .dashboard-faith-strip {
