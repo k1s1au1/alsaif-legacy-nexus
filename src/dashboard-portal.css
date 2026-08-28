@@ -490,23 +490,8 @@ body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after {
   margin: 5px 18px 5px 0;
 }
 
-@keyframes heritage-orbit-one {
-  from {
-    transform: translate(-50%, -50%) rotateX(67deg) rotateZ(8deg) translateZ(-18px);
-  }
-  to {
-    transform: translate(-50%, -50%) rotateX(67deg) rotateZ(368deg) translateZ(-18px);
-  }
-}
 
-@keyframes heritage-orbit-two {
-  from {
-    transform: translate(-50%, -50%) rotateX(72deg) rotateZ(74deg) translateZ(16px);
-  }
-  to {
-    transform: translate(-50%, -50%) rotateX(72deg) rotateZ(434deg) translateZ(16px);
-  }
-}
+
 
 @media (min-width: 1200px) {
   .desktop-rebuild-root > .desktop-faith-strip {
