@@ -120,4 +120,46 @@
   main>.app-shell-content{
     padding-top:112px!important;
   }
+
+  /* Legibility: the bar is now dark green, so the desktop ink colors
+     (dark primary) disappear. Lift every label/icon to light gold/white. */
+  main>.app-shell-header-wrap>header.app-shell-header{
+    margin-inline:auto!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>nav{
+    gap:6px!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>nav a,
+  main>.app-shell-header-wrap>header.app-shell-header>nav button{
+    color:color-mix(in srgb,#fff 82%,transparent)!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>nav a span,
+  main>.app-shell-header-wrap>header.app-shell-header>nav button span{
+    color:inherit!important;
+    opacity:1!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>nav a svg,
+  main>.app-shell-header-wrap>header.app-shell-header>nav button svg{
+    color:inherit!important;
+    stroke-width:2.3!important;
+    opacity:1!important;
+  }
+  /* Active item reads as a gold pill. */
+  main>.app-shell-header-wrap>header.app-shell-header>nav a.text-gold-primary,
+  main>.app-shell-header-wrap>header.app-shell-header>nav button.text-gold-primary{
+    color:var(--gold-primary)!important;
+    background:color-mix(in srgb,var(--gold-primary) 16%,transparent)!important;
+  }
+  /* Title, clock pill and right-side controls. */
+  main>.app-shell-header-wrap>header.app-shell-header h1{
+    color:#fff!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header .text-primary\/65,
+  main>.app-shell-header-wrap>header.app-shell-header .text-muted-foreground{
+    color:color-mix(in srgb,#fff 72%,transparent)!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>.order-first.md\:order-last svg{
+    color:#fff!important;
+  }
 }
+
