@@ -845,3 +845,25 @@ body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after {
     min-height: 355px !important;
   }
 }
+
+/* diwan-gate sizing per device (artwork only, no layout changes) */
+@media (min-width: 600px) and (max-width: 969.98px) {
+  html body .dashboard-page .dashboard-portal-hero .heritage-portal-3d {
+    --gate-width: 290px;
+    min-height: 340px !important;
+  }
+}
+
+@media (min-width: 970px) and (max-width: 1199px) {
+  .heritage-portal-3d {
+    --gate-width: 310px;
+    min-height: 380px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .heritage-portal-3d {
+    --gate-width: 360px;
+    min-height: 420px;
+  }
+}
