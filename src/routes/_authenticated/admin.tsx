@@ -706,7 +706,7 @@ function AdminPage() {
       icon: Inbox,
       visible: isSystemAdmin || isSiteChairman,
     },
-  ].filter((section) => section.visible);
+  ] as AdminSection[]).filter((section) => section.visible);
 
   const activeAdminSection =
     adminSections.find((section) => section.key === tab) || adminSections[0];
