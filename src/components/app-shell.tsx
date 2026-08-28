@@ -520,7 +520,7 @@ function AppShellChrome({
 
             {/* Desktop navigation mirrors the mobile bottom navigation. */}
             <nav
-              className="hidden min-[1200px]:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-1 h-16"
+              className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-0.5 min-[1200px]:gap-1 h-16"
               aria-label="التنقل الرئيسي"
             >
               {bottomNavKeys.map((key) => {
