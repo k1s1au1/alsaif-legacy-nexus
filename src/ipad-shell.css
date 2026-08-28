@@ -1,0 +1,89 @@
+/* iPad portrait shell (970px–1200px, portrait only):
+   tidy the top bar and bring back the floating bottom dock.
+   Laptops/desktops (landscape) are untouched. */
+@media (min-width:970px) and (max-width:1200px) and (orientation:portrait){
+  /* ---------- TOP BAR ---------- */
+  main>.app-shell-header-wrap{
+    padding-inline:0!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header{
+    height:84px!important;
+    min-height:84px!important;
+    padding-inline:22px!important;
+    gap:14px!important;
+    overflow:visible!important;
+  }
+
+  /* The desktop mid-nav duplicates the bottom dock on iPad — drop it. */
+  main>.app-shell-header-wrap>header.app-shell-header>nav{
+    display:none!important;
+  }
+
+  /* Right cluster: menu + logo + title, no cramped borders. */
+  main>.app-shell-header-wrap>header.app-shell-header>.order-last.md\:order-first{
+    gap:12px!important;
+    min-width:0!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>.order-last.md\:order-first h1{
+    font-size:19px!important;
+    max-width:220px!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>.order-last.md\:order-first .md\:pr-4{
+    padding-right:14px!important;
+  }
+
+  /* Left cluster: clock pill, bell, avatar — evenly spaced, nothing clipped. */
+  main>.app-shell-header-wrap>header.app-shell-header>.order-first.md\:order-last{
+    gap:14px!important;
+    flex-shrink:0!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>.order-first.md\:order-last>.hidden.md\:flex:first-child{
+    margin-right:0!important;
+    padding:8px 16px!important;
+    border-radius:999px!important;
+    background:color-mix(in srgb,var(--primary) 8%,transparent)!important;
+    border:1px solid color-mix(in srgb,var(--gold-primary) 22%,transparent)!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>.order-first.md\:order-last>.hidden.md\:flex:first-child>div{
+    font-size:13px!important;
+    gap:8px!important;
+  }
+  /* Show the date next to the time (it is hidden below 1200px by default). */
+  main>.app-shell-header-wrap>header.app-shell-header>.order-first.md\:order-last>.hidden.md\:flex:first-child .min-\[1200px\]\:block{
+    display:block!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>.order-first.md\:order-last>.hidden.md\:flex:first-child .min-\[1200px\]\:inline{
+    display:inline!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>.order-first.md\:order-last>div.hidden.md\:block{
+    margin-right:0!important;
+  }
+
+  /* The centered mobile clock overlay must stay hidden here (desktop clock pill is used). */
+  main>.app-shell-header-wrap>header.app-shell-header>.absolute.inset-0{
+    display:none!important;
+  }
+
+  /* ---------- BOTTOM DOCK ---------- */
+  main>.app-shell-bottom-dock{
+    display:flex!important;
+    left:clamp(40px,10vw,150px)!important;
+    right:clamp(40px,10vw,150px)!important;
+    bottom:26px!important;
+  }
+  main>.app-shell-bottom-dock>nav{
+    max-width:640px!important;
+    height:72px!important;
+    padding-inline:26px!important;
+    border-radius:34px!important;
+  }
+  main>.app-shell-bottom-dock>nav svg{
+    width:24px!important;
+    height:24px!important;
+  }
+
+  /* Keep the last content row clear of the floating dock. */
+  main>.app-shell-content{
+    padding-bottom:9rem!important;
+  }
+}
