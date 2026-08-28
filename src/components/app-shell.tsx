@@ -462,7 +462,7 @@ function AppShellChrome({
         </nav>
       </motion.aside>
 
-      <main className="relative min-h-screen pb-40 md:pb-24">
+      <main className="app-shell-main relative min-h-screen pb-40 md:pb-24">
         <motion.div
           initial={false}
           animate={{
@@ -471,13 +471,13 @@ function AppShellChrome({
               typeof window !== "undefined" && window.innerWidth < 768 && headerCompact ? 0.85 : 1,
           }}
           className={cn(
-            "z-[80] fixed top-4 inset-x-0 px-4 md:sticky md:top-0 md:inset-x-0 md:px-0 flex justify-center",
+            "app-shell-header-wrap z-[80] fixed top-4 inset-x-0 px-4 md:sticky md:top-0 md:inset-x-0 md:px-0 flex justify-center",
           )}
         >
           <header
             onClick={() => headerCompact && setHeaderCompact(false)}
             className={cn(
-              "flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative overflow-hidden",
+              "app-shell-header flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative overflow-hidden",
               headerCompact
                 ? "h-11 bg-[var(--nav-bg)]/80 w-40 rounded-full px-6 border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
                 : "h-14 bg-[var(--nav-bg)]/95 w-full rounded-full px-4 border border-white/10 shadow-2xl",
@@ -776,7 +776,7 @@ function AppShellChrome({
 
         <div
           className={cn(
-            "p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto",
+            "app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto",
             fullWidth ? "max-w-none w-full" : "max-w-7xl",
           )}
         >
@@ -788,7 +788,7 @@ function AppShellChrome({
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
-          className="md:hidden fixed bottom-8 inset-x-6 z-[100] flex justify-center"
+          className="app-shell-bottom-dock md:hidden fixed bottom-8 inset-x-6 z-[100] flex justify-center"
         >
           <nav className="h-16 w-full max-w-sm bg-[var(--nav-bg)]/95 border border-white/10 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center justify-around px-4 backdrop-blur-2xl relative overflow-hidden transition-all duration-500">
             {/* Subtle Sheen Effect */}

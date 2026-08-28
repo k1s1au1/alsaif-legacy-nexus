@@ -486,9 +486,9 @@ function Dashboard() {
 
   return (
     <AppShell title="لوحة العائلة" user={{ name: "", role: "", initial: "س" }}>
-      <div className="max-w-6xl mx-auto space-y-12 pb-20 px-4 md:px-0">
+      <div className="dashboard-page max-w-6xl mx-auto space-y-12 pb-20 px-4 md:px-0">
         {/* 1. SPIRITUAL REMINDER - Linked to Theme Colors */}
-        <section className="animate-fade-up px-2 md:px-0">
+        <section className="dashboard-spiritual animate-fade-up px-2 md:px-0">
           <div className="flex items-center justify-center gap-3 py-1 opacity-100 transition-all duration-700">
             <Scroll className="size-3 text-primary shrink-0" />
             <p
@@ -505,7 +505,7 @@ function Dashboard() {
         </section>
 
         {/* 2. RESPONSIVE HERO CARD */}
-        <section className="animate-fade-up px-2 md:px-0">
+        <section className="dashboard-hero animate-fade-up px-2 md:px-0">
           <div className="relative overflow-hidden rounded-[40px] md:rounded-[48px] bg-[#051410] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.7)] border border-white/5 group">
             {/* Background Texture */}
             <div
@@ -595,7 +595,7 @@ function Dashboard() {
 
         {/* 5. HERITAGE SNIPPET */}
         {heritageSnippet && (
-          <section className="animate-fade-up px-4 md:px-0">
+          <section className="dashboard-heritage animate-fade-up px-4 md:px-0">
             <Link
               to="/heritage"
               className="block group card-surface p-8 transition-all hover:scale-[1.01]"
@@ -623,7 +623,7 @@ function Dashboard() {
 
         {/* 6. ANNOUNCEMENTS - Refined with stable plugin */}
         {announcementsData && announcementsData.length > 0 && (
-          <section className="animate-fade-up px-2 md:px-0">
+          <section className="dashboard-announcements animate-fade-up px-2 md:px-0">
             <Carousel
               opts={announcementsOpts}
               plugins={announcementsPlugins}
@@ -682,7 +682,7 @@ function Dashboard() {
         )}
 
         {/* 7. STATS GRID */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 px-2 md:px-0">
+        <section className="dashboard-stats-grid grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 px-2 md:px-0">
           {stats.map((s, i) => (
             <Link key={i} to={s.link} className="block group">
               <div
@@ -711,7 +711,7 @@ function Dashboard() {
         </section>
 
         {/* 8. SUPPORT SECTION */}
-        <section className="pb-20 px-4 md:px-0 animate-fade-up">
+        <section className="dashboard-support pb-20 px-4 md:px-0 animate-fade-up">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Bug Report Card */}
             <div
