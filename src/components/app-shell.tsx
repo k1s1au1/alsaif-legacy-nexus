@@ -539,7 +539,8 @@ function AppShellChrome({
                     key={def.id}
                     to={def.to}
                     className={cn(
-                      "relative min-w-[76px] h-14 px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black transition-all duration-200",
+                      "relative min-w-[58px] min-[1200px]:min-w-[76px] h-14 px-2 min-[1200px]:px-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-[10px] min-[1200px]:text-[11px] font-black transition-all duration-200",
+
                       active
                         ? "text-gold-primary bg-gold-primary/10"
                         : "text-primary/65 hover:text-primary hover:bg-primary/5",
