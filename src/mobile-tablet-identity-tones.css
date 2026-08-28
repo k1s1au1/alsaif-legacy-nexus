@@ -1,5 +1,5 @@
 /* Layered identity colors for mobile/tablet. Each selected identity supplies multiple coordinated tones. */
-@media (max-width:1023px){
+@media (max-width:969.98px){
   main{background:var(--identity-space,var(--nav-bg,var(--primary)))!important}
   main>div.p-4.md\:p-8.lg\:p-12,.max-w-6xl.mx-auto.space-y-12,.integrated-hub,.integrated-hub~section{background:var(--identity-space,var(--nav-bg,var(--primary)))!important}
   main>.z-\[80\].fixed>header{background:linear-gradient(145deg,var(--identity-header,var(--nav-bg)),var(--identity-panel,var(--primary)))!important;border-color:color-mix(in srgb,var(--identity-accent,var(--gold-primary)) 34%,transparent)!important}
@@ -30,7 +30,7 @@
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) h2{font-size:clamp(1.45rem,6.6vw,2.15rem)!important;line-height:1.08!important}
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2) .h-8.overflow-hidden p{font-size:clamp(.72rem,2.9vw,.94rem)!important;line-height:1.35!important}
 }
-@media(min-width:600px) and (max-width:1023px){
+@media(min-width:600px) and (max-width:969.98px){
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div{aspect-ratio:2.75/1!important}
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div::before{width:22%!important;left:20%!important}
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2)>div::after{width:25%!important;left:31%!important}

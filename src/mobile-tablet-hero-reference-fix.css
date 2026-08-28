@@ -1,7 +1,7 @@
 /* Approved compact mobile/tablet welcome banner.
    Identity colors remain dynamic through --nav-bg/--primary/--gold-primary.
    No personal photo/avatar inside this banner. */
-@media (max-width:1023px){
+@media (max-width:969.98px){
   .max-w-6xl.mx-auto.space-y-12>section:nth-child(2){
     padding:18px 24px 24px!important;
   }
