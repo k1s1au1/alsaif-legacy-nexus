@@ -14,8 +14,10 @@ function QuickAction({ to, label, icon, color, description }: QuickActionProps) 
       <div className={cn("family-service-icon flex items-center justify-center text-white transition-transform duration-300 group-hover:-translate-y-1", color)}>
         {React.cloneElement(icon, { size: 24, strokeWidth: 1.8 })}
       </div>
-      <span className="family-service-label font-black text-foreground">{label}</span>
-      {description && <span className="family-service-description text-muted-foreground">{description}</span>}
+      <div className="family-service-copy">
+        <span className="family-service-label font-black text-foreground">{label}</span>
+        {description && <span className="family-service-description text-muted-foreground">{description}</span>}
+      </div>
     </Link>
   );
 }
@@ -56,6 +58,13 @@ export function QuickActionsBanner() {
           background: linear-gradient(145deg, color-mix(in srgb,var(--gold-primary) 88%,white), color-mix(in srgb,var(--gold-primary) 75%,#725b2f)) !important;
           color: white !important;
         }
+        .family-service-copy {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
 
         @media (max-width: 1199px) {
           .family-services-section {
@@ -92,37 +101,7 @@ export function QuickActionsBanner() {
           .family-services-section ~ section { margin-top: 0 !important; }
         }
 
-        /* iPad / tablet: exactly four compact, tall service cards per row like the mobile reference. */
-        @media (min-width: 768px) and (max-width: 1199px) {
-          .family-services-section { padding: 24px clamp(24px,3.5vw,44px) 30px !important; }
-          .family-services-panel { padding: 6px 0 12px !important; }
-          .family-services-heading { margin-bottom: 18px !important; }
-          .family-services-heading h3 { font-size: 25px !important; }
-          .family-services-grid {
-            display: grid !important;
-            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-            gap: 16px !important;
-            align-items: stretch !important;
-          }
-          .family-service-card {
-            width: 100% !important;
-            min-width: 0 !important;
-            min-height: 215px !important;
-            padding: 24px 14px 20px !important;
-            gap: 10px !important;
-          }
-          .family-service-icon {
-            width: 64px !important;
-            height: 64px !important;
-            border-radius: 20px !important;
-            margin-bottom: 4px !important;
-            box-shadow: 0 10px 18px -12px rgba(0,0,0,.55) !important;
-          }
-          .family-service-icon svg { width: 31px !important; height: 31px !important; }
-          .family-service-label { font-size: 18px !important; line-height: 1.35 !important; }
-          .family-service-description { font-size: 13px !important; line-height: 1.65 !important; max-width: 190px !important; }
-          .family-services-toggle { margin-top: 18px !important; min-height: 58px !important; border-radius: 20px !important; }
-        }
+
       `}</style>
       <section className="family-services-section animate-fade-up w-full" dir="rtl">
         <div className="family-services-panel">
