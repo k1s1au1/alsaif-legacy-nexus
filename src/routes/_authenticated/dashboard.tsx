@@ -23,6 +23,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useSiteLogo } from "@/hooks/use-site-logo";
+import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import { AnimatedCounter } from "@/components/dashboard/animated-counter";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -487,94 +488,53 @@ function Dashboard() {
   return (
     <AppShell title="لوحة العائلة" user={{ name: "", role: "", initial: "س" }}>
       <div className="dashboard-page max-w-6xl mx-auto space-y-12 pb-20 px-4 md:px-0">
-        {/* 1. SPIRITUAL REMINDER - Linked to Theme Colors */}
-        <section className="dashboard-spiritual animate-fade-up px-2 md:px-0">
-          <div className="flex items-center justify-center gap-3 py-1 opacity-100 transition-all duration-700">
-            <Scroll className="size-3 text-primary shrink-0" />
-            <p
-              className="text-[11px] md:text-sm font-black text-primary italic drop-shadow-sm"
-              style={{ fontFamily: "'Amiri', serif" }}
-            >
-              "{spiritualQuote.text}"
-            </p>
-            <div className="h-2 w-px bg-primary/20 mx-1" />
-            <span className="text-[11px] font-bold text-primary/60">
-              {spiritualQuote.source}
-            </span>
+        {/* 1. SPIRITUAL REMINDER */}
+        <section className="dashboard-spiritual dashboard-faith-strip animate-fade-up">
+          <div className="dashboard-faith-label">
+            <Scroll size={16} aria-hidden="true" />
+            <span>نفحات إيمانية</span>
           </div>
+          <p style={{ fontFamily: "'Amiri', serif" }}>
+            "{spiritualQuote.text}"
+          </p>
+          <span className="dashboard-faith-source">{spiritualQuote.source}</span>
         </section>
 
-        {/* 2. RESPONSIVE HERO CARD */}
-        <section className="dashboard-hero animate-fade-up px-2 md:px-0">
-          <div className="relative overflow-hidden rounded-[40px] md:rounded-[48px] bg-[#051410] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.7)] border border-white/5 group">
-            {/* Background Texture */}
-            <div
-              className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0l20 40H20zM40 80L20 40h40zM0 40l40-20v40zM80 40L40 60V20z' fill='%23D4AF37' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E")`,
-                backgroundSize: "80px 80px",
-              }}
-            />
-
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-16 p-10 md:p-12">
-              {/* Profile/Logo Medallion */}
-              <div className="shrink-0 flex items-center justify-center">
-                <div className="relative group/avatar">
-                  <div className="absolute inset-0 rounded-full bg-gold-primary/20 blur-2xl animate-pulse" />
-                  <div className="relative size-32 md:size-48 rounded-full p-1.5 bg-gradient-to-br from-gold-primary via-transparent to-gold-primary shadow-2xl transition-transform duration-700 group-hover/avatar:scale-[1.03]">
-                    <div className="size-full rounded-full bg-[#fdfcf7] p-4 flex items-center justify-center shadow-inner overflow-hidden border-[3px] border-emerald-950/5">
-                      {dynamicLogo ? (
-                        <div
-                          className="size-full bg-contain bg-no-repeat bg-center transition-transform duration-1000 group-hover/avatar:rotate-[360deg]"
-                          style={{ backgroundImage: `url(${dynamicLogo})` }}
-                        />
-                      ) : (
-                        <Sparkles className="size-16 text-gold-primary animate-pulse" />
-                      )}
-                    </div>
+        {/* 2. INTERACTIVE HERITAGE PORTAL */}
+        <section className="dashboard-hero dashboard-portal-hero animate-fade-up">
+          <div className="dashboard-portal-card">
+            <div className="dashboard-portal-layout">
+              <div className="dashboard-portal-copy">
+                <span className="dashboard-portal-eyebrow">
+                  <Sparkles size={15} aria-hidden="true" />
+                  {getGreeting()}، يا أهل الوفاء
+                </span>
+                <h2>
+                  <span>حيّاك الله،</span>
+                  <strong>{safeProfile.name}</strong>
+                </h2>
+                <div className="dashboard-portal-status">
+                  <span className="dashboard-portal-status-line" aria-hidden="true" />
+                  <div>
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={statusIndex}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {statusMessages[statusIndex]}
+                      </motion.p>
+                    </AnimatePresence>
                   </div>
                 </div>
               </div>
 
-              {/* Identity Section */}
-              <div className="flex-1 text-center md:text-right space-y-6 min-w-0">
-                <div className="space-y-4">
-                  <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                    <Sparkles className="size-3 text-gold-primary animate-bounce" />
-                    <p className="text-gold-primary font-black uppercase tracking-[0.4em] text-[11px] md:text-xs">
-                      {getGreeting()}، يا أهل الوفاء
-                    </p>
-                  </div>
-
-                  <h2 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter text-white drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                    {safeProfile.name}
-                  </h2>
-
-                  <div className="flex items-center justify-center md:justify-start gap-4 mt-6 md:mt-8">
-                    <div className="hidden md:block w-1 h-10 bg-gradient-to-b from-gold-primary/70 via-gold-primary/30 to-transparent rounded-full" />
-                    <div className="h-8 overflow-hidden relative w-full md:w-auto">
-                      <AnimatePresence mode="wait">
-                        <motion.p
-                          key={statusIndex}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          className="text-white/60 font-bold text-lg md:text-xl italic leading-none"
-                        >
-                          {statusMessages[statusIndex]}
-                        </motion.p>
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Corner Ornaments */}
-            <div className="absolute top-0 right-0 size-40 md:size-64 opacity-[0.1] pointer-events-none">
-              <svg viewBox="0 0 100 100" className="size-full fill-gold-primary">
-                <path d="M100,0 L100,30 Q100,0 70,0 L100,0 Z" />
-              </svg>
+              <HeritagePortal3D
+                logoUrl={dynamicLogo}
+                className="dashboard-portal-model"
+              />
             </div>
           </div>
         </section>
