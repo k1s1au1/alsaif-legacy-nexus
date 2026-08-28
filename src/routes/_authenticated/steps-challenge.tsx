@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { Trophy, Footprints, Flame, TrendingUp, Loader2, RotateCw, ShieldCheck, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 import { UserAvatar } from "@/components/user-avatar";
 import { Capacitor } from "@capacitor/core";
 
@@ -129,6 +130,8 @@ function StepsChallengePage() {
       setLoading(false);
     }
   }, []);
+
+  useRealtimeSync(["steps_data"], loadData);
 
   const saveSteps = useCallback(async (steps: number, source: "device" | "manual") => {
     const { data: { user } } = await supabase.auth.getUser();

@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 
 export const Route = createFileRoute("/_authenticated/family-tree")({
   ssr: false,
@@ -135,6 +136,10 @@ function FamilyTreePage() {
       }
     })();
   }, []);
+
+  useRealtimeSync(["profiles", "family_tree_extras", "user_roles"], () => {
+    void load();
+  });
 
   useEffect(() => {
     if (containerRef.current) {
