@@ -769,3 +769,200 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
     display: none !important;
   }
 }
+
+/* android-webview-flat-compositing-fix-2026-08-29 */
+/*
+ * Some Android WebView builds drop SVG and text layers when CSS 3D transforms
+ * are nested inside a filtered SVG. Keep the scene-level tilt, but flatten the
+ * internal compositing tree so every identity layer is painted reliably.
+ */
+.heritage-pavilion-v2 .najdi-pavilion-float,
+.heritage-pavilion-v2 .najdi-pavilion-scene {
+  transform-style: flat !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-float {
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation:
+    najdi-v2-enter-flat 0.9s cubic-bezier(0.2, 0.88, 0.25, 1.04) 0.04s both,
+    najdi-v2-breathe-flat 8.5s ease-in-out 1.1s infinite !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-architecture {
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  transform: none !important;
+  transform-style: flat !important;
+  backface-visibility: visible !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-depth,
+.heritage-pavilion-v2 .najdi-pavilion-gold-frame,
+.heritage-pavilion-v2 .najdi-pavilion-highlight {
+  opacity: 1;
+  visibility: visible;
+  filter: none !important;
+  transform: none !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-roof-copy,
+.heritage-pavilion-v2 .najdi-pavilion-crest,
+.heritage-pavilion-v2 .najdi-pavilion-content,
+.heritage-pavilion-v2 .najdi-pavilion-welcome,
+.heritage-pavilion-v2 .najdi-pavilion-name,
+.heritage-pavilion-v2 .najdi-pavilion-name-depth,
+.heritage-pavilion-v2 .najdi-pavilion-message-rail,
+.heritage-pavilion-v2 .najdi-pavilion-plaque,
+.heritage-pavilion-v2 .najdi-pavilion-light-sweep {
+  opacity: 1;
+  visibility: visible;
+  backface-visibility: visible !important;
+  transform-style: flat !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-roof-copy,
+.heritage-pavilion-v2 .najdi-pavilion-welcome,
+.heritage-pavilion-v2 .najdi-pavilion-name,
+.heritage-pavilion-v2 .najdi-pavilion-message-rail {
+  transform: none !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-crest {
+  transform: translate(-50%, -50%) !important;
+  animation: najdi-v2-crest-float-flat 5.4s ease-in-out 1.1s infinite !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-content {
+  transform: translate(-50%, -50%) !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-name-depth {
+  transform: translate(6px, 18px) !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-plaque {
+  transform: translateX(-50%) !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-light-sweep {
+  transform: translateX(60%) !important;
+  animation: najdi-v2-sweep-flat 8s ease-in-out 1.8s infinite !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-aura {
+  transform: none !important;
+  animation: najdi-v2-aura-flat 7.5s ease-in-out infinite !important;
+}
+
+.heritage-pavilion-v2 .najdi-pavilion-ground {
+  transform: none !important;
+  animation: najdi-v2-ground-flat 8.5s ease-in-out 1.2s infinite !important;
+}
+
+@keyframes najdi-v2-enter-flat {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.004);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes najdi-v2-breathe-flat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes najdi-v2-crest-float-flat {
+  0%,
+  100% {
+    transform: translate(-50%, -50%);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% - 3px));
+  }
+}
+
+@keyframes najdi-v2-sweep-flat {
+  0%,
+  60% {
+    opacity: 0;
+    transform: translateX(60%);
+  }
+  69% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.8;
+    transform: translateX(-60%);
+  }
+  94%,
+  100% {
+    opacity: 0;
+    transform: translateX(-64%);
+  }
+}
+
+@keyframes najdi-v2-aura-flat {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 0.98;
+    transform: scale(1.035);
+  }
+}
+
+@keyframes najdi-v2-ground-flat {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.62;
+    transform: scaleX(1.04);
+  }
+}
+
+@media (max-width: 599px) {
+  .heritage-pavilion-v2 .najdi-pavilion-name-depth {
+    transform: translate(4px, 12px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heritage-pavilion-v2 .najdi-pavilion-float,
+  .heritage-pavilion-v2 .najdi-pavilion-crest,
+  .heritage-pavilion-v2 .najdi-pavilion-light-sweep,
+  .heritage-pavilion-v2 .najdi-pavilion-aura,
+  .heritage-pavilion-v2 .najdi-pavilion-ground {
+    animation: none !important;
+  }
+
+  .heritage-pavilion-v2 .najdi-pavilion-float,
+  .heritage-pavilion-v2 .najdi-pavilion-aura,
+  .heritage-pavilion-v2 .najdi-pavilion-ground {
+    transform: none !important;
+  }
+
+  .heritage-pavilion-v2 .najdi-pavilion-crest {
+    transform: translate(-50%, -50%) !important;
+  }
+}
+
