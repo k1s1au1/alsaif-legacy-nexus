@@ -1,7 +1,7 @@
 /* iPad portrait shell (970px–1200px, portrait only):
    tidy the top bar and bring back the floating bottom dock.
    Laptops/desktops (landscape) are untouched. */
-@media (min-width:970px) and (max-width:1200px) and (orientation:portrait){
+@media (min-width:970px) and (max-width:1400px) and (orientation:portrait){
   /* ---------- TOP BAR ---------- */
   main>.app-shell-header-wrap{
     padding-inline:0!important;
