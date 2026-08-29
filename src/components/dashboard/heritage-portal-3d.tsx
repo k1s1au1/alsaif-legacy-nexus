@@ -39,8 +39,6 @@ export function HeritagePortal3D({
   const jadeId = "najdi-jade-" + instanceId;
   const glassId = "najdi-glass-" + instanceId;
   const cutoutId = "najdi-cutout-" + instanceId;
-  const glowId = "najdi-glow-" + instanceId;
-  const shadowId = "najdi-shadow-" + instanceId;
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -196,23 +194,6 @@ export function HeritagePortal3D({
                 <path d="M17 8 24.8 22H9.2Z" fill="#021712" />
               </pattern>
 
-              <filter id={glowId} x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-
-              <filter id={shadowId} x="-30%" y="-30%" width="160%" height="180%">
-                <feDropShadow
-                  dx="0"
-                  dy="18"
-                  stdDeviation="15"
-                  floodColor="#000000"
-                  floodOpacity="0.72"
-                />
-              </filter>
             </defs>
 
             <ellipse
@@ -223,7 +204,7 @@ export function HeritagePortal3D({
               ry="25"
             />
 
-            <g className="najdi-pavilion-depth" filter={"url(#" + shadowId + ")"}>
+            <g className="najdi-pavilion-depth">
               <polygon
                 points="75,76 1125,76 1084,170 116,170"
                 fill="#01130f"
@@ -278,7 +259,7 @@ export function HeritagePortal3D({
                 <polygon points="912,151 1088,151 1149,430 961,430" strokeWidth="3" />
                 <polygon points="280,151 920,151 958,427 242,427" strokeWidth="2.5" opacity="0.75" />
                 <polygon points="52,421 1148,421 1112,490 88,490" strokeWidth="3" />
-                <path d="M126 153H1074" strokeWidth="3" filter={"url(#" + glowId + ")"} />
+                <path d="M126 153H1074" strokeWidth="3" />
                 <path d="M83 438H1117" strokeWidth="2" opacity="0.8" />
               </g>
 
@@ -298,7 +279,6 @@ export function HeritagePortal3D({
                 stroke="#ffe09a"
                 strokeWidth="5"
                 strokeOpacity="0.8"
-                filter={"url(#" + glowId + ")"}
               />
             </g>
           </svg>
