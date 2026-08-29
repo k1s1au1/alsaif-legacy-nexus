@@ -215,8 +215,7 @@
 /* iPad portrait: no nav icons at all in the top bar (dock handles navigation). */
 @media (min-width:970px) and (max-width:1400px) and (orientation:portrait){
   main>.app-shell-header-wrap>header.app-shell-header>nav,
-  main>.app-shell-header-wrap>header.app-shell-header nav.hidden.md\:flex,
-  main>.app-shell-header-wrap>header.app-shell-header>.order-last.md\:order-first>button.hidden.md\:flex{
+  main>.app-shell-header-wrap>header.app-shell-header nav.hidden.md\:flex{
     display:none!important;
   }
   main>.app-shell-header-wrap>header.app-shell-header{
