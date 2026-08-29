@@ -365,3 +365,15 @@
     opacity:1!important;
   }
 }
+
+/* iPad landscape: reserve safe space below the floating top bar. */
+@media (min-width:970px) and (max-width:1600px) and (orientation:landscape) and (pointer:coarse){
+  /*
+   * desktop-dashboard.css uses a more specific padding shorthand at this width.
+   * Reserve the full floating-header height plus the iPad safe area so the
+   * faith strip and the pavilion always begin below the navigation.
+   */
+  html body main.app-shell-main>div.app-shell-content.p-4.md\:p-8.lg\:p-12{
+    padding-top:calc(112px + env(safe-area-inset-top, 0px))!important;
+  }
+}
