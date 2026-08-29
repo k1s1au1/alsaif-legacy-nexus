@@ -493,11 +493,11 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
 }
 
 
-/* iPad/tablet landscape: keep services in normal flow below the 16:9 pavilion. */
-@media (min-width: 768px) and (max-width: 1600px) and (orientation: landscape) {
-  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero,
-  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero > .dashboard-portal-card,
-  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-layout {
+/* iPad/tablet portrait: keep services in normal flow below the 16:9 pavilion. */
+@media (min-width: 768px) and (max-width: 1600px) and (orientation: portrait) {
+  html body main[data-tablet-portrait="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero,
+  html body main[data-tablet-portrait="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero > .dashboard-portal-card,
+  html body main[data-tablet-portrait="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-layout {
     position: relative !important;
     width: 100% !important;
     height: auto !important;
@@ -506,7 +506,7 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
     overflow: visible !important;
   }
 
-  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference {
+  html body main[data-tablet-portrait="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference {
     display: block !important;
     width: 100% !important;
     height: auto !important;
@@ -514,7 +514,7 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
     aspect-ratio: 1672 / 941 !important;
   }
 
-  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section {
+  html body main[data-tablet-portrait="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section {
     position: relative !important;
     z-index: 1 !important;
     clear: both !important;
