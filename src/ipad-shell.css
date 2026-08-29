@@ -1,7 +1,7 @@
 /* iPad portrait shell (970px–1200px, portrait only):
    tidy the top bar and bring back the floating bottom dock.
    Laptops/desktops (landscape) are untouched. */
-@media (min-width:970px) and (max-width:1200px) and (orientation:portrait){
+@media (min-width:970px) and (max-width:1400px) and (orientation:portrait){
   /* ---------- TOP BAR ---------- */
   main>.app-shell-header-wrap{
     padding-inline:0!important;
@@ -163,3 +163,68 @@
   }
 }
 
+
+/* ---------- iPad: mobile-style floating bottom dock in BOTH orientations ---------- */
+@media (min-width:970px) and (max-width:1400px) and (pointer:coarse){
+  main>.app-shell-bottom-dock{
+    display:flex!important;
+    position:fixed!important;
+    left:clamp(40px,12vw,220px)!important;
+    right:clamp(40px,12vw,220px)!important;
+    bottom:24px!important;
+    z-index:100!important;
+    justify-content:center!important;
+  }
+  main>.app-shell-bottom-dock>nav{
+    width:100%!important;
+    max-width:660px!important;
+    height:70px!important;
+    padding-inline:26px!important;
+    border-radius:999px!important;
+  }
+  main>.app-shell-bottom-dock>nav svg{
+    width:24px!important;
+    height:24px!important;
+  }
+  main>.app-shell-content{
+    padding-bottom:9.5rem!important;
+  }
+}
+
+/* iPad landscape: hide the duplicated desktop mid-nav? No — keep it, but tighten sizing. */
+@media (min-width:970px) and (max-width:1400px) and (orientation:landscape) and (pointer:coarse){
+  main>.app-shell-header-wrap>header.app-shell-header>nav a,
+  main>.app-shell-header-wrap>header.app-shell-header>nav button{
+    padding-inline:10px!important;
+    font-size:13px!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header>nav svg{
+    width:19px!important;
+    height:19px!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header h1{
+    font-size:18px!important;
+    max-width:200px!important;
+  }
+  main>.app-shell-content{
+    padding-top:108px!important;
+    padding-inline:clamp(20px,3vw,40px)!important;
+  }
+}
+
+/* iPad portrait: no nav icons at all in the top bar (dock handles navigation). */
+@media (min-width:970px) and (max-width:1400px) and (orientation:portrait){
+  main>.app-shell-header-wrap>header.app-shell-header>nav,
+  main>.app-shell-header-wrap>header.app-shell-header nav.hidden.md\:flex{
+    display:none!important;
+  }
+  main>.app-shell-header-wrap>header.app-shell-header{
+    height:78px!important;
+    min-height:78px!important;
+    justify-content:space-between!important;
+  }
+  main>.app-shell-content{
+    padding-top:1.5rem!important;
+    padding-inline:clamp(20px,3vw,40px)!important;
+  }
+}
