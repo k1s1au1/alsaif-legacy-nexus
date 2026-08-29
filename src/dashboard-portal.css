@@ -1208,3 +1208,949 @@ body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after {
     min-height: 420px;
   }
 }
+
+
+/* najdi-pavilion-hero-2026-08-29 */
+/*
+ * Approved design: a responsive Najdi pavilion built entirely from layered
+ * HTML/CSS. Application chrome is intentionally outside this scope.
+ */
+body .dashboard-page > .dashboard-portal-hero {
+  order: 1 !important;
+}
+
+body .dashboard-page > .family-services-section {
+  order: 2 !important;
+}
+
+html body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card {
+  width: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(218, 181, 104, 0.3) !important;
+  border-radius: 38px !important;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(28, 129, 91, 0.22), transparent 38%),
+    linear-gradient(135deg, #07372c 0%, #031f1a 48%, #020f0d 100%) !important;
+  box-shadow:
+    0 34px 68px -36px rgba(0, 0, 0, 0.88),
+    inset 0 1px rgba(255, 255, 255, 0.055) !important;
+}
+
+html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout {
+  display: block !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  padding: 22px 28px 18px !important;
+  opacity: 1 !important;
+}
+
+html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 0 !important;
+  inset: 15px !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  border: 1px solid rgba(218, 181, 104, 0.11) !important;
+  border-radius: 27px !important;
+  background: none !important;
+  pointer-events: none !important;
+}
+
+html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-model,
+html body .dashboard-page > .dashboard-portal-hero .heritage-portal-3d.heritage-pavilion {
+  --pavilion-rx: 0deg;
+  --pavilion-ry: 0deg;
+  --pavilion-shift-x: 0px;
+  --pavilion-shift-y: 0px;
+  --pavilion-light-x: 50%;
+  --pavilion-light-y: 34%;
+  position: relative !important;
+  inset: auto !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  min-height: 420px !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  isolation: isolate !important;
+  perspective: 1500px !important;
+  perspective-origin: 50% 42% !important;
+  touch-action: pan-y;
+}
+
+.heritage-pavilion-aura {
+  position: absolute;
+  z-index: 0;
+  inset: 6% 3% 5%;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at var(--pavilion-light-x) var(--pavilion-light-y),
+      rgba(255, 224, 158, 0.25),
+      transparent 28%
+    ),
+    radial-gradient(ellipse at 50% 72%, rgba(20, 151, 103, 0.25), transparent 60%);
+  filter: blur(30px);
+  opacity: 0.85;
+  transform: translate3d(
+    calc(var(--pavilion-shift-x) * -0.42),
+    calc(var(--pavilion-shift-y) * -0.42),
+    -90px
+  );
+  animation: najdi-pavilion-aura 7.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.heritage-pavilion-float {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+  animation:
+    najdi-pavilion-enter 1.15s cubic-bezier(0.2, 0.88, 0.25, 1.08) 0.05s both,
+    najdi-pavilion-breathe 9s ease-in-out 1.3s infinite;
+}
+
+.heritage-pavilion-scene {
+  position: relative;
+  width: min(100%, 990px);
+  aspect-ratio: 2.3 / 1;
+  margin-inline: auto;
+  transform: translate3d(
+      var(--pavilion-shift-x),
+      var(--pavilion-shift-y),
+      0
+    )
+    rotateX(var(--pavilion-rx))
+    rotateY(var(--pavilion-ry));
+  transform-style: preserve-3d;
+  transform-origin: 50% 68%;
+  transition: transform 0.11s linear;
+  will-change: transform;
+}
+
+.heritage-pavilion-backplate {
+  position: absolute;
+  z-index: 0;
+  inset: 21% 13% 18%;
+  border: 1px solid rgba(225, 188, 111, 0.11);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(13, 73, 57, 0.68), rgba(2, 29, 24, 0.88)),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 18px,
+      rgba(217, 179, 100, 0.025) 18px 19px
+    );
+  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.38);
+  transform: translateZ(-42px) scale(0.975);
+  pointer-events: none;
+}
+
+.heritage-pavilion-roof,
+.heritage-pavilion-pillar,
+.heritage-pavilion-glass,
+.heritage-pavilion-lower-beam,
+.heritage-pavilion-crest,
+.heritage-pavilion-plaque {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.heritage-pavilion-roof {
+  position: absolute;
+  z-index: 6;
+  top: 7%;
+  inset-inline: 2.5%;
+  height: 18%;
+  overflow: visible;
+  border: 1px solid rgba(226, 190, 112, 0.52);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 34%),
+    linear-gradient(90deg, #0a332a, #0f4939 48%, #092f27);
+  box-shadow:
+    0 11px 20px rgba(0, 0, 0, 0.42),
+    inset 0 0 0 2px rgba(2, 20, 17, 0.64),
+    inset 0 -5px 14px rgba(0, 0, 0, 0.38);
+  clip-path: polygon(0 15%, 100% 15%, 97.5% 87%, 2.5% 87%);
+  transform: translateZ(66px);
+}
+
+.heritage-pavilion-roof::before {
+  content: "";
+  position: absolute;
+  inset: 5px 13px 11px;
+  border-block: 1px solid rgba(232, 197, 123, 0.36);
+  opacity: 0.86;
+  pointer-events: none;
+}
+
+.heritage-pavilion-roof::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 10px -8px -11px;
+  border-radius: 6px;
+  background: #021a16;
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.5);
+  transform: translateZ(-32px);
+  pointer-events: none;
+}
+
+.heritage-pavilion-roof-copy {
+  position: absolute;
+  top: 50%;
+  display: block;
+  width: 31%;
+  overflow: hidden;
+  color: #dfb967;
+  font-size: clamp(12px, 1.55vw, 18px);
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.64);
+  transform: translateY(-50%) translateZ(17px);
+}
+
+.heritage-pavilion-roof-greeting {
+  inset-inline-end: 9%;
+}
+
+.heritage-pavilion-roof-loyalty {
+  inset-inline-start: 9%;
+}
+
+.heritage-pavilion-crest {
+  position: absolute;
+  z-index: 10;
+  top: 16%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: clamp(64px, 9.2%, 92px);
+  aspect-ratio: 1;
+  padding: 6px;
+  overflow: hidden;
+  border: 3px solid #c8a252;
+  border-radius: 50%;
+  color: #d7b567;
+  background:
+    linear-gradient(#fffdf7, #f4efe2) padding-box,
+    linear-gradient(145deg, #f0d397, #725520) border-box;
+  box-shadow:
+    0 13px 25px rgba(0, 0, 0, 0.48),
+    0 0 28px rgba(226, 185, 98, 0.18);
+  transform: translate3d(-50%, -50%, 112px);
+  animation: najdi-pavilion-crest 5.2s ease-in-out 1.25s infinite;
+}
+
+.heritage-pavilion-crest::after {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.72) 49%,
+    transparent 61%
+  );
+  transform: translateX(70%) rotate(8deg);
+  animation: najdi-pavilion-crest-glint 7s ease-in-out 1.8s infinite;
+  pointer-events: none;
+}
+
+.heritage-pavilion-crest img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.heritage-pavilion-crest > span {
+  font-size: clamp(23px, 4vw, 42px);
+  font-weight: 900;
+}
+
+.heritage-pavilion-pillar {
+  position: absolute;
+  z-index: 5;
+  top: 21%;
+  bottom: 14%;
+  width: 17%;
+  overflow: hidden;
+  border: 1px solid rgba(226, 190, 112, 0.58);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045), transparent 27%),
+    linear-gradient(150deg, #0a3b2f, #082a23 58%, #041b17);
+  box-shadow:
+    0 22px 30px rgba(0, 0, 0, 0.48),
+    inset 0 0 0 3px rgba(2, 23, 18, 0.48);
+  transform: translateZ(58px);
+}
+
+.heritage-pavilion-pillar::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 7px -9px -11px;
+  background: #021712;
+  transform: translateZ(-34px);
+  pointer-events: none;
+}
+
+.heritage-pavilion-pillar-start {
+  inset-inline-start: 2.7%;
+  clip-path: polygon(19% 0, 100% 0, 82% 100%, 0 100%);
+}
+
+.heritage-pavilion-pillar-end {
+  inset-inline-end: 2.7%;
+  clip-path: polygon(0 0, 81% 0, 100% 100%, 18% 100%);
+}
+
+.heritage-pavilion-cutouts {
+  position: absolute;
+  top: 21%;
+  left: 50%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px 6px;
+  width: 37%;
+  transform: translateX(-50%) translateZ(13px);
+}
+
+.heritage-pavilion-cutouts span {
+  display: block;
+  aspect-ratio: 1;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background:
+    linear-gradient(145deg, #020e0c, #061d18);
+  box-shadow:
+    inset 1px 1px rgba(0, 0, 0, 0.75),
+    0 0 8px rgba(225, 187, 105, 0.12);
+}
+
+.heritage-pavilion-glass {
+  position: absolute;
+  z-index: 4;
+  top: 24%;
+  bottom: 20%;
+  inset-inline: 14.2%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(219, 178, 94, 0.32);
+  border-radius: 8px;
+  background:
+    radial-gradient(
+      circle at var(--pavilion-light-x) var(--pavilion-light-y),
+      rgba(49, 156, 116, 0.18),
+      transparent 36%
+    ),
+    linear-gradient(145deg, rgba(11, 67, 53, 0.82), rgba(2, 27, 23, 0.94));
+  box-shadow:
+    0 18px 35px rgba(0, 0, 0, 0.42),
+    inset 0 0 36px rgba(8, 89, 67, 0.2),
+    inset 0 1px rgba(255, 255, 255, 0.05);
+  transform: translateZ(34px);
+}
+
+.heritage-pavilion-glass::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(214, 176, 97, 0.1);
+  border-radius: 4px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 38%),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 23px,
+      rgba(222, 184, 105, 0.025) 23px 24px
+    );
+  pointer-events: none;
+}
+
+.heritage-pavilion-welcome {
+  position: relative;
+  z-index: 5;
+  margin-bottom: 3px;
+  color: #d7af5d;
+  font-size: clamp(13px, 1.65vw, 19px);
+  font-weight: 900;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.72);
+  transform: translateZ(55px);
+}
+
+.heritage-pavilion-name {
+  position: relative;
+  z-index: 6;
+  display: block;
+  max-width: 91%;
+  overflow: hidden;
+  color: #faf4e8;
+  font-size: clamp(44px, 7.4vw, 88px);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-text-stroke: 0.4px rgba(119, 87, 35, 0.55);
+  text-shadow:
+    0 1px #d9b76f,
+    0 2px #bb944e,
+    0 4px #72552c,
+    0 7px #254f40,
+    0 11px 18px rgba(0, 0, 0, 0.68);
+  transform: translateZ(73px);
+}
+
+.heritage-pavilion-name-reflection {
+  position: absolute;
+  z-index: 2;
+  top: 64%;
+  max-width: 88%;
+  overflow: hidden;
+  color: rgba(234, 208, 151, 0.08);
+  font-size: clamp(40px, 7vw, 82px);
+  font-weight: 900;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  filter: blur(1.5px);
+  transform: translateZ(8px) scaleY(-0.45);
+  transform-origin: center top;
+  pointer-events: none;
+}
+
+.heritage-pavilion-glass-line {
+  position: absolute;
+  z-index: 3;
+  right: 12%;
+  bottom: 11%;
+  left: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(220, 182, 102, 0.34), transparent);
+  pointer-events: none;
+}
+
+.heritage-pavilion-light-sweep {
+  position: absolute;
+  z-index: 8;
+  inset: -20% -30%;
+  background: linear-gradient(
+    112deg,
+    transparent 39%,
+    rgba(255, 236, 190, 0.04) 45%,
+    rgba(255, 235, 187, 0.25) 50%,
+    rgba(255, 236, 190, 0.04) 55%,
+    transparent 61%
+  );
+  transform: translate3d(65%, 0, 90px);
+  animation: najdi-pavilion-sweep 7.8s ease-in-out 1.7s infinite;
+  pointer-events: none;
+}
+
+.heritage-pavilion-lower-beam {
+  position: absolute;
+  z-index: 7;
+  right: 2.5%;
+  bottom: 8%;
+  left: 2.5%;
+  display: grid;
+  place-items: center;
+  height: 14%;
+  padding: 6px 17%;
+  overflow: visible;
+  border: 1px solid rgba(226, 190, 112, 0.5);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 38%),
+    linear-gradient(90deg, #062a23, #0d4033 48%, #05261f);
+  box-shadow:
+    0 15px 25px rgba(0, 0, 0, 0.48),
+    inset 0 0 0 2px rgba(2, 21, 17, 0.5);
+  clip-path: polygon(2.5% 9%, 97.5% 9%, 100% 78%, 0 78%);
+  transform: translateZ(70px);
+}
+
+.heritage-pavilion-lower-beam::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 8px -6px -10px;
+  background: #021712;
+  transform: translateZ(-34px);
+  pointer-events: none;
+}
+
+.heritage-pavilion-message {
+  display: -webkit-box;
+  width: 100%;
+  overflow: hidden;
+  color: #d7b161;
+  font-size: clamp(11px, 1.45vw, 17px);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 7px rgba(0, 0, 0, 0.72);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  transform: translateZ(18px);
+  animation: najdi-pavilion-message-in 0.42s ease both;
+}
+
+.heritage-pavilion-plaque {
+  position: absolute;
+  z-index: 11;
+  bottom: 3.4%;
+  left: 50%;
+  min-width: 15%;
+  padding: 5px 18px;
+  overflow: hidden;
+  border: 1px solid rgba(225, 187, 105, 0.58);
+  border-radius: 999px;
+  color: #d6ae5d;
+  background: linear-gradient(180deg, #0d392e, #041f1a);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.52),
+    inset 0 0 0 2px rgba(1, 16, 13, 0.52);
+  font-size: clamp(9px, 1vw, 12px);
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  transform: translate3d(-50%, 0, 104px);
+}
+
+.heritage-pavilion-edge-light {
+  position: absolute;
+  z-index: 9;
+  right: 5%;
+  bottom: 14.5%;
+  left: 5%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 221, 150, 0.65) 18%,
+    rgba(255, 221, 150, 0.14) 50%,
+    rgba(255, 221, 150, 0.65) 82%,
+    transparent
+  );
+  box-shadow: 0 0 14px rgba(235, 194, 111, 0.3);
+  transform: translateZ(88px);
+  pointer-events: none;
+}
+
+.heritage-pavilion-ground {
+  position: absolute;
+  z-index: 1;
+  bottom: 4%;
+  left: calc(50% - var(--pavilion-shift-x));
+  width: min(76%, 700px);
+  height: 9%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse, rgba(216, 176, 95, 0.17), transparent 49%),
+    radial-gradient(ellipse, rgba(0, 0, 0, 0.66), transparent 70%);
+  filter: blur(11px);
+  transform: translateX(-50%);
+  transition: left 0.2s ease-out, filter 0.25s ease;
+  animation: najdi-pavilion-ground 9s ease-in-out 1.3s infinite;
+  pointer-events: none;
+}
+
+.heritage-pavilion[data-interacting="true"] .heritage-pavilion-ground {
+  filter: blur(8px);
+}
+
+.heritage-pavilion[data-interacting="true"] .heritage-pavilion-glass {
+  box-shadow:
+    0 25px 44px rgba(0, 0, 0, 0.52),
+    inset 0 0 42px rgba(13, 119, 86, 0.25);
+}
+
+@keyframes najdi-pavilion-enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 28px, -90px) rotateX(5deg) scale(0.92);
+  }
+  66% {
+    opacity: 1;
+    transform: translate3d(0, -3px, 8px) rotateX(-0.6deg) scale(1.008);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotateX(0deg) scale(1);
+  }
+}
+
+@keyframes najdi-pavilion-breathe {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+@keyframes najdi-pavilion-aura {
+  0%,
+  100% {
+    opacity: 0.68;
+    transform: translate3d(
+      calc(var(--pavilion-shift-x) * -0.42),
+      calc(var(--pavilion-shift-y) * -0.42),
+      -90px
+    ) scale(0.96);
+  }
+  50% {
+    opacity: 0.96;
+    transform: translate3d(
+      calc(var(--pavilion-shift-x) * -0.42),
+      calc(var(--pavilion-shift-y) * -0.42),
+      -90px
+    ) scale(1.035);
+  }
+}
+
+@keyframes najdi-pavilion-ground {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: translateX(-50%) scaleX(1);
+  }
+  50% {
+    opacity: 0.66;
+    transform: translateX(-50%) scaleX(1.055);
+  }
+}
+
+@keyframes najdi-pavilion-crest {
+  0%,
+  100% {
+    transform: translate3d(-50%, -50%, 112px);
+  }
+  50% {
+    transform: translate3d(-50%, calc(-50% - 2px), 120px);
+  }
+}
+
+@keyframes najdi-pavilion-crest-glint {
+  0%,
+  62% {
+    opacity: 0;
+    transform: translateX(70%) rotate(8deg);
+  }
+  72% {
+    opacity: 0.85;
+  }
+  86% {
+    opacity: 0;
+    transform: translateX(-70%) rotate(8deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-70%) rotate(8deg);
+  }
+}
+
+@keyframes najdi-pavilion-sweep {
+  0%,
+  58% {
+    opacity: 0;
+    transform: translate3d(65%, 0, 90px);
+  }
+  68% {
+    opacity: 1;
+  }
+  84% {
+    opacity: 0.9;
+    transform: translate3d(-62%, 0, 90px);
+  }
+  94%,
+  100% {
+    opacity: 0;
+    transform: translate3d(-66%, 0, 90px);
+  }
+}
+
+@keyframes najdi-pavilion-message-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 5px, 18px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 18px);
+  }
+}
+
+@keyframes najdi-pavilion-touch-orbit {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(-2.2deg);
+  }
+  50% {
+    transform: translate3d(0, -2px, 0) rotateX(0.8deg) rotateY(2.2deg);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .heritage-pavilion-scene {
+    animation: najdi-pavilion-touch-orbit 9.5s ease-in-out 1.3s infinite;
+  }
+}
+
+@media (min-width: 1200px) {
+  html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout {
+    padding: 24px 34px 18px !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero .heritage-portal-3d.heritage-pavilion {
+    min-height: 440px !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1199px) {
+  html body .dashboard-page > .dashboard-portal-hero {
+    padding: 14px 0 4px !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card {
+    min-height: 0 !important;
+    border-radius: 32px !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout {
+    display: block !important;
+    grid-template-areas: none !important;
+    grid-template-columns: none !important;
+    min-height: 0 !important;
+    padding: 18px 20px 14px !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-model,
+  html body .dashboard-page > .dashboard-portal-hero .heritage-portal-3d.heritage-pavilion {
+    width: 100% !important;
+    min-height: 390px !important;
+  }
+
+  .heritage-pavilion-scene {
+    width: min(100%, 850px);
+    aspect-ratio: 2.03 / 1;
+  }
+
+  .heritage-pavilion-name {
+    font-size: clamp(43px, 8vw, 71px);
+  }
+
+  .heritage-pavilion-roof-copy {
+    font-size: clamp(11px, 1.8vw, 15px);
+  }
+
+  .heritage-pavilion-message {
+    font-size: clamp(10px, 1.55vw, 14px);
+  }
+}
+
+@media (max-width: 599px) {
+  html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-faith-strip {
+    order: 0 !important;
+  }
+
+  html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero {
+    order: 1 !important;
+    padding: 10px 0 2px !important;
+  }
+
+  html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section {
+    order: 2 !important;
+    margin-top: 14px !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card {
+    min-height: 0 !important;
+    border-radius: 25px !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout {
+    display: block !important;
+    grid-template-areas: "portal" !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-height: 0 !important;
+    padding: 12px 9px 10px !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout::before {
+    inset: 8px !important;
+    border-radius: 19px !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-model,
+  html body .dashboard-page > .dashboard-portal-hero .heritage-portal-3d.heritage-pavilion {
+    display: grid !important;
+    width: 100% !important;
+    min-height: 292px !important;
+  }
+
+  .heritage-pavilion-float {
+    width: 100%;
+  }
+
+  .heritage-pavilion-scene {
+    width: min(100%, 520px);
+    aspect-ratio: 1.56 / 1;
+  }
+
+  .heritage-pavilion-roof {
+    top: 5%;
+    height: 19%;
+    clip-path: polygon(0 15%, 100% 15%, 96.5% 88%, 3.5% 88%);
+  }
+
+  .heritage-pavilion-roof-copy {
+    top: 51%;
+    width: 31%;
+    font-size: clamp(9px, 2.8vw, 11px);
+  }
+
+  .heritage-pavilion-roof-greeting {
+    inset-inline-end: 7%;
+  }
+
+  .heritage-pavilion-roof-loyalty {
+    inset-inline-start: 7%;
+  }
+
+  .heritage-pavilion-crest {
+    top: 15%;
+    width: clamp(52px, 15%, 64px);
+    padding: 4px;
+    border-width: 2px;
+  }
+
+  .heritage-pavilion-pillar {
+    top: 22%;
+    bottom: 14%;
+    width: 22%;
+  }
+
+  .heritage-pavilion-pillar-start {
+    inset-inline-start: 1.5%;
+  }
+
+  .heritage-pavilion-pillar-end {
+    inset-inline-end: 1.5%;
+  }
+
+  .heritage-pavilion-cutouts {
+    top: 22%;
+    gap: 4px 3px;
+    width: 36%;
+  }
+
+  .heritage-pavilion-glass {
+    top: 25%;
+    bottom: 21%;
+    inset-inline: 17.5%;
+  }
+
+  .heritage-pavilion-welcome {
+    margin-bottom: 1px;
+    font-size: clamp(10px, 3.2vw, 13px);
+  }
+
+  .heritage-pavilion-name {
+    max-width: 94%;
+    font-size: clamp(31px, 10.6vw, 46px);
+    letter-spacing: -0.055em;
+    text-shadow:
+      0 1px #d9b76f,
+      0 2px #a7803f,
+      0 4px #4d3b21,
+      0 7px 13px rgba(0, 0, 0, 0.66);
+  }
+
+  .heritage-pavilion-name-reflection {
+    display: none;
+  }
+
+  .heritage-pavilion-lower-beam {
+    right: 1.5%;
+    bottom: 7%;
+    left: 1.5%;
+    height: 16%;
+    padding-inline: 17%;
+  }
+
+  .heritage-pavilion-message {
+    font-size: clamp(8.5px, 2.55vw, 11px);
+    line-height: 1.25;
+  }
+
+  .heritage-pavilion-plaque {
+    bottom: 1.8%;
+    min-width: 24%;
+    padding: 4px 11px;
+    font-size: 8px;
+  }
+
+  .heritage-pavilion-edge-light {
+    bottom: 14%;
+  }
+
+  .heritage-pavilion-ground {
+    bottom: 2%;
+    width: 82%;
+    height: 7%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heritage-pavilion-aura,
+  .heritage-pavilion-float,
+  .heritage-pavilion-scene,
+  .heritage-pavilion-crest,
+  .heritage-pavilion-crest::after,
+  .heritage-pavilion-light-sweep,
+  .heritage-pavilion-message,
+  .heritage-pavilion-ground {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .heritage-pavilion-float {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .heritage-pavilion-scene {
+    transform: none !important;
+  }
+
+  .heritage-pavilion-crest {
+    transform: translate3d(-50%, -50%, 112px) !important;
+  }
+
+  .heritage-pavilion-light-sweep {
+    display: none !important;
+  }
+}
