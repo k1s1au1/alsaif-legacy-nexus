@@ -35,6 +35,7 @@ import {
   Footprints,
   Inbox,
   PartyPopper,
+  Handshake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSiteLogo } from "@/hooks/use-site-logo";
@@ -1157,7 +1158,7 @@ function AppShellChrome({
                   <QuickActionItem
                     to="/community"
                     label="ركن الأعضاء"
-                    icon={<Users size={28} />}
+                    icon={<Handshake size={28} />}
                     color={cn("bg-[#3D8557]", isGuest && !allowedSections.includes("community") && "opacity-20 grayscale cursor-not-allowed")}
                     onClick={(e: any) => {
                       if (isGuest && !allowedSections.includes("community")) {
