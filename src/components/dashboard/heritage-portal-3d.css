@@ -360,6 +360,12 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero 
   max-height: none !important;
 }
 
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero,
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero > .dashboard-portal-card,
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-layout {
+  aspect-ratio: auto !important;
+}
+
 html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero {
   display: block !important;
   align-self: auto !important;
@@ -483,5 +489,36 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
 
   .pavilion-reference-sheen {
     display: none;
+  }
+}
+
+
+/* iPad/tablet landscape: keep services in normal flow below the 16:9 pavilion. */
+@media (min-width: 768px) and (max-width: 1600px) and (orientation: landscape) {
+  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero,
+  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero > .dashboard-portal-card,
+  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-layout {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+  }
+
+  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 1672 / 941 !important;
+  }
+
+  html body main[data-tablet-landscape="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section {
+    position: relative !important;
+    z-index: 1 !important;
+    clear: both !important;
+    margin-top: clamp(20px, 2.4vw, 32px) !important;
+    transform: none !important;
   }
 }
