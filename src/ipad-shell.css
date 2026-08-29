@@ -164,8 +164,8 @@
 }
 
 
-/* ---------- iPad: mobile-style floating bottom dock in BOTH orientations ---------- */
-@media (min-width:970px) and (max-width:1600px) and (pointer:coarse){
+/* ---------- iPad portrait: mobile-style floating bottom dock ---------- */
+@media (min-width:970px) and (max-width:1600px) and (orientation:portrait) and (pointer:coarse){
   main>.app-shell-bottom-dock{
     display:flex!important;
     position:fixed!important;
@@ -266,8 +266,8 @@
   }
 }
 
-/* Bottom dock: force-visible on every tablet size/orientation, highest specificity. */
-@media (min-width:970px) and (max-width:1600px){
+/* Bottom dock: force-visible in iPad portrait, highest specificity. */
+@media (min-width:970px) and (max-width:1600px) and (orientation:portrait){
   html body main>.app-shell-bottom-dock{
     display:flex!important;
     position:fixed!important;
@@ -350,5 +350,18 @@
   html body main>.app-shell-header-wrap>header.app-shell-header>nav a,
   html body main>.app-shell-header-wrap>header.app-shell-header>nav button{
     display:flex!important;
+  }
+}
+
+
+/* Compact-width tablet landscape returns to the desktop-style top navigation. */
+@media (min-width:768px) and (max-width:969.98px) and (orientation:landscape){
+  html body main>.app-shell-bottom-dock{
+    display:none!important;
+  }
+  html body main>.app-shell-header-wrap>header.app-shell-header>nav.app-shell-primary-nav{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
   }
 }

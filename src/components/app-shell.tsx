@@ -261,31 +261,31 @@ function AppShellChrome({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showMoreHub, setShowMoreHub] = useState(false);
-  const [isTabletLandscape, setIsTabletLandscape] = useState(false);
+  const [isTabletPortrait, setIsTabletPortrait] = useState(false);
 
   useEffect(() => {
-    const syncTabletLandscape = () => {
+    const syncTabletPortrait = () => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const isTouchDevice =
         navigator.maxTouchPoints > 0 ||
         window.matchMedia("(pointer: coarse)").matches;
 
-      setIsTabletLandscape(
+      setIsTabletPortrait(
         isTouchDevice &&
           viewportWidth >= 768 &&
           viewportWidth <= 1600 &&
-          viewportWidth > viewportHeight,
+          viewportHeight > viewportWidth,
       );
     };
 
-    syncTabletLandscape();
-    window.addEventListener("resize", syncTabletLandscape);
-    window.addEventListener("orientationchange", syncTabletLandscape);
+    syncTabletPortrait();
+    window.addEventListener("resize", syncTabletPortrait);
+    window.addEventListener("orientationchange", syncTabletPortrait);
 
     return () => {
-      window.removeEventListener("resize", syncTabletLandscape);
-      window.removeEventListener("orientationchange", syncTabletLandscape);
+      window.removeEventListener("resize", syncTabletPortrait);
+      window.removeEventListener("orientationchange", syncTabletPortrait);
     };
   }, []);
 
@@ -491,7 +491,7 @@ function AppShellChrome({
 
       <main
         className="app-shell-main relative min-h-screen pb-40 md:pb-24"
-        data-tablet-landscape={isTabletLandscape ? "true" : undefined}
+        data-tablet-portrait={isTabletPortrait ? "true" : undefined}
       >
         <motion.div
           initial={false}
@@ -552,7 +552,7 @@ function AppShellChrome({
             </div>
 
             {/* Desktop navigation mirrors the mobile bottom navigation. */}
-            {!isTabletLandscape && (
+            {!isTabletPortrait && (
             <nav
               className="app-shell-primary-nav hidden md:flex md:flex-1 md:min-w-0 md:mx-2 items-center justify-center gap-0.5 min-[1200px]:gap-1 h-16 min-[1200px]:flex-none min-[1200px]:mx-0 min-[1200px]:absolute min-[1200px]:left-1/2 min-[1200px]:-translate-x-1/2"
               aria-label="التنقل الرئيسي"
@@ -827,8 +827,8 @@ function AppShellChrome({
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
           className={cn(
             "app-shell-bottom-dock fixed bottom-8 inset-x-6 z-[100] flex justify-center",
-            !isTabletLandscape && "md:hidden",
-            isTabletLandscape && "app-shell-bottom-dock-tablet-landscape",
+            !isTabletPortrait && "md:hidden",
+            isTabletPortrait && "app-shell-bottom-dock-tablet-portrait",
           )}
         >
           <nav className="h-16 w-full max-w-sm bg-[var(--nav-bg)]/95 border border-white/10 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center justify-around px-4 backdrop-blur-2xl relative overflow-hidden transition-all duration-500">
