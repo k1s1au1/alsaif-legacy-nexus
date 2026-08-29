@@ -289,3 +289,66 @@
   }
   html body main>.app-shell-bottom-dock>nav svg{width:24px!important;height:24px!important}
 }
+
+/* ---------- iPad: safe-area insets so bars never hide under notch / home bar ---------- */
+@media (min-width:970px) and (max-width:1600px){
+  html body main>.app-shell-header-wrap{
+    padding-top:calc(14px + env(safe-area-inset-top))!important;
+    padding-left:calc(26px + env(safe-area-inset-left))!important;
+    padding-right:calc(26px + env(safe-area-inset-right))!important;
+  }
+  html body main>.app-shell-bottom-dock{
+    bottom:calc(24px + env(safe-area-inset-bottom))!important;
+    left:calc(clamp(40px,12vw,220px) + env(safe-area-inset-left))!important;
+    right:calc(clamp(40px,12vw,220px) + env(safe-area-inset-right))!important;
+  }
+  html body main>.app-shell-content{
+    padding-bottom:calc(10rem + env(safe-area-inset-bottom))!important;
+  }
+
+  /* Keyboard / tablet focus states inside the bottom dock: clear ring + contrast. */
+  html body main>.app-shell-bottom-dock>nav a:focus-visible,
+  html body main>.app-shell-bottom-dock>nav button:focus-visible{
+    outline:3px solid var(--gold-primary)!important;
+    outline-offset:3px!important;
+    border-radius:18px!important;
+    background:color-mix(in srgb,var(--gold-primary) 18%,transparent)!important;
+    color:#fff!important;
+    box-shadow:0 0 0 4px color-mix(in srgb,var(--gold-primary) 28%,transparent)!important;
+  }
+  html body main>.app-shell-bottom-dock>nav a:focus-visible svg,
+  html body main>.app-shell-bottom-dock>nav button:focus-visible svg{
+    color:#fff!important;
+    opacity:1!important;
+  }
+  /* Same treatment for the top bar controls. */
+  html body main>.app-shell-header-wrap>header.app-shell-header a:focus-visible,
+  html body main>.app-shell-header-wrap>header.app-shell-header button:focus-visible{
+    outline:3px solid var(--gold-primary)!important;
+    outline-offset:3px!important;
+    border-radius:16px!important;
+  }
+}
+
+/* Portrait: only the menu toggle stays in the top bar. */
+@media (min-width:970px) and (max-width:1600px) and (orientation:portrait){
+  html body main>.app-shell-header-wrap>header.app-shell-header>nav{display:none!important}
+  html body main>.app-shell-header-wrap>header.app-shell-header button[aria-label*="قائمة"],
+  html body main>.app-shell-header-wrap>header.app-shell-header button[aria-label*="menu"],
+  html body main>.app-shell-header-wrap>header.app-shell-header button[aria-label*="Menu"]{
+    display:flex!important;
+  }
+}
+
+/* Landscape: the top-bar nav comes back in full. */
+@media (min-width:970px) and (max-width:1600px) and (orientation:landscape){
+  html body main>.app-shell-header-wrap>header.app-shell-header>nav{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+  html body main>.app-shell-header-wrap>header.app-shell-header>nav a,
+  html body main>.app-shell-header-wrap>header.app-shell-header>nav button{
+    display:flex!important;
+  }
+}
