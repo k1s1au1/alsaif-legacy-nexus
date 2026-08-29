@@ -34,6 +34,7 @@ import {
   AlertOctagon,
   Footprints,
   Inbox,
+  PartyPopper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSiteLogo } from "@/hooks/use-site-logo";
@@ -1108,6 +1109,19 @@ function AppShellChrome({
                     color={cn("bg-[#1B3022]", isGuest && !allowedSections.includes("meetings") && "opacity-20 grayscale cursor-not-allowed")}
                     onClick={(e: any) => {
                       if (isGuest && !allowedSections.includes("meetings")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/family-occasions"
+                    label="مناسبات العائلة"
+                    icon={<PartyPopper size={28} />}
+                    color={cn("bg-[#9A6732]", isGuest && !allowedSections.includes("family-occasions") && "opacity-20 grayscale cursor-not-allowed")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("family-occasions")) {
                         e.preventDefault(); toast.error("خاص بالعائلة");
                       } else {
                         setShowQuickActions(false);
