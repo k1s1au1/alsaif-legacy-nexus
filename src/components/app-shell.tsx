@@ -261,6 +261,33 @@ function AppShellChrome({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showMoreHub, setShowMoreHub] = useState(false);
+  const [isTabletLandscape, setIsTabletLandscape] = useState(false);
+
+  useEffect(() => {
+    const syncTabletLandscape = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const isTouchDevice =
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia("(pointer: coarse)").matches;
+
+      setIsTabletLandscape(
+        isTouchDevice &&
+          viewportWidth >= 768 &&
+          viewportWidth <= 1600 &&
+          viewportWidth > viewportHeight,
+      );
+    };
+
+    syncTabletLandscape();
+    window.addEventListener("resize", syncTabletLandscape);
+    window.addEventListener("orientationchange", syncTabletLandscape);
+
+    return () => {
+      window.removeEventListener("resize", syncTabletLandscape);
+      window.removeEventListener("orientationchange", syncTabletLandscape);
+    };
+  }, []);
 
   // 1. Centralized Identity Source (Zero Redundancy)
   const { data: globalProfile, isLoading: profileLoading } = useProfile();
@@ -462,7 +489,10 @@ function AppShellChrome({
         </nav>
       </motion.aside>
 
-      <main className="app-shell-main relative min-h-screen pb-40 md:pb-24">
+      <main
+        className="app-shell-main relative min-h-screen pb-40 md:pb-24"
+        data-tablet-landscape={isTabletLandscape ? "true" : undefined}
+      >
         <motion.div
           initial={false}
           animate={{
@@ -522,8 +552,9 @@ function AppShellChrome({
             </div>
 
             {/* Desktop navigation mirrors the mobile bottom navigation. */}
+            {!isTabletLandscape && (
             <nav
-              className="hidden md:flex md:flex-1 md:min-w-0 md:mx-2 items-center justify-center gap-0.5 min-[1200px]:gap-1 h-16 min-[1200px]:flex-none min-[1200px]:mx-0 min-[1200px]:absolute min-[1200px]:left-1/2 min-[1200px]:-translate-x-1/2"
+              className="app-shell-primary-nav hidden md:flex md:flex-1 md:min-w-0 md:mx-2 items-center justify-center gap-0.5 min-[1200px]:gap-1 h-16 min-[1200px]:flex-none min-[1200px]:mx-0 min-[1200px]:absolute min-[1200px]:left-1/2 min-[1200px]:-translate-x-1/2"
               aria-label="التنقل الرئيسي"
             >
               {bottomNavKeys.map((key) => {
@@ -663,6 +694,7 @@ function AppShellChrome({
                 </Link>
               )}
             </nav>
+            )}
 
             {/* DYNAMIC ISLAND CENTER CONTENT - Hidden on Desktop */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none md:hidden">
@@ -793,7 +825,11 @@ function AppShellChrome({
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
-          className="app-shell-bottom-dock md:hidden fixed bottom-8 inset-x-6 z-[100] flex justify-center"
+          className={cn(
+            "app-shell-bottom-dock fixed bottom-8 inset-x-6 z-[100] flex justify-center",
+            !isTabletLandscape && "md:hidden",
+            isTabletLandscape && "app-shell-bottom-dock-tablet-landscape",
+          )}
         >
           <nav className="h-16 w-full max-w-sm bg-[var(--nav-bg)]/95 border border-white/10 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center justify-around px-4 backdrop-blur-2xl relative overflow-hidden transition-all duration-500">
             {/* Subtle Sheen Effect */}
