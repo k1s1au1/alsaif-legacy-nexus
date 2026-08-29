@@ -20,7 +20,6 @@ import {
   Scroll,
   ShieldAlert,
   Send,
-  Sparkles,
 } from "lucide-react";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
@@ -500,39 +499,18 @@ function Dashboard() {
           <span className="dashboard-faith-source">{spiritualQuote.source}</span>
         </section>
 
-        {/* 2. INTERACTIVE HERITAGE PORTAL */}
-        <section className="dashboard-hero dashboard-portal-hero animate-fade-up">
+        {/* 2. INTERACTIVE NAJDI WELCOME PAVILION */}
+        <section
+          className="dashboard-hero dashboard-portal-hero animate-fade-up"
+          data-transition-section
+        >
           <div className="dashboard-portal-card">
             <div className="dashboard-portal-layout">
-              <div className="dashboard-portal-copy">
-                <span className="dashboard-portal-eyebrow">
-                  <Sparkles size={15} aria-hidden="true" />
-                  {getGreeting()}، يا أهل الوفاء
-                </span>
-                <h2>
-                  <span>حيّاك الله،</span>
-                  <strong>{safeProfile.name}</strong>
-                </h2>
-                <div className="dashboard-portal-status">
-                  <span className="dashboard-portal-status-line" aria-hidden="true" />
-                  <div>
-                    <AnimatePresence mode="wait">
-                      <motion.p
-                        key={statusIndex}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        {statusMessages[statusIndex]}
-                      </motion.p>
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </div>
-
               <HeritagePortal3D
                 logoUrl={dynamicLogo}
+                greeting={getGreeting()}
+                name={safeProfile.name}
+                message={statusMessages[statusIndex]}
                 className="dashboard-portal-model"
               />
             </div>
