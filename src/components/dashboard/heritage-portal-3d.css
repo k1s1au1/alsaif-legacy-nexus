@@ -5,7 +5,9 @@
   position: relative;
   isolation: isolate;
   display: block;
-  width: 100%;
+  width: 94%;
+  max-width: 1540px;
+  margin-inline: auto;
   aspect-ratio: 1672 / 941;
   overflow: hidden;
   border: 1px solid rgba(220, 179, 87, 0.58);
@@ -154,13 +156,13 @@
 }
 
 .pavilion-reference-greeting {
-  top: 25.5%;
-  right: 36%;
-  left: 36%;
+  top: 26.2%;
+  right: 34%;
+  left: 34%;
   margin: 0;
   overflow: hidden;
   color: #f0c66f;
-  font-size: clamp(10px, 1.42vw, 23px);
+  font-size: clamp(9px, 1.15vw, 20px);
   font-weight: 800;
   line-height: 1.25;
   text-align: center;
@@ -170,10 +172,10 @@
 }
 
 .pavilion-reference-identity {
-  top: 43%;
+  top: 46.5%;
   left: 50%;
   display: flex;
-  width: 42%;
+  width: 46%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -184,7 +186,7 @@
 
 .pavilion-reference-identity span {
   color: #f0c36d;
-  font-size: clamp(11px, 1.62vw, 26px);
+  font-size: clamp(10px, 1.3vw, 22px);
   font-weight: 800;
   line-height: 1.2;
   text-shadow: 0 3px 9px rgba(0, 0, 0, 0.86);
@@ -208,7 +210,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-size: clamp(28px, 5.4vw, 88px);
+  font-size: clamp(26px, 4.5vw, 74px);
   font-weight: 950;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -222,14 +224,14 @@
 }
 
 .pavilion-reference-message {
-  right: 30%;
-  bottom: 17.4%;
-  left: 30%;
+  right: 28%;
+  bottom: 22.5%;
+  left: 28%;
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
   color: #dfb763;
-  font-size: clamp(9px, 1.38vw, 22px);
+  font-size: clamp(8.5px, 1.1vw, 18px);
   font-weight: 800;
   line-height: 1.32;
   text-align: center;
@@ -254,7 +256,7 @@
   width: 22%;
   overflow: hidden;
   color: #e7bc64;
-  font-size: clamp(9px, 1.25vw, 20px);
+  font-size: clamp(8px, 1vw, 17px);
   font-weight: 900;
   line-height: 1.2;
   text-align: center;
@@ -411,32 +413,32 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
   }
 
   .pavilion-reference-greeting {
-    top: 25%;
-    right: 33%;
-    left: 33%;
-    font-size: clamp(7.5px, 2.45vw, 12px);
+    top: 26%;
+    right: 27%;
+    left: 27%;
+    font-size: clamp(7px, 2vw, 10.5px);
   }
 
   .pavilion-reference-identity {
-    top: 44%;
-    width: 48%;
+    top: 46%;
+    width: 54%;
   }
 
   .pavilion-reference-identity span {
-    font-size: clamp(9px, 3vw, 14px);
+    font-size: clamp(8.5px, 2.55vw, 13px);
   }
 
   .pavilion-reference-identity strong {
-    font-size: clamp(27px, 9.9vw, 50px);
+    font-size: clamp(24px, 8.6vw, 44px);
     filter: drop-shadow(0 4px 0 rgba(63, 42, 12, 0.82))
       drop-shadow(0 9px 9px rgba(0, 0, 0, 0.65));
   }
 
   .pavilion-reference-message {
-    right: 23%;
-    bottom: 17.1%;
-    left: 23%;
-    font-size: clamp(7.5px, 2.45vw, 11.5px);
+    right: 20%;
+    bottom: 21.5%;
+    left: 20%;
+    font-size: clamp(7px, 2.1vw, 10.5px);
   }
 
   .pavilion-reference-plaque {
@@ -508,9 +510,11 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
 
   html body main[data-tablet-portrait="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference {
     display: block !important;
-    width: 100% !important;
+    width: 94% !important;
+    max-width: 1540px !important;
     height: auto !important;
     min-height: 0 !important;
+    margin-inline: auto !important;
     aspect-ratio: 1672 / 941 !important;
   }
 
@@ -520,5 +524,27 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
     clear: both !important;
     margin-top: clamp(20px, 2.4vw, 32px) !important;
     transform: none !important;
+  }
+}
+
+
+/* Keep the pavilion slightly inset and its copy centered inside the arch on every device. */
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero
+  .dashboard-portal-model.heritage-pavilion-reference,
+html body .desktop-portal-stage
+  > .desktop-portal-model.heritage-pavilion-reference {
+  width: 94% !important;
+  max-width: 1540px !important;
+  margin-inline: auto !important;
+}
+
+@media (min-width: 1200px) {
+  html body .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference,
+  html body .desktop-portal-stage
+    > .desktop-portal-model.heritage-pavilion-reference {
+    width: 92% !important;
   }
 }
