@@ -60,6 +60,7 @@ import { IntegratedHub } from "@/components/dashboard/integrated-hub";
 import { sendFcmNotification } from "@/lib/fcm.functions";
 import { finalizePoll } from "@/lib/api/shura.functions";
 import { SuggestionsManager } from "@/components/admin/suggestions-manager";
+import { ProfileChangeRequests } from "@/components/admin/profile-change-requests";
 import "@/admin-executive.css";
 
 
@@ -90,6 +91,7 @@ type AdminTab =
   | "requests"
   | "members"
   | "member_requests"
+  | "profile_changes"
   | "polls"
   | "bugs"
   | "master_archive"
@@ -672,6 +674,14 @@ function AdminPage() {
       visible: true,
     },
     {
+      key: "profile_changes",
+      label: "تعديل بيانات الهوية",
+      shortLabel: "الهوية",
+      description: "مراجعة طلبات تعديل الاسم والجنس وتاريخ الميلاد ومنع انتحال الهوية.",
+      icon: Shield,
+      visible: isSystemAdmin || isSiteChairman,
+    },
+    {
       key: "member_requests",
       label: "طلبات الأعضاء",
       shortLabel: "الطلبات",
@@ -872,6 +882,10 @@ function AdminPage() {
                 <div className="admin-content-body">
 
             {tab === "suggestions" && (isSystemAdmin || isSiteChairman) && <SuggestionsManager />}
+
+            {tab === "profile_changes" && (isSystemAdmin || isSiteChairman) && (
+              <ProfileChangeRequests />
+            )}
 
 
             {tab === "requests" && (

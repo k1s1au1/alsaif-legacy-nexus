@@ -16,6 +16,10 @@ type Props = {
   /** Visual style: soft = light forms (auth/profile), dark = onboarding screen. */
   tone?: "soft" | "dark";
   className?: string;
+  /** Lock gender selection (already verified). */
+  genderDisabled?: boolean;
+  /** Lock calendar + date inputs (already verified). */
+  dateDisabled?: boolean;
 };
 
 export function BirthInfoFields({
@@ -27,6 +31,8 @@ export function BirthInfoFields({
   onDate,
   tone = "soft",
   className,
+  genderDisabled = false,
+  dateDisabled = false,
 }: Props) {
   const labelCls =
     tone === "dark"
@@ -37,7 +43,7 @@ export function BirthInfoFields({
       ? "w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm text-ivory focus:outline-none focus:ring-1 focus:ring-gold-primary/40 focus:border-gold-primary/40 transition"
       : "w-full h-14 px-5 bg-muted/30 border border-border rounded-2xl font-bold text-sm focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm";
 
-  const chip = (active: boolean) =>
+  const chip = (active: boolean, disabled = false) =>
     cn(
       "flex-1 py-2.5 px-3 rounded-xl text-sm font-bold border transition-all",
       active
@@ -45,6 +51,7 @@ export function BirthInfoFields({
         : tone === "dark"
           ? "bg-background text-muted-foreground border-border hover:border-gold-primary/40"
           : "bg-muted/30 text-muted-foreground border-border hover:border-primary/40",
+      disabled && "opacity-50 cursor-not-allowed pointer-events-none",
     );
 
   return (
@@ -57,8 +64,9 @@ export function BirthInfoFields({
               key={g}
               type="button"
               aria-pressed={gender === g}
+              disabled={genderDisabled}
               onClick={() => onGender(g)}
-              className={chip(gender === g)}
+              className={chip(gender === g, genderDisabled)}
             >
               {GENDER_LABEL[g]}
             </button>
@@ -74,11 +82,12 @@ export function BirthInfoFields({
               key={c}
               type="button"
               aria-pressed={calendar === c}
+              disabled={dateDisabled}
               onClick={() => {
                 if (c !== calendar) onDate("");
                 onCalendar(c);
               }}
-              className={chip(calendar === c)}
+              className={chip(calendar === c, dateDisabled)}
             >
               {CALENDAR_LABEL[c]}
             </button>
@@ -87,11 +96,12 @@ export function BirthInfoFields({
       </div>
 
       <div className="space-y-2">
-        <label className={labelCls} htmlFor="birth-date-input">
+        <span className={labelCls}>
           {calendar === "hijri" ? "تاريخ الميلاد (هجري)" : "تاريخ الميلاد (ميلادي)"}
-        </label>
+        </span>
         <input
-          id="birth-date-input"
+          aria-label={calendar === "hijri" ? "تاريخ الميلاد هجري" : "تاريخ الميلاد ميلادي"}
+          disabled={dateDisabled}
           type={calendar === "hijri" ? "text" : "date"}
           inputMode={calendar === "hijri" ? "numeric" : undefined}
           dir="ltr"
@@ -99,7 +109,7 @@ export function BirthInfoFields({
           value={dateValue}
           onChange={(e) => onDate(e.target.value)}
           placeholder={calendar === "hijri" ? "1410-05-12" : undefined}
-          className={inputCls}
+          className={cn(inputCls, dateDisabled && "opacity-50 cursor-not-allowed")}
         />
         {calendar === "hijri" && (
           <p className="text-[11px] text-muted-foreground mr-1">الصيغة: سنة-شهر-يوم (مثال 1410-05-12)</p>

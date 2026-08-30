@@ -90,7 +90,33 @@ function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Identity lock + change requests
+  const [lockedName, setLockedName] = useState(false);
+  const [lockedGender, setLockedGender] = useState(false);
+  const [lockedBirth, setLockedBirth] = useState(false);
+  const [pendingReq, setPendingReq] = useState<any | null>(null);
+  const [lastReq, setLastReq] = useState<any | null>(null);
+  const [showReqForm, setShowReqForm] = useState(false);
+  const [reqSaving, setReqSaving] = useState(false);
+  const [reqArabicName, setReqArabicName] = useState("");
+  const [reqFullName, setReqFullName] = useState("");
+  const [reqGender, setReqGender] = useState<Gender | null>(null);
+  const [reqCalendar, setReqCalendar] = useState<BirthCalendar>("gregorian");
+  const [reqBirthDate, setReqBirthDate] = useState("");
+  const [reqReason, setReqReason] = useState("");
+
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  async function loadRequests() {
+    const { data } = await supabase
+      .from("profile_change_requests" as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    const list = (data as any[]) || [];
+    setPendingReq(list.find((r) => r.status === "pending") ?? null);
+    setLastReq(list[0] ?? null);
+  }
 
   useEffect(() => {
     (async () => {
@@ -108,7 +134,16 @@ function ProfilePage() {
         const cal: BirthCalendar = p.birth_calendar === "hijri" ? "hijri" : "gregorian";
         setGender(p.gender ?? null);
         setCalendar(cal);
-        setBirthDate((cal === "hijri" ? p.birth_date_hijri : p.birth_date) ?? "");
+        const dateVal = (cal === "hijri" ? p.birth_date_hijri : p.birth_date) ?? "";
+        setBirthDate(dateVal);
+        setLockedName(Boolean(p.arabic_name || p.full_name));
+        setLockedGender(Boolean(p.gender));
+        setLockedBirth(Boolean(p.birth_date || p.birth_date_hijri));
+        setReqArabicName(p.arabic_name ?? "");
+        setReqFullName(p.full_name ?? "");
+        setReqGender(p.gender ?? null);
+        setReqCalendar(cal);
+        setReqBirthDate(dateVal);
         setAvatarUrl(p.avatar_url);
         if (p.avatar_url) {
           const { data: signed } = await supabase.storage
@@ -117,9 +152,70 @@ function ProfilePage() {
           setAvatarSrc(signed?.signedUrl ?? null);
         }
       }
+      await loadRequests();
       setLoading(false);
     })();
   }, []);
+
+  async function submitChangeRequest(e: React.FormEvent) {
+    e.preventDefault();
+    if (pendingReq) {
+      toast.error("لديك طلب تعديل قيد المراجعة بالفعل");
+      return;
+    }
+    const changes: Record<string, string | null> = {};
+    if (reqArabicName.trim() !== (arabicName || "")) {
+      const parsed = nameSchema.safeParse(reqArabicName);
+      if (!parsed.success) {
+        toast.error(parsed.error.issues[0].message);
+        return;
+      }
+      changes["arabic_name"] = reqArabicName.trim();
+    }
+    if (reqFullName.trim() !== (fullName || "")) {
+      const parsed = nameSchema.safeParse(reqFullName);
+      if (!parsed.success) {
+        toast.error(parsed.error.issues[0].message);
+        return;
+      }
+      changes["full_name"] = reqFullName.trim();
+    }
+    if (reqGender && reqGender !== gender) changes["gender"] = reqGender;
+    if (reqBirthDate && (reqBirthDate !== birthDate || reqCalendar !== calendar)) {
+      const birthError = validateBirthDate(reqCalendar, reqBirthDate);
+      if (birthError) {
+        toast.error(birthError);
+        return;
+      }
+      changes["birth_calendar"] = reqCalendar;
+      changes["birth_date"] = reqCalendar === "gregorian" ? reqBirthDate : null;
+      changes["birth_date_hijri"] = reqCalendar === "hijri" ? reqBirthDate : null;
+    }
+
+    if (Object.keys(changes).length === 0) {
+      toast.error("لم تُجرِ أي تغيير على البيانات");
+      return;
+    }
+    if (reqReason.trim().length < 10) {
+      toast.error("يرجى كتابة سبب التعديل (10 أحرف على الأقل)");
+      return;
+    }
+
+    setReqSaving(true);
+    const { error } = await supabase.rpc("submit_profile_change_request" as any, {
+      _changes: changes,
+      _reason: reqReason.trim(),
+    });
+    setReqSaving(false);
+    if (error) {
+      toast.error(error.message || "تعذر إرسال الطلب");
+      return;
+    }
+    setReqReason("");
+    setShowReqForm(false);
+    await loadRequests();
+    toast.success("تم إرسال طلب التعديل للمراجعة من الإدارة");
+  }
 
   const displayName = (arabicName || fullName || email.split("@")[0] || "عضو العائلة").trim();
   const initial = (displayName[0] ?? "س").toUpperCase();
@@ -147,20 +243,34 @@ function ProfilePage() {
       return;
     }
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        arabic_name: arabicName.trim() || null,
-        full_name: fullName.trim() || null,
-        phone: phone.trim() || null,
-        ...buildBirthPayload(gender, calendar, birthDate),
-      } as any)
-      .eq("id", userId);
+    // Locked identity fields are never sent from here; they change only through an approved request.
+    const payload: Record<string, any> = { phone: phone.trim() || null };
+    if (!lockedName) {
+      payload["arabic_name"] = arabicName.trim() || null;
+      payload["full_name"] = fullName.trim() || null;
+    }
+    if (!lockedGender || !lockedBirth) {
+      const birthPayload = buildBirthPayload(gender, calendar, birthDate) as Record<string, any>;
+      if (!lockedGender) payload["gender"] = birthPayload["gender"];
+      if (!lockedBirth) {
+        payload["birth_calendar"] = birthPayload["birth_calendar"];
+        payload["birth_date"] = birthPayload["birth_date"];
+        payload["birth_date_hijri"] = birthPayload["birth_date_hijri"];
+      }
+    }
+    const { error } = await supabase.from("profiles").update(payload as any).eq("id", userId);
     setSaving(false);
     if (error) {
-      toast.error("تعذر حفظ التغييرات");
+      toast.error(
+        error.message?.includes("PROFILE_LOCKED")
+          ? "بيانات الهوية مقفلة — أرسل طلب تعديل ليعتمده المسؤول"
+          : "تعذر حفظ التغييرات",
+      );
       return;
     }
+    setLockedName(Boolean(payload["arabic_name"] || payload["full_name"]) || lockedName);
+    if (!lockedGender && payload["gender"]) setLockedGender(true);
+    if (!lockedBirth && (payload["birth_date"] || payload["birth_date_hijri"])) setLockedBirth(true);
     toast.success("تم تحديث بياناتك بنجاح");
   }
 
@@ -352,17 +462,19 @@ function ProfilePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Field
-                  label="الاسم بالعربية (المجلس)"
+                  label={lockedName ? "الاسم بالعربية (موثق)" : "الاسم بالعربية (المجلس)"}
                   icon={<Quote className="size-4" />}
                   value={arabicName}
                   onChange={setArabicName}
+                  disabled={lockedName}
                   placeholder="مثال: سعود السيف"
                 />
                 <Field
-                  label="الاسم الكامل (الهوية)"
+                  label={lockedName ? "الاسم الكامل (موثق)" : "الاسم الكامل (الهوية)"}
                   icon={<UserIcon className="size-4" />}
                   value={fullName}
                   onChange={setFullName}
+                  disabled={lockedName}
                   placeholder="الاسم كما في الهوية..."
                 />
                 <Field
@@ -388,8 +500,20 @@ function ProfilePage() {
                   onCalendar={setCalendar}
                   dateValue={birthDate}
                   onDate={setBirthDate}
+                  genderDisabled={lockedGender}
+                  dateDisabled={lockedBirth}
                 />
               </div>
+
+              {(lockedName || lockedGender || lockedBirth) && (
+                <div className="flex items-start gap-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 text-amber-700 dark:text-amber-400">
+                  <Lock className="size-4 mt-0.5 shrink-0" />
+                  <p className="text-xs font-bold leading-relaxed">
+                    بيانات الهوية (الاسم، الجنس، تاريخ الميلاد) موثقة ومقفلة لحماية العائلة من انتحال
+                    الهوية. لتعديلها أرسل «طلب تعديل» ويعتمده المسؤول التقني أو رئيس المجلس.
+                  </p>
+                </div>
+              )}
 
               <div className="pt-4">
                 <button
@@ -402,6 +526,111 @@ function ProfilePage() {
                 </button>
               </div>
             </form>
+
+            {/* Identity change request */}
+            {(lockedName || lockedGender || lockedBirth) && (
+              <div
+                className="card-surface p-8 md:p-10 space-y-6 animate-fade-up"
+                style={{ animationDelay: "150ms" }}
+              >
+                <div className="flex items-center justify-between gap-4 border-b border-border/40 pb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 shadow-inner">
+                      <ShieldCheck className="size-6" />
+                    </div>
+                    <h3 className="text-xl font-black text-primary">طلب تعديل بيانات الهوية</h3>
+                  </div>
+                  {!pendingReq && (
+                    <button
+                      type="button"
+                      onClick={() => setShowReqForm((v) => !v)}
+                      className="px-5 py-2.5 rounded-xl bg-muted/60 hover:bg-primary hover:text-white transition-all text-xs font-black text-primary"
+                    >
+                      {showReqForm ? "إلغاء" : "طلب تعديل"}
+                    </button>
+                  )}
+                </div>
+
+                {pendingReq ? (
+                  <div className="rounded-2xl bg-primary/5 border border-primary/10 p-5 space-y-2">
+                    <p className="text-sm font-black text-primary">طلبك قيد المراجعة</p>
+                    <p className="text-xs font-bold text-muted-foreground leading-relaxed">
+                      أُرسل بتاريخ {new Date(pendingReq.created_at).toLocaleDateString("ar-SA")} —
+                      سيتم إشعارك بعد اعتماده أو رفضه من الإدارة.
+                    </p>
+                  </div>
+                ) : (
+                  lastReq && (
+                    <div className="rounded-2xl bg-muted/40 border border-border/60 p-5 space-y-1">
+                      <p className="text-sm font-black text-primary">
+                        آخر طلب: {lastReq.status === "approved" ? "تم الاعتماد" : "مرفوض"}
+                      </p>
+                      {lastReq.review_note && (
+                        <p className="text-xs font-bold text-muted-foreground">
+                          ملاحظة الإدارة: {lastReq.review_note}
+                        </p>
+                      )}
+                    </div>
+                  )
+                )}
+
+                {showReqForm && !pendingReq && (
+                  <form onSubmit={submitChangeRequest} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <Field
+                        label="الاسم بالعربية المطلوب"
+                        icon={<Quote className="size-4" />}
+                        value={reqArabicName}
+                        onChange={setReqArabicName}
+                        placeholder="الاسم الصحيح..."
+                      />
+                      <Field
+                        label="الاسم الكامل المطلوب"
+                        icon={<UserIcon className="size-4" />}
+                        value={reqFullName}
+                        onChange={setReqFullName}
+                        placeholder="الاسم كما في الهوية..."
+                      />
+                      <BirthInfoFields
+                        className="md:col-span-2"
+                        gender={reqGender}
+                        onGender={setReqGender}
+                        calendar={reqCalendar}
+                        onCalendar={setReqCalendar}
+                        dateValue={reqBirthDate}
+                        onDate={setReqBirthDate}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-muted-foreground mr-2 uppercase tracking-widest">
+                        سبب التعديل (مطلوب)
+                      </label>
+                      <textarea
+                        value={reqReason}
+                        onChange={(e) => setReqReason(e.target.value)}
+                        maxLength={500}
+                        rows={3}
+                        placeholder="اذكر سبب التعديل، مثال: خطأ إملائي في الاسم حسب الهوية الوطنية"
+                        className="w-full p-5 bg-muted/30 border border-border rounded-2xl font-bold text-sm focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={reqSaving}
+                      className="px-10 py-4 rounded-2xl bg-primary text-white hover:opacity-90 transition-all font-black text-sm flex items-center gap-3 w-full md:w-fit"
+                    >
+                      {reqSaving ? (
+                        <Loader2 className="size-5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="size-5" />
+                      )}
+                      إرسال الطلب للإدارة
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
 
             {/* Password Security */}
             <form

@@ -1068,6 +1068,48 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_change_requests: {
+        Row: {
+          changes: Json
+          created_at: string
+          current_values: Json
+          id: string
+          reason: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          changes: Json
+          created_at?: string
+          current_values?: Json
+          id?: string
+          reason?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          changes?: Json
+          created_at?: string
+          current_values?: Json
+          id?: string
+          reason?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           allowed_sections: Json | null
@@ -1520,6 +1562,14 @@ export type Database = {
         Returns: undefined
       }
       public_stats: { Args: never; Returns: Json }
+      review_profile_change_request: {
+        Args: { _approve: boolean; _id: string; _note?: string }
+        Returns: undefined
+      }
+      submit_profile_change_request: {
+        Args: { _changes: Json; _reason?: string }
+        Returns: string
+      }
     }
     Enums: {
       account_request_status: "pending" | "approved" | "rejected"
