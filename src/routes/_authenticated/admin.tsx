@@ -90,6 +90,7 @@ type AdminTab =
   | "requests"
   | "members"
   | "member_requests"
+  | "profile_changes"
   | "polls"
   | "bugs"
   | "master_archive"
