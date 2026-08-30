@@ -60,6 +60,7 @@ import { IntegratedHub } from "@/components/dashboard/integrated-hub";
 import { sendFcmNotification } from "@/lib/fcm.functions";
 import { finalizePoll } from "@/lib/api/shura.functions";
 import { SuggestionsManager } from "@/components/admin/suggestions-manager";
+import { ProfileChangeRequests } from "@/components/admin/profile-change-requests";
 import "@/admin-executive.css";
 
 
