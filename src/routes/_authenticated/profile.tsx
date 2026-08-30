@@ -90,7 +90,33 @@ function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Identity lock + change requests
+  const [lockedName, setLockedName] = useState(false);
+  const [lockedGender, setLockedGender] = useState(false);
+  const [lockedBirth, setLockedBirth] = useState(false);
+  const [pendingReq, setPendingReq] = useState<any | null>(null);
+  const [lastReq, setLastReq] = useState<any | null>(null);
+  const [showReqForm, setShowReqForm] = useState(false);
+  const [reqSaving, setReqSaving] = useState(false);
+  const [reqArabicName, setReqArabicName] = useState("");
+  const [reqFullName, setReqFullName] = useState("");
+  const [reqGender, setReqGender] = useState<Gender | null>(null);
+  const [reqCalendar, setReqCalendar] = useState<BirthCalendar>("gregorian");
+  const [reqBirthDate, setReqBirthDate] = useState("");
+  const [reqReason, setReqReason] = useState("");
+
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  async function loadRequests() {
+    const { data } = await supabase
+      .from("profile_change_requests" as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    const list = (data as any[]) || [];
+    setPendingReq(list.find((r) => r.status === "pending") ?? null);
+    setLastReq(list[0] ?? null);
+  }
 
   useEffect(() => {
     (async () => {
@@ -108,7 +134,16 @@ function ProfilePage() {
         const cal: BirthCalendar = p.birth_calendar === "hijri" ? "hijri" : "gregorian";
         setGender(p.gender ?? null);
         setCalendar(cal);
-        setBirthDate((cal === "hijri" ? p.birth_date_hijri : p.birth_date) ?? "");
+        const dateVal = (cal === "hijri" ? p.birth_date_hijri : p.birth_date) ?? "";
+        setBirthDate(dateVal);
+        setLockedName(Boolean(p.arabic_name || p.full_name));
+        setLockedGender(Boolean(p.gender));
+        setLockedBirth(Boolean(p.birth_date || p.birth_date_hijri));
+        setReqArabicName(p.arabic_name ?? "");
+        setReqFullName(p.full_name ?? "");
+        setReqGender(p.gender ?? null);
+        setReqCalendar(cal);
+        setReqBirthDate(dateVal);
         setAvatarUrl(p.avatar_url);
         if (p.avatar_url) {
           const { data: signed } = await supabase.storage
@@ -117,9 +152,70 @@ function ProfilePage() {
           setAvatarSrc(signed?.signedUrl ?? null);
         }
       }
+      await loadRequests();
       setLoading(false);
     })();
   }, []);
+
+  async function submitChangeRequest(e: React.FormEvent) {
+    e.preventDefault();
+    if (pendingReq) {
+      toast.error("لديك طلب تعديل قيد المراجعة بالفعل");
+      return;
+    }
+    const changes: Record<string, string | null> = {};
+    if (reqArabicName.trim() !== (arabicName || "")) {
+      const parsed = nameSchema.safeParse(reqArabicName);
+      if (!parsed.success) {
+        toast.error(parsed.error.issues[0].message);
+        return;
+      }
+      changes["arabic_name"] = reqArabicName.trim();
+    }
+    if (reqFullName.trim() !== (fullName || "")) {
+      const parsed = nameSchema.safeParse(reqFullName);
+      if (!parsed.success) {
+        toast.error(parsed.error.issues[0].message);
+        return;
+      }
+      changes["full_name"] = reqFullName.trim();
+    }
+    if (reqGender && reqGender !== gender) changes["gender"] = reqGender;
+    if (reqBirthDate && (reqBirthDate !== birthDate || reqCalendar !== calendar)) {
+      const birthError = validateBirthDate(reqCalendar, reqBirthDate);
+      if (birthError) {
+        toast.error(birthError);
+        return;
+      }
+      changes["birth_calendar"] = reqCalendar;
+      changes["birth_date"] = reqCalendar === "gregorian" ? reqBirthDate : null;
+      changes["birth_date_hijri"] = reqCalendar === "hijri" ? reqBirthDate : null;
+    }
+
+    if (Object.keys(changes).length === 0) {
+      toast.error("لم تُجرِ أي تغيير على البيانات");
+      return;
+    }
+    if (reqReason.trim().length < 10) {
+      toast.error("يرجى كتابة سبب التعديل (10 أحرف على الأقل)");
+      return;
+    }
+
+    setReqSaving(true);
+    const { error } = await supabase.rpc("submit_profile_change_request" as any, {
+      _changes: changes,
+      _reason: reqReason.trim(),
+    });
+    setReqSaving(false);
+    if (error) {
+      toast.error(error.message || "تعذر إرسال الطلب");
+      return;
+    }
+    setReqReason("");
+    setShowReqForm(false);
+    await loadRequests();
+    toast.success("تم إرسال طلب التعديل للمراجعة من الإدارة");
+  }
 
   const displayName = (arabicName || fullName || email.split("@")[0] || "عضو العائلة").trim();
   const initial = (displayName[0] ?? "س").toUpperCase();
