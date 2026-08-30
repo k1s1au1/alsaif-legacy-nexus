@@ -545,7 +545,7 @@ html body .desktop-portal-stage
     .dashboard-portal-model.heritage-pavilion-reference,
   html body .desktop-portal-stage
     > .desktop-portal-model.heritage-pavilion-reference {
-    width: 92% !important;
+    width: 80% !important;
     max-width: 1540px !important;
   }
 }
