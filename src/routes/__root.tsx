@@ -18,7 +18,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
-import { DesktopDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
+import { ResponsiveDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
 import { FamilyOccasionsSync } from "@/components/family-occasions-sync";
 import { DesktopSidebarQuickAccess } from "@/components/desktop-sidebar-quick-access";
 import { DeviceOrientationGuard } from "@/components/device-orientation-guard";
@@ -52,6 +52,6 @@ function RootShell({children}:Readonly<{children:ReactNode}>){
     };
     syncTheme();
   },[]);
-  const showDesktopDashboard=typeof window!=="undefined"&&window.location.pathname==="/dashboard"&&window.innerWidth>=1200;
-  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><FamilyOccasionsSync/><DesktopSidebarQuickAccess/>{showDesktopDashboard&&<DesktopDashboardExtras/>}<Toaster richColors position="top-center"/></QueryClientProvider><Scripts/></body></html>
+  const showDashboardExtras=typeof window!=="undefined"&&window.location.pathname==="/dashboard";
+  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><FamilyOccasionsSync/><DesktopSidebarQuickAccess/>{showDashboardExtras&&<ResponsiveDashboardExtras/>}<Toaster richColors position="top-center"/></QueryClientProvider><Scripts/></body></html>
 }

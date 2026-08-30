@@ -125,7 +125,65 @@ const occasionTemplatePath = (item: LocalOccasion) => {
   return `/occasion-templates/${type}-${design}.png`;
 };
 
-export function DesktopDashboardExtras() {
+type DashboardExtrasMode = "hidden" | "desktop" | "tablet-landscape";
+
+export function ResponsiveDashboardExtras() {
+  const [mode, setMode] = useState<DashboardExtrasMode>("hidden");
+
+  useEffect(() => {
+    const syncMode = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const isTouchDevice =
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia("(pointer: coarse)").matches;
+      const isTabletLandscape =
+        isTouchDevice &&
+        width >= 970 &&
+        width <= 1600 &&
+        height >= 600 &&
+        width > height;
+
+      if (isTabletLandscape) {
+        document.documentElement.setAttribute(
+          "data-dashboard-tablet-landscape",
+          "true",
+        );
+        setMode("tablet-landscape");
+        return;
+      }
+
+      document.documentElement.removeAttribute(
+        "data-dashboard-tablet-landscape",
+      );
+      setMode(width >= 1200 ? "desktop" : "hidden");
+    };
+
+    syncMode();
+    window.addEventListener("resize", syncMode);
+    window.addEventListener("orientationchange", syncMode);
+
+    return () => {
+      window.removeEventListener("resize", syncMode);
+      window.removeEventListener("orientationchange", syncMode);
+      document.documentElement.removeAttribute(
+        "data-dashboard-tablet-landscape",
+      );
+    };
+  }, []);
+
+  if (mode === "hidden") return null;
+
+  return (
+    <DesktopDashboardExtras contentOnly={mode === "tablet-landscape"} />
+  );
+}
+
+export function DesktopDashboardExtras({
+  contentOnly = false,
+}: {
+  contentOnly?: boolean;
+}) {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const { data: eventsData } = useUpcomingEvents();
   const { data: announcementsData } = useDashboardAnnouncements();
@@ -288,9 +346,14 @@ export function DesktopDashboardExtras() {
   if (path !== "/dashboard" || !target) return null;
 
   return createPortal(
-    <div className="desktop-rebuild-shell" dir="rtl">
+    <div
+      className={contentOnly ? "tablet-landscape-desktop-content" : "desktop-rebuild-shell"}
+      dir="rtl"
+    >
       <div className="desktop-rebuild-root">
-        <div className="desktop-faith-strip">
+        {!contentOnly && (
+          <>
+            <div className="desktop-faith-strip">
           <div className="desktop-faith-label">
             <Scroll size={16} aria-hidden="true" />
             <b>نفحات إيمانية</b>
@@ -356,7 +419,9 @@ export function DesktopDashboardExtras() {
               <ChevronLeft size={15} />
             </button>
           </div>
-        </section>
+            </section>
+          </>
+        )}
 
         <section className="desktop-follow-panel">
           <div className="desktop-section-head">

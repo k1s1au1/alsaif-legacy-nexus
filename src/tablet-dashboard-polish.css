@@ -130,3 +130,52 @@
   .dashboard-hero>div,.dashboard-hero>div>.relative.z-10{min-height:300px!important}
   .dashboard-page .integrated-hub .hub-card{height:310px!important;min-height:310px!important}
 }
+
+
+/*
+ * Tablet landscape: retain the tablet faith/portal/services area, then use the
+ * exact desktop content sections below it. Portrait selectors are untouched.
+ */
+@media (min-width: 970px) and (max-width: 1600px) and (min-height: 600px) and (orientation: landscape) and (any-pointer: coarse) {
+  html[data-dashboard-tablet-landscape="true"]
+    .dashboard-page
+    > .integrated-hub,
+  html[data-dashboard-tablet-landscape="true"]
+    .dashboard-page
+    > .dashboard-heritage,
+  html[data-dashboard-tablet-landscape="true"]
+    .dashboard-page
+    > .dashboard-announcements,
+  html[data-dashboard-tablet-landscape="true"]
+    .dashboard-page
+    > .dashboard-stats-grid,
+  html[data-dashboard-tablet-landscape="true"]
+    .dashboard-page
+    > .dashboard-support {
+    display: none !important;
+  }
+
+  html[data-dashboard-tablet-landscape="true"]
+    .tablet-landscape-desktop-content {
+    display: block !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  html[data-dashboard-tablet-landscape="true"]
+    .tablet-landscape-desktop-content
+    .desktop-rebuild-root {
+    display: block !important;
+    width: 100%;
+    max-width: 1320px;
+    margin-inline: auto;
+  }
+
+  html[data-dashboard-tablet-landscape="true"]
+    .tablet-landscape-desktop-content
+    .desktop-follow-panel {
+    margin-top: 24px;
+  }
+}
