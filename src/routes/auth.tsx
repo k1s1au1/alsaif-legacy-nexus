@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { BirthInfoFields } from "@/components/birth-info-fields";
+import { buildBirthPayload, validateBirthDate, validateGender, type BirthCalendar, type Gender } from "@/lib/birth-info";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -75,6 +77,9 @@ function AuthPage() {
     email: "",
     password: "",
   });
+  const [reqGender, setReqGender] = useState<Gender | null>(null);
+  const [reqCalendar, setReqCalendar] = useState<BirthCalendar>("gregorian");
+  const [reqBirthDate, setReqBirthDate] = useState("");
 
   const [msgIndex, setMsgIndex] = useState(0);
   const welcomeMessages = [
@@ -153,6 +158,16 @@ function AuthPage() {
 
   async function onRequest(e: React.FormEvent) {
     e.preventDefault();
+    const genderError = validateGender(reqGender);
+    if (genderError) {
+      toast.error(genderError);
+      return;
+    }
+    const birthError = validateBirthDate(reqCalendar, reqBirthDate);
+    if (birthError) {
+      toast.error(birthError);
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.from("account_requests").insert({
       first_name: reqForm.firstName,
@@ -162,7 +177,8 @@ function AuthPage() {
       email: reqForm.email,
       desired_password: reqForm.password,
       status: "pending",
-    });
+      ...buildBirthPayload(reqGender, reqCalendar, reqBirthDate),
+    } as any);
 
     if (error) {
       setLoading(false);
@@ -459,6 +475,14 @@ function AuthPage() {
                       onChange={(v: string) => setReqForm({ ...reqForm, phone: v })}
                       placeholder="05xxxxxxxx"
                       icon={<Phone size={18} />}
+                    />
+                    <BirthInfoFields
+                      gender={reqGender}
+                      onGender={setReqGender}
+                      calendar={reqCalendar}
+                      onCalendar={setReqCalendar}
+                      dateValue={reqBirthDate}
+                      onDate={setReqBirthDate}
                     />
                     <AuthField
                       label="البريد الإلكتروني"

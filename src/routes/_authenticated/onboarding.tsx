@@ -4,13 +4,15 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { BirthInfoFields } from "@/components/birth-info-fields";
+import { buildBirthPayload, validateBirthDate, validateGender, type BirthCalendar, type Gender } from "@/lib/birth-info";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   ssr: false,
   head: () => ({
     meta: [
       { title: "إكمال الملف الشخصي — السيف" },
-      { name: "description", content: "أكمل اسمك الثلاثي ورقم جوالك قبل المتابعة." },
+      { name: "description", content: "أكمل اسمك الثلاثي ورقم جوالك والجنس وتاريخ الميلاد قبل المتابعة." },
     ],
   }),
   component: OnboardingPage,
@@ -38,6 +40,9 @@ function OnboardingPage() {
   const [father, setFather] = useState("");
   const [grand, setGrand] = useState("");
   const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState<Gender | null>(null);
+  const [calendar, setCalendar] = useState<BirthCalendar>("gregorian");
+  const [birthDate, setBirthDate] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -53,8 +58,12 @@ function OnboardingPage() {
         father_name: string | null;
         grandfather_name: string | null;
         phone: string | null;
+        gender: Gender | null;
+        birth_calendar: BirthCalendar | null;
+        birth_date: string | null;
+        birth_date_hijri: string | null;
       } | null;
-      if (p?.first_name && p?.father_name && p?.grandfather_name) {
+      if (p?.first_name && p?.father_name && p?.grandfather_name && p?.gender && (p?.birth_date || p?.birth_date_hijri)) {
         navigate({ to: "/dashboard", replace: true });
         return;
       }
@@ -62,6 +71,10 @@ function OnboardingPage() {
       setFather(p?.father_name ?? "");
       setGrand(p?.grandfather_name ?? "");
       setPhone(p?.phone ?? "");
+      const cal: BirthCalendar = p?.birth_calendar === "hijri" ? "hijri" : "gregorian";
+      setGender(p?.gender ?? null);
+      setCalendar(cal);
+      setBirthDate((cal === "hijri" ? p?.birth_date_hijri : p?.birth_date) ?? "");
       setLoading(false);
     })();
   }, [navigate]);
@@ -84,6 +97,16 @@ function OnboardingPage() {
       toast.error(`رقم الجوال: ${phoneParsed.error.issues[0].message}`);
       return;
     }
+    const genderError = validateGender(gender);
+    if (genderError) {
+      toast.error(genderError);
+      return;
+    }
+    const birthError = validateBirthDate(calendar, birthDate);
+    if (birthError) {
+      toast.error(birthError);
+      return;
+    }
     setSaving(true);
     const f = first.trim();
     const fa = father.trim();
@@ -97,7 +120,8 @@ function OnboardingPage() {
         grandfather_name: g,
         arabic_name,
         phone: phone.trim() || null,
-      })
+        ...buildBirthPayload(gender, calendar, birthDate),
+      } as any)
       .eq("id", userId);
     setSaving(false);
     if (error) {
@@ -131,7 +155,7 @@ function OnboardingPage() {
           </div>
           <h1 className="text-2xl font-medium text-ivory tracking-tight">أكمل بياناتك</h1>
           <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-            رجاءً سجّل اسمك الثلاثي ورقم جوالك قبل المتابعة لاستخدام المنصة.
+            رجاءً سجّل اسمك الثلاثي ورقم جوالك والجنس وتاريخ الميلاد قبل المتابعة لاستخدام المنصة.
           </p>
         </div>
 
@@ -144,6 +168,15 @@ function OnboardingPage() {
             value={phone}
             onChange={setPhone}
             placeholder="مثال: 055 123 4567"
+          />
+          <BirthInfoFields
+            tone="dark"
+            gender={gender}
+            onGender={setGender}
+            calendar={calendar}
+            onCalendar={setCalendar}
+            dateValue={birthDate}
+            onDate={setBirthDate}
           />
           <button
             type="submit"

@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { BirthInfoFields } from "@/components/birth-info-fields";
+import { buildBirthPayload, validateBirthDate, validateGender, type BirthCalendar, type Gender } from "@/lib/birth-info";
 import { AppShell } from "@/components/app-shell";
 import { toast } from "sonner";
 import {
@@ -52,6 +54,10 @@ const phoneSchema = z
   .regex(/^[\d\s+\-()]+$/, { message: "أرقام فقط" });
 
 type ProfileRow = {
+  gender: Gender | null;
+  birth_calendar: BirthCalendar | null;
+  birth_date: string | null;
+  birth_date_hijri: string | null;
   id: string;
   arabic_name: string | null;
   full_name: string | null;
@@ -73,6 +79,9 @@ function ProfilePage() {
   const [arabicName, setArabicName] = useState<string>("");
   const [fullName, setFullName] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
+  const [gender, setGender] = useState<Gender | null>(null);
+  const [calendar, setCalendar] = useState<BirthCalendar>("gregorian");
+  const [birthDate, setBirthDate] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
 
@@ -96,6 +105,10 @@ function ProfilePage() {
         setArabicName(p.arabic_name ?? "");
         setFullName(p.full_name ?? "");
         setPhone(p.phone ?? "");
+        const cal: BirthCalendar = p.birth_calendar === "hijri" ? "hijri" : "gregorian";
+        setGender(p.gender ?? null);
+        setCalendar(cal);
+        setBirthDate((cal === "hijri" ? p.birth_date_hijri : p.birth_date) ?? "");
         setAvatarUrl(p.avatar_url);
         if (p.avatar_url) {
           const { data: signed } = await supabase.storage
@@ -123,6 +136,16 @@ function ProfilePage() {
       toast.error(phoneParsed.error.issues[0].message);
       return;
     }
+    const genderError = validateGender(gender);
+    if (genderError) {
+      toast.error(genderError);
+      return;
+    }
+    const birthError = validateBirthDate(calendar, birthDate);
+    if (birthError) {
+      toast.error(birthError);
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
@@ -130,7 +153,8 @@ function ProfilePage() {
         arabic_name: arabicName.trim() || null,
         full_name: fullName.trim() || null,
         phone: phone.trim() || null,
-      })
+        ...buildBirthPayload(gender, calendar, birthDate),
+      } as any)
       .eq("id", userId);
     setSaving(false);
     if (error) {
@@ -355,6 +379,15 @@ function ProfilePage() {
                   value={email}
                   disabled
                   placeholder="البريد لا يمكن تعديله"
+                />
+                <BirthInfoFields
+                  className="md:col-span-2"
+                  gender={gender}
+                  onGender={setGender}
+                  calendar={calendar}
+                  onCalendar={setCalendar}
+                  dateValue={birthDate}
+                  onDate={setBirthDate}
                 />
               </div>
 
