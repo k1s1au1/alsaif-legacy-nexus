@@ -16,11 +16,15 @@ export type Database = {
     Tables: {
       account_requests: {
         Row: {
+          birth_calendar: string
+          birth_date: string | null
+          birth_date_hijri: string | null
           created_at: string
           desired_password: string | null
           email: string
           father_name: string
           first_name: string
+          gender: Database["public"]["Enums"]["gender_type"] | null
           grandfather_name: string
           id: string
           note: string | null
@@ -32,11 +36,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          birth_calendar?: string
+          birth_date?: string | null
+          birth_date_hijri?: string | null
           created_at?: string
           desired_password?: string | null
           email: string
           father_name: string
           first_name: string
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           grandfather_name: string
           id?: string
           note?: string | null
@@ -48,11 +56,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          birth_calendar?: string
+          birth_date?: string | null
+          birth_date_hijri?: string | null
           created_at?: string
           desired_password?: string | null
           email?: string
           father_name?: string
           first_name?: string
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           grandfather_name?: string
           id?: string
           note?: string | null
@@ -1061,12 +1073,16 @@ export type Database = {
           allowed_sections: Json | null
           arabic_name: string | null
           avatar_url: string | null
+          birth_calendar: string
+          birth_date: string | null
+          birth_date_hijri: string | null
           bottom_nav_prefs: Json | null
           created_at: string
           father_name: string | null
           fcm_token: string | null
           first_name: string | null
           full_name: string | null
+          gender: Database["public"]["Enums"]["gender_type"] | null
           grandfather_name: string | null
           id: string
           is_active: boolean
@@ -1080,12 +1096,16 @@ export type Database = {
           allowed_sections?: Json | null
           arabic_name?: string | null
           avatar_url?: string | null
+          birth_calendar?: string
+          birth_date?: string | null
+          birth_date_hijri?: string | null
           bottom_nav_prefs?: Json | null
           created_at?: string
           father_name?: string | null
           fcm_token?: string | null
           first_name?: string | null
           full_name?: string | null
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           grandfather_name?: string | null
           id: string
           is_active?: boolean
@@ -1099,12 +1119,16 @@ export type Database = {
           allowed_sections?: Json | null
           arabic_name?: string | null
           avatar_url?: string | null
+          birth_calendar?: string
+          birth_date?: string | null
+          birth_date_hijri?: string | null
           bottom_nav_prefs?: Json | null
           created_at?: string
           father_name?: string | null
           fcm_token?: string | null
           first_name?: string | null
           full_name?: string | null
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           grandfather_name?: string | null
           id?: string
           is_active?: boolean
@@ -1449,12 +1473,16 @@ export type Database = {
           allowed_sections: Json | null
           arabic_name: string | null
           avatar_url: string | null
+          birth_calendar: string
+          birth_date: string | null
+          birth_date_hijri: string | null
           bottom_nav_prefs: Json | null
           created_at: string
           father_name: string | null
           fcm_token: string | null
           first_name: string | null
           full_name: string | null
+          gender: Database["public"]["Enums"]["gender_type"] | null
           grandfather_name: string | null
           id: string
           is_active: boolean
@@ -1527,6 +1555,7 @@ export type Database = {
         | "completed"
         | "cancelled"
       fund_tx_type: "contribution" | "expense"
+      gender_type: "male" | "female"
       group_send_permission: "all" | "admins" | "selected"
       majlis_post_kind: "announcement" | "discussion" | "complaint"
       meeting_rsvp: "going" | "not_going" | "maybe"
@@ -1698,6 +1727,7 @@ export const Constants = {
         "cancelled",
       ],
       fund_tx_type: ["contribution", "expense"],
+      gender_type: ["male", "female"],
       group_send_permission: ["all", "admins", "selected"],
       majlis_post_kind: ["announcement", "discussion", "complaint"],
       meeting_rsvp: ["going", "not_going", "maybe"],
