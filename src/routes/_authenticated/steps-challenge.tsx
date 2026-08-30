@@ -280,6 +280,62 @@ function StepsChallengePage() {
     }
   };
 
+  // ---------- Web (browser) pedometer ----------
+  const startWebPedometer = useCallback(async () => {
+    if (!isMotionSupported()) {
+      toast.error("متصفحك لا يدعم مستشعر الحركة", { description: "استخدم متصفح الجوال أو أدخل خطواتك يدوياً." });
+      setManualOpen(true);
+      return;
+    }
+    const granted = await requestMotionPermission();
+    if (!granted) {
+      toast.error("لم يتم السماح بقراءة الحركة", { description: "اسمح بـ (الحركة والاتجاه) في إعدادات المتصفح ثم أعد المحاولة." });
+      return;
+    }
+    if (!pedRef.current) {
+      pedRef.current = new WebPedometer((s) => setWebSteps(s));
+    }
+    pedRef.current.start();
+    setWebActive(true);
+    setWebSteps(pedRef.current.current);
+    toast.success("تم تفعيل عدّاد الخطوات ✨", { description: "احمل الجوال معك وامشِ — يتم الحساب تلقائياً." });
+  }, []);
+
+  const stopWebPedometer = useCallback(async () => {
+    pedRef.current?.stop();
+    setWebActive(false);
+    try {
+      if ((pedRef.current?.current ?? 0) > 0) {
+        await saveSteps(pedRef.current!.current, "device");
+        await loadData();
+      }
+    } catch { /* ignore */ }
+  }, [saveSteps, loadData]);
+
+  useEffect(() => {
+    if (isNative()) return;
+    setWebSupported(isMotionSupported());
+    setWebSteps(readStoredSteps());
+  }, []);
+
+  // Auto-save browser steps every 20s while counting.
+  useEffect(() => {
+    if (!webActive) return;
+    const id = window.setInterval(async () => {
+      const value = pedRef.current?.current ?? 0;
+      if (value <= 0) return;
+      try {
+        await saveSteps(value, "device");
+        await loadData();
+      } catch { /* ignore */ }
+    }, 20000);
+    return () => window.clearInterval(id);
+  }, [webActive, saveSteps, loadData]);
+
+  useEffect(() => {
+    return () => { pedRef.current?.stop(); };
+  }, []);
+
   useEffect(() => {
     (async () => {
       await loadData();
@@ -306,6 +362,7 @@ function StepsChallengePage() {
     }
     return () => { if (handle) handle.remove(); };
   }, [loadData, checkSensor, handleSync, checkHealth]);
+
 
   const myRank = leaderboard.findIndex((u) => u.id === meId) + 1;
 
