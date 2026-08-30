@@ -32,7 +32,6 @@ import {
   LayoutGrid,
   Radio,
   AlertOctagon,
-  Footprints,
   Inbox,
   PartyPopper,
   Handshake,
@@ -81,7 +80,6 @@ const desktopServiceItems: { id: NavItemKey; label: string; description: string 
   { id: "heritage", label: "الإرث", description: "تاريخ العائلة وإرثها" },
   { id: "family-tree", label: "شجرة العائلة", description: "الأجيال وروابط القرابة" },
   { id: "vault", label: "الخزنة", description: "المحتوى العائلي الخاص" },
-  { id: "steps", label: "تحدي الخطوات", description: "النشاط والتحديات" },
 ];
 
 function BottomNavItem({
@@ -1245,19 +1243,6 @@ function AppShellChrome({
                     }}
                   />
                   <QuickActionItem
-                    to="/steps-challenge"
-                    label="تحدي الخطوات"
-                    icon={<Footprints size={28} />}
-                    color={cn("bg-[#10b981]", isGuest && !allowedSections.includes("steps") && "opacity-20 grayscale cursor-not-allowed")}
-                    onClick={(e: any) => {
-                      if (isGuest && !allowedSections.includes("steps")) {
-                        e.preventDefault(); toast.error("خاص بالعائلة");
-                      } else {
-                        setShowQuickActions(false);
-                      }
-                    }}
-                  />
-                  <QuickActionItem
                     to="/profile"
                     label="ملفي"
                     icon={<User size={28} />}
@@ -1323,7 +1308,6 @@ const SHELL_TITLE_MAP: [RegExp, string][] = [
   [/^\/family-tree/, "شجرة عائلة السيف"],
   [/^\/family-occasions/, "مناسبات العائلة"],
   [/^\/vault/, "الخزنة"],
-  [/^\/steps-challenge/, "تحدي الخطوات"],
   [/^\/suggestions/, "صندوق المقترحات"],
   [/^\/notifications/, "مركز الإشعارات"],
   [/^\/chat/, "المحادثات"],

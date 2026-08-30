@@ -2,7 +2,6 @@ import {
   Home,
   Newspaper,
   MessageCircle,
-  Footprints,
   CalendarDays,
   ListChecks,
   Users,
@@ -23,7 +22,6 @@ export type NavItemKey =
   | "dashboard"
   | "news"
   | "chat"
-  | "steps"
   | "meetings"
   | "calendar"
   | "tasks"
@@ -51,7 +49,6 @@ export const NAV_REGISTRY: NavItemDef[] = [
   { id: "dashboard", to: "/dashboard", label: "الرئيسية", icon: Home },
   { id: "news", to: "/majlis", label: "الأخبار", icon: Newspaper },
   { id: "chat", to: "/chat", label: "محادثة", icon: MessageCircle },
-  { id: "steps", to: "/steps-challenge", label: "خطواتي", icon: Footprints },
   { id: "meetings", to: "/meetings", label: "اجتماعات", icon: UsersRound },
   { id: "calendar", to: "/calendar", label: "التقويم", icon: CalendarDays },
   { id: "tasks", to: "/tasks", label: "مهامي", icon: ListChecks },

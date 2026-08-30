@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <queries>
-        <!-- Required to check if Health Connect is installed -->
-        <package android:name="com.google.android.apps.healthdata" />
-    </queries>
-
-    <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
-
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -67,32 +60,11 @@
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="alsaif_notifications" />
         <receiver android:name=".NotificationActionReceiver" android:exported="false" />
 
-        <meta-data android:name="health_permissions_rationale" android:value=".HealthConnectActivity" />
-
-        <!-- Health Connect Activity -->
-        <activity
-            android:name=".HealthConnectActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="alsaif-legacy-nexus.lovable.app" android:path="/privacy" />
-            </intent-filter>
-        </activity>
     </application>
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-    <uses-permission android:name="android.permission.health.READ_STEPS" />
-    <uses-permission android:name="androidx.health.permission.read.STEPS" />
-    <uses-permission android:name="androidx.health.permission.write.STEPS" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
