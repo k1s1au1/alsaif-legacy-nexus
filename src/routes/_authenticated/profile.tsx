@@ -500,8 +500,20 @@ function ProfilePage() {
                   onCalendar={setCalendar}
                   dateValue={birthDate}
                   onDate={setBirthDate}
+                  genderDisabled={lockedGender}
+                  dateDisabled={lockedBirth}
                 />
               </div>
+
+              {(lockedName || lockedGender || lockedBirth) && (
+                <div className="flex items-start gap-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 text-amber-700 dark:text-amber-400">
+                  <Lock className="size-4 mt-0.5 shrink-0" />
+                  <p className="text-xs font-bold leading-relaxed">
+                    بيانات الهوية (الاسم، الجنس، تاريخ الميلاد) موثقة ومقفلة لحماية العائلة من انتحال
+                    الهوية. لتعديلها أرسل «طلب تعديل» ويعتمده المسؤول التقني أو رئيس المجلس.
+                  </p>
+                </div>
+              )}
 
               <div className="pt-4">
                 <button
@@ -514,6 +526,111 @@ function ProfilePage() {
                 </button>
               </div>
             </form>
+
+            {/* Identity change request */}
+            {(lockedName || lockedGender || lockedBirth) && (
+              <div
+                className="card-surface p-8 md:p-10 space-y-6 animate-fade-up"
+                style={{ animationDelay: "150ms" }}
+              >
+                <div className="flex items-center justify-between gap-4 border-b border-border/40 pb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 shadow-inner">
+                      <ShieldCheck className="size-6" />
+                    </div>
+                    <h3 className="text-xl font-black text-primary">طلب تعديل بيانات الهوية</h3>
+                  </div>
+                  {!pendingReq && (
+                    <button
+                      type="button"
+                      onClick={() => setShowReqForm((v) => !v)}
+                      className="px-5 py-2.5 rounded-xl bg-muted/60 hover:bg-primary hover:text-white transition-all text-xs font-black text-primary"
+                    >
+                      {showReqForm ? "إلغاء" : "طلب تعديل"}
+                    </button>
+                  )}
+                </div>
+
+                {pendingReq ? (
+                  <div className="rounded-2xl bg-primary/5 border border-primary/10 p-5 space-y-2">
+                    <p className="text-sm font-black text-primary">طلبك قيد المراجعة</p>
+                    <p className="text-xs font-bold text-muted-foreground leading-relaxed">
+                      أُرسل بتاريخ {new Date(pendingReq.created_at).toLocaleDateString("ar-SA")} —
+                      سيتم إشعارك بعد اعتماده أو رفضه من الإدارة.
+                    </p>
+                  </div>
+                ) : (
+                  lastReq && (
+                    <div className="rounded-2xl bg-muted/40 border border-border/60 p-5 space-y-1">
+                      <p className="text-sm font-black text-primary">
+                        آخر طلب: {lastReq.status === "approved" ? "تم الاعتماد" : "مرفوض"}
+                      </p>
+                      {lastReq.review_note && (
+                        <p className="text-xs font-bold text-muted-foreground">
+                          ملاحظة الإدارة: {lastReq.review_note}
+                        </p>
+                      )}
+                    </div>
+                  )
+                )}
+
+                {showReqForm && !pendingReq && (
+                  <form onSubmit={submitChangeRequest} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <Field
+                        label="الاسم بالعربية المطلوب"
+                        icon={<Quote className="size-4" />}
+                        value={reqArabicName}
+                        onChange={setReqArabicName}
+                        placeholder="الاسم الصحيح..."
+                      />
+                      <Field
+                        label="الاسم الكامل المطلوب"
+                        icon={<UserIcon className="size-4" />}
+                        value={reqFullName}
+                        onChange={setReqFullName}
+                        placeholder="الاسم كما في الهوية..."
+                      />
+                      <BirthInfoFields
+                        className="md:col-span-2"
+                        gender={reqGender}
+                        onGender={setReqGender}
+                        calendar={reqCalendar}
+                        onCalendar={setReqCalendar}
+                        dateValue={reqBirthDate}
+                        onDate={setReqBirthDate}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-muted-foreground mr-2 uppercase tracking-widest">
+                        سبب التعديل (مطلوب)
+                      </label>
+                      <textarea
+                        value={reqReason}
+                        onChange={(e) => setReqReason(e.target.value)}
+                        maxLength={500}
+                        rows={3}
+                        placeholder="اذكر سبب التعديل، مثال: خطأ إملائي في الاسم حسب الهوية الوطنية"
+                        className="w-full p-5 bg-muted/30 border border-border rounded-2xl font-bold text-sm focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={reqSaving}
+                      className="px-10 py-4 rounded-2xl bg-primary text-white hover:opacity-90 transition-all font-black text-sm flex items-center gap-3 w-full md:w-fit"
+                    >
+                      {reqSaving ? (
+                        <Loader2 className="size-5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="size-5" />
+                      )}
+                      إرسال الطلب للإدارة
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
 
             {/* Password Security */}
             <form
