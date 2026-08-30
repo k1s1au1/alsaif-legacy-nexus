@@ -20,6 +20,14 @@ import java.time.LocalDateTime
  * health app (Google Fit, Samsung Health, Huawei Health, ...) once the user has
  * granted the READ_STEPS permission inside Health Connect.
  */
+fun interface BoolCallback {
+    fun onResult(granted: Boolean, error: String?)
+}
+
+fun interface StepsCallback {
+    fun onResult(steps: Long?, error: String?)
+}
+
 object HealthConnectBridge {
 
     private const val PROVIDER = "com.google.android.apps.healthdata"
@@ -44,27 +52,27 @@ object HealthConnectBridge {
             .createIntent(context, readPermissions)
 
     @JvmStatic
-    fun hasPermission(context: Context, callback: (Boolean, String?) -> Unit) {
+    fun hasPermission(context: Context, callback: BoolCallback) {
         if (!isAvailable(context)) {
-            callback(false, "HC_UNAVAILABLE")
+            callback.onResult(false, "HC_UNAVAILABLE")
             return
         }
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val client = HealthConnectClient.getOrCreate(context, PROVIDER)
                 val granted = client.permissionController.getGrantedPermissions()
-                callback(granted.containsAll(readPermissions), null)
+                callback.onResult(granted.containsAll(readPermissions), null)
             } catch (e: Throwable) {
-                callback(false, e.message)
+                callback.onResult(false, e.message)
             }
         }
     }
 
     /** Reads the aggregated step count for today from Health Connect. */
     @JvmStatic
-    fun readTodaySteps(context: Context, callback: (Long?, String?) -> Unit) {
+    fun readTodaySteps(context: Context, callback: StepsCallback) {
         if (!isAvailable(context)) {
-            callback(null, "HC_UNAVAILABLE")
+            callback.onResult(null, "HC_UNAVAILABLE")
             return
         }
         CoroutineScope(Dispatchers.Main).launch {
@@ -72,7 +80,7 @@ object HealthConnectBridge {
                 val client = HealthConnectClient.getOrCreate(context, PROVIDER)
                 val granted = client.permissionController.getGrantedPermissions()
                 if (!granted.containsAll(readPermissions)) {
-                    callback(null, "NO_PERMISSION")
+                    callback.onResult(null, "NO_PERMISSION")
                     return@launch
                 }
                 val start = LocalDate.now().atStartOfDay()
@@ -83,9 +91,9 @@ object HealthConnectBridge {
                         timeRangeFilter = TimeRangeFilter.between(start, end),
                     ),
                 )
-                callback(result[StepsRecord.COUNT_TOTAL] ?: 0L, null)
+                callback.onResult(result[StepsRecord.COUNT_TOTAL] ?: 0L, null)
             } catch (e: Throwable) {
-                callback(null, e.message ?: "HC_READ_FAILED")
+                callback.onResult(null, e.message ?: "HC_READ_FAILED")
             }
         }
     }
