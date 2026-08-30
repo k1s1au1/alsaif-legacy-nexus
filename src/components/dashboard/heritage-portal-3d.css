@@ -546,7 +546,6 @@ html body .desktop-portal-stage
   html body .desktop-portal-stage
     > .desktop-portal-model.heritage-pavilion-reference {
     width: 80% !important;
-    width: min(80%, max(720px, calc(177.7svh - 620px))) !important;
     max-width: 1540px !important;
   }
 }
@@ -612,4 +611,40 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12
 html body .desktop-portal-stage {
   overflow: hidden !important;
   border-radius: clamp(20px, 2.3vw, 34px) !important;
+}
+
+
+/*
+ * Desktop-only horizontal pavilion expansion.
+ * Preserve the exact height produced by the previous viewport cap while
+ * widening the artwork from the center; touch/tablet layouts are untouched.
+ */
+@media (min-width: 1200px) and (hover: hover) and (pointer: fine) {
+  html body .desktop-portal-stage {
+    container-type: inline-size;
+  }
+
+  html body .desktop-portal-stage
+    > .desktop-portal-model.heritage-pavilion-reference {
+    width: 80% !important;
+    height: min(45vw, max(405px, calc(100svh - 349px))) !important;
+    height: min(45.024cqw, max(405px, calc(100svh - 349px))) !important;
+    min-height: 0 !important;
+    max-width: 1540px !important;
+    aspect-ratio: auto !important;
+    container-type: size;
+  }
+
+  html body .desktop-portal-stage
+    > .desktop-portal-model.heritage-pavilion-reference
+    .pavilion-reference-backdrop {
+    object-fit: fill !important;
+  }
+
+  html body .desktop-portal-stage
+    > .desktop-portal-model.heritage-pavilion-reference
+    .pavilion-reference-logo {
+    width: 21.86cqh;
+    padding: 1.28cqh;
+  }
 }
