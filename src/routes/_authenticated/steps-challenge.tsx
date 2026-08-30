@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 import { UserAvatar } from "@/components/user-avatar";
 import { Capacitor } from "@capacitor/core";
+import { WebPedometer, isMotionSupported, requestMotionPermission, readStoredSteps } from "@/lib/web-pedometer";
+
 
 export const Route = createFileRoute("/_authenticated/steps-challenge")({
   ssr: false,
