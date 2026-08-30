@@ -673,6 +673,14 @@ function AdminPage() {
       visible: true,
     },
     {
+      key: "profile_changes",
+      label: "تعديل بيانات الهوية",
+      shortLabel: "الهوية",
+      description: "مراجعة طلبات تعديل الاسم والجنس وتاريخ الميلاد ومنع انتحال الهوية.",
+      icon: Shield,
+      visible: isSystemAdmin || isSiteChairman,
+    },
+    {
       key: "member_requests",
       label: "طلبات الأعضاء",
       shortLabel: "الطلبات",
