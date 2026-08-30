@@ -13,18 +13,6 @@
             android:data="alsaif://majlis" />
     </shortcut>
 
-    <!-- Steps Challenge -->
-    <shortcut
-        android:shortcutId="open_steps"
-        android:enabled="true"
-        android:icon="@mipmap/ic_launcher"
-        android:shortcutShortLabel="@string/shortcut_steps_label">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetPackage="com.alsaif.familyhub"
-            android:targetClass="com.alsaif.familyhub.MainActivity"
-            android:data="alsaif://steps-challenge" />
-    </shortcut>
 
     <!-- Vault -->
     <shortcut

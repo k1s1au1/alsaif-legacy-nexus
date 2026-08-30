@@ -16,7 +16,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVaultRouteImport } from './routes/_authenticated/vault'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSuggestionsRouteImport } from './routes/_authenticated/suggestions'
-import { Route as AuthenticatedStepsChallengeRouteImport } from './routes/_authenticated/steps-challenge'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -74,12 +73,6 @@ const AuthenticatedSuggestionsRoute =
   AuthenticatedSuggestionsRouteImport.update({
     id: '/suggestions',
     path: '/suggestions',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedStepsChallengeRoute =
-  AuthenticatedStepsChallengeRouteImport.update({
-    id: '/steps-challenge',
-    path: '/steps-challenge',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -225,7 +218,6 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/steps-challenge': typeof AuthenticatedStepsChallengeRoute
   '/suggestions': typeof AuthenticatedSuggestionsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/vault': typeof AuthenticatedVaultRoute
@@ -256,7 +248,6 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/steps-challenge': typeof AuthenticatedStepsChallengeRoute
   '/suggestions': typeof AuthenticatedSuggestionsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/vault': typeof AuthenticatedVaultRoute
@@ -290,7 +281,6 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/steps-challenge': typeof AuthenticatedStepsChallengeRoute
   '/_authenticated/suggestions': typeof AuthenticatedSuggestionsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/vault': typeof AuthenticatedVaultRoute
@@ -324,7 +314,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/settings'
-    | '/steps-challenge'
     | '/suggestions'
     | '/tasks'
     | '/vault'
@@ -355,7 +344,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/settings'
-    | '/steps-challenge'
     | '/suggestions'
     | '/tasks'
     | '/vault'
@@ -388,7 +376,6 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/profile'
     | '/_authenticated/settings'
-    | '/_authenticated/steps-challenge'
     | '/_authenticated/suggestions'
     | '/_authenticated/tasks'
     | '/_authenticated/vault'
@@ -456,13 +443,6 @@ declare module '@tanstack/react-router' {
       path: '/suggestions'
       fullPath: '/suggestions'
       preLoaderRoute: typeof AuthenticatedSuggestionsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/steps-challenge': {
-      id: '/_authenticated/steps-challenge'
-      path: '/steps-challenge'
-      fullPath: '/steps-challenge'
-      preLoaderRoute: typeof AuthenticatedStepsChallengeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -660,7 +640,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedStepsChallengeRoute: typeof AuthenticatedStepsChallengeRoute
   AuthenticatedSuggestionsRoute: typeof AuthenticatedSuggestionsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedVaultRoute: typeof AuthenticatedVaultRoute
@@ -688,7 +667,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedStepsChallengeRoute: AuthenticatedStepsChallengeRoute,
   AuthenticatedSuggestionsRoute: AuthenticatedSuggestionsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedVaultRoute: AuthenticatedVaultRoute,

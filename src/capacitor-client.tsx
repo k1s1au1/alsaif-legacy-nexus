@@ -18,8 +18,6 @@ App.addListener('appUrlOpen', (event: any) => {
   // Example: alsaif://meetings -> /meetings
   if (path.includes('meetings')) {
     router.navigate({ to: '/meetings' });
-  } else if (path.includes('steps-challenge')) {
-    router.navigate({ to: '/steps-challenge' });
   } else if (path.includes('majlis')) {
     router.navigate({ to: '/majlis' });
   } else if (path.includes('chat')) {

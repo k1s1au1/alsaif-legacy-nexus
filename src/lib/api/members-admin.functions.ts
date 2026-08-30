@@ -43,7 +43,6 @@ export const deleteMemberAccount = createServerFn({ method: "POST" })
       ["message_deliveries", "user_id"],
       ["message_reactions", "user_id"],
       ["conversation_participants", "user_id"],
-      ["steps_data", "user_id"],
       ["event_attendees", "user_id"],
       ["meeting_attendees", "user_id"],
       ["trip_attendees", "user_id"],
