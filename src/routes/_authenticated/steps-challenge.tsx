@@ -140,7 +140,7 @@ function StepsChallengePage() {
 
   useRealtimeSync(["steps_data"], loadData);
 
-  const saveSteps = useCallback(async (steps: number, source: "device" | "manual") => {
+  const saveSteps = useCallback(async (steps: number, source: "device" | "manual" | "health_connect") => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("NOT_SIGNED_IN");
 
