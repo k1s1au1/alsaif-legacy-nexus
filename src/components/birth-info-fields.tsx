@@ -109,7 +109,7 @@ export function BirthInfoFields({
           value={dateValue}
           onChange={(e) => onDate(e.target.value)}
           placeholder={calendar === "hijri" ? "1410-05-12" : undefined}
-          className={inputCls}
+          className={cn(inputCls, dateDisabled && "opacity-50 cursor-not-allowed")}
         />
         {calendar === "hijri" && (
           <p className="text-[11px] text-muted-foreground mr-1">الصيغة: سنة-شهر-يوم (مثال 1410-05-12)</p>
