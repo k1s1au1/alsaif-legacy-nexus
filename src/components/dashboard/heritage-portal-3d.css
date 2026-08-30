@@ -5,8 +5,8 @@
   position: relative;
   isolation: isolate;
   display: block;
-  width: 94%;
-  max-width: 1540px;
+  width: 100%;
+  max-width: none;
   margin-inline: auto;
   aspect-ratio: 1672 / 941;
   overflow: hidden;
@@ -251,7 +251,7 @@
 }
 
 .pavilion-reference-plaque {
-  bottom: 3.1%;
+  bottom: 7.1%;
   left: 50%;
   width: 22%;
   overflow: hidden;
@@ -442,7 +442,7 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
   }
 
   .pavilion-reference-plaque {
-    bottom: 3%;
+    bottom: 7.1%;
     width: 23%;
     font-size: clamp(7px, 2vw, 10px);
   }
@@ -510,8 +510,8 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
 
   html body main[data-tablet-portrait="true"] .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference {
     display: block !important;
-    width: 94% !important;
-    max-width: 1540px !important;
+    width: 100% !important;
+    max-width: none !important;
     height: auto !important;
     min-height: 0 !important;
     margin-inline: auto !important;
@@ -528,14 +528,14 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
 }
 
 
-/* Keep the pavilion slightly inset and its copy centered inside the arch on every device. */
+/* Preserve the original full-width pavilion on phones and tablets; compact desktop only. */
 html body .dashboard-page.max-w-6xl.mx-auto.space-y-12
   > .dashboard-portal-hero
   .dashboard-portal-model.heritage-pavilion-reference,
 html body .desktop-portal-stage
   > .desktop-portal-model.heritage-pavilion-reference {
-  width: 94% !important;
-  max-width: 1540px !important;
+  width: 100% !important;
+  max-width: none !important;
   margin-inline: auto !important;
 }
 
@@ -546,5 +546,17 @@ html body .desktop-portal-stage
   html body .desktop-portal-stage
     > .desktop-portal-model.heritage-pavilion-reference {
     width: 92% !important;
+    max-width: 1540px !important;
+  }
+}
+
+@media (min-width: 700px) and (max-width: 1600px) and (any-pointer: coarse) {
+  html body .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference,
+  html body .desktop-portal-stage
+    > .desktop-portal-model.heritage-pavilion-reference {
+    width: 100% !important;
+    max-width: none !important;
   }
 }
