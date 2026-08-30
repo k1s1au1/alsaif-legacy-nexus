@@ -243,20 +243,34 @@ function ProfilePage() {
       return;
     }
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        arabic_name: arabicName.trim() || null,
-        full_name: fullName.trim() || null,
-        phone: phone.trim() || null,
-        ...buildBirthPayload(gender, calendar, birthDate),
-      } as any)
-      .eq("id", userId);
+    // Locked identity fields are never sent from here; they change only through an approved request.
+    const payload: Record<string, any> = { phone: phone.trim() || null };
+    if (!lockedName) {
+      payload["arabic_name"] = arabicName.trim() || null;
+      payload["full_name"] = fullName.trim() || null;
+    }
+    if (!lockedGender || !lockedBirth) {
+      const birthPayload = buildBirthPayload(gender, calendar, birthDate) as Record<string, any>;
+      if (!lockedGender) payload["gender"] = birthPayload["gender"];
+      if (!lockedBirth) {
+        payload["birth_calendar"] = birthPayload["birth_calendar"];
+        payload["birth_date"] = birthPayload["birth_date"];
+        payload["birth_date_hijri"] = birthPayload["birth_date_hijri"];
+      }
+    }
+    const { error } = await supabase.from("profiles").update(payload as any).eq("id", userId);
     setSaving(false);
     if (error) {
-      toast.error("تعذر حفظ التغييرات");
+      toast.error(
+        error.message?.includes("PROFILE_LOCKED")
+          ? "بيانات الهوية مقفلة — أرسل طلب تعديل ليعتمده المسؤول"
+          : "تعذر حفظ التغييرات",
+      );
       return;
     }
+    setLockedName(Boolean(payload["arabic_name"] || payload["full_name"]) || lockedName);
+    if (!lockedGender && payload["gender"]) setLockedGender(true);
+    if (!lockedBirth && (payload["birth_date"] || payload["birth_date_hijri"])) setLockedBirth(true);
     toast.success("تم تحديث بياناتك بنجاح");
   }
 
