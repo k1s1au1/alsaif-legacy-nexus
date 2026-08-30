@@ -316,7 +316,14 @@ export function DesktopDashboardExtras() {
               <div className="desktop-portal-rule" aria-hidden="true" />
             </div>
 
-            <HeritagePortal3D logoUrl={logo} className="desktop-portal-model" />
+            <HeritagePortal3D
+              logoUrl={logo}
+              greeting="حيّاك الله،"
+              name={name}
+              message="نصل العائلة، نحفظ الإرث، ونبني المستقبل."
+              className="desktop-portal-model"
+            />
+
           </div>
 
           <div className={`desktop-services-panel${servicesExpanded ? " is-expanded" : ""}`}>

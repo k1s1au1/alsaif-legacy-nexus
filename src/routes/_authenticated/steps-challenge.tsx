@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 import { UserAvatar } from "@/components/user-avatar";
 import { Capacitor } from "@capacitor/core";
+import { WebPedometer, isMotionSupported, requestMotionPermission, readStoredSteps } from "@/lib/web-pedometer";
+
 
 export const Route = createFileRoute("/_authenticated/steps-challenge")({
   ssr: false,
@@ -58,6 +60,11 @@ function StepsChallengePage() {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualValue, setManualValue] = useState("");
   const syncingRef = useRef(false);
+  const [webSteps, setWebSteps] = useState(0);
+  const [webActive, setWebActive] = useState(false);
+  const [webSupported, setWebSupported] = useState(false);
+  const pedRef = useRef<WebPedometer | null>(null);
+
 
   const checkHealth = useCallback(async () => {
     if (!isNative()) return;
@@ -174,10 +181,12 @@ function StepsChallengePage() {
 
       const { available } = await plugin.isAvailable();
       if (!available) {
-        toast.error("جوالك لا يحتوي على مستشعر خطوات", { description: "يمكنك إدخال خطواتك يدوياً." });
+        toast.info("لا يوجد مستشعر خطوات مخصص", { description: "سيتم الحساب من مستشعر حركة الجهاز." });
         setSensorReady(false);
+        await startWebPedometer();
         return;
       }
+
 
       setSensorReady(true);
       toast.success("تم تفعيل عدّاد الخطوات ✨");
@@ -273,6 +282,62 @@ function StepsChallengePage() {
     }
   };
 
+  // ---------- Web (browser) pedometer ----------
+  const startWebPedometer = useCallback(async () => {
+    if (!isMotionSupported()) {
+      toast.error("متصفحك لا يدعم مستشعر الحركة", { description: "استخدم متصفح الجوال أو أدخل خطواتك يدوياً." });
+      setManualOpen(true);
+      return;
+    }
+    const granted = await requestMotionPermission();
+    if (!granted) {
+      toast.error("لم يتم السماح بقراءة الحركة", { description: "اسمح بـ (الحركة والاتجاه) في إعدادات المتصفح ثم أعد المحاولة." });
+      return;
+    }
+    if (!pedRef.current) {
+      pedRef.current = new WebPedometer((s) => setWebSteps(s));
+    }
+    pedRef.current.start();
+    setWebActive(true);
+    setWebSteps(pedRef.current.current);
+    toast.success("تم تفعيل عدّاد الخطوات ✨", { description: "احمل الجوال معك وامشِ — يتم الحساب تلقائياً." });
+  }, []);
+
+  const stopWebPedometer = useCallback(async () => {
+    pedRef.current?.stop();
+    setWebActive(false);
+    try {
+      if ((pedRef.current?.current ?? 0) > 0) {
+        await saveSteps(pedRef.current!.current, "device");
+        await loadData();
+      }
+    } catch { /* ignore */ }
+  }, [saveSteps, loadData]);
+
+  useEffect(() => {
+    if (isNative()) return;
+    setWebSupported(isMotionSupported());
+    setWebSteps(readStoredSteps());
+  }, []);
+
+  // Auto-save browser steps every 20s while counting.
+  useEffect(() => {
+    if (!webActive) return;
+    const id = window.setInterval(async () => {
+      const value = pedRef.current?.current ?? 0;
+      if (value <= 0) return;
+      try {
+        await saveSteps(value, "device");
+        await loadData();
+      } catch { /* ignore */ }
+    }, 20000);
+    return () => window.clearInterval(id);
+  }, [webActive, saveSteps, loadData]);
+
+  useEffect(() => {
+    return () => { pedRef.current?.stop(); };
+  }, []);
+
   useEffect(() => {
     (async () => {
       await loadData();
@@ -299,6 +364,7 @@ function StepsChallengePage() {
     }
     return () => { if (handle) handle.remove(); };
   }, [loadData, checkSensor, handleSync, checkHealth]);
+
 
   const myRank = leaderboard.findIndex((u) => u.id === meId) + 1;
 
@@ -372,18 +438,45 @@ function StepsChallengePage() {
               مزامنة خطوات اليوم
             </button>
           ) : (
-            <button
-              onClick={() => setManualOpen(true)}
-              className="btn-gold px-12 py-5 rounded-full flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black"
-            >
-              <Pencil className="size-6" /> تسجيل خطوات اليوم
-            </button>
+            <div className="flex flex-col items-center gap-4 w-full max-w-md">
+              {webActive && (
+                <div className="card-surface w-full p-6 text-center space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">العدّاد يعمل الآن</p>
+                  <p className="text-5xl font-black text-primary tracking-tighter">{webSteps.toLocaleString()}</p>
+                  <p className="text-[11px] font-bold text-emerald-600">يتم الحفظ تلقائياً كل ٢٠ ثانية</p>
+                </div>
+              )}
+              {!webActive ? (
+                <button
+                  onClick={startWebPedometer}
+                  className="btn-gold px-12 py-5 rounded-full flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black"
+                >
+                  <ShieldCheck className="size-6" /> تفعيل عدّاد الخطوات
+                </button>
+              ) : (
+                <button
+                  onClick={stopWebPedometer}
+                  className="px-12 py-5 rounded-full bg-primary text-white flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black"
+                >
+                  <RotateCw className="size-6" /> إيقاف وحفظ الخطوات
+                </button>
+              )}
+              <button
+                onClick={() => setManualOpen(true)}
+                className="text-xs font-black text-primary underline underline-offset-4 opacity-70 flex items-center gap-2"
+              >
+                <Pencil className="size-4" /> إدخال خطوات تطبيق الصحة (قوقل / سامسونج / هواوي) يدوياً
+              </button>
+            </div>
           )}
 
           <p className="text-[11px] font-bold text-muted-foreground opacity-70 text-center max-w-md leading-relaxed">
             {isNative()
               ? "يتم القياس من مستشعر الخطوات في جوالك أو عبر Health Connect ويُحدَّث تلقائياً عند فتح التطبيق."
-              : "قياس الخطوات التلقائي متاح داخل تطبيق الجوال فقط. من المتصفح يمكنك تسجيل خطوات اليوم يدوياً."}
+              : webSupported
+                ? "من المتصفح يتم حساب خطواتك من مستشعر حركة الجوال أثناء بقاء الصفحة مفتوحة. للقياس على مدار اليوم استخدم تطبيق الجوال أو انقل رقم تطبيق الصحة يدوياً."
+                : "هذا الجهاز لا يوفّر مستشعر حركة للمتصفح. أدخل خطوات تطبيق الصحة يدوياً أو استخدم تطبيق الجوال."}
+
           </p>
 
           {isNative() && (
