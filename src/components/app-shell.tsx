@@ -541,9 +541,11 @@ function AppShellChrome({
 
 
 
-              <div className="hidden md:block mr-2">
-                <NotificationsBell />
-              </div>
+              {!isTabletPortrait && (
+                <div className="hidden md:block mr-2">
+                  <NotificationsBell />
+                </div>
+              )}
 
               <UserDropdown
                 safeUser={safeUser}
@@ -805,11 +807,20 @@ function AppShellChrome({
                 </div>
               </div>
 
-              {/* Mobile Notifications Bell (Left side) */}
-              <div className="md:hidden">
+              {/* Mobile notifications remain unchanged outside tablet portrait. */}
+              {!isTabletPortrait && (
+                <div className="md:hidden">
+                  <NotificationsBell />
+                </div>
+              )}
+            </div>
+
+            {/* Tablet portrait gets exactly one, physically right-aligned notification control. */}
+            {isTabletPortrait && (
+              <div className="app-shell-tablet-portrait-bell">
                 <NotificationsBell />
               </div>
-            </div>
+            )}
           </header>
         </motion.div>
 
