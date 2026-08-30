@@ -436,18 +436,45 @@ function StepsChallengePage() {
               مزامنة خطوات اليوم
             </button>
           ) : (
-            <button
-              onClick={() => setManualOpen(true)}
-              className="btn-gold px-12 py-5 rounded-full flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black"
-            >
-              <Pencil className="size-6" /> تسجيل خطوات اليوم
-            </button>
+            <div className="flex flex-col items-center gap-4 w-full max-w-md">
+              {webActive && (
+                <div className="card-surface w-full p-6 text-center space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">العدّاد يعمل الآن</p>
+                  <p className="text-5xl font-black text-primary tracking-tighter">{webSteps.toLocaleString()}</p>
+                  <p className="text-[11px] font-bold text-emerald-600">يتم الحفظ تلقائياً كل ٢٠ ثانية</p>
+                </div>
+              )}
+              {!webActive ? (
+                <button
+                  onClick={startWebPedometer}
+                  className="btn-gold px-12 py-5 rounded-full flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black"
+                >
+                  <ShieldCheck className="size-6" /> تفعيل عدّاد الخطوات
+                </button>
+              ) : (
+                <button
+                  onClick={stopWebPedometer}
+                  className="px-12 py-5 rounded-full bg-primary text-white flex items-center gap-4 shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg font-black"
+                >
+                  <RotateCw className="size-6" /> إيقاف وحفظ الخطوات
+                </button>
+              )}
+              <button
+                onClick={() => setManualOpen(true)}
+                className="text-xs font-black text-primary underline underline-offset-4 opacity-70 flex items-center gap-2"
+              >
+                <Pencil className="size-4" /> إدخال خطوات تطبيق الصحة (قوقل / سامسونج / هواوي) يدوياً
+              </button>
+            </div>
           )}
 
           <p className="text-[11px] font-bold text-muted-foreground opacity-70 text-center max-w-md leading-relaxed">
             {isNative()
               ? "يتم القياس من مستشعر الخطوات في جوالك أو عبر Health Connect ويُحدَّث تلقائياً عند فتح التطبيق."
-              : "قياس الخطوات التلقائي متاح داخل تطبيق الجوال فقط. من المتصفح يمكنك تسجيل خطوات اليوم يدوياً."}
+              : webSupported
+                ? "من المتصفح يتم حساب خطواتك من مستشعر حركة الجوال أثناء بقاء الصفحة مفتوحة. للقياس على مدار اليوم استخدم تطبيق الجوال أو انقل رقم تطبيق الصحة يدوياً."
+                : "هذا الجهاز لا يوفّر مستشعر حركة للمتصفح. أدخل خطوات تطبيق الصحة يدوياً أو استخدم تطبيق الجوال."}
+
           </p>
 
           {isNative() && (
