@@ -16,6 +16,10 @@ type Props = {
   /** Visual style: soft = light forms (auth/profile), dark = onboarding screen. */
   tone?: "soft" | "dark";
   className?: string;
+  /** Lock gender selection (already verified). */
+  genderDisabled?: boolean;
+  /** Lock calendar + date inputs (already verified). */
+  dateDisabled?: boolean;
 };
 
 export function BirthInfoFields({
@@ -27,6 +31,8 @@ export function BirthInfoFields({
   onDate,
   tone = "soft",
   className,
+  genderDisabled = false,
+  dateDisabled = false,
 }: Props) {
   const labelCls =
     tone === "dark"
