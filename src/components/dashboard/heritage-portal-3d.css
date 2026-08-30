@@ -546,6 +546,7 @@ html body .desktop-portal-stage
   html body .desktop-portal-stage
     > .desktop-portal-model.heritage-pavilion-reference {
     width: 80% !important;
+    width: min(80%, max(720px, calc(177.7svh - 620px))) !important;
     max-width: 1540px !important;
   }
 }
@@ -573,4 +574,42 @@ html body .desktop-portal-stage
     width: min(100%, max(680px, calc(177.7svh - 620px))) !important;
     max-width: none !important;
   }
+}
+
+
+/*
+ * Pavilion-only responsive surface:
+ * keep the surrounding portal area filled while the artwork is height-capped.
+ * No navigation, services, or page-content rules belong in this block.
+ */
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero,
+html body .desktop-portal-stage {
+  position: relative !important;
+  isolation: isolate !important;
+  background: #021b17 !important;
+}
+
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero {
+  overflow: visible !important;
+}
+
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: -1 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  width: 100vw !important;
+  background: #021b17 !important;
+  transform: translateX(-50%) !important;
+  pointer-events: none !important;
+}
+
+html body .desktop-portal-stage {
+  overflow: hidden !important;
+  border-radius: clamp(20px, 2.3vw, 34px) !important;
 }
