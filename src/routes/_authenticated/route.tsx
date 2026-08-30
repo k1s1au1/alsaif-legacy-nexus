@@ -47,21 +47,25 @@ export const Route = createFileRoute("/_authenticated")({
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) throw redirect({ to: "/auth" });
 
-      // Force onboarding if the three-part name is missing
+      // Force onboarding if the three-part name, gender or birth date is missing
       if (location.pathname !== "/onboarding") {
         const { data: profile, error: pError } = await supabase
           .from("profiles")
-          .select("first_name, father_name, grandfather_name")
+          .select("first_name, father_name, grandfather_name, gender, birth_date, birth_date_hijri")
           .eq("id", data.user.id)
           .maybeSingle();
 
         // If we can't check profile (e.g. columns missing), don't block the app
         if (!pError && profile) {
-          if (!profile.first_name || !profile.father_name || !profile.grandfather_name) {
+          const p = profile as any;
+          const missingName = !p.first_name || !p.father_name || !p.grandfather_name;
+          const missingBirth = !p.gender || (!p.birth_date && !p.birth_date_hijri);
+          if (missingName || missingBirth) {
             throw redirect({ to: "/onboarding" });
           }
         }
       }
+
 
       return { user: data.user };
     } catch (e) {

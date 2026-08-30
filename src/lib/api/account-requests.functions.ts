@@ -41,7 +41,11 @@ export const approveAccountRequest = createServerFn({ method: "POST" })
         arabic_name: fullName,
         full_name: fullName,
         phone: req.phone,
-      });
+        gender: (req as any).gender ?? null,
+        birth_calendar: (req as any).birth_calendar ?? "gregorian",
+        birth_date: (req as any).birth_date ?? null,
+        birth_date_hijri: (req as any).birth_date_hijri ?? null,
+      } as any);
     await admin.from("user_roles").insert({ user_id: authUser.user.id, role: "member" });
     await admin.from("account_requests").update({ status: "approved" }).eq("id", data.id);
 
