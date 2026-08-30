@@ -710,38 +710,24 @@ body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after {
 
 .desktop-portal-stage {
   position: relative;
-  display: grid;
-  grid-template-areas: "portal copy";
-  grid-template-columns: minmax(430px, 1.18fr) minmax(340px, 0.82fr);
-  align-items: center;
-  min-height: 410px;
-  overflow: hidden;
-  border: 1px solid rgba(222, 184, 105, 0.35);
-  border-radius: 36px;
-  background:
-    radial-gradient(circle at 23% 43%, rgba(33, 147, 103, 0.2), transparent 35%),
-    linear-gradient(135deg, #073228 0%, #031b16 52%, #020e0b 100%);
-  box-shadow:
-    0 34px 70px -34px rgba(0, 0, 0, 0.88),
-    inset 0 1px rgba(255, 255, 255, 0.05);
+  display: block;
+  width: 100%;
+  min-height: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .desktop-portal-stage::before {
-  content: "";
-  position: absolute;
-  inset: 19px;
-  border: 1px solid rgba(222, 184, 105, 0.11);
-  border-radius: 25px;
-  pointer-events: none;
+  display: none;
+  content: none;
 }
 
 .desktop-portal-stage::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(224, 185, 103, 0.7), transparent);
-  pointer-events: none;
+  display: none;
+  content: none;
 }
 
 .desktop-portal-copy {
@@ -810,9 +796,10 @@ body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after {
 }
 
 .desktop-portal-model {
-  grid-area: portal;
-  min-height: 380px;
-  margin: 5px 18px 5px 0;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
 }
 
 

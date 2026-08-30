@@ -303,27 +303,13 @@ export function DesktopDashboardExtras() {
 
         <section className="desktop-overview-shell">
           <div className="desktop-portal-stage">
-            <div className="desktop-portal-copy">
-              <span className="desktop-portal-eyebrow">
-                <Sparkles size={15} aria-hidden="true" />
-                {greeting}، يا أهل الوفاء
-              </span>
-              <h1>
-                <small>حيّاك الله،</small>
-                <strong>{name}</strong>
-              </h1>
-              <p>نصل العائلة، نحفظ الإرث، ونبني المستقبل.</p>
-              <div className="desktop-portal-rule" aria-hidden="true" />
-            </div>
-
             <HeritagePortal3D
               logoUrl={logo}
-              greeting="حيّاك الله،"
+              greeting={`${greeting}، يا أهل الوفاء`}
               name={name}
               message="نصل العائلة، نحفظ الإرث، ونبني المستقبل."
               className="desktop-portal-model"
             />
-
           </div>
 
           <div className={`desktop-services-panel${servicesExpanded ? " is-expanded" : ""}`}>
