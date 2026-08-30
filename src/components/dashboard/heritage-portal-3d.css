@@ -546,6 +546,7 @@ html body .desktop-portal-stage
   html body .desktop-portal-stage
     > .desktop-portal-model.heritage-pavilion-reference {
     width: 80% !important;
+    width: min(80%, max(720px, calc(177.7svh - 620px))) !important;
     max-width: 1540px !important;
   }
 }
@@ -557,6 +558,20 @@ html body .desktop-portal-stage
   html body .desktop-portal-stage
     > .desktop-portal-model.heritage-pavilion-reference {
     width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+
+/* Landscape tablets: cap the pavilion by viewport height so services remain visible. */
+@media (min-width: 900px) and (max-width: 1600px) and (min-height: 600px) and (orientation: landscape) and (any-pointer: coarse) {
+  html body .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference,
+  html body .desktop-portal-stage
+    > .desktop-portal-model.heritage-pavilion-reference {
+    width: 100% !important;
+    width: min(100%, max(680px, calc(177.7svh - 620px))) !important;
     max-width: none !important;
   }
 }
