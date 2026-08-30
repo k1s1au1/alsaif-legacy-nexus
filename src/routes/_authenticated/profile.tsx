@@ -462,17 +462,19 @@ function ProfilePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Field
-                  label="الاسم بالعربية (المجلس)"
+                  label={lockedName ? "الاسم بالعربية (موثق)" : "الاسم بالعربية (المجلس)"}
                   icon={<Quote className="size-4" />}
                   value={arabicName}
                   onChange={setArabicName}
+                  disabled={lockedName}
                   placeholder="مثال: سعود السيف"
                 />
                 <Field
-                  label="الاسم الكامل (الهوية)"
+                  label={lockedName ? "الاسم الكامل (موثق)" : "الاسم الكامل (الهوية)"}
                   icon={<UserIcon className="size-4" />}
                   value={fullName}
                   onChange={setFullName}
+                  disabled={lockedName}
                   placeholder="الاسم كما في الهوية..."
                 />
                 <Field
