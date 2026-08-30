@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireSupabaseAuth } from "@/lib/api/supabase-auth.middleware";
 
 export const getMemberCredential = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
