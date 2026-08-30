@@ -501,8 +501,8 @@ function AdminPage() {
       await deleteMemberFn({ data: { userId: uid } });
       toast.success("تم حذف الحساب بنجاح");
       loadData();
-    } catch {
-      toast.error("فشل الحذف");
+    } catch (err: any) {
+      toast.error("فشل الحذف", { description: err?.message || "خطأ غير معروف" });
     }
   };
 

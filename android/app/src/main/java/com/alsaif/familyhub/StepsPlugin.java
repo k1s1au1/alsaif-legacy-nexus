@@ -21,6 +21,8 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import com.getcapacitor.annotation.ActivityCallback;
+import androidx.activity.result.ActivityResult;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -160,57 +162,79 @@ public class StepsPlugin extends Plugin implements SensorEventListener {
     @PluginMethod
     public void checkHealthConnect(PluginCall call) {
         JSObject ret = new JSObject();
-        try {
-            int status = androidx.health.connect.client.HealthConnectClient.getSdkStatus(getContext(), "com.google.android.apps.healthdata");
-            ret.put("status", status);
-
-            if (status == 1) { // SDK_AVAILABLE
-                androidx.health.connect.client.HealthConnectClient client = androidx.health.connect.client.HealthConnectClient.getOrCreate(getContext());
-                // In a real implementation, we'd check permissions here too.
-            }
-        } catch (Exception e) {
-            ret.put("status", 2);
-        }
+        int status = HealthConnectBridge.sdkStatus(getContext());
+        ret.put("status", status);
+        ret.put("available", status == 1);
         call.resolve(ret);
     }
 
     @PluginMethod
-    public void getHealthConnectSteps(final PluginCall call) {
-        // This is a simplified version. Health Connect requires complex async handling in Java.
-        // We will implement a robust check and return what we can.
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
-            call.reject("UNSUPPORTED_OS");
+    public void requestHealthConnectPermission(PluginCall call) {
+        if (!HealthConnectBridge.isAvailable(getContext())) {
+            call.reject("HC_UNAVAILABLE");
             return;
         }
-
         try {
-            int status = androidx.health.connect.client.HealthConnectClient.getSdkStatus(getContext());
-            if (status != 1) {
-                call.reject("HC_UNAVAILABLE");
+            saveCall(call);
+            startActivityForResult(call, HealthConnectBridge.permissionIntent(getContext()), "healthPermsResult");
+        } catch (Exception e) {
+            call.reject(e.getMessage() != null ? e.getMessage() : "HC_PERMISSION_FAILED");
+        }
+    }
+
+    @ActivityCallback
+    private void healthPermsResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        HealthConnectBridge.hasPermission(getContext(), (granted, error) -> {
+            JSObject ret = new JSObject();
+            ret.put("granted", granted);
+            if (error != null) ret.put("error", error);
+            call.resolve(ret);
+        });
+    }
+
+    @PluginMethod
+    public void getHealthConnectSteps(final PluginCall call) {
+        int status = HealthConnectBridge.sdkStatus(getContext());
+        if (status != 1) {
+            call.reject("HC_UNAVAILABLE");
+            return;
+        }
+        HealthConnectBridge.readTodaySteps(getContext(), (steps, error) -> {
+            if (error != null) {
+                if ("NO_PERMISSION".equals(error)) {
+                    call.reject("NO_PERMISSION");
+                } else {
+                    call.reject(error);
+                }
                 return;
             }
-
-            // Since we're in Java and HC is Kotlin-first, we'll suggest using
-            // the sensor as primary and HC as manual trigger for now.
-            // Full HC implementation usually requires a Kotlin bridge or specific Java wrappers.
             JSObject ret = new JSObject();
             ret.put("supported", true);
+            ret.put("steps", steps == null ? 0 : steps.intValue());
+            ret.put("date", today());
+            ret.put("source", "health_connect");
             call.resolve(ret);
-        } catch (Exception e) {
-            call.reject(e.getMessage());
-        }
+        });
     }
 
     @PluginMethod
     public void openHealthConnectSettings(PluginCall call) {
         try {
             Intent intent = new Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS");
-            intent.setPackage("com.google.android.apps.healthdata");
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getContext().startActivity(intent);
             call.resolve();
         } catch (Exception e) {
-            call.reject("COULD_NOT_OPEN_SETTINGS");
+            try {
+                Intent play = new Intent(Intent.ACTION_VIEW);
+                play.setData(android.net.Uri.parse("market://details?id=com.google.android.apps.healthdata"));
+                play.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(play);
+                call.resolve();
+            } catch (Exception e2) {
+                call.reject("COULD_NOT_OPEN_SETTINGS");
+            }
         }
     }
 

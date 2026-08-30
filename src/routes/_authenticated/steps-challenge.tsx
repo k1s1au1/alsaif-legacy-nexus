@@ -140,7 +140,7 @@ function StepsChallengePage() {
 
   useRealtimeSync(["steps_data"], loadData);
 
-  const saveSteps = useCallback(async (steps: number, source: "device" | "manual") => {
+  const saveSteps = useCallback(async (steps: number, source: "device" | "manual" | "health_connect") => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("NOT_SIGNED_IN");
 
@@ -267,15 +267,45 @@ function StepsChallengePage() {
     const tId = toast.loading("جاري المزامنة مع بيانات الصحة...");
     try {
       const plugin = await getStepsPlugin();
-      // This will trigger the permission request or just succeed if already granted
-      const result = await plugin.getHealthConnectSteps();
-      if (result.supported) {
-        toast.success("تم الربط مع نظام الصحة بنجاح ✨", { id: tId });
-        await handleSync(true);
+
+      const readSteps = async () => {
+        const result = await plugin.getHealthConnectSteps();
+        return Number(result?.steps ?? 0);
+      };
+
+      let steps: number;
+      try {
+        steps = await readSteps();
+      } catch (err: any) {
+        const code = String(err?.message || err?.code || "");
+        if (code.includes("NO_PERMISSION")) {
+          // Ask Health Connect for the READ_STEPS permission, then retry once.
+          const perm = await plugin.requestHealthConnectPermission();
+          if (!perm?.granted) {
+            toast.error("لم يتم السماح بقراءة الخطوات من Health Connect", {
+              id: tId,
+              description: "افتح Health Connect واسمح للتطبيق بقراءة الخطوات، ثم أعد المحاولة.",
+            });
+            try {
+              await plugin.openHealthConnectSettings();
+            } catch (e) {}
+            return;
+          }
+          steps = await readSteps();
+        } else {
+          throw err;
+        }
+      }
+
+      if (steps > 0) {
+        const saved = await saveSteps(Math.round(steps), "health_connect");
+        toast.success(`تمت مزامنة ${saved.toLocaleString()} خطوة من تطبيقات الصحة ✨`, { id: tId });
+        await loadData();
       } else {
-        // If supported but no data/permission, open settings
-        await plugin.openHealthConnectSettings();
-        toast.dismiss(tId);
+        toast.info("لا توجد خطوات مسجّلة اليوم في Health Connect", {
+          id: tId,
+          description: "تأكد أن تطبيق الصحة (Google Fit / Samsung Health / Huawei Health) يشارك الخطوات مع Health Connect.",
+        });
       }
     } catch (e: any) {
       toast.error("فشل الربط مع بيانات الصحة", { id: tId, description: e?.message });
