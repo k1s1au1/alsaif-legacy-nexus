@@ -882,6 +882,10 @@ function AdminPage() {
 
             {tab === "suggestions" && (isSystemAdmin || isSiteChairman) && <SuggestionsManager />}
 
+            {tab === "profile_changes" && (isSystemAdmin || isSiteChairman) && (
+              <ProfileChangeRequests />
+            )}
+
 
             {tab === "requests" && (
               <section className="space-y-8 animate-fade-up">
