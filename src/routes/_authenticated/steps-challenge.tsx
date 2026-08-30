@@ -60,6 +60,11 @@ function StepsChallengePage() {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualValue, setManualValue] = useState("");
   const syncingRef = useRef(false);
+  const [webSteps, setWebSteps] = useState(0);
+  const [webActive, setWebActive] = useState(false);
+  const [webSupported, setWebSupported] = useState(false);
+  const pedRef = useRef<WebPedometer | null>(null);
+
 
   const checkHealth = useCallback(async () => {
     if (!isNative()) return;
