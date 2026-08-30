@@ -181,10 +181,12 @@ function StepsChallengePage() {
 
       const { available } = await plugin.isAvailable();
       if (!available) {
-        toast.error("جوالك لا يحتوي على مستشعر خطوات", { description: "يمكنك إدخال خطواتك يدوياً." });
+        toast.info("لا يوجد مستشعر خطوات مخصص", { description: "سيتم الحساب من مستشعر حركة الجهاز." });
         setSensorReady(false);
+        await startWebPedometer();
         return;
       }
+
 
       setSensorReady(true);
       toast.success("تم تفعيل عدّاد الخطوات ✨");
