@@ -603,3 +603,12 @@
     transition: none !important;
   }
 }
+
+/* Desktop-only header clearance:
+   move the primary navigation toward the brand side so Calendar never
+   overlaps the clock/date pill. Fine-pointer gating keeps tablets untouched. */
+@media (min-width: 1200px) and (hover: hover) and (pointer: fine) {
+  html body main > .app-shell-header-wrap > header.app-shell-header > nav.app-shell-primary-nav {
+    left: calc(50% + clamp(56px, 5.2vw, 104px)) !important;
+  }
+}
