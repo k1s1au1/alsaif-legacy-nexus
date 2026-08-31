@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { isFamilyOccasionEvent } from "@/lib/family-occasion-events";
 import {
   DropdownMenu,
   DropdownMenuArrow,
@@ -32,17 +33,6 @@ type Notif = {
   at: string;
   refId?: string; // Original ID from DB
 };
-
-const FAMILY_OCCASION_MARKER = "__familyOccasion";
-
-function isFamilyOccasionDescription(description: string | null) {
-  try {
-    const payload = description ? JSON.parse(description) : null;
-    return payload?.[FAMILY_OCCASION_MARKER] === true && Boolean(payload.occasion);
-  } catch {
-    return false;
-  }
-}
 
 function timeAgo(iso: string) {
   try {
@@ -197,7 +187,7 @@ export function NotificationsBell() {
         .lte("starts_at", soon)
         .order("starts_at");
       (occasions ?? [])
-        .filter((o: any) => isFamilyOccasionDescription(o.description))
+        .filter((o: any) => isFamilyOccasionEvent(o))
         .slice(0, 5)
         .forEach((o: any) => {
           const notifId = `occ-${o.id}`;
