@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { UserAvatar } from "@/components/user-avatar";
@@ -11,22 +11,277 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserRole } from "@/hooks/use-user-role";
 import { sendFcmNotification } from "@/lib/fcm.functions";
+import { OfflineCache } from "@/lib/offline-cache";
 
 export const Route = createFileRoute("/_authenticated/community")({ ssr:false, head:()=>({meta:[{title:"ركن الأعضاء — السيف"},{name:"description",content:"مساحة الأعضاء لمشاركة اليوميات، الصور، والأسئلة مع تصويت العائلة."}]}), component:CommunityPage });
 type Post={id:string;author_id:string;kind:"diary"|"photo"|"question"|"request"|string;title:string;body:string|null;image_urls:string[];poll_options:{label:string}[]|null;pinned:boolean;created_at:string;author?:{arabic_name:string|null;full_name:string|null;avatar_url:string|null}};
 const KIND_META:Record<string,{label:string;icon:any;color:string}>={diary:{label:"يوميات",icon:BookOpen,color:"bg-emerald-600"},photo:{label:"صور",icon:Camera,color:"bg-amber-600"},question:{label:"سؤال للعائلة",icon:HelpCircle,color:"bg-sky-600"},request:{label:"طلبات",icon:ShieldAlert,color:"bg-rose-600"}};
 
+const COMMUNITY_PAGE_SIZE = 20;
+const COMMUNITY_CACHE_PREFIX = "member_corner_posts";
+
 function CommunityPage(){
- const {userId:meId,canManage}=useUserRole(); const isHead=canManage("community");
- const [profile,setProfile]=useState({name:"",role:"",initial:"ع",avatarPath:null as string|null}); const [isChair,setIsChair]=useState(false); const [posts,setPosts]=useState<Post[]>([]); const [comments,setComments]=useState<any[]>([]); const [votes,setVotes]=useState<any[]>([]); const [loading,setLoading]=useState(true); const [showAdd,setShowAdd]=useState(false); const [filter,setFilter]=useState<string>("all");
- const loadData=useCallback(async()=>{if(!meId)return;setLoading(true);try{const[{data:p},{data:roles}]=await Promise.all([supabase.from("profiles").select("id, arabic_name, full_name, avatar_url, is_active, created_at, updated_at, first_name, father_name, grandfather_name, parent_id, terms_accepted_at").eq("id",meId).maybeSingle(),supabase.from("user_roles").select("role").eq("user_id",meId)]);const rs=(roles??[]).map(r=>r.role);setIsChair(rs.includes("chairman"));if(p)setProfile({name:p.arabic_name||p.full_name||"عضو",role:rs.includes("chairman")?"رئيس المجلس":rs.includes("admin")?"مسؤول تقني":rs.includes("manager")?"مسؤول قسم":"عضو",initial:(p.arabic_name?.[0]||"ع").toUpperCase(),avatarPath:p.avatar_url});const{data:rawPosts}=await supabase.from("member_posts" as any).select("*");if(rawPosts){const ids=Array.from(new Set((rawPosts as any[]).map(p=>p.author_id).filter(Boolean)));const{data:profs}=ids.length?await supabase.from("profiles").select("id, arabic_name, full_name, avatar_url").in("id",ids):{data:[]};const map=new Map((profs??[]).map((p:any)=>[p.id,p]));const processed=(rawPosts as any[]).map(p=>({...p,author:map.get(p.author_id)||null}));processed.sort((a:any,b:any)=>a.pinned!==b.pinned?(a.pinned?-1:1):new Date(b.created_at).getTime()-new Date(a.created_at).getTime());setPosts(processed as Post[])}const{data:coms}=await supabase.from("member_post_comments" as any).select("*").order("created_at",{ascending:true});if(coms){const ids=Array.from(new Set((coms as any[]).map((c:any)=>c.author_id).filter(Boolean)));const{data:cp}=ids.length?await supabase.from("profiles").select("id, arabic_name, full_name, avatar_url").in("id",ids):{data:[]};const m=new Map((cp??[]).map((p:any)=>[p.id,p]));setComments((coms as any[]).map((c:any)=>({...c,author:m.get(c.author_id)||null})))}const{data:vs}=await supabase.from("member_post_votes" as any).select("*");setVotes((vs as any[])||[])}finally{setLoading(false)}},[meId]);
- useEffect(()=>{loadData()},[loadData]); useEffect(()=>{const channel=supabase.channel("community-realtime").on("postgres_changes",{event:"*",schema:"public",table:"member_posts"},()=>loadData()).on("postgres_changes",{event:"*",schema:"public",table:"member_post_comments"},()=>loadData()).on("postgres_changes",{event:"*",schema:"public",table:"member_post_votes"},()=>loadData()).subscribe();return()=>{supabase.removeChannel(channel)}},[loadData]);
- const filtered=useMemo(()=>{const visible=posts.filter(p=>p.kind!=="request"||isChair||p.author_id===meId);return filter==="all"?visible:visible.filter(p=>p.kind===filter)},[posts,filter,isChair,meId]);
- return <AppShell title="ركن الأعضاء" user={profile}><div className="member-corner-page max-w-6xl mx-auto space-y-12 pb-24" dir="rtl">
+ const {
+   userId:meId,
+   canManage,
+   isChairman,
+   primaryRole,
+   isLoading:roleLoading,
+ }=useUserRole();
+ const isHead=canManage("community");
+ const [profile,setProfile]=useState({name:"",role:"",initial:"ع",avatarPath:null as string|null});
+ const [posts,setPosts]=useState<Post[]>([]);
+ const [comments,setComments]=useState<any[]>([]);
+ const [votes,setVotes]=useState<any[]>([]);
+ const [loading,setLoading]=useState(true);
+ const [loadingMore,setLoadingMore]=useState(false);
+ const [hasMore,setHasMore]=useState(true);
+ const [showAdd,setShowAdd]=useState(false);
+ const [filter,setFilter]=useState<string>("all");
+ const postsRef=useRef<Post[]>([]);
+ const postIdsRef=useRef<string[]>([]);
+
+ useEffect(()=>{
+   if(!meId)return;
+   const cached=OfflineCache.load(`${COMMUNITY_CACHE_PREFIX}:${meId}`);
+   if(Array.isArray(cached)&&cached.length>0){
+     const cachedPosts=cached as Post[];
+     postsRef.current=cachedPosts;
+     postIdsRef.current=cachedPosts.map(post=>post.id);
+     setPosts(cachedPosts);
+     setLoading(false);
+   }
+ },[meId]);
+
+ const loadEngagement=useCallback(async(postIds:string[])=>{
+   if(postIds.length===0){
+     setComments([]);
+     setVotes([]);
+     return;
+   }
+
+   try{
+     const[{data:coms,error:commentsError},{data:vs,error:votesError}]=await Promise.all([
+       supabase
+         .from("member_post_comments" as any)
+         .select("*")
+         .in("post_id",postIds)
+         .order("created_at",{ascending:true}),
+       supabase
+         .from("member_post_votes" as any)
+         .select("*")
+         .in("post_id",postIds),
+     ]);
+
+     if(commentsError) console.error("Member comments fetch error:",commentsError);
+     if(votesError) console.error("Member votes fetch error:",votesError);
+
+     if(coms){
+       const authorIds=Array.from(new Set((coms as any[]).map((comment:any)=>comment.author_id).filter(Boolean)));
+       const{data:commentProfiles}=authorIds.length
+         ?await supabase
+             .from("profiles")
+             .select("id, arabic_name, full_name, avatar_url")
+             .in("id",authorIds)
+         :{data:[]};
+       const profileMap=new Map((commentProfiles??[]).map((item:any)=>[item.id,item]));
+       setComments((coms as any[]).map((comment:any)=>({
+         ...comment,
+         author:profileMap.get(comment.author_id)||null,
+       })));
+     }
+
+     setVotes((vs as any[])||[]);
+   }catch(error){
+     console.error("Member engagement fetch error:",error);
+   }
+ },[]);
+
+ const loadProfile=useCallback(async()=>{
+   if(!meId)return;
+   const{data:p,error}=await supabase
+     .from("profiles")
+     .select("id, arabic_name, full_name, avatar_url")
+     .eq("id",meId)
+     .maybeSingle();
+
+   if(error){
+     console.error("Member profile fetch error:",error);
+     return;
+   }
+
+   if(p){
+     setProfile({
+       name:p.arabic_name||p.full_name||"عضو",
+       role:"",
+       initial:(p.arabic_name?.[0]||"ع").toUpperCase(),
+       avatarPath:p.avatar_url,
+     });
+   }
+ },[meId]);
+
+ const loadPosts=useCallback(async(
+   options:{append?:boolean;silent?:boolean}={},
+ )=>{
+   if(!meId)return;
+   const append=options.append===true;
+   const silent=options.silent===true;
+   const hasVisiblePosts=postsRef.current.length>0;
+
+   if(append)setLoadingMore(true);
+   else if(!silent&&!hasVisiblePosts)setLoading(true);
+
+   try{
+     const offset=append?postsRef.current.length:0;
+     const requestedCount=append
+       ?COMMUNITY_PAGE_SIZE
+       :Math.max(COMMUNITY_PAGE_SIZE,postsRef.current.length);
+
+     const{data:rawPosts,error}=await supabase
+       .from("member_posts" as any)
+       .select("*")
+       .order("pinned",{ascending:false})
+       .order("created_at",{ascending:false})
+       .range(offset,offset+requestedCount-1);
+
+     if(error)throw error;
+
+     const page=(rawPosts as any[])||[];
+     const authorIds=Array.from(new Set(page.map(post=>post.author_id).filter(Boolean)));
+     const{data:authorProfiles}=authorIds.length
+       ?await supabase
+           .from("profiles")
+           .select("id, arabic_name, full_name, avatar_url")
+           .in("id",authorIds)
+       :{data:[]};
+     const profileMap=new Map((authorProfiles??[]).map((item:any)=>[item.id,item]));
+     const processed=page.map((post:any)=>({
+       ...post,
+       author:profileMap.get(post.author_id)||null,
+     })) as Post[];
+
+     const merged=append
+       ?[
+           ...postsRef.current,
+           ...processed.filter(post=>!postsRef.current.some(current=>current.id===post.id)),
+         ]
+       :processed;
+
+     postsRef.current=merged;
+     postIdsRef.current=merged.map(post=>post.id);
+     setPosts(merged);
+     setHasMore(page.length===requestedCount);
+     OfflineCache.save(`${COMMUNITY_CACHE_PREFIX}:${meId}`,merged);
+     setLoading(false);
+
+     void loadEngagement(postIdsRef.current);
+   }catch(error){
+     console.error("Member posts fetch error:",error);
+     if(!hasVisiblePosts)toast.error("تعذر تحميل مشاركات ركن الأعضاء");
+   }finally{
+     if(append)setLoadingMore(false);
+     if(!hasVisiblePosts)setLoading(false);
+   }
+ },[meId,loadEngagement]);
+
+ const loadData=useCallback(async()=>{
+   await loadPosts({silent:postsRef.current.length>0});
+ },[loadPosts]);
+
+ useEffect(()=>{
+   if(meId){
+     void loadPosts({silent:postsRef.current.length>0});
+     return;
+   }
+   if(!roleLoading)setLoading(false);
+ },[meId,roleLoading,loadPosts]);
+
+ useEffect(()=>{
+   if(meId)void loadProfile();
+ },[meId,loadProfile]);
+
+ useEffect(()=>{
+   if(!meId)return;
+   const channel=supabase
+     .channel("community-realtime")
+     .on("postgres_changes",{event:"*",schema:"public",table:"member_posts"},()=>{
+       void loadPosts({silent:true});
+     })
+     .on("postgres_changes",{event:"*",schema:"public",table:"member_post_comments"},()=>{
+       void loadEngagement(postIdsRef.current);
+     })
+     .on("postgres_changes",{event:"*",schema:"public",table:"member_post_votes"},()=>{
+       void loadEngagement(postIdsRef.current);
+     })
+     .subscribe();
+
+   return()=>{supabase.removeChannel(channel)};
+ },[meId,loadPosts,loadEngagement]);
+
+ const shellProfile=useMemo(()=>({
+   ...profile,
+   role:isChairman
+     ?"رئيس المجلس"
+     :primaryRole==="admin"
+       ?"مسؤول تقني"
+       :isHead||primaryRole==="manager"
+         ?"مسؤول قسم"
+         :"عضو",
+ }),[profile,isChairman,primaryRole,isHead]);
+
+ const filtered=useMemo(()=>{
+   const visible=posts.filter(post=>post.kind!=="request"||isChairman||post.author_id===meId);
+   return filter==="all"?visible:visible.filter(post=>post.kind===filter);
+ },[posts,filter,isChairman,meId]);
+
+ return <AppShell title="ركن الأعضاء" user={shellProfile}><div className="member-corner-page max-w-6xl mx-auto space-y-12 pb-24" dir="rtl">
    <section className="member-corner-hero animate-fade-up px-4 md:px-0"><div className="relative overflow-hidden rounded-[32px] md:rounded-[48px] bg-gradient-to-br from-emerald-800 via-[#0d2620] to-black p-6 md:p-12 text-white shadow-2xl border border-white/5"><div className="absolute top-0 right-0 size-64 bg-gold-primary/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"/><div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6"><div className="space-y-3 md:space-y-5 text-center md:text-right"><div className="flex items-center justify-center md:justify-start gap-3"><div className="h-0.5 w-8 md:w-12 bg-gold-primary"/><span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">مساحة العائلة</span></div><h2 className="text-3xl md:text-6xl font-black tracking-tighter leading-tight">ركن الأعضاء</h2><p className="text-white/60 font-bold text-sm md:text-xl max-w-xl">شارك يومياتك، صورك، أو اطرح سؤالاً تأخذ فيه رأي العائلة بالتعليق أو التصويت.</p></div><div className="size-16 md:size-28 rounded-2xl md:rounded-[36px] bg-white/5 border border-white/10 flex items-center justify-center self-center md:self-auto shrink-0"><Users className="size-8 md:size-14 text-gold-primary" strokeWidth={1.5}/></div></div></div></section>
    <div className="member-corner-services"><QuickActionsBanner/></div>
    <div className="member-corner-filters px-4 md:px-0 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2"><FilterChip active={filter==="all"} onClick={()=>setFilter("all")} label="الكل"/>{Object.entries(KIND_META).map(([k,m])=><FilterChip key={k} active={filter===k} onClick={()=>setFilter(k)} label={m.label} Icon={m.icon}/>)}</div><button onClick={()=>setShowAdd(true)} className="btn-gold px-6 py-3 rounded-2xl flex items-center gap-2 shadow-xl text-sm font-black"><Plus size={18}/><span>مشاركة جديدة</span></button></div>
-   <div className="member-corner-content grid grid-cols-1 gap-8 px-4 md:px-0">{loading?<div className="py-20 text-center"><Loader2 className="animate-spin size-12 mx-auto text-primary opacity-20"/></div>:filtered.length===0?<div className="p-16 text-center bg-muted/20 rounded-[36px] border-4 border-dashed italic text-muted-foreground">لا توجد مشاركات بعد — كن أول من يبدأ</div>:filtered.map(p=><PostCard key={p.id} post={p} meId={meId} isHead={isHead} canDelete={isHead||p.author_id===meId} comments={comments.filter(c=>c.post_id===p.id)} votes={votes.filter(v=>v.post_id===p.id)} onRefresh={loadData}/>)}</div>
+   <div className="member-corner-content grid grid-cols-1 gap-8 px-4 md:px-0">
+    {loading?(
+      <div className="py-20 text-center">
+        <Loader2 className="animate-spin size-12 mx-auto text-primary opacity-20"/>
+      </div>
+    ):filtered.length===0?(
+      <div className="p-16 text-center bg-muted/20 rounded-[36px] border-4 border-dashed italic text-muted-foreground">
+        لا توجد مشاركات بعد — كن أول من يبدأ
+      </div>
+    ):(
+      filtered.map(post=>(
+        <PostCard
+          key={post.id}
+          post={post}
+          meId={meId}
+          isHead={isHead}
+          canDelete={isHead||post.author_id===meId}
+          comments={comments.filter(comment=>comment.post_id===post.id)}
+          votes={votes.filter(vote=>vote.post_id===post.id)}
+          onRefresh={loadData}
+        />
+      ))
+    )}
+
+    {!loading&&hasMore&&(
+      <div className="flex justify-center pt-2">
+        <button
+          type="button"
+          disabled={loadingMore}
+          onClick={()=>void loadPosts({append:true,silent:true})}
+          className="min-w-44 h-12 px-6 rounded-2xl border border-primary/20 bg-card text-primary text-sm font-black shadow-lg transition-all hover:border-primary/40 hover:bg-primary/5 disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {loadingMore?(
+            <>
+              <Loader2 className="animate-spin" size={17}/>
+              <span>جاري التحميل...</span>
+            </>
+          ):(
+            <span>تحميل مشاركات أقدم</span>
+          )}
+        </button>
+      </div>
+    )}
+   </div>
   </div><AnimatePresence>{showAdd&&<AddPostDialog meId={meId} onClose={()=>setShowAdd(false)} onSaved={loadData}/>}</AnimatePresence></AppShell>
 }
 function FilterChip({active,onClick,label,Icon}:any){return <button onClick={onClick} className={cn("px-4 py-2 rounded-2xl text-xs font-black border transition-all flex items-center gap-2",active?"bg-primary text-white border-primary shadow-lg":"bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-primary")}>{Icon&&<Icon size={14}/>} {label}</button>}
