@@ -837,7 +837,7 @@ function AppShellChrome({
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
           className={cn(
-            "app-shell-bottom-dock fixed bottom-8 inset-x-6 z-[100] flex justify-center",
+            "app-shell-bottom-dock fixed bottom-8 inset-x-6 z-[70] flex justify-center",
             !isTabletPortrait && "md:hidden",
             isTabletPortrait && "app-shell-bottom-dock-tablet-portrait",
           )}
