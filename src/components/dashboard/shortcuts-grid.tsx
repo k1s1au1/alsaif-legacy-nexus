@@ -140,17 +140,6 @@ export function ShortcutsGrid({
         stat: stats.tasks ?? null,
       },
       {
-        key: "events",
-        to: "/events",
-        title: "المهام",
-        description: "متابعة المهام والأنشطة العائلية",
-        icon: Sparkles,
-        accent: "from-gold-primary/10 to-transparent",
-        cta: "تصفح المهام",
-        badge: badges.events ?? null,
-        stat: stats.events ?? null,
-      },
-      {
         key: "majlis",
         to: "/majlis",
         title: "الأخبار",
