@@ -718,20 +718,23 @@ function AddPostDialog({ meId, canManageNews, editPost, onClose, onSaved }: any)
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl"
+      className="fixed inset-0 z-[180] flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-xl"
       dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-label={isEdit ? "تعديل الإعلان" : "مشاركة جديدة"}
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-card w-full max-w-2xl rounded-[48px] overflow-hidden shadow-2xl border border-border flex flex-col max-h-[90vh]"
+        className="bg-card w-full max-w-2xl rounded-[32px] sm:rounded-[48px] overflow-hidden shadow-2xl border border-border flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]"
       >
-        <header className="p-8 border-b border-border/40 flex items-center justify-between">
+        <header className="p-5 sm:p-8 border-b border-border/40 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg">
               {isEdit ? <Pencil size={24} strokeWidth={3} /> : <Plus size={24} strokeWidth={3} />}
             </div>
-            <h3 className="text-2xl font-black text-primary">
+            <h3 className="text-xl sm:text-2xl font-black text-primary">
               {isEdit ? "تعديل الإعلان" : "إعلان جديد"}
             </h3>
           </div>
@@ -744,7 +747,7 @@ function AddPostDialog({ meId, canManageNews, editPost, onClose, onSaved }: any)
         </header>
         <form
           onSubmit={submit}
-          className="p-8 space-y-6 overflow-y-auto no-scrollbar flex-1 text-foreground"
+          className="p-5 sm:p-8 space-y-6 overflow-y-auto overscroll-contain no-scrollbar flex-1 text-foreground"
         >
           <div className="space-y-3">
             <label className="text-[10px] font-black uppercase tracking-widest text-primary/60 px-2">
@@ -809,7 +812,7 @@ function AddPostDialog({ meId, canManageNews, editPost, onClose, onSaved }: any)
             </div>
           )}
 
-          <div className="flex gap-4 pt-6">
+          <div className="sticky bottom-0 z-20 -mx-5 sm:-mx-8 flex gap-3 border-t border-border/40 bg-card/95 px-5 sm:px-8 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-xl">
             <button
               type="button"
               onClick={onClose}
