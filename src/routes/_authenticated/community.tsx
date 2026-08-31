@@ -18,7 +18,7 @@ type Post={id:string;author_id:string;kind:"diary"|"photo"|"question"|"request"|
 const KIND_META:Record<string,{label:string;icon:any;color:string}>={diary:{label:"يوميات",icon:BookOpen,color:"bg-emerald-600"},photo:{label:"صور",icon:Camera,color:"bg-amber-600"},question:{label:"سؤال للعائلة",icon:HelpCircle,color:"bg-sky-600"},request:{label:"طلبات",icon:ShieldAlert,color:"bg-rose-600"}};
 
 const COMMUNITY_PAGE_SIZE = 20;
-const COMMUNITY_CACHE_KEY = "member_corner_posts";
+const COMMUNITY_CACHE_PREFIX = "member_corner_posts";
 
 function CommunityPage(){
  const {
@@ -42,7 +42,8 @@ function CommunityPage(){
  const postIdsRef=useRef<string[]>([]);
 
  useEffect(()=>{
-   const cached=OfflineCache.load(COMMUNITY_CACHE_KEY);
+   if(!meId)return;
+   const cached=OfflineCache.load(`${COMMUNITY_CACHE_PREFIX}:${meId}`);
    if(Array.isArray(cached)&&cached.length>0){
      const cachedPosts=cached as Post[];
      postsRef.current=cachedPosts;
@@ -50,7 +51,7 @@ function CommunityPage(){
      setPosts(cachedPosts);
      setLoading(false);
    }
- },[]);
+ },[meId]);
 
  const loadEngagement=useCallback(async(postIds:string[])=>{
    if(postIds.length===0){
@@ -170,7 +171,7 @@ function CommunityPage(){
      postIdsRef.current=merged.map(post=>post.id);
      setPosts(merged);
      setHasMore(page.length===requestedCount);
-     OfflineCache.save(COMMUNITY_CACHE_KEY,merged);
+     OfflineCache.save(`${COMMUNITY_CACHE_PREFIX}:${meId}`,merged);
      setLoading(false);
 
      void loadEngagement(postIdsRef.current);
