@@ -200,16 +200,16 @@ export function NotificationsBell() {
         .filter((o: any) => isFamilyOccasionDescription(o.description))
         .slice(0, 5)
         .forEach((o: any) => {
-        const notifId = `occ-${o.id}`;
-        if (!dismissed.includes(notifId)) {
-          out.push({
-            id: notifId,
-            kind: "occasion",
-            title: o.title || "مناسبة عائلية",
-            description: "مناسبة عائلية قادمة — اضغط للتفاصيل",
-            href: "/family-occasions",
-            at: o.starts_at,
-            refId: o.id,
+          const notifId = `occ-${o.id}`;
+          if (!dismissed.includes(notifId)) {
+            out.push({
+              id: notifId,
+              kind: "occasion",
+              title: o.title || "مناسبة عائلية",
+              description: "مناسبة عائلية قادمة — اضغط للتفاصيل",
+              href: "/family-occasions",
+              at: o.starts_at,
+              refId: o.id,
             });
           }
         });
