@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
@@ -28,6 +28,9 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 
 export const Route = createFileRoute("/_authenticated/events")({
   ssr: false,
+  beforeLoad: () => {
+    throw redirect({ to: "/family-occasions" });
+  },
   head: () => ({
     meta: [
       { title: "المهام — السيف" },

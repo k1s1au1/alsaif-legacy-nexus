@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  decodeFamilyOccasionEventDescription,
+  encodeFamilyOccasionEventDescription,
+} from "@/lib/family-occasion-events";
 
 const STORAGE_KEY = "alsaif:family-occasions";
-const MARKER = "__familyOccasion";
-
 type LocalOccasion = {
   id: string;
   type: string;
@@ -74,22 +76,19 @@ const startIso = (occasion: LocalOccasion) => {
   return Number.isNaN(value.getTime()) ? new Date().toISOString() : value.toISOString();
 };
 
-const encodeDescription = (occasion: LocalOccasion) => JSON.stringify({ [MARKER]: true, occasion });
+const encodeDescription = (occasion: LocalOccasion) =>
+  encodeFamilyOccasionEventDescription(occasion);
 
 const decodeOccasion = (row: EventRow): LocalOccasion | null => {
-  try {
-    const payload = row.description ? JSON.parse(row.description) : null;
-    if (!payload || payload[MARKER] !== true || !payload.occasion) return null;
-    const o = payload.occasion as LocalOccasion;
-    return {
-      ...o,
-      id: row.id,
-      title: o.title ?? row.title ?? "",
-      location: o.location ?? row.location ?? "",
-    };
-  } catch {
-    return null;
-  }
+  const occasion = decodeFamilyOccasionEventDescription<LocalOccasion>(row.description);
+  if (!occasion) return null;
+
+  return {
+    ...occasion,
+    id: row.id,
+    title: occasion.title ?? row.title ?? "",
+    location: occasion.location ?? row.location ?? "",
+  };
 };
 
 const toEventRow = (occasion: LocalOccasion, userId: string) => ({
