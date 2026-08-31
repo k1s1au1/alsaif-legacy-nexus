@@ -28,11 +28,10 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { QuickActionsBanner } from "@/components/quick-actions-banner";
 import {
+  type CarouselApi,
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { TripImage } from "@/components/trip-image";
@@ -322,6 +321,7 @@ function Dashboard() {
   }, []);
 
   const [annIndex, setAnnIndex] = useState(0);
+  const [announcementsApi, setAnnouncementsApi] = useState<CarouselApi>();
   const [statusIndex, setStatusIndex] = useState(0);
   const [showBugReport, setShowBugReport] = useState(false);
   const [immersiveItem, setImmersiveItem] = useState<{
@@ -373,10 +373,18 @@ function Dashboard() {
   }, [announcementsData, profileData?.id]);
 
   useEffect(() => {
-    if ((announcementsData?.length || 0) < 2) return;
-    const t = setInterval(() => setAnnIndex((p) => (p + 1) % announcementsData!.length), 7000);
-    return () => clearInterval(t);
-  }, [announcementsData?.length]);
+    if (!announcementsApi) return;
+
+    const syncSelectedNews = () => setAnnIndex(announcementsApi.selectedScrollSnap());
+    syncSelectedNews();
+    announcementsApi.on("select", syncSelectedNews);
+    announcementsApi.on("reInit", syncSelectedNews);
+
+    return () => {
+      announcementsApi.off("select", syncSelectedNews);
+      announcementsApi.off("reInit", syncSelectedNews);
+    };
+  }, [announcementsApi]);
 
   const statusMessages = useMemo(() => {
     const msgs = ["نصل العائلة، نحفظ الإرث، ونبني المستقبل."];
@@ -520,7 +528,86 @@ function Dashboard() {
         {/* 3. QUICK ACTIONS BANNER - ONLY ONE INSTANCE */}
         <QuickActionsBanner />
 
-        {/* 4. CONTENT HUB & POLLS */}
+        {/* 4. LATEST COUNCIL NEWS */}
+        {announcementsData && announcementsData.length > 0 && (
+          <section
+            className="dashboard-news-section animate-fade-up"
+            aria-labelledby="dashboard-news-title"
+          >
+            <div className="dashboard-news-heading">
+              <h2 id="dashboard-news-title">
+                <Newspaper size={20} aria-hidden="true" />
+                آخر أخبار المجلس
+              </h2>
+              <Link to="/majlis">
+                عرض الكل
+                <ChevronLeft size={15} aria-hidden="true" />
+              </Link>
+            </div>
+
+            <Carousel
+              opts={announcementsOpts}
+              plugins={announcementsPlugins}
+              setApi={setAnnouncementsApi}
+              className="dashboard-news-carousel"
+            >
+              <CarouselContent className="dashboard-news-track">
+                {announcementsData.map((a, i) => (
+                  <CarouselItem key={a.id || i} className="dashboard-news-slide">
+                    <Link to="/majlis" className="dashboard-news-card">
+                      <div className="dashboard-news-media">
+                        {a.imageUrl ? (
+                          <img src={a.imageUrl} alt="" />
+                        ) : (
+                          <div className="dashboard-news-media-fallback" aria-hidden="true">
+                            <Newspaper size={36} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="dashboard-news-copy">
+                        <div className="dashboard-news-meta">
+                          <span>{a._label || "إعلان المجلس"}</span>
+                          <time dateTime={a.created_at}>
+                            {new Date(a.created_at).toLocaleDateString("ar-SA", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            })}
+                          </time>
+                        </div>
+                        <h3>{a.title}</h3>
+                        <p>{a.cleanBody}</p>
+                        <span className="dashboard-news-action">
+                          قراءة الخبر
+                          <ChevronLeft size={15} aria-hidden="true" />
+                        </span>
+                      </div>
+                    </Link>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+
+              {announcementsData.length > 1 && (
+                <div className="dashboard-news-dots" aria-label="اختيار الخبر">
+                  {announcementsData.map((a, i) => (
+                    <button
+                      key={a.id || i}
+                      type="button"
+                      className={i === annIndex ? "active" : ""}
+                      onClick={() => announcementsApi?.scrollTo(i)}
+                      aria-label={`الخبر ${i + 1}`}
+                      aria-current={i === annIndex ? "true" : undefined}
+                    />
+                  ))}
+                </div>
+              )}
+            </Carousel>
+          </section>
+        )}
+
+
+        {/* 5. CONTENT HUB & POLLS */}
         <PollsPopup userId={safeProfile.id ?? null} />
         <IntegratedHub
           upcomingMeetings={eventsData?.meetings || []}
@@ -531,7 +618,7 @@ function Dashboard() {
           onViewMeeting={(m) => setImmersiveItem({ type: "meeting", data: m })}
         />
 
-        {/* 5. HERITAGE SNIPPET */}
+        {/* 6. HERITAGE SNIPPET */}
         {heritageSnippet && (
           <section className="dashboard-heritage animate-fade-up px-4 md:px-0">
             <Link
@@ -556,66 +643,6 @@ function Dashboard() {
                 <ChevronLeft className="size-6 text-gold-primary opacity-30 group-hover:opacity-100 group-hover:-translate-x-2 transition-all" />
               </div>
             </Link>
-          </section>
-        )}
-
-        {/* 6. ANNOUNCEMENTS - Refined with stable plugin */}
-        {announcementsData && announcementsData.length > 0 && (
-          <section className="dashboard-announcements animate-fade-up px-2 md:px-0">
-            <Carousel
-              opts={announcementsOpts}
-              plugins={announcementsPlugins}
-              className="w-full group"
-            >
-              <CarouselContent>
-                {announcementsData.map((a, i) => (
-                  <CarouselItem key={i}>
-                    <Link
-                      to="/majlis"
-                      className="block relative overflow-hidden rounded-[32px] md:rounded-[40px] border border-gold-primary/30 bg-gradient-to-br from-primary via-[#0d2620] to-black shadow-2xl min-h-[240px] md:min-h-[200px] flex items-stretch"
-                    >
-                      {a.imageUrl && (
-                        <div className="absolute inset-0 z-0 overflow-hidden">
-                          <img
-                            src={a.imageUrl}
-                            className="size-full object-cover object-left md:object-center transition-all duration-1000 group-hover:scale-105"
-                            alt=""
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-l from-black via-black/40 to-transparent" />
-                        </div>
-                      )}
-                      <div className="relative z-10 flex flex-col md:flex-row items-end md:items-center justify-between gap-6 w-full p-6 md:p-12">
-                        <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 text-center md:text-right w-full">
-                          <div className="size-14 md:size-24 rounded-2xl md:rounded-3xl bg-gold-primary/20 backdrop-blur-xl border border-gold-primary/30 flex items-center justify-center text-gold-primary shrink-0 shadow-2xl group-hover:rotate-6 transition-transform duration-500">
-                            <Newspaper size={28} className="md:size-[40px]" />
-                          </div>
-                          <div className="space-y-2 md:space-y-1 w-full">
-                            <span className="text-[11px] md:text-[10px] font-black uppercase tracking-[0.4em] text-gold-primary opacity-80">
-                              {a._label}
-                            </span>
-                            <h3 className="text-2xl md:text-4xl font-black text-white tracking-tight drop-shadow-lg">
-                              {a.title}
-                            </h3>
-                            <p className="text-white/90 font-bold text-sm md:text-lg leading-relaxed max-w-2xl">
-                              {a.cleanBody}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="hidden md:flex shrink-0">
-                          <ChevronLeft className="size-10 text-gold-primary/40 group-hover:text-gold-primary group-hover:-translate-x-3 transition-all duration-500" />
-                        </div>
-                      </div>
-                    </Link>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-
-              {/* Desktop Arrows */}
-              <div className="hidden md:block">
-                <CarouselPrevious className="right-4 bg-white/10 border-white/20 text-white hover:bg-gold-primary hover:text-black transition-all" />
-                <CarouselNext className="left-4 bg-white/10 border-white/20 text-white hover:bg-gold-primary hover:text-black transition-all" />
-              </div>
-            </Carousel>
           </section>
         )}
 
