@@ -216,12 +216,35 @@ export function PollsPopup({ userId }: { userId: string | null }) {
 
   return (
     <>
+      <style>{`
+        .dashboard-polls-trigger {
+          bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+          left: calc(1rem + env(safe-area-inset-left, 0px));
+          max-width: calc(100vw - 2rem);
+        }
+
+        @media (min-width: 768px) {
+          .dashboard-polls-trigger {
+            bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+            left: calc(2rem + env(safe-area-inset-left, 0px));
+          }
+        }
+
+        @media (min-width: 768px) and (max-width: 1600px) and (orientation: portrait) {
+          html body main[data-tablet-portrait="true"] .dashboard-polls-trigger {
+            bottom: calc(8.75rem + env(safe-area-inset-bottom, 0px));
+            left: calc(1.5rem + env(safe-area-inset-left, 0px));
+            max-width: calc(100vw - 3rem);
+          }
+        }
+      `}</style>
+
       {!open && pending.length > 0 && (
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           onClick={reopen}
-          className="fixed bottom-24 left-4 z-[60] flex items-center gap-2 rounded-full bg-primary text-white px-4 py-3 shadow-2xl shadow-primary/40 hover:scale-105 transition-transform"
+          className="dashboard-polls-trigger fixed z-[75] flex items-center gap-2 rounded-full bg-primary text-white px-4 py-3 shadow-2xl shadow-primary/40 hover:scale-105 transition-transform"
           dir="rtl"
           aria-label="عرض الاقتراحات"
         >
@@ -232,7 +255,7 @@ export function PollsPopup({ userId }: { userId: string | null }) {
 
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent
-          className="max-w-2xl max-h-[85vh] overflow-y-auto bg-card/95 backdrop-blur-xl border-primary/20"
+          className="max-w-2xl max-h-[calc(100dvh-2rem)] sm:max-h-[85vh] overflow-y-auto overscroll-contain bg-card/95 backdrop-blur-xl border-primary/20 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
           dir="rtl"
         >
           <DialogHeader>
