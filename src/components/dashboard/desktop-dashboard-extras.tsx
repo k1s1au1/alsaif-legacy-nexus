@@ -423,6 +423,41 @@ export function DesktopDashboardExtras({
           </>
         )}
 
+        <section className="desktop-news-feature" aria-labelledby="desktop-news-title">
+          <div className="desktop-section-head desktop-news-feature-head">
+            <div>
+              <h2 id="desktop-news-title">آخر أخبار المجلس</h2>
+              <p>أحدث أخبار وإعلانات العائلة</p>
+            </div>
+            <Link to="/majlis">
+              عرض الكل
+              <ChevronLeft size={15} />
+            </Link>
+          </div>
+
+          <Link to="/majlis" className="desktop-news-feature-card">
+            <div className="desktop-news-feature-media">
+              {latest?.imageUrl ? (
+                <img src={latest.imageUrl} alt="" />
+              ) : (
+                <Newspaper size={44} aria-hidden="true" />
+              )}
+            </div>
+            <div className="desktop-news-feature-copy">
+              <div className="desktop-news-feature-meta">
+                <span>{latest?._label || "إعلان المجلس"}</span>
+                <time>{fmtDate(latest?.created_at)}</time>
+              </div>
+              <h3>{latest?.title || "مركز أخبار العائلة"}</h3>
+              <p>{latest?.cleanBody || "تابع أخبار وإعلانات مجلس العائلة من مكان واحد."}</p>
+              <b>
+                قراءة الخبر
+                <ChevronLeft size={15} />
+              </b>
+            </div>
+          </Link>
+        </section>
+
         <section className="desktop-follow-panel">
           <div className="desktop-section-head">
             <div>
@@ -702,15 +737,6 @@ export function DesktopDashboardExtras({
         </section>
 
         <section className="desktop-editorial-grid">
-          <Link to="/majlis" className="desktop-news-card">
-            {latest?.imageUrl && <img src={latest.imageUrl} alt="" />}
-            <div>
-              <Newspaper />
-              <span>آخر إعلان عائلي</span>
-              <h3>{latest?.title || "مركز أخبار العائلة"}</h3>
-              <p>{latest?.cleanBody || "تابع أخبار وإعلانات مجلس العائلة من مكان واحد."}</p>
-            </div>
-          </Link>
           <div className="desktop-side-stack">
             <Link to="/heritage" className="desktop-mini-card">
               <Scroll />
