@@ -435,3 +435,66 @@
     gap:10px!important;
   }
 }
+
+/* ---------- Tablet portrait: remove duplicate clock + enlarge the bottom dock ---------- */
+@media (min-width:768px) and (max-width:1600px) and (orientation:portrait){
+  /* Keep the large centered clock only; this is the compact desktop clock that appeared beside the bell. */
+  html body main[data-tablet-portrait="true"]>.app-shell-header-wrap>header.app-shell-header>.order-first.md\:order-last>.hidden.md\:flex:first-child{
+    display:none!important;
+  }
+
+  /* Give the remaining profile control breathing room next to the dedicated bell. */
+  html body main[data-tablet-portrait="true"]>.app-shell-header-wrap>header.app-shell-header>.order-first.md\:order-last{
+    gap:10px!important;
+    min-width:0!important;
+  }
+
+  /* A wider, taller touch dock sized specifically for portrait tablets. */
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock{
+    left:calc(clamp(28px,6vw,96px) + env(safe-area-inset-left,0px))!important;
+    right:calc(clamp(28px,6vw,96px) + env(safe-area-inset-right,0px))!important;
+    bottom:calc(24px + env(safe-area-inset-bottom,0px))!important;
+  }
+
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav{
+    width:100%!important;
+    max-width:820px!important;
+    height:86px!important;
+    padding-inline:34px!important;
+    border-radius:999px!important;
+  }
+
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav>a,
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav>button{
+    min-width:72px!important;
+    min-height:60px!important;
+    gap:5px!important;
+  }
+
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav svg{
+    width:27px!important;
+    height:27px!important;
+  }
+
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav span{
+    font-size:12px!important;
+    letter-spacing:.04em!important;
+  }
+
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav>div.relative>button{
+    width:60px!important;
+    height:60px!important;
+    min-width:60px!important;
+    min-height:60px!important;
+    padding:12px!important;
+  }
+
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav>div.relative>button svg{
+    width:29px!important;
+    height:29px!important;
+  }
+
+  html body main[data-tablet-portrait="true"]>.app-shell-content{
+    padding-bottom:calc(11rem + env(safe-area-inset-bottom,0px))!important;
+  }
+}
