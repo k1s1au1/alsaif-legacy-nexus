@@ -208,17 +208,17 @@ function FamilyCalendarPage() {
       (eventsRes.data ?? [])
         .filter((event: any) => isFamilyOccasionEvent(event))
         .forEach((e: any) => {
-        const start = e.starts_at ? new Date(e.starts_at) : null;
-        if (!start || isNaN(start.getTime())) return;
-        const end = e.ends_at ? new Date(e.ends_at) : null;
-        out.push({
-          id: `event-${e.id}`,
-          category: "event",
-          title: e.title,
-          dayKey: dayKey(start),
-          start,
-          end: end && !isNaN(end.getTime()) ? end : null,
-          location: e.location,
+          const start = e.starts_at ? new Date(e.starts_at) : null;
+          if (!start || isNaN(start.getTime())) return;
+          const end = e.ends_at ? new Date(e.ends_at) : null;
+          out.push({
+            id: `event-${e.id}`,
+            category: "event",
+            title: e.title,
+            dayKey: dayKey(start),
+            start,
+            end: end && !isNaN(end.getTime()) ? end : null,
+            location: e.location,
             to: "/family-occasions",
           });
         });
