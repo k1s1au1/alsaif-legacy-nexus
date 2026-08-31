@@ -54,5 +54,5 @@ function RootShell({children}:Readonly<{children:ReactNode}>){
     syncTheme();
   },[]);
   const showDashboardExtras=typeof window!=="undefined"&&window.location.pathname==="/dashboard";
-  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><FamilyOccasionsSync/><DesktopSidebarQuickAccess/>{showDashboardExtras&&<ResponsiveDashboardExtras/>}<Toaster richColors position="top-center"/></QueryClientProvider><Scripts/></body></html>
+  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><FamilyOccasionsSync/><AppOpenAlerts/><DesktopSidebarQuickAccess/>{showDashboardExtras&&<ResponsiveDashboardExtras/>}<Toaster richColors position="top-center"/></QueryClientProvider><Scripts/></body></html>
 }
