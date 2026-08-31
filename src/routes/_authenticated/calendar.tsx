@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isFamilyOccasionEvent } from "@/lib/family-occasion-events";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   ssr: false,
@@ -175,7 +176,7 @@ function FamilyCalendarPage() {
           .neq("status", "cancelled"),
         supabase
           .from("events")
-          .select("id,title,starts_at,ends_at,location,status")
+          .select("id,title,starts_at,ends_at,location,status,description")
           .neq("status", "cancelled"),
         supabase
           .from("trips")
@@ -204,7 +205,9 @@ function FamilyCalendarPage() {
         });
       });
 
-      (eventsRes.data ?? []).forEach((e: any) => {
+      (eventsRes.data ?? [])
+        .filter((event: any) => isFamilyOccasionEvent(event))
+        .forEach((e: any) => {
         const start = e.starts_at ? new Date(e.starts_at) : null;
         if (!start || isNaN(start.getTime())) return;
         const end = e.ends_at ? new Date(e.ends_at) : null;
@@ -216,9 +219,9 @@ function FamilyCalendarPage() {
           start,
           end: end && !isNaN(end.getTime()) ? end : null,
           location: e.location,
-          to: "/family-occasions",
+            to: "/family-occasions",
+          });
         });
-      });
 
       (tripsRes.data ?? []).forEach((t: any) => {
         if (!t.start_date) return;
