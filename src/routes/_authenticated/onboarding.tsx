@@ -125,7 +125,11 @@ function OnboardingPage() {
       .eq("id", userId);
     setSaving(false);
     if (error) {
-      toast.error("تعذر الحفظ، حاول مرة أخرى");
+      toast.error(
+        error.message?.includes("PROFILE_LOCKED")
+          ? "بياناتك مقفلة، أرسل طلب تعديل من الملف الشخصي"
+          : `تعذر الحفظ: ${error.message ?? "حاول مرة أخرى"}`,
+      );
       return;
     }
     navigate({ to: "/dashboard", replace: true });
