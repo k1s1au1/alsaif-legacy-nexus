@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 
 interface QuickActionProps { to: string; label: string; icon: any; color?: string; description?: string; }
 
@@ -39,8 +39,12 @@ const services = [
 ];
 
 export function QuickActionsBanner() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [expanded, setExpanded] = useState(false);
   const visibleServices = expanded ? services : services.slice(0, 4);
+  const isDashboardHome = pathname === "/dashboard" || pathname === "/dashboard/";
+
+  if (!isDashboardHome) return null;
 
   return (
     <>
