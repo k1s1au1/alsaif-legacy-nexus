@@ -61,6 +61,7 @@ import { sendFcmNotification } from "@/lib/fcm.functions";
 import { finalizePoll } from "@/lib/api/shura.functions";
 import { SuggestionsManager } from "@/components/admin/suggestions-manager";
 import { ProfileChangeRequests } from "@/components/admin/profile-change-requests";
+import { MembershipAlerts } from "@/components/admin/membership-alerts";
 import "@/admin-executive.css";
 
 
@@ -89,6 +90,7 @@ type ReqRow = {
 
 type AdminTab =
   | "requests"
+  | "membership_alerts"
   | "members"
   | "member_requests"
   | "profile_changes"
@@ -656,6 +658,15 @@ function AdminPage() {
       visible: true,
     },
     {
+      key: "membership_alerts",
+      label: "إشعارات العضوية",
+      shortLabel: "الإشعارات",
+      description: "سجل مباشر لطلبات العضوية الجديدة وحالات الموافقة والرفض.",
+      icon: BellRing,
+      count: reqCounts.pending,
+      visible: isSystemAdmin || isSiteChairman,
+    },
+    {
       key: "members",
       label: "سجل الأعضاء",
       shortLabel: "الأعضاء",
@@ -880,6 +891,10 @@ function AdminPage() {
                   </div>
                 </header>
                 <div className="admin-content-body">
+
+            {tab === "membership_alerts" && (isSystemAdmin || isSiteChairman) && (
+              <MembershipAlerts canManage={isPowerUser} />
+            )}
 
             {tab === "suggestions" && (isSystemAdmin || isSiteChairman) && <SuggestionsManager />}
 

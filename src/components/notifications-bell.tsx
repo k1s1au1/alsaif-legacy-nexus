@@ -7,6 +7,7 @@ import {
   UserPlus,
   Inbox,
   ListChecks,
+  PartyPopper,
   ChevronLeft,
   X,
 } from "lucide-react";
@@ -21,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type NotifKind = "message" | "meeting" | "account_request" | "task";
+type NotifKind = "message" | "meeting" | "account_request" | "task" | "occasion";
 type Notif = {
   id: string;
   kind: NotifKind;
@@ -148,7 +149,7 @@ export function NotificationsBell() {
 
       // 3) Admin Requests
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-      const isPriv = (roles ?? []).some((r) => r.role === "admin" || r.role === "manager");
+      const isPriv = (roles ?? []).some((r) => r.role === "admin" || r.role === "manager" || r.role === "chairman");
       if (isPriv) {
         const { data: reqs } = await supabase
           .from("account_requests")
@@ -170,6 +171,31 @@ export function NotificationsBell() {
           }
         });
       }
+
+      // 4) Upcoming family occasions (next 30 days)
+      const soon = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: occasions } = await supabase
+        .from("events")
+        .select("id,title,starts_at,event_type")
+        .eq("status", "scheduled")
+        .gte("starts_at", new Date().toISOString())
+        .lte("starts_at", soon)
+        .order("starts_at")
+        .limit(5);
+      (occasions ?? []).forEach((o: any) => {
+        const notifId = `occ-${o.id}`;
+        if (!dismissed.includes(notifId)) {
+          out.push({
+            id: notifId,
+            kind: "occasion",
+            title: o.title || "مناسبة عائلية",
+            description: "مناسبة عائلية قادمة — اضغط للتفاصيل",
+            href: "/family-occasions",
+            at: o.starts_at,
+            refId: o.id,
+          });
+        }
+      });
 
       setItems(out.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()));
     } catch (e) {
@@ -345,7 +371,9 @@ export function NotificationsBell() {
                 <div
                   className={cn(
                     "size-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all group-hover:scale-110 group-hover:rotate-6",
-                    n.kind === "meeting"
+                    n.kind === "occasion"
+                      ? "bg-fuchsia-500/10 text-fuchsia-600"
+                      : n.kind === "meeting"
                       ? "bg-amber-500/10 text-amber-600"
                       : n.kind === "task"
                         ? "bg-rose-500/10 text-rose-600"
@@ -354,7 +382,9 @@ export function NotificationsBell() {
                           : "bg-primary/10 text-primary",
                   )}
                 >
-                  {n.kind === "meeting" ? (
+                  {n.kind === "occasion" ? (
+                    <PartyPopper size={20} />
+                  ) : n.kind === "meeting" ? (
                     <CalendarDays size={20} />
                   ) : n.kind === "message" ? (
                     <MessageCircle size={20} />
