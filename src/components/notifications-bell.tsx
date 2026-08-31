@@ -33,16 +33,31 @@ type Notif = {
   refId?: string; // Original ID from DB
 };
 
+const FAMILY_OCCASION_MARKER = "__familyOccasion";
+
+function isFamilyOccasionDescription(description: string | null) {
+  try {
+    const payload = description ? JSON.parse(description) : null;
+    return payload?.[FAMILY_OCCASION_MARKER] === true && Boolean(payload.occasion);
+  } catch {
+    return false;
+  }
+}
+
 function timeAgo(iso: string) {
   try {
-    const diff = Date.now() - new Date(iso).getTime();
-    const m = Math.floor(diff / 60000);
+    const value = new Date(iso).getTime();
+    if (Number.isNaN(value)) return "";
+
+    const diff = Date.now() - value;
+    const future = diff < 0;
+    const m = Math.floor(Math.abs(diff) / 60000);
     if (m < 1) return "الآن";
-    if (m < 60) return `${m}د`;
+    if (m < 60) return future ? `بعد ${m}د` : `${m}د`;
     const h = Math.floor(m / 60);
-    if (h < 24) return `${h}س`;
+    if (h < 24) return future ? `بعد ${h}س` : `${h}س`;
     const d = Math.floor(h / 24);
-    return `${d}ي`;
+    return future ? `بعد ${d}ي` : `${d}ي`;
   } catch {
     return "";
   }
@@ -176,26 +191,28 @@ export function NotificationsBell() {
       const soon = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data: occasions } = await supabase
         .from("events")
-        .select("id,title,starts_at,event_type")
+        .select("id,title,starts_at,event_type,description")
         .eq("status", "scheduled")
         .gte("starts_at", new Date().toISOString())
         .lte("starts_at", soon)
-        .order("starts_at")
-        .limit(5);
-      (occasions ?? []).forEach((o: any) => {
-        const notifId = `occ-${o.id}`;
-        if (!dismissed.includes(notifId)) {
-          out.push({
-            id: notifId,
-            kind: "occasion",
-            title: o.title || "مناسبة عائلية",
-            description: "مناسبة عائلية قادمة — اضغط للتفاصيل",
-            href: "/family-occasions",
-            at: o.starts_at,
-            refId: o.id,
-          });
-        }
-      });
+        .order("starts_at");
+      (occasions ?? [])
+        .filter((o: any) => isFamilyOccasionDescription(o.description))
+        .slice(0, 5)
+        .forEach((o: any) => {
+          const notifId = `occ-${o.id}`;
+          if (!dismissed.includes(notifId)) {
+            out.push({
+              id: notifId,
+              kind: "occasion",
+              title: o.title || "مناسبة عائلية",
+              description: "مناسبة عائلية قادمة — اضغط للتفاصيل",
+              href: "/family-occasions",
+              at: o.starts_at,
+              refId: o.id,
+            });
+          }
+        });
 
       setItems(out.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()));
     } catch (e) {
