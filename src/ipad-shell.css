@@ -172,7 +172,7 @@
     left:clamp(40px,12vw,220px)!important;
     right:clamp(40px,12vw,220px)!important;
     bottom:24px!important;
-    z-index:100!important;
+    z-index:70!important;
     justify-content:center!important;
   }
   main>.app-shell-bottom-dock>nav{
@@ -274,7 +274,7 @@
     left:clamp(40px,12vw,220px)!important;
     right:clamp(40px,12vw,220px)!important;
     bottom:24px!important;
-    z-index:100!important;
+    z-index:70!important;
     opacity:1!important;
     visibility:visible!important;
     justify-content:center!important;
