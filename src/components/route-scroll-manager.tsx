@@ -29,6 +29,7 @@ export function RouteScrollManager() {
   const state = (location.state ?? {}) as unknown as Record<string, unknown>;
   const key = state["__TSR_key"] ?? location.href;
   const keyRef = useRef(key);
+  const previousPathRef = useRef(location.pathname);
   keyRef.current = key;
 
   // Continuously record the scroll position of the active history entry so
@@ -62,6 +63,9 @@ export function RouteScrollManager() {
 
     const action = (router.history as unknown as { action?: string }).action;
     const goingBack = isHistoryReturn(action);
+    const enteringDashboard =
+      location.pathname === "/dashboard" &&
+      previousPathRef.current !== "/dashboard";
     const content = document.querySelector<HTMLElement>(".app-shell-content");
     let transitionTimer = 0;
 
@@ -70,7 +74,11 @@ export function RouteScrollManager() {
       const previousBehavior = html.style.scrollBehavior;
       html.style.scrollBehavior = "auto";
 
-      const saved = goingBack ? positions.get(key) : undefined;
+      // The dashboard is the application's visual entry point. Returning to it
+      // from settings or another section must start at the hero instead of
+      // restoring a stale middle-of-page position.
+      const saved =
+        goingBack && !enteringDashboard ? positions.get(key) : undefined;
       if (saved) {
         window.scrollTo(saved.x, saved.y);
       } else {
@@ -99,11 +107,13 @@ export function RouteScrollManager() {
       }, 560);
     }
 
+    previousPathRef.current = location.pathname;
+
     return () => {
       window.clearTimeout(transitionTimer);
       content?.classList.remove("route-transition-enter");
     };
-  }, [key, location.hash, router]);
+  }, [key, location.hash, location.pathname, router]);
 
   // Reveal semantic sections and tab panels as they become visible.
   useLayoutEffect(() => {
