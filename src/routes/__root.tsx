@@ -21,7 +21,6 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
-import { ResponsiveDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
 import { FamilyOccasionsSync } from "@/components/family-occasions-sync";
 import { DesktopSidebarQuickAccess } from "@/components/desktop-sidebar-quick-access";
 import { DeviceOrientationGuard } from "@/components/device-orientation-guard";
@@ -56,6 +55,5 @@ function RootShell({children}:Readonly<{children:ReactNode}>){
     };
     syncTheme();
   },[]);
-  const showDashboardExtras=typeof window!=="undefined"&&window.location.pathname==="/dashboard";
-  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><FamilyOccasionsSync/><AppOpenAlerts/><DesktopSidebarQuickAccess/>{showDashboardExtras&&<ResponsiveDashboardExtras/>}<Toaster richColors position="top-center"/></QueryClientProvider><Scripts/></body></html>
+  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><FamilyOccasionsSync/><AppOpenAlerts/><DesktopSidebarQuickAccess/><Toaster richColors position="top-center"/></QueryClientProvider><Scripts/></body></html>
 }
