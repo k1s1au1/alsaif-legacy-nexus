@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
+import { ResponsiveDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
 import { AnimatedCounter } from "@/components/dashboard/animated-counter";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -710,6 +711,8 @@ function Dashboard() {
           </div>
         </section>
       </div>
+
+      <ResponsiveDashboardExtras />
 
       <AnimatePresence>
         {immersiveItem && (
