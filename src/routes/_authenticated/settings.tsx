@@ -154,12 +154,10 @@ function SettingsPage() {
     if (typeof window === "undefined") return;
 
     const savedTheme = localStorage.getItem("theme") as "light" | "dark" | "system" | null;
-    if (savedTheme) {
-      setDarkMode(savedTheme);
-      applyTheme(savedTheme);
-    } else {
-      setDarkMode("system");
-    }
+    const currentTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    // Opening settings must not mutate the active theme. Apply it only after
+    // the user explicitly chooses one of the appearance options below.
+    setDarkMode(savedTheme || currentTheme);
 
     const savedFont = localStorage.getItem("app-font-id");
     if (savedFont) {
