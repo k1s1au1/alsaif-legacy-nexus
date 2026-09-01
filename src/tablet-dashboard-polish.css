@@ -137,6 +137,12 @@
  * exact desktop content sections below it. Portrait selectors are untouched.
  */
 @media (min-width: 970px) and (max-width: 1600px) and (min-height: 600px) and (orientation: landscape) and (any-pointer: coarse) {
+  /* The legacy dashboard wrapper ends at Family Services in this mode.
+     Remove its mobile bottom padding so desktop news follows at a natural gap. */
+  html[data-dashboard-tablet-landscape="true"] .dashboard-page {
+    padding-bottom: 0 !important;
+  }
+
   html[data-dashboard-tablet-landscape="true"]
     .dashboard-page
     > .integrated-hub,
