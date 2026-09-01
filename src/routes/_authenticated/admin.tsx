@@ -55,6 +55,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
 import { useSiteLogo } from "@/hooks/use-site-logo";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { isFamilyOccasionEvent } from "@/lib/family-occasion-events";
 import {
   isFamilyOccasionArchived,
@@ -202,6 +203,7 @@ function AdminPage() {
   const [healthError, setHealthError] = useState<string | null>(null);
   const [showHealthDetails, setShowHealthDetails] = useState(false);
   const dynamicLogo = useSiteLogo();
+  const activeDayKey = useDayBoundaryKey();
 
   // Announcement State
   const [showAnnForm, setShowAnnForm] = useState(false);
@@ -421,7 +423,7 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [meId, isA, isSystemAdmin, isSiteChairman]);
+  }, [meId, isA, isSystemAdmin, isSiteChairman, activeDayKey]);
 
   useEffect(() => {
     loadData();
