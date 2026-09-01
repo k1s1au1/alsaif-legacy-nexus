@@ -279,7 +279,7 @@ export function DesktopDashboardExtras({
       window.removeEventListener("focus", read);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [path]);
+  }, []);
 
   const upcoming = useMemo(() => {
     const rows: any[] = [];
