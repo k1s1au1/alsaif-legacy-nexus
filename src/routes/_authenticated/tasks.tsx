@@ -27,6 +27,7 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
 import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 import { sendPushNotification } from "@/lib/api/push.functions";
+import { consumeQuickCreate } from "@/lib/quick-create";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   ssr: false,
@@ -147,6 +148,15 @@ function TasksPage() {
   }, [loadAll, userId, primaryRole]);
 
   useRealtimeSync(["tasks"], loadAll);
+
+  useEffect(() => {
+    if (rolesLoading) return;
+    const requested = consumeQuickCreate("task");
+    if (requested && isPrivileged) {
+      setEditingTask(null);
+      setShowDialog(true);
+    }
+  }, [rolesLoading, isPrivileged]);
 
   const filteredTasks = useMemo(() => {
     let list = tasks;
