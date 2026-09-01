@@ -28,6 +28,7 @@ import {
 import { FamilySharing } from "@/lib/native-bridge";
 import { toast } from "sonner";
 import { consumeQuickCreate } from "@/lib/quick-create";
+import { isPastLocalDay } from "@/lib/day-lifecycle";
 
 type OccasionType =
   | "wedding"
@@ -369,7 +370,14 @@ function FamilyOccasionsPage() {
     const load = () => {
       try {
         const r = localStorage.getItem(STORAGE);
-        if (r) setItems(JSON.parse(r));
+        if (r) {
+          const parsed = JSON.parse(r);
+          setItems(
+            Array.isArray(parsed)
+              ? parsed.filter((item: Occasion) => !isPastLocalDay(item.date))
+              : [],
+          );
+        }
       } catch {}
     };
     load();
