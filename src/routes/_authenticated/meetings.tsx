@@ -44,6 +44,7 @@ import { MeetingPresentations } from "@/components/meeting-presentations";
 import { addToCalendar } from "@/lib/calendar";
 import { FamilySharing } from "@/lib/native-bridge";
 import { OfflineCache } from "@/lib/offline-cache";
+import { consumeQuickCreate } from "@/lib/quick-create";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
   ssr: false,
@@ -216,6 +217,14 @@ function MeetingsPage() {
       supabase.removeChannel(channel);
     };
   }, [loadAll, userId, primaryRole]);
+
+  useEffect(() => {
+    if (rolesLoading) return;
+    if (consumeQuickCreate("meeting") && canManage) {
+      resetForm();
+      setShowForm(true);
+    }
+  }, [rolesLoading, canManage, resetForm]);
 
   const openCreate = () => {
     resetForm();
