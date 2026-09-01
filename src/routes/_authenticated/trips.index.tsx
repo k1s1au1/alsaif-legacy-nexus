@@ -32,6 +32,7 @@ import { useUserRole, roleLabel } from "@/hooks/use-user-role";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { GamesHub } from "@/components/entertainment/games-hub";
 import { sendPushNotification } from "@/lib/api/push.functions";
+import { consumeQuickCreate } from "@/lib/quick-create";
 
 export const Route = createFileRoute("/_authenticated/trips/")({
   ssr: false,
@@ -89,7 +90,12 @@ function TripsPage() {
   const [activeTab, setActiveTab] = useState<"destinations" | "games">("destinations");
   const [showAdd, setShowAdd] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
-  const { userId, canManage: canManageSection, primaryRole } = useUserRole();
+  const {
+    userId,
+    canManage: canManageSection,
+    primaryRole,
+    isLoading: rolesLoading,
+  } = useUserRole();
   const canManage = canManageSection("trips");
   const dynamicLogo = useSiteLogo();
 
@@ -137,6 +143,16 @@ function TripsPage() {
       supabase.removeChannel(channel);
     };
   }, [userId, primaryRole]);
+
+  useEffect(() => {
+    if (rolesLoading) return;
+    const requested = consumeQuickCreate("trip");
+    if (requested && canManage) {
+      setActiveTab("destinations");
+      setEditingTrip(null);
+      setShowAdd(true);
+    }
+  }, [rolesLoading, canManage]);
 
   return (
     <AppShell title="الترفيه" user={{ name: "", role: "", initial: "ص" }}>
