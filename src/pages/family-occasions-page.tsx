@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { FamilySharing } from "@/lib/native-bridge";
 import { toast } from "sonner";
+import { consumeQuickCreate } from "@/lib/quick-create";
 
 type OccasionType =
   | "wedding"
@@ -404,6 +405,10 @@ function FamilyOccasionsPage() {
     reset();
     setOpen(true);
   }
+
+  useEffect(() => {
+    if (consumeQuickCreate("occasion")) start();
+  }, []);
 
   function edit(o: Occasion) {
     setEditing(o.id);
