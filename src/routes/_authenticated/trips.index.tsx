@@ -33,6 +33,8 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { GamesHub } from "@/components/entertainment/games-hub";
 import { sendPushNotification } from "@/lib/api/push.functions";
 import { consumeQuickCreate } from "@/lib/quick-create";
+import { isTripActive } from "@/lib/day-lifecycle";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 
 export const Route = createFileRoute("/_authenticated/trips/")({
   ssr: false,
@@ -98,6 +100,7 @@ function TripsPage() {
   } = useUserRole();
   const canManage = canManageSection("trips");
   const dynamicLogo = useSiteLogo();
+  const activeDayKey = useDayBoundaryKey();
 
   async function loadTrips() {
     const { data, error } = await supabase
@@ -107,7 +110,7 @@ function TripsPage() {
     if (error) {
       toast.error("تعذر تحميل بيانات الترفيه");
     } else {
-      setTrips((data ?? []) as Trip[]);
+      setTrips(((data ?? []) as Trip[]).filter((trip) => isTripActive(trip)));
     }
     setLoading(false);
   }
@@ -142,7 +145,7 @@ function TripsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, primaryRole]);
+  }, [userId, primaryRole, activeDayKey]);
 
   useEffect(() => {
     if (rolesLoading) return;
