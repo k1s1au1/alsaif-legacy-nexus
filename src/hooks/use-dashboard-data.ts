@@ -1,5 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSupabase } from "@/integrations/supabase/client";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
+import {
+  isMeetingActive,
+  isTaskActive,
+  isTripActive,
+  startOfLocalTodayIso,
+} from "@/lib/day-lifecycle";
 
 export function useProfile() {
   return useQuery({
@@ -55,8 +62,10 @@ export function useProfile() {
 }
 
 export function useDashboardCounts() {
+  const activeDayKey = useDayBoundaryKey();
+
   return useQuery({
-    queryKey: ["dashboard-counts"],
+    queryKey: ["dashboard-counts", activeDayKey],
     queryFn: async () => {
       const supabase = getSupabase();
       const { data: { user } } = await supabase.auth.getUser();
@@ -64,29 +73,26 @@ export function useDashboardCounts() {
 
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-      const [
-        { count: mCount },
-        { count: tCount },
-        { count: myTCount },
-        { count: newsCount },
-      ] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("tasks").select("id", { count: "exact", head: true }).neq("status", "done"),
-        supabase
-          .from("tasks")
-          .select("id", { count: "exact", head: true })
-          .eq("assignee_id", user.id)
-          .neq("status", "done"),
-        supabase
-          .from("majlis_posts")
-          .select("id", { count: "exact", head: true })
-          .gt("created_at", yesterday),
-      ]);
+      const [{ count: memberCount }, { data: taskRows }, { count: newsCount }] =
+        await Promise.all([
+          supabase.from("profiles").select("id", { count: "exact", head: true }),
+          supabase
+            .from("tasks")
+            .select("id,due_date,status,assignee_id"),
+          supabase
+            .from("majlis_posts")
+            .select("id", { count: "exact", head: true })
+            .gt("created_at", yesterday),
+        ]);
+
+      const activeTasks = (taskRows || []).filter((task: any) => isTaskActive(task));
 
       return {
-        members: mCount || 0,
-        tasks: tCount || 0,
-        myTasks: myTCount || 0,
+        members: memberCount || 0,
+        tasks: activeTasks.filter((task: any) => task.status !== "done").length,
+        myTasks: activeTasks.filter(
+          (task: any) => task.assignee_id === user.id && task.status !== "done",
+        ).length,
         newNews: newsCount || 0,
       };
     },
@@ -95,49 +101,46 @@ export function useDashboardCounts() {
 }
 
 export function useUpcomingEvents() {
+  const activeDayKey = useDayBoundaryKey();
+
   return useQuery({
-    queryKey: ["upcoming-events"],
+    queryKey: ["upcoming-events", activeDayKey],
     queryFn: async () => {
       const supabase = getSupabase();
       const now = new Date();
-      const nowIso = now.toISOString();
-      // trips.start_date is a calendar date in the trips UI. Compare it with the
-      // local calendar day instead of the current timestamp so today's trips
-      // are not dropped after midnight.
-      const localToday = [
-        now.getFullYear(),
-        String(now.getMonth() + 1).padStart(2, "0"),
-        String(now.getDate()).padStart(2, "0"),
-      ].join("-");
+      const todayStartIso = startOfLocalTodayIso(now);
 
       const [{ data: meetings }, { data: trips }, { data: tasks }] = await Promise.all([
         supabase
           .from("meetings")
           .select("*")
-          .gte("scheduled_at", nowIso)
+          .neq("status", "cancelled")
+          .gte("scheduled_at", todayStartIso)
           .order("scheduled_at")
-          .limit(5),
+          .limit(20),
         supabase
           .from("trips")
           .select("*")
-          .gte("start_date", localToday)
           .order("start_date")
-          .limit(5),
+          .limit(50),
         supabase
           .from("tasks")
           .select("id, title, description, progress, priority, due_date, assignee_id, status, created_at")
           .neq("status", "done")
           .order("created_at", { ascending: false })
-          .limit(5),
+          .limit(50),
       ]);
 
       return {
-        meetings: meetings || [],
-        trips: trips || [],
-        tasks: (tasks || []).map((task: any) => ({
-          ...task,
-          progress: task.progress ?? (task.status === "in_progress" ? 40 : 0),
-        })),
+        meetings: (meetings || []).filter((item: any) => isMeetingActive(item, now)).slice(0, 5),
+        trips: (trips || []).filter((item: any) => isTripActive(item, now)).slice(0, 5),
+        tasks: (tasks || [])
+          .filter((item: any) => isTaskActive(item, now))
+          .slice(0, 5)
+          .map((task: any) => ({
+            ...task,
+            progress: task.progress ?? (task.status === "in_progress" ? 40 : 0),
+          })),
       };
     },
     // The dashboard must reflect newly added trips immediately instead of

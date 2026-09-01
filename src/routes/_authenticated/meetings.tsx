@@ -45,6 +45,8 @@ import { addToCalendar } from "@/lib/calendar";
 import { FamilySharing } from "@/lib/native-bridge";
 import { OfflineCache } from "@/lib/offline-cache";
 import { consumeQuickCreate } from "@/lib/quick-create";
+import { isMeetingActive } from "@/lib/day-lifecycle";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
   ssr: false,
@@ -112,6 +114,7 @@ function MeetingsPage() {
     isChairman,
   } = useUserRole();
   const dynamicLogo = useSiteLogo();
+  const activeDayKey = useDayBoundaryKey();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileLite>>({});
@@ -149,7 +152,9 @@ function MeetingsPage() {
 
   const loadAll = useCallback(async () => {
     const cached = OfflineCache.load("meetings");
-    if (cached) setMeetings(cached);
+    if (cached) {
+      setMeetings(((cached || []) as Meeting[]).filter((meeting) => isMeetingActive(meeting)));
+    }
 
     setLoading(true);
     try {
@@ -159,8 +164,11 @@ function MeetingsPage() {
         supabase.from("profiles").select("id, arabic_name, full_name, avatar_url"),
       ]);
 
-      setMeetings((m ?? []) as Meeting[]);
-      OfflineCache.save("meetings", m);
+      const activeMeetings = ((m ?? []) as Meeting[]).filter((meeting) =>
+        isMeetingActive(meeting),
+      );
+      setMeetings(activeMeetings);
+      OfflineCache.save("meetings", activeMeetings);
       setAttendees((a ?? []) as Attendee[]);
       const map: Record<string, ProfileLite> = {};
       (pr ?? []).forEach((p: any) => {
@@ -173,7 +181,7 @@ function MeetingsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeDayKey]);
 
   useEffect(() => {
     (async () => {
@@ -390,8 +398,7 @@ function MeetingsPage() {
     }
   };
 
-  const upcoming = (meetings || []).filter((m) => m && m.scheduled_at && new Date(m.scheduled_at) >= new Date());
-  const past = (meetings || []).filter((m) => m && m.scheduled_at && new Date(m.scheduled_at) < new Date());
+  const upcoming = (meetings || []).filter((meeting) => isMeetingActive(meeting));
 
   const myRsvp = (meetingId: string): Rsvp | null => {
     if (!userId) return null;

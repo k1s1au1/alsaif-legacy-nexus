@@ -28,6 +28,8 @@ import { useUserRole, roleLabel } from "@/hooks/use-user-role";
 import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 import { sendPushNotification } from "@/lib/api/push.functions";
 import { consumeQuickCreate } from "@/lib/quick-create";
+import { isTaskActive } from "@/lib/day-lifecycle";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   ssr: false,
@@ -95,6 +97,7 @@ function TasksPage() {
   } = useUserRole();
   const isPrivileged = isAdmin || isManager || isChairman || sectionHeads.length > 0;
   const dynamicLogo = useSiteLogo();
+  const activeDayKey = useDayBoundaryKey();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,7 +117,7 @@ function TasksPage() {
       progress: t.progress ?? (t.status === "done" ? 100 : t.status === "in_progress" ? 40 : 0),
     }));
 
-    setTasks(mappedTasks as Task[]);
+    setTasks((mappedTasks as Task[]).filter((task) => isTaskActive(task)));
     setMembers(
       (mRes.data ?? []).map((p) => ({
         id: p.id,
@@ -123,7 +126,7 @@ function TasksPage() {
       })),
     );
     setLoading(false);
-  }, []);
+  }, [activeDayKey]);
 
   useEffect(() => {
     (async () => {

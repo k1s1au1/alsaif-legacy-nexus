@@ -55,6 +55,14 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
 import { useSiteLogo } from "@/hooks/use-site-logo";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
+import { isFamilyOccasionEvent } from "@/lib/family-occasion-events";
+import {
+  isFamilyOccasionArchived,
+  isMeetingArchived,
+  isTaskArchived,
+  isTripArchived,
+} from "@/lib/day-lifecycle";
 
 import { IntegratedHub } from "@/components/dashboard/integrated-hub";
 import { sendFcmNotification } from "@/lib/fcm.functions";
@@ -178,7 +186,7 @@ function AdminPage() {
     meetings: [] as any[],
     trips: [] as any[],
     tasks: [] as any[],
-    community: [] as any[],
+    occasions: [] as any[],
   });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<AdminTab>("requests");
@@ -195,6 +203,7 @@ function AdminPage() {
   const [healthError, setHealthError] = useState<string | null>(null);
   const [showHealthDetails, setShowHealthDetails] = useState(false);
   const dynamicLogo = useSiteLogo();
+  const activeDayKey = useDayBoundaryKey();
 
   // Announcement State
   const [showAnnForm, setShowAnnForm] = useState(false);
@@ -359,12 +368,14 @@ function AdminPage() {
             { data: archAttendees },
             { data: archTrips },
             { data: archTasks },
+            { data: archOccasions },
             { data: archProfiles },
           ] = await Promise.all([
             supabase.from("meetings").select("*").order("scheduled_at", { ascending: false }),
             supabase.from("meeting_attendees").select("*"),
             supabase.from("trips").select("*").order("start_date", { ascending: false }),
             supabase.from("tasks").select("*").order("created_at", { ascending: false }),
+            supabase.from("events").select("*").order("starts_at", { ascending: false }),
             supabase.from("profiles").select("id, arabic_name, full_name, avatar_url"),
           ]);
 
@@ -377,11 +388,24 @@ function AdminPage() {
             attendeesByMeeting.set(a.meeting_id, arr);
           });
 
+          const archiveNow = new Date();
           setArchiveData({
-            meetings: (archMeetings || []).map(m => ({ ...m, attendees: attendeesByMeeting.get(m.id) || [] })),
-            trips: archTrips || [],
-            tasks: (archTasks || []).map(t => ({ ...t, assignee: profMap.get(t.assignee_id) })),
-            community: pollList || [],
+            meetings: (archMeetings || [])
+              .map((meeting) => ({
+                ...meeting,
+                attendees: attendeesByMeeting.get(meeting.id) || [],
+              }))
+              .filter((meeting) => isMeetingArchived(meeting, archiveNow)),
+            trips: (archTrips || []).filter((trip) => isTripArchived(trip, archiveNow)),
+            tasks: (archTasks || [])
+              .map((task) => ({
+                ...task,
+                assignee: profMap.get(task.assignee_id),
+              }))
+              .filter((task) => isTaskArchived(task, archiveNow)),
+            occasions: (archOccasions || [])
+              .filter((occasion) => isFamilyOccasionEvent(occasion))
+              .filter((occasion) => isFamilyOccasionArchived(occasion, archiveNow)),
           });
 
           const counts = { pending: 0, approved: 0, rejected: 0 };
@@ -399,7 +423,7 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [meId, isA, isSystemAdmin, isSiteChairman]);
+  }, [meId, isA, isSystemAdmin, isSiteChairman, activeDayKey]);
 
   useEffect(() => {
     loadData();
@@ -1313,18 +1337,28 @@ function AdminPage() {
 }
 
 function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }) {
-  const [subTab, setSubTab] = useState<"meetings" | "trips" | "tasks" | "community">("meetings");
+  const [subTab, setSubTab] = useState<"meetings" | "trips" | "tasks" | "occasions">("meetings");
 
   return (
     <section className="animate-fade-up space-y-8">
-      <div className="space-y-1">
-        <h3 className="text-xl font-black text-primary tracking-tight">الأرشيف الشامل للنظام</h3>
-        <p className="text-sm font-bold text-muted-foreground opacity-60">
-          سجل كامل لجميع الأنشطة والبيانات التاريخية للمجلس.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h3 className="text-xl font-black text-primary tracking-tight">مركز بيانات العائلة</h3>
+          <p className="text-sm font-bold text-muted-foreground opacity-60">
+            يحفظ الاجتماعات والرحلات والمناسبات والمهام المنتهية دون حذفها.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-black text-primary transition hover:bg-muted"
+        >
+          <RefreshCw size={15} />
+          تحديث الأرشيف
+        </button>
       </div>
 
-      <div className="flex items-center gap-2 p-1 bg-muted/20 rounded-2xl w-fit">
+      <div className="flex flex-wrap items-center gap-2 p-1 bg-muted/20 rounded-2xl w-fit max-w-full">
         <button
           onClick={() => setSubTab("meetings")}
           className={cn(
@@ -1332,7 +1366,7 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
             subTab === "meetings" ? "bg-white text-primary shadow-sm" : "text-muted-foreground",
           )}
         >
-          الاجتماعات
+          الاجتماعات ({data.meetings.length})
         </button>
         <button
           onClick={() => setSubTab("trips")}
@@ -1341,7 +1375,16 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
             subTab === "trips" ? "bg-white text-primary shadow-sm" : "text-muted-foreground",
           )}
         >
-          الترفيه
+          الرحلات ({data.trips.length})
+        </button>
+        <button
+          onClick={() => setSubTab("occasions")}
+          className={cn(
+            "px-6 py-2 rounded-xl text-xs font-black transition-all",
+            subTab === "occasions" ? "bg-white text-primary shadow-sm" : "text-muted-foreground",
+          )}
+        >
+          المناسبات ({data.occasions.length})
         </button>
         <button
           onClick={() => setSubTab("tasks")}
@@ -1350,7 +1393,7 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
             subTab === "tasks" ? "bg-white text-primary shadow-sm" : "text-muted-foreground",
           )}
         >
-          المهام
+          المهام ({data.tasks.length})
         </button>
       </div>
 
@@ -1449,6 +1492,46 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
           </div>
         )}
 
+        {subTab === "occasions" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {data.occasions.length === 0 ? (
+              <div className="card-surface col-span-full p-12 text-center text-sm font-bold text-muted-foreground">
+                لا توجد مناسبات منتهية حتى الآن.
+              </div>
+            ) : (
+              data.occasions.map((occasion: any) => (
+                <div key={occasion.id} className="card-surface p-6 space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-gold-primary">مناسبة عائلية محفوظة</span>
+                      <h4 className="text-lg font-black text-primary">{occasion.title}</h4>
+                    </div>
+                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-rose-500/10 text-rose-600">
+                      <CalendarDays size={19} />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 border-t border-border/40 pt-4 text-xs font-bold text-muted-foreground">
+                    <span>
+                      {new Date(occasion.starts_at).toLocaleDateString("ar-SA", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                    {occasion.location && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={13} />
+                        {occasion.location}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
         {subTab === "tasks" && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1489,7 +1572,7 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
                 <div className="flex items-center gap-3 px-2">
                   <Clock className="text-amber-500" size={20} />
                   <h4 className="text-sm font-black text-amber-600 uppercase tracking-widest">
-                    مهام قيد التنفيذ
+                    مهام انتهى موعدها
                   </h4>
                 </div>
                 {data.tasks.filter((t: any) => t.status !== "done").map((t: any) => (
@@ -1509,7 +1592,7 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
                         </span>
                       </div>
                       <span className="text-[11px] font-black text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                        {t.status === "todo" ? "قيد الانتظار" : "جاري العمل"}
+                        انتهى موعدها
                       </span>
                     </div>
                   </div>

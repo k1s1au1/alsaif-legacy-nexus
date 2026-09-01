@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { isMeetingActive, startOfLocalTodayIso } from "@/lib/day-lifecycle";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
   component: NotificationsPage,
@@ -43,6 +45,7 @@ function timeAgo(iso: string) {
 }
 
 function NotificationsPage() {
+  const activeDayKey = useDayBoundaryKey();
   const [items, setItems] = useState<Notif[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -126,11 +129,12 @@ function NotificationsPage() {
     // Meetings
     const { data: meetings } = await supabase
       .from("meetings")
-      .select("id,title,scheduled_at")
-      .gte("scheduled_at", new Date().toISOString())
+      .select("id,title,scheduled_at,status")
+      .neq("status", "cancelled")
+      .gte("scheduled_at", startOfLocalTodayIso())
       .order("scheduled_at")
       .limit(10);
-    (meetings ?? []).forEach((m) => {
+    (meetings ?? []).filter((meeting) => isMeetingActive(meeting)).forEach((m) => {
       const nid = `meet-${m.id}`;
       if (!dismissed.includes(nid)) {
         out.push({
@@ -172,7 +176,7 @@ function NotificationsPage() {
 
     setItems(out.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()));
     setLoading(false);
-  }, []);
+  }, [activeDayKey]);
 
   useEffect(() => {
     load();

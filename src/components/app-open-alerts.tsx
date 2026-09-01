@@ -1,6 +1,11 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { isFamilyOccasionEvent } from "@/lib/family-occasion-events";
+import {
+  isFamilyOccasionActive,
+  startOfLocalTodayIso,
+} from "@/lib/day-lifecycle";
 
 const SESSION_KEY = "alsaif:app-open-alerts";
 
@@ -48,16 +53,24 @@ export function AppOpenAlerts() {
 
         const now = new Date();
         const until = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-        const { data: occasions } = await supabase
+        const { data: occasionRows } = await supabase
           .from("events")
-          .select("id,title,starts_at,event_type")
+          .select("id,title,starts_at,ends_at,event_type,status,description")
           .eq("status", "scheduled")
-          .gte("starts_at", now.toISOString())
+          .gte("starts_at", startOfLocalTodayIso(now))
           .lte("starts_at", until.toISOString())
           .order("starts_at")
-          .limit(3);
+          .limit(30);
 
-        if (!cancelled && occasions && occasions.length > 0) {
+        const occasions = (occasionRows || [])
+          .filter(
+            (occasion: any) =>
+              isFamilyOccasionEvent(occasion) &&
+              isFamilyOccasionActive(occasion, now),
+          )
+          .slice(0, 3);
+
+        if (!cancelled && occasions.length > 0) {
           const first = occasions[0];
           const when = new Intl.DateTimeFormat("ar-SA", {
             weekday: "long",
