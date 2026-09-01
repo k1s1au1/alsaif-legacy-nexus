@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUserRole } from "@/hooks/use-user-role";
 import { sendFcmNotification } from "@/lib/fcm.functions";
 import { OfflineCache } from "@/lib/offline-cache";
+import { consumeQuickCreate } from "@/lib/quick-create";
 
 export const Route = createFileRoute("/_authenticated/community")({ ssr:false, head:()=>({meta:[{title:"ركن الأعضاء — السيف"},{name:"description",content:"مساحة الأعضاء لمشاركة اليوميات، الصور، والأسئلة مع تصويت العائلة."}]}), component:CommunityPage });
 type Post={id:string;author_id:string;kind:"diary"|"photo"|"question"|"request"|string;title:string;body:string|null;image_urls:string[];poll_options:{label:string}[]|null;pinned:boolean;created_at:string;author?:{arabic_name:string|null;full_name:string|null;avatar_url:string|null}};
@@ -40,6 +41,11 @@ function CommunityPage(){
  const [filter,setFilter]=useState<string>("all");
  const postsRef=useRef<Post[]>([]);
  const postIdsRef=useRef<string[]>([]);
+
+ useEffect(()=>{
+   if(roleLoading||!meId)return;
+   if(consumeQuickCreate("community"))setShowAdd(true);
+ },[roleLoading,meId]);
 
  useEffect(()=>{
    if(!meId)return;
