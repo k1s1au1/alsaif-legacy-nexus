@@ -2,6 +2,12 @@
   --portal-x: 0px;
   --portal-y: 0px;
   --portal-light-x: 50%;
+  --pavilion-logo-top: 9.8%;
+  --pavilion-logo-size: 10.8%;
+  --pavilion-greeting-top: 31.2%;
+  --pavilion-identity-top: 52.2%;
+  --pavilion-message-bottom: 20.1%;
+  --pavilion-plaque-bottom: 5.25%;
   position: relative;
   isolation: isolate;
   display: block;
@@ -54,7 +60,7 @@
 
 .pavilion-reference-ambient {
   position: absolute;
-  inset: 24% 30% 19%;
+  inset: 28% 31% 18%;
   border-radius: 45%;
   background:
     radial-gradient(
@@ -64,15 +70,15 @@
       transparent 69%
     );
   mix-blend-mode: screen;
-  opacity: 0.78;
+  opacity: 0.54;
   animation: pavilion-reference-glow 5.8s ease-in-out infinite;
 }
 
 .pavilion-reference-beam {
   position: absolute;
-  top: 24%;
-  width: 13%;
-  height: 53%;
+  top: 30%;
+  width: 9%;
+  height: 46%;
   background: linear-gradient(
     178deg,
     rgba(255, 224, 156, 0.2),
@@ -81,18 +87,18 @@
   );
   filter: blur(8px);
   mix-blend-mode: screen;
-  opacity: 0.42;
+  opacity: 0.3;
   animation: pavilion-reference-lantern 4.6s ease-in-out infinite alternate;
 }
 
 .pavilion-reference-beam-right {
-  right: 31%;
-  transform: rotate(-7deg);
+  right: 18%;
+  transform: rotate(-4deg);
 }
 
 .pavilion-reference-beam-left {
-  left: 31%;
-  transform: rotate(7deg);
+  left: 18%;
+  transform: rotate(4deg);
   animation-delay: -2.3s;
 }
 
@@ -130,13 +136,13 @@
 }
 
 .pavilion-reference-logo {
-  top: 5.5%;
+  top: var(--pavilion-logo-top);
   left: 50%;
   display: grid;
-  width: 12.3%;
+  width: var(--pavilion-logo-size);
   aspect-ratio: 1;
   place-items: center;
-  padding: 0.72%;
+  padding: 0.62%;
   overflow: hidden;
   border-radius: 50%;
   color: #0b4a3b;
@@ -156,9 +162,9 @@
 }
 
 .pavilion-reference-greeting {
-  top: 26.2%;
-  right: 34%;
-  left: 34%;
+  top: var(--pavilion-greeting-top);
+  right: 35%;
+  left: 35%;
   margin: 0;
   overflow: hidden;
   color: #f0c66f;
@@ -172,10 +178,10 @@
 }
 
 .pavilion-reference-identity {
-  top: 46.5%;
+  top: var(--pavilion-identity-top);
   left: 50%;
   display: flex;
-  width: 46%;
+  width: 44%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -210,7 +216,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-size: clamp(26px, 4.5vw, 74px);
+  font-size: clamp(26px, 4.25vw, 72px);
   font-weight: 950;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -225,7 +231,7 @@
 
 .pavilion-reference-message {
   right: 28%;
-  bottom: 22.5%;
+  bottom: var(--pavilion-message-bottom);
   left: 28%;
   display: -webkit-box;
   margin: 0;
@@ -251,7 +257,7 @@
 }
 
 .pavilion-reference-plaque {
-  bottom: 7.1%;
+  bottom: var(--pavilion-plaque-bottom);
   left: 50%;
   width: 22%;
   overflow: hidden;
@@ -403,25 +409,27 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
 
 @media (max-width: 699px) {
   .heritage-pavilion-reference {
+    --pavilion-logo-top: 9.6%;
+    --pavilion-logo-size: 11%;
+    --pavilion-greeting-top: 31%;
+    --pavilion-identity-top: 52%;
+    --pavilion-message-bottom: 19.6%;
+    --pavilion-plaque-bottom: 5.15%;
     border-radius: 22px;
   }
 
   .pavilion-reference-logo {
-    top: 5.2%;
-    width: 12.8%;
-    padding: 0.8%;
+    padding: 0.65%;
   }
 
   .pavilion-reference-greeting {
-    top: 26%;
-    right: 27%;
-    left: 27%;
+    right: 29%;
+    left: 29%;
     font-size: clamp(7px, 2vw, 10.5px);
   }
 
   .pavilion-reference-identity {
-    top: 46%;
-    width: 54%;
+    width: 52%;
   }
 
   .pavilion-reference-identity span {
@@ -429,20 +437,18 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
   }
 
   .pavilion-reference-identity strong {
-    font-size: clamp(24px, 8.6vw, 44px);
+    font-size: clamp(22px, 8vw, 42px);
     filter: drop-shadow(0 4px 0 rgba(63, 42, 12, 0.82))
       drop-shadow(0 9px 9px rgba(0, 0, 0, 0.65));
   }
 
   .pavilion-reference-message {
-    right: 20%;
-    bottom: 21.5%;
-    left: 20%;
+    right: 18%;
+    left: 18%;
     font-size: clamp(7px, 2.1vw, 10.5px);
   }
 
   .pavilion-reference-plaque {
-    bottom: 7.1%;
     width: 23%;
     font-size: clamp(7px, 2vw, 10px);
   }
@@ -644,7 +650,7 @@ html body .desktop-portal-stage {
   html body .desktop-portal-stage
     > .desktop-portal-model.heritage-pavilion-reference
     .pavilion-reference-logo {
-    width: 21.86cqh;
-    padding: 1.28cqh;
+    width: 19.2cqh;
+    padding: 1.1cqh;
   }
 }
