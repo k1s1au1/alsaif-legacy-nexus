@@ -25,7 +25,7 @@ function asLocalDayStart(value: LifecycleDate): Date | null {
     }
   }
 
-  const parsed = value instanceof Date ? new Date(value) : new Date(value);
+  const parsed = value instanceof Date ? new Date(value.getTime()) : new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
 
   return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
