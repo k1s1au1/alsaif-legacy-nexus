@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
   Archive,
   CalendarDays,
@@ -185,7 +184,6 @@ export function DesktopDashboardExtras({
 }: {
   contentOnly?: boolean;
 }) {
-  const path = useRouterState({ select: (state) => state.location.pathname });
   const { data: eventsData } = useUpcomingEvents();
   const { data: announcementsData } = useDashboardAnnouncements();
   const { data: counts } = useDashboardCounts();
@@ -233,31 +231,10 @@ export function DesktopDashboardExtras({
       ? [{ to: "/community", create: "community", label: "مشاركة", icon: MessageCircle }]
       : []),
   ];
-  const [target, setTarget] = useState<Element | null>(null);
   const [servicesExpanded, setServicesExpanded] = useState(false);
   const [followExpanded, setFollowExpanded] = useState(false);
   const [followIndex, setFollowIndex] = useState(0);
   const [occasions, setOccasions] = useState<LocalOccasion[]>([]);
-
-  useEffect(() => {
-    if (path !== "/dashboard") {
-      setTarget(null);
-      return;
-    }
-
-    let tries = 0;
-    const id = window.setInterval(() => {
-      const node = document.querySelector("main > div.p-4.md\\:p-8.lg\\:p-12");
-      if (node) {
-        setTarget(node);
-        window.clearInterval(id);
-      } else if (++tries > 40) {
-        window.clearInterval(id);
-      }
-    }, 50);
-
-    return () => window.clearInterval(id);
-  }, [path]);
 
   useEffect(() => {
     const read = () => {
@@ -384,9 +361,7 @@ export function DesktopDashboardExtras({
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "صباح الخير" : hour < 17 ? "مساء النور" : "مساء الخير";
 
-  if (path !== "/dashboard" || !target) return null;
-
-  return createPortal(
+  return (
     <div
       className={contentOnly ? "tablet-landscape-desktop-content" : "desktop-rebuild-shell"}
       dir="rtl"
@@ -799,7 +774,6 @@ export function DesktopDashboardExtras({
           </div>
         </section>
       </div>
-    </div>,
-    target,
+    </div>
   );
 }
