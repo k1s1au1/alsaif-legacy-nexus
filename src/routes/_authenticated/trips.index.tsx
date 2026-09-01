@@ -140,7 +140,7 @@ function TripsPage() {
 
   return (
     <AppShell title="الترفيه" user={{ name: "", role: "", initial: "ص" }}>
-      <div className="max-w-7xl mx-auto space-y-8 pb-24" dir="rtl">
+      <div className="max-w-7xl mx-auto space-y-8 pb-48 xl:pb-24" dir="rtl">
         <QuickActionsBanner />
 
         {/* Entertainment Tabs - Moved to Top for better visibility */}
@@ -212,10 +212,10 @@ function TripsPage() {
                     {canManage && (
                       <button
                         onClick={() => setShowAdd(true)}
-                        className="btn-gold relative px-8 py-4 md:px-12 md:py-6 rounded-2xl md:rounded-[32px] flex items-center justify-center gap-3 shadow-2xl shadow-gold-primary/30 text-sm md:text-xl font-black group/btn self-center md:self-auto shrink-0 active:scale-95 transition-all"
+                        className="btn-gold relative hidden xl:flex px-8 py-4 xl:px-12 xl:py-6 rounded-2xl xl:rounded-[32px] items-center justify-center gap-3 shadow-2xl shadow-gold-primary/30 text-sm xl:text-xl font-black group/btn self-center xl:self-auto shrink-0 active:scale-95 transition-all"
                       >
                         <Plus className="size-5 md:size-7" strokeWidth={3} />
-                        <span>إضافة وجهة</span>
+                        <span>إضافة رحلة جديدة</span>
                       </button>
                     )}
                   </div>
@@ -298,6 +298,18 @@ function TripsPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {canManage && activeTab === "destinations" && (
+        <button
+          type="button"
+          onClick={() => setShowAdd(true)}
+          aria-label="إضافة رحلة جديدة"
+          className="fixed bottom-[calc(8.25rem+env(safe-area-inset-bottom,0px))] sm:bottom-[calc(9rem+env(safe-area-inset-bottom,0px))] left-4 right-4 sm:left-1/2 sm:right-auto sm:w-[360px] sm:-translate-x-1/2 z-[75] xl:hidden btn-gold h-14 sm:h-16 px-6 rounded-2xl flex items-center justify-center gap-3 text-base sm:text-lg font-black shadow-2xl shadow-black/30 border border-white/15 active:scale-[0.98] transition-transform"
+        >
+          <Plus className="size-5 sm:size-6" strokeWidth={3} />
+          <span>إضافة رحلة جديدة</span>
+        </button>
+      )}
 
       <AnimatePresence>
         {(showAdd || editingTrip) && (
