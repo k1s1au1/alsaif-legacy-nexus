@@ -31,6 +31,7 @@ import {
   useProfile,
 } from "@/hooks/use-dashboard-data";
 import { useSiteLogo } from "@/hooks/use-site-logo";
+import { useUserRole } from "@/hooks/use-user-role";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 
 const fmtDate = (value?: string | null) => {
@@ -192,6 +193,46 @@ export function DesktopDashboardExtras({
   const { data: heritage } = useHeritageSnippet();
   const { data: profile } = useProfile();
   const logo = useSiteLogo();
+  const {
+    canManage: canManageSection,
+    isAdmin,
+    isManager,
+    isChairman,
+    sectionHeads,
+    isLoading: rolesLoading,
+  } = useUserRole();
+  const canCreateTask =
+    !rolesLoading && (isAdmin || isManager || isChairman || sectionHeads.length > 0);
+  const managementQuickActions = [
+    {
+      to: "/meetings",
+      create: "meeting",
+      label: "اجتماع",
+      icon: Users,
+      allowed: !rolesLoading && canManageSection("meetings"),
+    },
+    {
+      to: "/trips",
+      create: "trip",
+      label: "رحلة",
+      icon: Plane,
+      allowed: !rolesLoading && canManageSection("trips"),
+    },
+    {
+      to: "/tasks",
+      create: "task",
+      label: "مهمة",
+      icon: ListChecks,
+      allowed: canCreateTask,
+    },
+  ].filter((item) => item.allowed);
+  const quickCreateActions = [
+    { to: "/family-occasions", create: "occasion", label: "مناسبة", icon: Sparkles },
+    ...managementQuickActions,
+    ...(managementQuickActions.length < 3
+      ? [{ to: "/community", create: "community", label: "مشاركة", icon: MessageCircle }]
+      : []),
+  ];
   const [target, setTarget] = useState<Element | null>(null);
   const [servicesExpanded, setServicesExpanded] = useState(false);
   const [followExpanded, setFollowExpanded] = useState(false);
@@ -666,15 +707,15 @@ export function DesktopDashboardExtras({
               </div>
             </div>
             <div className="desktop-quick-add">
-              {[
-                { to: "/family-occasions", label: "مناسبة", icon: Sparkles },
-                { to: "/meetings", label: "اجتماع", icon: Users },
-                { to: "/trips", label: "رحلة", icon: Plane },
-                { to: "/tasks", label: "مهمة", icon: ListChecks },
-              ].map((item) => {
+              {quickCreateActions.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Link key={item.label} to={item.to}>
+                  <Link
+                    key={item.create}
+                    to={item.to}
+                    search={{ create: item.create } as any}
+                    aria-label={`إضافة ${item.label}`}
+                  >
                     <Icon />
                     <span>إضافة {item.label}</span>
                   </Link>
