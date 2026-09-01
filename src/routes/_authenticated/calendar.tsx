@@ -18,6 +18,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isFamilyOccasionEvent } from "@/lib/family-occasion-events";
+import {
+  isFamilyOccasionActive,
+  isMeetingActive,
+  isTaskActive,
+  isTripActive,
+} from "@/lib/day-lifecycle";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   ssr: false,
@@ -132,6 +139,7 @@ function timeLabel(d: Date | null) {
 
 function FamilyCalendarPage() {
   const { userId, primaryRole } = useUserRole();
+  const activeDayKey = useDayBoundaryKey();
   const [profile, setProfile] = useState({
     name: "عضو العائلة",
     role: "عضو",
@@ -139,7 +147,7 @@ function FamilyCalendarPage() {
     avatarPath: null as string | null,
   });
 
-  const today = useMemo(() => new Date(), []);
+  const today = useMemo(() => new Date(), [activeDayKey]);
   const [cursor, setCursor] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
@@ -191,6 +199,7 @@ function FamilyCalendarPage() {
       const out: CalItem[] = [];
 
       (meetingsRes.data ?? []).forEach((m: any) => {
+        if (!isMeetingActive(m)) return;
         const start = m.scheduled_at ? new Date(m.scheduled_at) : null;
         if (!start || isNaN(start.getTime())) return;
         out.push({
@@ -206,7 +215,10 @@ function FamilyCalendarPage() {
       });
 
       (eventsRes.data ?? [])
-        .filter((event: any) => isFamilyOccasionEvent(event))
+        .filter(
+          (event: any) =>
+            isFamilyOccasionEvent(event) && isFamilyOccasionActive(event),
+        )
         .forEach((e: any) => {
           const start = e.starts_at ? new Date(e.starts_at) : null;
           if (!start || isNaN(start.getTime())) return;
@@ -224,7 +236,7 @@ function FamilyCalendarPage() {
         });
 
       (tripsRes.data ?? []).forEach((t: any) => {
-        if (!t.start_date) return;
+        if (!isTripActive(t) || !t.start_date) return;
         const start = new Date(`${t.start_date}T00:00:00`);
         if (isNaN(start.getTime())) return;
         const end = t.end_date ? new Date(`${t.end_date}T00:00:00`) : start;
@@ -248,6 +260,7 @@ function FamilyCalendarPage() {
       });
 
       (tasksRes.data ?? []).forEach((t: any) => {
+        if (!isTaskActive(t)) return;
         const due = t.due_date ? new Date(t.due_date) : null;
         if (!due || isNaN(due.getTime())) return;
         out.push({
@@ -264,7 +277,7 @@ function FamilyCalendarPage() {
       setItems(out);
       setLoading(false);
     })();
-  }, [refreshKey]);
+  }, [refreshKey, activeDayKey]);
 
   useRealtimeSync(["meetings", "events", "trips", "tasks"], () => setRefreshKey((k) => k + 1));
 
