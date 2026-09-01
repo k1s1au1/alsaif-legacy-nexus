@@ -4,6 +4,7 @@ import {
   decodeFamilyOccasionEventDescription,
   encodeFamilyOccasionEventDescription,
 } from "@/lib/family-occasion-events";
+import { isFamilyOccasionActive } from "@/lib/day-lifecycle";
 
 const STORAGE_KEY = "alsaif:family-occasions";
 type LocalOccasion = {
@@ -26,6 +27,7 @@ type EventRow = {
   event_type: "wedding" | "birthday" | "graduation" | "religious" | "social" | "other";
   location: string | null;
   starts_at: string;
+  ends_at: string | null;
   status: "scheduled" | "cancelled" | "completed";
   created_by: string;
 };
@@ -144,7 +146,7 @@ export function FamilyOccasionsSync() {
     const fetchRemote = async (): Promise<RemoteSnapshot> => {
       const { data, error } = await supabase
         .from("events")
-        .select("id,title,description,event_type,location,starts_at,status,created_by")
+        .select("id,title,description,event_type,location,starts_at,ends_at,status,created_by")
         .order("starts_at", { ascending: true });
       if (error) throw error;
 
@@ -155,7 +157,7 @@ export function FamilyOccasionsSync() {
         const occasion = decodeOccasion(row);
         if (!occasion) continue;
         knownIds.add(row.id);
-        if (row.status !== "cancelled") active.push(occasion);
+        if (isFamilyOccasionActive(row)) active.push(occasion);
       }
 
       return { active, knownIds };
