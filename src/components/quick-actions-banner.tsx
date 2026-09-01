@@ -1,6 +1,6 @@
 import {
   MessageCircle, Ticket, CalendarDays, ListChecks, Newspaper, Trees, Wallet,
-  History, Archive, Users, Lock, ChevronDown, ChevronUp, PartyPopper,
+  History, Archive, Users, Handshake, Lock, ChevronDown, ChevronUp, PartyPopper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
@@ -32,7 +32,7 @@ const services = [
   { to: "/archive", label: "الألبومات", description: "ذكرياتنا في صور جميلة", icon: <Archive /> },
   { to: "/calendar", label: "تقويم العائلة", description: "المواعيد والمناسبات", icon: <CalendarDays /> },
   { to: "/chat", label: "المحادثات", description: "تواصل خاص بالعائلة", icon: <MessageCircle /> },
-  { to: "/community", label: "ركن الأعضاء", description: "مجتمع أفراد العائلة", icon: <Users /> },
+  { to: "/community", label: "ركن الأعضاء", description: "مجتمع أفراد العائلة", icon: <Handshake /> },
   { to: "/heritage", label: "الإرث", description: "تاريخ وإرث العائلة", icon: <History /> },
   { to: "/family-tree", label: "شجرة العائلة", description: "أجيال العائلة وروابطها", icon: <Trees /> },
   { to: "/vault", label: "الخزنة", description: "المحتوى العائلي الخاص", icon: <Lock /> },
