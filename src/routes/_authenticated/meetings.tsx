@@ -152,7 +152,9 @@ function MeetingsPage() {
 
   const loadAll = useCallback(async () => {
     const cached = OfflineCache.load("meetings");
-    if (cached) setMeetings(cached);
+    if (cached) {
+      setMeetings(((cached || []) as Meeting[]).filter((meeting) => isMeetingActive(meeting)));
+    }
 
     setLoading(true);
     try {
