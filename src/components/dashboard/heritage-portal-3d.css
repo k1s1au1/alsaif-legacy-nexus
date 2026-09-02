@@ -4,10 +4,10 @@
   --portal-light-x: 50%;
   --pavilion-logo-top: 9.8%;
   --pavilion-logo-size: 10.8%;
-  --pavilion-greeting-top: 31.2%;
-  --pavilion-identity-top: 52.2%;
+  --pavilion-greeting-top: 30.5%;
+  --pavilion-identity-top: 49.5%;
   --pavilion-message-bottom: 20.1%;
-  --pavilion-plaque-bottom: 5.25%;
+  --pavilion-plaque-bottom: 7.1%;
   position: relative;
   isolation: isolate;
   display: block;
@@ -163,10 +163,27 @@
 
 .pavilion-reference-greeting {
   top: var(--pavilion-greeting-top);
-  right: 35%;
-  left: 35%;
+  right: auto;
+  left: 50%;
+  display: flex;
+  min-width: 15%;
+  max-width: 32%;
+  min-height: 5.2%;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2px, 0.42vw, 7px) clamp(10px, 1.3vw, 22px);
   margin: 0;
   overflow: hidden;
+  border: 1px solid rgba(220, 179, 87, 0.72);
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 52, 43, 0.96),
+    rgba(2, 30, 25, 0.94)
+  );
+  box-shadow:
+    0 7px 16px rgba(0, 0, 0, 0.36),
+    inset 0 1px rgba(255, 240, 196, 0.12);
   color: #f0c66f;
   font-size: clamp(9px, 1.15vw, 20px);
   font-weight: 800;
@@ -174,6 +191,7 @@
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transform: translateX(-50%);
   text-shadow: 0 2px 7px rgba(0, 0, 0, 0.86);
 }
 
@@ -191,6 +209,7 @@
 }
 
 .pavilion-reference-identity span {
+  margin-bottom: clamp(1px, 0.25vw, 4px);
   color: #f0c36d;
   font-size: clamp(10px, 1.3vw, 22px);
   font-weight: 800;
@@ -411,10 +430,10 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
   .heritage-pavilion-reference {
     --pavilion-logo-top: 9.6%;
     --pavilion-logo-size: 11%;
-    --pavilion-greeting-top: 31%;
-    --pavilion-identity-top: 52%;
+    --pavilion-greeting-top: 30.2%;
+    --pavilion-identity-top: 49.2%;
     --pavilion-message-bottom: 19.6%;
-    --pavilion-plaque-bottom: 5.15%;
+    --pavilion-plaque-bottom: 7%;
     border-radius: 22px;
   }
 
@@ -423,8 +442,10 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
   }
 
   .pavilion-reference-greeting {
-    right: 29%;
-    left: 29%;
+    min-width: 21%;
+    max-width: 46%;
+    min-height: 5.6%;
+    padding: 2px 8px;
     font-size: clamp(7px, 2vw, 10.5px);
   }
 
