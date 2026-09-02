@@ -23,10 +23,8 @@ import {
   Users,
   X,
   Share2,
-  Download,
 } from "lucide-react";
 import { FamilySharing } from "@/lib/native-bridge";
-import { toast } from "sonner";
 import { consumeQuickCreate } from "@/lib/quick-create";
 import { isPastLocalDay } from "@/lib/day-lifecycle";
 
@@ -45,11 +43,15 @@ type OccasionType =
 
 type BirthdayAudience = "adult" | "child";
 type InviteMode = "public" | "private";
+type OccasionFont = "ibm" | "tajawal" | "amiri" | "reem-kufi";
 
 type Extra = {
   inviteMode?: InviteMode;
   guestName?: string;
   showLogo?: boolean;
+  fontFamily?: OccasionFont;
+  fontScale?: number;
+  textColor?: string;
   groomFamily?: string;
   brideFamily?: string;
   groomName?: string;
@@ -158,8 +160,35 @@ const COPY: Record<
 
 const STORAGE = "alsaif:family-occasions";
 const ROOT = "/occasion-templates";
+const OCCASION_FONTS: Array<{ id: OccasionFont; label: string; family: string }> = [
+  {
+    id: "ibm",
+    label: "IBM Plex عربي",
+    family: '"IBM Plex Sans Arabic", "Tajawal", sans-serif',
+  },
+  { id: "tajawal", label: "تجوال", family: '"Tajawal", sans-serif' },
+  { id: "amiri", label: "أميري", family: '"Amiri", serif' },
+  { id: "reem-kufi", label: "ريم كوفي", family: '"Reem Kufi", sans-serif' },
+];
+const OCCASION_TEXT_COLORS = ["#183F36", "#0F5A3A", "#171717", "#8E7745", "#FFFFFF"];
 
 const meta = (t: OccasionType) => TYPES.find((x) => x.key === t) ?? TYPES[0];
+
+function occasionFontFamily(font?: OccasionFont) {
+  return OCCASION_FONTS.find((option) => option.id === font)?.family ?? OCCASION_FONTS[0].family;
+}
+
+function occasionFontScale(value?: number) {
+  return Math.min(1.4, Math.max(0.75, Number.isFinite(value) ? Number(value) : 1));
+}
+
+function occasionTextColor(type: OccasionType, value?: string) {
+  return /^#[0-9a-f]{6}$/i.test(value ?? "")
+    ? value!
+    : type === "condolence"
+      ? "#FFFFFF"
+      : "#183F36";
+}
 
 function extra(s?: string): Extra {
   try {
@@ -243,6 +272,11 @@ function Preview({
   const cond = type === "condolence";
   const logo = !cond && (x.showLogo ?? true);
   const parts = c.body.split("\n");
+  const selectedFontScale = occasionFontScale(x.fontScale);
+  const selectedTextColor = occasionTextColor(type, x.textColor);
+  const fontGrowth = Math.max(0, selectedFontScale - 1);
+  const scaledText = (minimum: number, viewport: number, maximum: number) =>
+    `clamp(${(minimum * selectedFontScale).toFixed(2)}px, ${(viewport * selectedFontScale).toFixed(2)}vw, ${(maximum * selectedFontScale).toFixed(2)}px)`;
 
   return (
     <div
@@ -262,62 +296,99 @@ function Preview({
       )}
       {show && (
         <div
-          className={`absolute inset-x-[10%] top-[18%] bottom-[12%] z-10 flex flex-col items-center justify-center overflow-hidden px-4 py-4 text-center ${cond ? "text-white" : "text-[#183f36]"}`}
+          className="absolute inset-x-[10%] z-10 flex flex-col items-center justify-center overflow-hidden px-4 py-4 text-center"
+          style={{
+            top: `${18 - fontGrowth * 10}%`,
+            bottom: `${12 - fontGrowth * 7.5}%`,
+            color: selectedTextColor,
+            fontFamily: occasionFontFamily(x.fontFamily),
+          }}
         >
           <div className="w-full max-w-[92%] space-y-[clamp(6px,1.5vw,14px)]">
-            <h3 className="text-[clamp(14px,3.8vw,24px)] font-black leading-tight tracking-wide drop-shadow-sm">
+            <h3
+              className="font-black leading-tight tracking-wide drop-shadow-sm"
+              style={{ fontSize: scaledText(14, 3.8, 24) }}
+            >
               {c.heading}
             </h3>
             {parts[0] && (
-              <p className="text-[clamp(10px,2.4vw,15px)] font-black leading-relaxed opacity-90">
+              <p
+                className="font-black leading-relaxed opacity-90"
+                style={{ fontSize: scaledText(10, 2.4, 15) }}
+              >
                 {parts[0]}
               </p>
             )}
             {parts[1] && (
-              <p className="mx-auto max-w-[95%] text-[clamp(9px,2.1vw,14px)] font-bold leading-[1.75] opacity-85">
+              <p
+                className="mx-auto max-w-[95%] font-bold leading-[1.75] opacity-85"
+                style={{ fontSize: scaledText(9, 2.1, 14) }}
+              >
                 {parts[1]}
               </p>
             )}
             {x.inviteMode === "private" && x.guestName && (
-              <div className="py-1 text-[clamp(11px,2.6vw,17px)] font-black border-y border-current/10 my-1">
+              <div
+                className="my-1 border-y border-current/10 py-1 font-black"
+                style={{ fontSize: scaledText(11, 2.6, 17) }}
+              >
                 المكرم/ {x.guestName}
               </div>
             )}
             {parts.slice(2).map((p, i) => (
-              <p key={i} className="text-[clamp(9px,2vw,14px)] font-semibold leading-[1.85] opacity-80">
+              <p
+                key={i}
+                className="font-semibold leading-[1.85] opacity-80"
+                style={{ fontSize: scaledText(9, 2, 14) }}
+              >
                 {p}
               </p>
             ))}
             {type === "wedding" ? (
               <div className="space-y-2 pt-1">
                 {x.groomFamily && x.brideFamily && (
-                  <p className="text-[clamp(10px,2.2vw,15px)] font-black leading-relaxed">
+                  <p
+                    className="font-black leading-relaxed"
+                    style={{ fontSize: scaledText(10, 2.2, 15) }}
+                  >
                     تتشرف عائلتا {x.groomFamily} و {x.brideFamily}
                     <br />
                     بدعوتكم لحضور حفل زواج
                   </p>
                 )}
-                <div className="text-[clamp(15px,3.6vw,25px)] font-black leading-tight text-primary">
+                <div
+                  className="font-black leading-tight"
+                  style={{ fontSize: scaledText(15, 3.6, 25) }}
+                >
                   {x.groomName || name}
                   {x.brideName ? ` و ${x.brideName}` : ""}
                 </div>
               </div>
             ) : (
               name?.trim() && (
-                <div className="pt-1 text-[clamp(15px,3.4vw,24px)] font-black leading-tight text-primary">
+                <div
+                  className="pt-1 font-black leading-tight"
+                  style={{ fontSize: scaledText(15, 3.4, 24) }}
+                >
                   {name}
                 </div>
               )
             )}
             {type === "birthday" && a !== null && (
-              <div className="text-[clamp(30px,8vw,48px)] font-black leading-none">
+              <div
+                className="font-black leading-none"
+                style={{ fontSize: scaledText(30, 8, 48) }}
+              >
                 {a}
-                <span className="mr-1 text-[clamp(10px,2.2vw,15px)]">عامًا</span>
+                <span className="mr-1" style={{ fontSize: scaledText(10, 2.2, 15) }}>
+                  عامًا
+                </span>
               </div>
             )}
             {(eventDate || time || x.dayName || x.hijriDate) && (
               <div
-                className={`mx-auto mt-2 w-full rounded-xl px-2 py-2 text-[clamp(9px,2.1vw,14px)] font-black leading-relaxed ${cond ? "bg-white/10" : "bg-[#183f36]/7"}`}
+                className={`mx-auto mt-2 w-full rounded-xl px-2 py-2 font-black leading-relaxed ${cond ? "bg-white/10" : "bg-[#183f36]/7"}`}
+                style={{ fontSize: scaledText(9, 2.1, 14) }}
               >
                 {x.dayName && <div>{x.dayName}</div>}
                 <div>
@@ -328,14 +399,22 @@ function Preview({
               </div>
             )}
             {(x.venue || location || x.city) && (
-              <div className="text-[clamp(9px,2.1vw,14px)] font-black leading-relaxed">
+              <div
+                className="font-black leading-relaxed"
+                style={{ fontSize: scaledText(9, 2.1, 14) }}
+              >
                 {x.venue || location}
                 {x.city ? ` — ${x.city}` : ""}
               </div>
             )}
             {type === "wedding" && (x.groomFather || x.brideFather) && (
-              <div className="border-t border-current/20 pt-2 text-[clamp(8px,1.9vw,13px)] font-bold leading-relaxed">
-                <strong className="block text-[clamp(9px,2.1vw,14px)]">الداعيان</strong>
+              <div
+                className="border-t border-current/20 pt-2 font-bold leading-relaxed"
+                style={{ fontSize: scaledText(8, 1.9, 13) }}
+              >
+                <strong className="block" style={{ fontSize: scaledText(9, 2.1, 14) }}>
+                  الداعيان
+                </strong>
                 {x.groomFather && <span className="block">والد العريس: {x.groomFather}</span>}
                 {x.brideFather && <span className="block">والد العروس: {x.brideFather}</span>}
               </div>
@@ -387,7 +466,12 @@ function FamilyOccasionsPage() {
   const [location, setLocation] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [audience, setAudience] = useState<BirthdayAudience>("adult");
-  const [x, setX] = useState<Extra>({ inviteMode: "public", showLogo: true });
+  const [x, setX] = useState<Extra>({
+    inviteMode: "public",
+    showLogo: true,
+    fontFamily: "ibm",
+    fontScale: 1,
+  });
 
   useEffect(() => {
     const load = () => {
@@ -411,7 +495,8 @@ function FamilyOccasionsPage() {
 
   const selected = useMemo(() => meta(type), [type]);
   const previews = Array.from({ length: selected.designs }, (_, i) => i + 1);
-  const set = (k: keyof Extra, v: string | boolean) => setX((q) => ({ ...q, [k]: v }));
+  const set = (k: keyof Extra, v: string | boolean | number) =>
+    setX((q) => ({ ...q, [k]: v }));
 
   const persist = (v: Occasion[]) => {
     setItems(v);
@@ -429,7 +514,7 @@ function FamilyOccasionsPage() {
     setLocation("");
     setBirthDate("");
     setAudience("adult");
-    setX({ inviteMode: "public", showLogo: true });
+    setX({ inviteMode: "public", showLogo: true, fontFamily: "ibm", fontScale: 1 });
   }
 
   function start() {
@@ -707,6 +792,114 @@ function FamilyOccasionsPage() {
                         />
                       </label>
                     )}
+                    <div className="mt-4 rounded-[22px] border border-border bg-background p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <strong className="text-sm font-black">تنسيق خط البطاقة</strong>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setX((current) => ({
+                              ...current,
+                              fontFamily: "ibm",
+                              fontScale: 1,
+                              textColor: undefined,
+                            }))
+                          }
+                          className="rounded-xl bg-muted px-3 py-2 text-xs font-black"
+                        >
+                          إعادة الضبط
+                        </button>
+                      </div>
+
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <label>
+                          <span className="mb-1.5 block text-xs font-black">نوع الخط</span>
+                          <select
+                            value={x.fontFamily ?? "ibm"}
+                            onChange={(e) => set("fontFamily", e.target.value)}
+                            className="min-h-12 w-full rounded-2xl border border-border bg-card px-4 text-sm font-bold"
+                          >
+                            {OCCASION_FONTS.map((font) => (
+                              <option key={font.id} value={font.id} style={{ fontFamily: font.family }}>
+                                {font.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <div>
+                          <span className="mb-1.5 block text-xs font-black">لون الخط</span>
+                          <div className="flex min-h-12 items-center gap-2 rounded-2xl border border-border bg-card px-3">
+                            {OCCASION_TEXT_COLORS.map((color) => {
+                              const active =
+                                occasionTextColor(type, x.textColor).toUpperCase() === color;
+                              return (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  onClick={() => set("textColor", color)}
+                                  aria-label={`اختيار لون الخط ${color}`}
+                                  className={`size-7 shrink-0 rounded-full border transition-transform ${active ? "scale-110 ring-2 ring-primary ring-offset-2" : "border-black/15"}`}
+                                  style={{ backgroundColor: color }}
+                                />
+                              );
+                            })}
+                            <input
+                              type="color"
+                              value={occasionTextColor(type, x.textColor)}
+                              onChange={(e) => set("textColor", e.target.value.toUpperCase())}
+                              aria-label="اختيار لون خط مخصص"
+                              className="mr-auto size-8 cursor-pointer rounded-lg border-0 bg-transparent p-0"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="mb-2 flex items-center justify-between text-xs font-black">
+                          <span>حجم الخط</span>
+                          <output>{Math.round(occasionFontScale(x.fontScale) * 100)}٪</output>
+                        </div>
+                        <div className="flex items-center gap-3" dir="ltr">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              set(
+                                "fontScale",
+                                Math.max(0.75, occasionFontScale(x.fontScale) - 0.05),
+                              )
+                            }
+                            aria-label="تصغير الخط"
+                            className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-xl font-black"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="range"
+                            min="0.75"
+                            max="1.4"
+                            step="0.05"
+                            value={occasionFontScale(x.fontScale)}
+                            onChange={(e) => set("fontScale", Number(e.target.value))}
+                            aria-label="حجم خط البطاقة"
+                            className="h-2 min-w-0 flex-1 cursor-pointer accent-[#0F5A3A]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              set(
+                                "fontScale",
+                                Math.min(1.4, occasionFontScale(x.fontScale) + 0.05),
+                              )
+                            }
+                            aria-label="تكبير الخط"
+                            className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-xl font-black"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     <div className="mt-4 rounded-2xl bg-primary/5 p-4">
                       <strong className="text-sm font-black">{COPY[type].heading}</strong>
                       <p className="mt-2 whitespace-pre-line text-xs leading-6 text-muted-foreground">
