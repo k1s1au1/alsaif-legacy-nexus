@@ -190,6 +190,29 @@ function path(t: OccasionType, n: number, a: BirthdayAudience = "adult") {
   return `${ROOT}/${t}-${n}.png`;
 }
 
+async function shareOccasion(o: Occasion) {
+  const x = extra(o.details);
+
+  await FamilySharing.shareInvitation({
+    title: o.title || COPY[o.type].heading,
+    date: o.date || "قريباً",
+    location: x.venue || o.location || "مجلس العائلة",
+    templatePath: path(o.type, o.design, o.birthdayAudience),
+    layout: {
+      occasionType: o.type,
+      heading: COPY[o.type].heading,
+      body: COPY[o.type].body,
+      name: o.title,
+      eventDate: o.date,
+      time: o.time,
+      location: o.location,
+      age: o.type === "birthday" ? age(o.birthDate, o.date) : null,
+      ...x,
+      showLogo: o.type === "condolence" ? false : (x.showLogo ?? true),
+    },
+  });
+}
+
 function Preview({
   type,
   design,
@@ -529,17 +552,7 @@ function FamilyOccasionsPage() {
                           <Pencil className="mx-auto size-4" />
                         </button>
                         <button
-                          onClick={() => {
-                            const dateStr = o.date
-                              ? new Date(o.date).toLocaleDateString("ar-SA")
-                              : "قريباً";
-                            FamilySharing.shareInvitation({
-                              title: o.title || COPY[o.type].heading,
-                              date: dateStr,
-                              location: o.location || "مجلس العائلة",
-                              templatePath: path(o.type, o.design, o.birthdayAudience),
-                            });
-                          }}
+                          onClick={() => void shareOccasion(o)}
                           className="flex-1 rounded-xl bg-gold-primary/10 py-2 text-gold-primary"
                           title="مشاركة"
                         >
@@ -881,16 +894,7 @@ function FamilyOccasionsPage() {
                 <X size={22} />
               </button>
               <button
-                onClick={() => {
-                  const o = viewingOccasion;
-                  const dateStr = o.date ? new Date(o.date).toLocaleDateString("ar-SA") : "قريباً";
-                  FamilySharing.shareInvitation({
-                    title: o.title || COPY[o.type].heading,
-                    date: dateStr,
-                    location: o.location || "مجلس العائلة",
-                    templatePath: path(o.type, o.design, o.birthdayAudience),
-                  });
-                }}
+                onClick={() => void shareOccasion(viewingOccasion)}
                 className="size-11 rounded-full bg-gold-primary text-emerald-950 flex items-center justify-center hover:scale-110 transition-all shadow-xl"
               >
                 <Share2 size={20} />
