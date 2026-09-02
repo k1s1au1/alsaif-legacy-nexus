@@ -21,6 +21,9 @@ export type FamilyInvitationShareLayout = {
   location?: string;
   age?: number | null;
   showLogo?: boolean;
+  fontFamily?: string;
+  fontScale?: number;
+  textColor?: string;
   inviteMode?: "public" | "private";
   guestName?: string;
   groomFamily?: string;
@@ -72,10 +75,29 @@ type InvitationTextBlock = {
   pill?: boolean;
 };
 
-const INVITATION_FONT = '"Tajawal", "Noto Sans Arabic", Arial, sans-serif';
+const INVITATION_FONTS: Record<string, string> = {
+  ibm: '"IBM Plex Sans Arabic", "Tajawal", sans-serif',
+  tajawal: '"Tajawal", sans-serif',
+  amiri: '"Amiri", serif',
+  "reem-kufi": '"Reem Kufi", sans-serif',
+};
 
-function setInvitationFont(ctx: CanvasRenderingContext2D, block: InvitationTextBlock, scale: number) {
-  ctx.font = `${block.weight} ${Math.round(block.size * scale)}px ${INVITATION_FONT}`;
+function invitationFontFamily(font?: string) {
+  return (font && INVITATION_FONTS[font]) || INVITATION_FONTS.ibm;
+}
+
+function invitationTextColor(layout: FamilyInvitationShareLayout) {
+  if (/^#[0-9a-f]{6}$/i.test(layout.textColor ?? "")) return layout.textColor!;
+  return layout.occasionType === "condolence" ? "#FFFFFF" : "#183f36";
+}
+
+function setInvitationFont(
+  ctx: CanvasRenderingContext2D,
+  block: InvitationTextBlock,
+  scale: number,
+  fontFamily: string,
+) {
+  ctx.font = `${block.weight} ${Math.round(block.size * scale)}px ${fontFamily}`;
 }
 
 function breakLongInvitationWord(
@@ -158,8 +180,14 @@ function drawRoundedInvitationRect(
 }
 
 function invitationBlocks(layout: FamilyInvitationShareLayout): InvitationTextBlock[] {
-  const darkText = layout.occasionType === "condolence" ? "#FFFFFF" : "#183f36";
-  const accentText = layout.occasionType === "condolence" ? "#FFFFFF" : "#0F5A3A";
+  const selectedTextColor = invitationTextColor(layout);
+  const hasCustomColor = /^#[0-9a-f]{6}$/i.test(layout.textColor ?? "");
+  const darkText = selectedTextColor;
+  const accentText = hasCustomColor
+    ? selectedTextColor
+    : layout.occasionType === "condolence"
+      ? "#FFFFFF"
+      : "#0F5A3A";
   const blocks: InvitationTextBlock[] = [
     {
       text: layout.heading,
@@ -301,10 +329,11 @@ function measureInvitationBlocks(
   ctx: CanvasRenderingContext2D,
   blocks: InvitationTextBlock[],
   scale: number,
+  fontFamily: string,
 ) {
   return blocks.reduce((total, block) => {
-    setInvitationFont(ctx, block, scale);
-    const lines = wrapInvitationText(ctx, block.text, (block.maxWidth ?? 960) * scale);
+    setInvitationFont(ctx, block, scale, fontFamily);
+    const lines = wrapInvitationText(ctx, block.text, block.maxWidth ?? 960);
     const padding = block.pill ? 26 * scale : 0;
     return total + (block.marginTop ?? 0) * scale + lines.length * block.lineHeight * scale + padding;
   }, 0);
@@ -315,14 +344,18 @@ function drawInvitationLayout(
   layout: FamilyInvitationShareLayout,
 ) {
   const blocks = invitationBlocks(layout);
-  const contentTop = 360;
-  const contentHeight = 1400;
-  let scale = 1;
-  let totalHeight = measureInvitationBlocks(ctx, blocks, scale);
+  const fontFamily = invitationFontFamily(layout.fontFamily);
+  const requestedScale = Math.min(1.4, Math.max(0.75, Number(layout.fontScale) || 1));
+  const fontGrowth = Math.max(0, requestedScale - 1);
+  const contentTop = 360 - fontGrowth * 200;
+  const contentBottom = 240 - fontGrowth * 150;
+  const contentHeight = 2000 - contentTop - contentBottom;
+  let scale = requestedScale;
+  let totalHeight = measureInvitationBlocks(ctx, blocks, scale, fontFamily);
 
   while (totalHeight > contentHeight && scale > 0.62) {
     scale = Math.max(0.62, scale - 0.04);
-    totalHeight = measureInvitationBlocks(ctx, blocks, scale);
+    totalHeight = measureInvitationBlocks(ctx, blocks, scale, fontFamily);
   }
 
   let y = contentTop + Math.max(0, (contentHeight - totalHeight) / 2);
@@ -332,8 +365,8 @@ function drawInvitationLayout(
 
   for (const block of blocks) {
     y += (block.marginTop ?? 0) * scale;
-    setInvitationFont(ctx, block, scale);
-    const lines = wrapInvitationText(ctx, block.text, (block.maxWidth ?? 960) * scale);
+    setInvitationFont(ctx, block, scale, fontFamily);
+    const lines = wrapInvitationText(ctx, block.text, block.maxWidth ?? 960);
     const lineHeight = block.lineHeight * scale;
     const verticalPadding = block.pill ? 13 * scale : 0;
     const blockHeight = lines.length * lineHeight + verticalPadding * 2;
@@ -379,8 +412,13 @@ export const FamilySharing = {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    if (document.fonts?.ready) {
+    const selectedCanvasFont = invitationFontFamily(layout?.fontFamily);
+    if (document.fonts) {
       await document.fonts.ready.catch(() => undefined);
+      await Promise.all([
+        document.fonts.load(`400 48px ${selectedCanvasFont}`, "المناسبة"),
+        document.fonts.load(`700 48px ${selectedCanvasFont}`, "المناسبة"),
+      ]).catch(() => undefined);
     }
 
     // Helper to load images
