@@ -498,14 +498,16 @@ function Dashboard() {
       <div className="dashboard-page max-w-6xl mx-auto space-y-12 pb-20 px-4 md:px-0">
         {/* 1. SPIRITUAL REMINDER */}
         <section className="dashboard-spiritual dashboard-faith-strip animate-fade-up">
-          <div className="dashboard-faith-label">
-            <Scroll size={16} aria-hidden="true" />
-            <span>نفحات إيمانية</span>
+          <div className="dashboard-faith-meta">
+            <div className="dashboard-faith-label">
+              <Scroll size={16} aria-hidden="true" />
+              <span>نفحات إيمانية</span>
+            </div>
+            <span className="dashboard-faith-source">{spiritualQuote.source}</span>
           </div>
           <p style={{ fontFamily: "'Amiri', serif" }}>
             "{spiritualQuote.text}"
           </p>
-          <span className="dashboard-faith-source">{spiritualQuote.source}</span>
         </section>
 
         {/* 2. INTERACTIVE NAJDI WELCOME PAVILION */}
