@@ -59,6 +59,21 @@ type Member = {
 const NODE_W = 140;
 const NODE_H = 160;
 
+function shouldUseNativeIOSNodes() {
+  if (typeof navigator === "undefined") return false;
+
+  const userAgent = navigator.userAgent;
+  const isClassicIOS = /iPad|iPhone|iPod/.test(userAgent);
+  const isModernIPad = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+
+  return isClassicIOS || isModernIPad;
+}
+
+function shortenNodeLabel(value: string | null | undefined, maxLength = 15) {
+  const label = value?.trim() || "—";
+  return label.length > maxLength ? `${label.slice(0, maxLength - 1)}…` : label;
+}
+
 function FamilyTreePage() {
   const router = useRouter();
   const [me, setMe] = useState<{
@@ -79,7 +94,9 @@ function FamilyTreePage() {
   const [translate, setTranslate] = useState({ x: 200, y: 100 });
   const [addOpen, setAddOpen] = useState(false);
   const [pathIds, setPathIds] = useState<Set<string>>(new Set());
+  const [useNativeIOSNodes] = useState(shouldUseNativeIOSNodes);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const lastContainerWidthRef = useRef(0);
 
   // Normalizing Arabic text for better search
   const normalize = (text: string) => {
@@ -142,10 +159,40 @@ function FamilyTreePage() {
   });
 
   useEffect(() => {
-    if (containerRef.current) {
-      setTranslate({ x: containerRef.current.clientWidth / 2, y: 80 });
-    }
-  }, [members.length]);
+    const container = containerRef.current;
+    if (!container) return;
+
+    let frameId = 0;
+    const syncTreePosition = (force = false) => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        const width = container.getBoundingClientRect().width;
+        if (!width) return;
+
+        if (force || Math.abs(width - lastContainerWidthRef.current) > 1) {
+          lastContainerWidthRef.current = width;
+          setTranslate({ x: width / 2, y: useNativeIOSNodes ? 96 : 80 });
+        }
+      });
+    };
+
+    syncTreePosition(true);
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(() => syncTreePosition());
+    resizeObserver?.observe(container);
+
+    const handleOrientationChange = () => syncTreePosition(true);
+    window.addEventListener("orientationchange", handleOrientationChange);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+      window.removeEventListener("orientationchange", handleOrientationChange);
+    };
+  }, [members.length, useNativeIOSNodes]);
 
   async function load() {
     setLoading(true);
@@ -314,13 +361,157 @@ function FamilyTreePage() {
 
     const isExtra = m?.kind === "extra";
 
+    if (useNativeIOSNodes) {
+      const nodeName = isRoot ? nodeDatum.name : m?.first_name;
+      const nodeSubtitle = isRoot
+        ? "الأصل"
+        : isExtra
+          ? "قيد التسجيل"
+          : m?.father_name || "السيف";
+      const isEmphasized = Boolean(isRoot || isMe || isInPath);
+      const cardFill = isInPath
+        ? "#D4AF37"
+        : isRoot || isMe
+          ? "#1B4332"
+          : isExtra
+            ? "#FFF8E7"
+            : "#FFFFFF";
+      const cardStroke = isSearchMatch || isInPath || isRoot ? "#D4AF37" : "#E5E4E0";
+      const primaryText = isEmphasized ? "#FFFFFF" : "#1B4332";
+      const secondaryText = isEmphasized ? "#FFF3C4" : "#9A7A35";
+      const initial = isRoot ? "السيف" : shortenNodeLabel(m?.first_name, 2).slice(0, 1);
+
+      return (
+        <g
+          className="ios-native-tree-node"
+          onClick={handleNodeClick}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleNodeClick();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={`${nodeName || "فرد"}، ${nodeSubtitle}`}
+          style={{ cursor: "pointer", WebkitTapHighlightColor: "transparent" }}
+        >
+          {(isSearchMatch || isInPath) && (
+            <circle
+              cx={0}
+              cy={-38}
+              r={43}
+              fill="none"
+              stroke="#D4AF37"
+              strokeWidth={isSearchMatch ? 5 : 3}
+              opacity={0.72}
+            />
+          )}
+
+          <circle
+            cx={0}
+            cy={-38}
+            r={37}
+            fill={isEmphasized ? "#1B4332" : isExtra ? "#E8E2D5" : "#F4F7F5"}
+            stroke={cardStroke}
+            strokeWidth={3}
+          />
+          <circle
+            cx={0}
+            cy={-38}
+            r={30}
+            fill={isRoot || isMe ? "#0F5139" : "#FFFFFF"}
+            stroke={isRoot || isMe ? "#D4AF37" : "#D8E1DC"}
+            strokeWidth={2}
+          />
+          <text
+            x={0}
+            y={-37}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill={isRoot || isMe ? "#F3CD74" : "#1B4332"}
+            fontSize={isRoot ? 12 : 21}
+            fontWeight={900}
+            fontFamily="Tajawal, sans-serif"
+            direction="rtl"
+          >
+            {initial}
+          </text>
+
+          <rect
+            x={-67}
+            y={10}
+            width={134}
+            height={58}
+            rx={18}
+            fill={cardFill}
+            stroke={cardStroke}
+            strokeWidth={isSearchMatch ? 3 : 2}
+          />
+          <text
+            x={0}
+            y={34}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill={primaryText}
+            fontSize={15}
+            fontWeight={900}
+            fontFamily="Tajawal, sans-serif"
+            direction="rtl"
+          >
+            {shortenNodeLabel(nodeName)}
+          </text>
+          <text
+            x={0}
+            y={53}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill={secondaryText}
+            fontSize={10}
+            fontWeight={800}
+            fontFamily="Tajawal, sans-serif"
+            direction="rtl"
+          >
+            {shortenNodeLabel(nodeSubtitle, 17)}
+          </text>
+
+          {isPriv && !isRoot && m && (
+            <g
+              transform="translate(53 -65)"
+              onClick={(event) => {
+                event.stopPropagation();
+                setEditing(m.id);
+                setDraftParent(m.parent_id);
+              }}
+              role="button"
+              aria-label={`تعديل ارتباط ${m.first_name || "الفرد"}`}
+            >
+              <circle r={14} fill="#FFFFFF" stroke="#D4AF37" strokeWidth={2} />
+              <text
+                x={0}
+                y={1}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#1B4332"
+                fontSize={15}
+                fontWeight={900}
+              >
+                ✎
+              </text>
+            </g>
+          )}
+        </g>
+      );
+    }
+
     return (
       <g className="node-group">
         <foreignObject width={NODE_W} height={NODE_H} x={-NODE_W / 2} y={-NODE_H / 2}>
           <div
+            xmlns="http://www.w3.org/1999/xhtml"
             onClick={handleNodeClick}
             className={cn(
-              "relative flex flex-col items-center justify-center gap-3 transition-all duration-500 p-4 cursor-pointer group",
+              "tree-node-content relative flex flex-col items-center justify-center gap-3 transition-all duration-500 p-4 cursor-pointer group",
               isSearchMatch && "scale-110",
               isInPath && "scale-105",
             )}
@@ -466,7 +657,10 @@ function FamilyTreePage() {
                 onClick={() => {
                   setZoom(0.6);
                   if (containerRef.current) {
-                    setTranslate({ x: containerRef.current.clientWidth / 2, y: 80 });
+                    setTranslate({
+                      x: containerRef.current.clientWidth / 2,
+                      y: useNativeIOSNodes ? 96 : 80,
+                    });
                   }
                 }}
                 icon={<Maximize2 size={18} />}
@@ -477,8 +671,7 @@ function FamilyTreePage() {
 
         <div
           ref={containerRef}
-          className="w-full rounded-[32px] md:rounded-[44px] bg-white border border-[#E5E4E0] overflow-hidden shadow-2xl relative"
-          style={{ height: "calc(100vh - 240px)", minHeight: 500 }}
+          className="family-tree-canvas w-full rounded-[32px] md:rounded-[44px] bg-white border border-[#E5E4E0] overflow-hidden shadow-2xl relative"
         >
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
@@ -511,7 +704,7 @@ function FamilyTreePage() {
               collapsible={false}
               zoomable
               draggable
-              transitionDuration={800}
+              transitionDuration={useNativeIOSNodes ? 0 : 800}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground font-bold">
@@ -662,6 +855,27 @@ function FamilyTreePage() {
           background-size: 32px 32px;
         }
 
+        .family-tree-canvas {
+          height: calc(100vh - 240px);
+          min-height: 500px;
+          overscroll-behavior: contain;
+          -webkit-user-select: none;
+          user-select: none;
+        }
+
+        @supports (height: 100dvh) {
+          .family-tree-canvas {
+            height: calc(100dvh - 240px - env(safe-area-inset-bottom, 0px));
+          }
+        }
+
+        .family-tree-canvas .rd3t-tree-container,
+        .family-tree-canvas .rd3t-tree-container > svg {
+          touch-action: none;
+          -webkit-user-select: none;
+          user-select: none;
+        }
+
         /* Modern Organic Nodes */
         .node-group {
           filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
@@ -671,10 +885,52 @@ function FamilyTreePage() {
           transform: scale(1.1);
         }
 
-        /* Force GPU rendering for SVG nodes on iOS */
+        .tree-node-content {
+          width: ${NODE_W}px;
+          height: ${NODE_H}px;
+          box-sizing: border-box;
+        }
+
         foreignObject {
-          transform: translateZ(0);
-          -webkit-transform: translateZ(0);
+          overflow: visible;
+        }
+
+        .ios-native-tree-node:focus-visible {
+          outline: none;
+        }
+
+        .ios-native-tree-node:focus-visible > rect {
+          stroke: #FFF3C4;
+          stroke-width: 4px;
+        }
+
+        @supports (-webkit-touch-callout: none) {
+          .node-group {
+            filter: none;
+          }
+
+          foreignObject {
+            transform: none !important;
+            -webkit-transform: none !important;
+          }
+
+          .tree-node-content {
+            transform: none;
+            -webkit-transform: none;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+
+          .tree-link-active {
+            filter: none;
+          }
+        }
+
+        @media (orientation: landscape) and (max-height: 700px) {
+          .family-tree-canvas {
+            height: calc(100dvh - 170px - env(safe-area-inset-bottom, 0px));
+            min-height: 380px;
+          }
         }
       `}</style>
 
