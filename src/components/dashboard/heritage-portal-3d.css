@@ -543,3 +543,50 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
     display: none;
   }
 }
+
+
+/* uniform-council-portal-background-2026-09-02
+ * Keep one continuous green surface behind the portal copy and model.
+ * On touch layouts, hide the RTL scroll thumb so it cannot appear as a grey seam.
+ */
+:root {
+  --council-portal-background: #032b26;
+}
+
+.heritage-pavilion-reference,
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero,
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero::before,
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero > .dashboard-portal-card,
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-layout,
+html body .desktop-portal-stage {
+  background: var(--council-portal-background) !important;
+  background-image: none !important;
+}
+
+.council-portal-ambient,
+.council-portal-sheen {
+  display: none !important;
+}
+
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 1100px) {
+  html,
+  body,
+  main.app-shell-main,
+  .app-shell-content {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  main.app-shell-main::-webkit-scrollbar,
+  .app-shell-content::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
