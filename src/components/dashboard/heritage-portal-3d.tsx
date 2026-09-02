@@ -3,7 +3,7 @@ import {
   useRef,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import pavilionBackdrop from "@/assets/najdi-pavilion-reference.webp";
+import { councilTowers } from "@/assets/najdi-council-towers-v1";
 import "./heritage-portal-3d.css";
 
 type HeritagePortal3DProps = {
@@ -18,7 +18,6 @@ const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
 export function HeritagePortal3D({
-  logoUrl,
   greeting,
   name,
   message,
@@ -61,7 +60,7 @@ export function HeritagePortal3D({
     root.style.setProperty("--portal-y", `${(current.y * 5).toFixed(2)}px`);
     root.style.setProperty(
       "--portal-light-x",
-      `${(50 + current.x * 22).toFixed(1)}%`,
+      `${(72 + current.x * 12).toFixed(1)}%`,
     );
 
     if (
@@ -117,45 +116,55 @@ export function HeritagePortal3D({
       data-interacting="false"
       dir="rtl"
       role="img"
-      aria-label={[greeting, `حياك الله، ${name}`, message, "بوابة السيف"].join(
-        ". ",
-      )}
+      aria-label={[
+        greeting,
+        `حياك الله، ${name}`,
+        message,
+        "مجلس السيف",
+        "تأسس عام ١٤٤٨ هجري",
+        "بوابة السيف",
+      ].join(". ")}
       onPointerMove={handlePointerMove}
       onPointerLeave={resetParallax}
     >
-      <div className="pavilion-reference-stage" aria-hidden="true">
-        <img
-          className="pavilion-reference-backdrop"
-          src={pavilionBackdrop}
-          alt=""
-          draggable={false}
-        />
-        <span className="pavilion-reference-ambient" />
-        <span className="pavilion-reference-beam pavilion-reference-beam-right" />
-        <span className="pavilion-reference-beam pavilion-reference-beam-left" />
-        <span className="pavilion-reference-sheen" />
+      <span className="council-portal-ambient" aria-hidden="true" />
+      <span className="council-portal-sheen" aria-hidden="true" />
+
+      <div className="council-portal-copy" aria-hidden="true">
+        <p className="council-portal-greeting">{greeting}</p>
+
+        <div className="council-portal-identity">
+          <span>حياك الله،</span>
+          <strong>{name}</strong>
+        </div>
+
+        <p className="council-portal-message" key={message}>
+          {message}
+        </p>
+
+        <span className="council-portal-plaque">بوابة السيف</span>
       </div>
 
-      <div className="pavilion-reference-logo" aria-hidden="true">
-        {logoUrl ? (
-          <img src={logoUrl} alt="" draggable={false} />
-        ) : (
-          <span>السيف</span>
-        )}
+      <div className="council-portal-model" aria-hidden="true">
+        <div className="council-portal-model-visual">
+          <img
+            className="council-portal-towers"
+            src={councilTowers}
+            alt=""
+            draggable={false}
+          />
+
+          <div className="council-tower-inscription">
+            <strong>
+              <span>مجلس</span>
+              <span>السيف</span>
+            </strong>
+            <bdi className="council-tower-year" dir="rtl">
+              ١٤٤٨هـ
+            </bdi>
+          </div>
+        </div>
       </div>
-
-      <p className="pavilion-reference-greeting">{greeting}</p>
-
-      <div className="pavilion-reference-identity">
-        <span>حياك الله،</span>
-        <strong>{name}</strong>
-      </div>
-
-      <p className="pavilion-reference-message" key={message}>
-        {message}
-      </p>
-
-      <span className="pavilion-reference-plaque">بوابة السيف</span>
     </div>
   );
 }
