@@ -6,7 +6,6 @@ import type { RawNodeDatum, CustomNodeElementProps } from "react-d3-tree";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { UserAvatar } from "@/components/user-avatar";
-import { QuickActionsBanner } from "@/components/quick-actions-banner";
 import {
   setMemberParent,
   addExtraMember,
@@ -25,7 +24,11 @@ import {
   UserPlus,
   Trash2,
   UserCircle2,
-  MapPin,
+  GitBranch,
+  IdCard,
+  UsersRound,
+  X,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -56,8 +59,8 @@ type Member = {
   kind: "profile" | "extra";
 };
 
-const NODE_W = 140;
-const NODE_H = 160;
+const NODE_W = 184;
+const NODE_H = 116;
 
 function shouldUseNativeIOSNodes() {
   if (typeof navigator === "undefined") return false;
@@ -74,6 +77,20 @@ function shortenNodeLabel(value: string | null | undefined, maxLength = 15) {
   return label.length > maxLength ? `${label.slice(0, maxLength - 1)}…` : label;
 }
 
+function memberDisplayName(member: Member) {
+  return (
+    member.full_name?.trim() ||
+    [member.first_name, member.father_name, member.grandfather_name]
+      .filter(Boolean)
+      .join(" ") ||
+    "فرد من العائلة"
+  );
+}
+
+function memberCardName(member: Member) {
+  return [member.first_name, member.father_name].filter(Boolean).join(" ") || "فرد من العائلة";
+}
+
 function FamilyTreePage() {
   const router = useRouter();
   const [me, setMe] = useState<{
@@ -88,9 +105,10 @@ function FamilyTreePage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftParent, setDraftParent] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [zoom, setZoom] = useState(0.6);
+  const [zoom, setZoom] = useState(0.68);
   const [translate, setTranslate] = useState({ x: 200, y: 100 });
   const [addOpen, setAddOpen] = useState(false);
   const [pathIds, setPathIds] = useState<Set<string>>(new Set());
@@ -146,6 +164,7 @@ function FamilyTreePage() {
           avatarPath: profile?.avatar_url,
           id: user.id,
         });
+        setSelectedId(user.id);
         setIsPriv(isAdmin);
         await load();
       } catch (err) {
@@ -171,7 +190,7 @@ function FamilyTreePage() {
 
         if (force || Math.abs(width - lastContainerWidthRef.current) > 1) {
           lastContainerWidthRef.current = width;
-          setTranslate({ x: width / 2, y: useNativeIOSNodes ? 96 : 80 });
+          setTranslate({ x: width / 2, y: useNativeIOSNodes ? 112 : 96 });
         }
       });
     };
@@ -268,6 +287,59 @@ function FamilyTreePage() {
     ];
   }, [members]);
 
+  const membersById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
+
+  const getAncestorIds = (memberId: string) => {
+    const ids: string[] = [];
+    let current = membersById.get(memberId);
+    const visited = new Set<string>();
+
+    while (current && !visited.has(current.id)) {
+      ids.push(current.id);
+      visited.add(current.id);
+      current = current.parent_id ? membersById.get(current.parent_id) : undefined;
+    }
+
+    return ids;
+  };
+
+  const highlightRelationship = (memberId: string) => {
+    const targetAncestors = getAncestorIds(memberId);
+
+    if (!me?.id) {
+      setPathIds(new Set(targetAncestors));
+      return;
+    }
+
+    const myAncestors = getAncestorIds(me.id);
+    const commonAncestor = myAncestors.find((id) => targetAncestors.includes(id));
+
+    if (!commonAncestor) {
+      setPathIds(new Set(targetAncestors));
+      return;
+    }
+
+    const relationshipPath = new Set<string>();
+    for (const id of myAncestors) {
+      relationshipPath.add(id);
+      if (id === commonAncestor) break;
+    }
+    for (const id of targetAncestors) {
+      relationshipPath.add(id);
+      if (id === commonAncestor) break;
+    }
+    setPathIds(relationshipPath);
+  };
+
+  const selectedMember = selectedId ? membersById.get(selectedId) ?? null : null;
+  const selectedLineage = useMemo(() => {
+    if (!selectedId) return [];
+    return getAncestorIds(selectedId)
+      .reverse()
+      .map((id) => membersById.get(id)?.first_name)
+      .filter((name): name is string => Boolean(name));
+  }, [membersById, selectedId]);
+
   async function saveParent(member: Member) {
     setSaving(true);
     try {
@@ -301,53 +373,19 @@ function FamilyTreePage() {
     const isRoot = memberId === "__root__";
     const isMe = me?.id && m && m.id === me.id;
     const isInPath = memberId && pathIds.has(memberId);
+    const isSelected = Boolean(memberId && memberId === selectedId);
 
     const handleNodeClick = () => {
       if (isRoot) {
+        setSelectedId(null);
         setPathIds(new Set());
         toggleNode();
         return;
       }
 
-      if (!me?.id || !memberId) return;
-
-      const getAncestors = (id: string) => {
-        const list: string[] = [];
-        let curr = members.find(x => x.id === id);
-        while (curr) {
-          list.push(curr.id);
-          if (!curr.parent_id) break;
-          curr = members.find(x => x.id === curr?.parent_id);
-        }
-        return list;
-      };
-
-      const myAncestors = getAncestors(me.id);
-      const targetAncestors = getAncestors(memberId);
-
-      let lca: string | null = null;
-      for (const id of myAncestors) {
-        if (targetAncestors.includes(id)) {
-          lca = id;
-          break;
-        }
-      }
-
-      if (lca) {
-        const finalPath = new Set<string>();
-        for (const id of myAncestors) {
-          finalPath.add(id);
-          if (id === lca) break;
-        }
-        for (const id of targetAncestors) {
-          finalPath.add(id);
-          if (id === lca) break;
-        }
-        setPathIds(finalPath);
-      } else {
-        // No common ancestor found (different roots)
-        setPathIds(new Set([...targetAncestors]));
-      }
+      if (!memberId) return;
+      setSelectedId(memberId);
+      highlightRelationship(memberId);
 
       toggleNode();
     };
@@ -362,24 +400,21 @@ function FamilyTreePage() {
     const isExtra = m?.kind === "extra";
 
     if (useNativeIOSNodes) {
-      const nodeName = isRoot ? nodeDatum.name : m?.first_name;
-      const nodeSubtitle = isRoot
-        ? "الأصل"
-        : isExtra
-          ? "قيد التسجيل"
-          : m?.father_name || "السيف";
-      const isEmphasized = Boolean(isRoot || isMe || isInPath);
-      const cardFill = isInPath
-        ? "#D4AF37"
-        : isRoot || isMe
-          ? "#1B4332"
-          : isExtra
-            ? "#FFF8E7"
-            : "#FFFFFF";
-      const cardStroke = isSearchMatch || isInPath || isRoot ? "#D4AF37" : "#E5E4E0";
-      const primaryText = isEmphasized ? "#FFFFFF" : "#1B4332";
-      const secondaryText = isEmphasized ? "#FFF3C4" : "#9A7A35";
-      const initial = isRoot ? "السيف" : shortenNodeLabel(m?.first_name, 2).slice(0, 1);
+      const nodeName = isRoot ? nodeDatum.name : m ? memberCardName(m) : "فرد من العائلة";
+      const nodeSubtitle = isRoot ? "جذور العائلة" : isExtra ? "قيد التسجيل" : "عضو العائلة";
+      const initial = isRoot ? "س" : shortenNodeLabel(m?.first_name, 2).slice(0, 1);
+      const cardFill = isRoot
+        ? "#0F5139"
+        : isSelected
+          ? "#D6AD4B"
+          : isInPath
+            ? "#FFF2C7"
+            : isExtra
+              ? "#FFF9E9"
+              : "#FFFEFA";
+      const cardStroke = isRoot || isSelected || isSearchMatch ? "#C79A32" : "#D8CCAB";
+      const primaryText = isRoot ? "#FFFFFF" : "#153D2F";
+      const secondaryText = isRoot ? "#F7D98A" : "#8A713A";
 
       return (
         <g
@@ -393,44 +428,49 @@ function FamilyTreePage() {
           }}
           role="button"
           tabIndex={0}
-          aria-label={`${nodeName || "فرد"}، ${nodeSubtitle}`}
+          aria-label={`${nodeName}، ${nodeSubtitle}`}
           style={{ cursor: "pointer", WebkitTapHighlightColor: "transparent" }}
         >
-          {(isSearchMatch || isInPath) && (
-            <circle
-              cx={0}
-              cy={-38}
-              r={43}
+          {(isSearchMatch || isSelected) && (
+            <rect
+              x={-97}
+              y={-59}
+              width={194}
+              height={118}
+              rx={26}
               fill="none"
-              stroke="#D4AF37"
+              stroke="#C79A32"
               strokeWidth={isSearchMatch ? 5 : 3}
-              opacity={0.72}
+              opacity={0.82}
             />
           )}
 
-          <circle
-            cx={0}
-            cy={-38}
-            r={37}
-            fill={isEmphasized ? "#1B4332" : isExtra ? "#E8E2D5" : "#F4F7F5"}
+          <rect
+            x={-91}
+            y={-53}
+            width={182}
+            height={106}
+            rx={22}
+            fill={cardFill}
             stroke={cardStroke}
-            strokeWidth={3}
+            strokeWidth={isSelected ? 3 : 2}
           />
+
           <circle
             cx={0}
-            cy={-38}
-            r={30}
-            fill={isRoot || isMe ? "#0F5139" : "#FFFFFF"}
-            stroke={isRoot || isMe ? "#D4AF37" : "#D8E1DC"}
-            strokeWidth={2}
+            cy={-51}
+            r={25}
+            fill={isRoot || isSelected || isMe ? "#0F5139" : "#FFFFFF"}
+            stroke="#D6AD4B"
+            strokeWidth={3}
           />
           <text
             x={0}
-            y={-37}
+            y={-50}
             textAnchor="middle"
             dominantBaseline="middle"
-            fill={isRoot || isMe ? "#F3CD74" : "#1B4332"}
-            fontSize={isRoot ? 12 : 21}
+            fill={isRoot || isSelected || isMe ? "#F7D98A" : "#153D2F"}
+            fontSize={20}
             fontWeight={900}
             fontFamily="Tajawal, sans-serif"
             direction="rtl"
@@ -438,19 +478,9 @@ function FamilyTreePage() {
             {initial}
           </text>
 
-          <rect
-            x={-67}
-            y={10}
-            width={134}
-            height={58}
-            rx={18}
-            fill={cardFill}
-            stroke={cardStroke}
-            strokeWidth={isSearchMatch ? 3 : 2}
-          />
           <text
             x={0}
-            y={34}
+            y={7}
             textAnchor="middle"
             dominantBaseline="middle"
             fill={primaryText}
@@ -459,25 +489,25 @@ function FamilyTreePage() {
             fontFamily="Tajawal, sans-serif"
             direction="rtl"
           >
-            {shortenNodeLabel(nodeName)}
+            {shortenNodeLabel(nodeName, 20)}
           </text>
           <text
             x={0}
-            y={53}
+            y={31}
             textAnchor="middle"
             dominantBaseline="middle"
             fill={secondaryText}
-            fontSize={10}
+            fontSize={11}
             fontWeight={800}
             fontFamily="Tajawal, sans-serif"
             direction="rtl"
           >
-            {shortenNodeLabel(nodeSubtitle, 17)}
+            {nodeSubtitle}
           </text>
 
           {isPriv && !isRoot && m && (
             <g
-              transform="translate(53 -65)"
+              transform="translate(74 -43)"
               onClick={(event) => {
                 event.stopPropagation();
                 setEditing(m.id);
@@ -486,13 +516,13 @@ function FamilyTreePage() {
               role="button"
               aria-label={`تعديل ارتباط ${m.first_name || "الفرد"}`}
             >
-              <circle r={14} fill="#FFFFFF" stroke="#D4AF37" strokeWidth={2} />
+              <circle r={15} fill="#FFFFFF" stroke="#C79A32" strokeWidth={2} />
               <text
                 x={0}
                 y={1}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill="#1B4332"
+                fill="#153D2F"
                 fontSize={15}
                 fontWeight={900}
               >
@@ -511,82 +541,68 @@ function FamilyTreePage() {
             xmlns="http://www.w3.org/1999/xhtml"
             onClick={handleNodeClick}
             className={cn(
-              "tree-node-content relative flex flex-col items-center justify-center gap-3 transition-all duration-500 p-4 cursor-pointer group",
-              isSearchMatch && "scale-110",
-              isInPath && "scale-105",
+              "tree-node-content relative cursor-pointer group transition-transform duration-300",
+              isSearchMatch && "scale-105",
             )}
           >
-            {/* Medallion Avatar Container */}
-            <div className="relative">
-              <div
-                className={cn(
-                  "size-20 md:size-24 rounded-full p-1 transition-all duration-500 shadow-xl",
-                  isRoot ? "bg-gradient-to-br from-gold-primary via-white to-gold-primary animate-pulse" :
-                  isMe ? "bg-gradient-to-br from-emerald-400 to-primary" :
-                  isInPath ? "bg-gold-primary ring-4 ring-gold-primary/30" :
-                  isExtra ? "bg-slate-200" : "bg-gradient-to-br from-primary/20 to-primary/5",
-                  isSearchMatch && "ring-4 ring-gold-primary ring-offset-4"
-                )}
-              >
-                <div className="size-full rounded-full bg-white overflow-hidden border-2 border-white shadow-inner flex items-center justify-center relative">
-                  {isRoot ? (
-                    <div className="size-full bg-primary flex items-center justify-center">
-                       <Trees size={32} className="text-gold-primary" />
-                    </div>
-                  ) : isExtra ? (
-                    <UserCircle2 size={48} className="text-slate-400" />
-                  ) : (
-                    <UserAvatar
-                      name={m?.first_name || "ع"}
-                      path={m?.avatar_url}
-                      className="size-full"
-                      userId={m?.id}
-                    />
-                  )}
-
-                  {/* Status Indicator */}
-                  {!isRoot && !isExtra && (
-                    <div className="absolute bottom-1 right-1 size-4 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Content Card */}
             <div
               className={cn(
-                "px-3 py-2.5 rounded-2xl border text-center min-w-[130px] shadow-md backdrop-blur-md transition-all duration-300",
-                isRoot ? "bg-primary text-white border-gold-primary/50 shadow-gold-primary/20" :
-                isMe ? "bg-primary text-white border-primary" :
-                isInPath ? "bg-gold-primary text-white border-gold-primary shadow-lg" :
-                "bg-white text-primary border-border"
+                "absolute inset-x-1 top-5 bottom-1 rounded-[22px] border-2 px-3 pb-3 pt-9 text-center shadow-[0_10px_24px_rgba(34,51,42,0.12)] transition-all duration-300",
+                isRoot
+                  ? "border-[#C79A32] bg-[#0F5139] text-white"
+                  : isSelected
+                    ? "border-[#0F5139] bg-[#D6AD4B] text-[#153D2F] shadow-[0_14px_30px_rgba(199,154,50,0.28)]"
+                    : isInPath
+                      ? "border-[#D6AD4B] bg-[#FFF2C7] text-[#153D2F]"
+                      : isExtra
+                        ? "border-[#DCCB9E] bg-[#FFF9E9] text-[#153D2F]"
+                        : "border-[#DED4B9] bg-[#FFFEFA] text-[#153D2F]",
+                isSearchMatch && "ring-4 ring-[#D6AD4B]/45",
               )}
             >
-              <p className={cn(
-                "font-black tracking-tight whitespace-nowrap overflow-hidden text-ellipsis",
-                (isRoot || isMe) ? "text-base" : "text-[15px]"
-              )}>
-                {isRoot ? nodeDatum.name : m?.first_name}
+              <div
+                className={cn(
+                  "absolute -top-7 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center overflow-hidden rounded-full border-[3px] border-[#D6AD4B] bg-white shadow-md",
+                  (isRoot || isSelected || isMe) && "bg-[#0F5139]",
+                )}
+              >
+                {isRoot ? (
+                  <Trees size={25} className="text-[#F5CF73]" />
+                ) : isExtra ? (
+                  <UserCircle2 size={30} className="text-[#90753C]" />
+                ) : (
+                  <UserAvatar
+                    name={m?.first_name || "ع"}
+                    path={m?.avatar_url}
+                    className="size-full"
+                    userId={m?.id}
+                  />
+                )}
+              </div>
+
+              <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-black tracking-tight">
+                {isRoot ? nodeDatum.name : m ? memberCardName(m) : "فرد من العائلة"}
               </p>
               <p
                 className={cn(
-                  "text-[10px] font-black uppercase tracking-widest mt-0.5",
-                  (isRoot || isMe) ? "text-white/80" : "text-gold-primary"
+                  "mt-1 text-[11px] font-bold",
+                  isRoot ? "text-[#F5CF73]" : "text-[#8A713A]",
                 )}
               >
-                {isRoot ? "الأصل" : isExtra ? "قيد التسجيل" : m?.father_name || "السيف"}
+                {isRoot ? "جذور العائلة" : isExtra ? "قيد التسجيل" : "عضو العائلة"}
               </p>
             </div>
 
-            {/* Admin Pencil - Floating */}
             {isPriv && !isRoot && m && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setEditing(m.id);
                   setDraftParent(m.parent_id);
                 }}
-                className="absolute top-2 right-2 size-8 rounded-full bg-white shadow-lg border border-border flex items-center justify-center text-primary hover:bg-gold-primary hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                aria-label={`تعديل ارتباط ${m.first_name || "الفرد"}`}
+                className="absolute right-0 top-1 z-10 flex size-8 items-center justify-center rounded-full border-2 border-[#D6AD4B] bg-white text-[#153D2F] shadow-md transition-colors hover:bg-[#0F5139] hover:text-white"
               >
                 <Pencil size={14} />
               </button>
@@ -609,108 +625,239 @@ function FamilyTreePage() {
 
   return (
     <AppShell title="شجرة عائلة السيف" user={me}>
-      <div className="space-y-4 px-1 md:px-0">
-        <QuickActionsBanner />
-        <header className="flex flex-col gap-4 bg-white p-4 md:p-6 rounded-[24px] md:rounded-[32px] shadow-sm border border-border">
-          <div className="flex items-center gap-3">
-            <div className="size-10 md:size-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
-              <Trees className="size-6 md:size-8 text-white" />
+      <div className="family-tree-page space-y-4 px-1 md:px-0">
+        <header className="rounded-[24px] border border-[#E7E0CF] bg-white p-4 shadow-[0_12px_34px_rgba(30,59,47,0.08)] md:rounded-[30px] md:p-5">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#0F5139] shadow-lg shadow-[#0F5139]/15 md:size-14">
+                <Trees className="size-6 text-[#F5CF73] md:size-7" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="truncate text-xl font-black text-[#153D2F] md:text-2xl">
+                  شجرة عائلة السيف
+                </h1>
+                <p className="mt-0.5 text-sm font-bold text-[#7B7B76]">
+                  تصفّح صلات القرابة بين أفراد العائلة
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h1 className="text-lg md:text-2xl font-black text-[#1B4332]">شجرة عائلة السيف</h1>
-              <p className="text-[10px] md:text-sm font-bold text-[#8E8E93]">
-                استكشف تفرعات وجذور عائلة السيف العريقة
-              </p>
-            </div>
+
             {isPriv && (
               <button
+                type="button"
                 onClick={() => setAddOpen(true)}
-                className="btn-gold flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 rounded-2xl text-xs md:text-sm font-bold shadow-md"
+                className="btn-gold flex min-h-11 items-center gap-2 rounded-2xl px-4 text-sm font-black shadow-md"
               >
                 <UserPlus className="size-4" />
-                <span className="hidden md:inline">إضافة فرد</span>
+                <span>إضافة فرد</span>
               </button>
             )}
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-3 w-full">
-            <div className="relative w-full md:w-auto flex-1">
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-[#8E8E93]" />
+          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute right-4 top-1/2 size-5 -translate-y-1/2 text-[#8E8E88]" />
               <input
-                type="text"
+                type="search"
                 placeholder="ابحث عن فرد..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pr-11 pl-4 py-3 bg-[#F2F2F7] border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#1B4332]/10 transition-all"
+                onChange={(event) => setSearch(event.target.value)}
+                className="min-h-12 w-full rounded-2xl border border-transparent bg-[#F6F4EF] pr-12 pl-4 text-base font-bold text-[#153D2F] outline-none transition focus:border-[#D6AD4B] focus:bg-white focus:ring-4 focus:ring-[#D6AD4B]/10"
               />
             </div>
-            <div className="flex gap-2 w-full md:w-auto justify-center">
+
+            <div className="flex items-center justify-center gap-2 md:justify-start">
               <ControlBtn
-                onClick={() => setZoom((z) => Math.min(2, z + 0.15))}
-                icon={<ZoomIn size={18} />}
+                label="تكبير الشجرة"
+                onClick={() => setZoom((value) => Math.min(2, value + 0.15))}
+                icon={<ZoomIn size={19} />}
               />
               <ControlBtn
-                onClick={() => setZoom((z) => Math.max(0.1, z - 0.15))}
-                icon={<ZoomOut size={18} />}
+                label="تصغير الشجرة"
+                onClick={() => setZoom((value) => Math.max(0.1, value - 0.15))}
+                icon={<ZoomOut size={19} />}
               />
               <ControlBtn
+                label="إعادة ضبط العرض"
                 onClick={() => {
-                  setZoom(0.6);
+                  setZoom(0.68);
                   if (containerRef.current) {
                     setTranslate({
                       x: containerRef.current.clientWidth / 2,
-                      y: useNativeIOSNodes ? 96 : 80,
+                      y: useNativeIOSNodes ? 112 : 96,
                     });
                   }
                 }}
-                icon={<Maximize2 size={18} />}
+                icon={<Maximize2 size={19} />}
               />
             </div>
           </div>
         </header>
 
-        <div
-          ref={containerRef}
-          className="family-tree-canvas w-full rounded-[32px] md:rounded-[44px] bg-white border border-[#E5E4E0] overflow-hidden shadow-2xl relative"
-        >
-          {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
-              <Loader2 className="size-10 animate-spin text-gold-primary" />
-            </div>
-          ) : treeData.length > 0 ? (
-            <Tree
-              data={treeData[0]}
-              orientation="vertical"
-              translate={translate}
-              zoom={zoom}
-              onUpdate={(state) => {
-                if (Math.abs(state.zoom - zoom) > 0.01) setZoom(state.zoom);
-                if (
-                  Math.abs(state.translate.x - translate.x) > 1 ||
-                  Math.abs(state.translate.y - translate.y) > 1
-                ) {
-                  setTranslate(state.translate);
-                }
-              }}
-              pathFunc="diagonal"
-              pathClassFunc={(link) => {
-                const targetId = link.target.data.attributes?.memberId as string;
-                const sourceId = link.source.data.attributes?.memberId as string;
-                if (pathIds.has(targetId) && pathIds.has(sourceId)) return "tree-link-active";
-                return "tree-link-curved";
-              }}
-              nodeSize={{ x: NODE_W + 100, y: NODE_H + 120 }}
-              renderCustomNodeElement={renderNode}
-              collapsible={false}
-              zoomable
-              draggable
-              transitionDuration={useNativeIOSNodes ? 0 : 800}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground font-bold">
-              لا توجد بيانات لعرضها في الشجرة
-            </div>
-          )}
+        <div className="family-tree-workspace">
+          <aside className="member-panel">
+            {selectedMember ? (
+              <div className="member-panel-content">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-[#F6D37E]">
+                    <IdCard className="size-5" />
+                    <span className="text-sm font-black">بطاقة الفرد</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedId(null);
+                      setPathIds(new Set());
+                    }}
+                    aria-label="إغلاق بطاقة الفرد"
+                    className="flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/15"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+
+                <div className="member-summary">
+                  <div className="member-avatar">
+                    {selectedMember.kind === "extra" ? (
+                      <UserCircle2 className="size-12 text-[#8B713B]" />
+                    ) : (
+                      <UserAvatar
+                        name={selectedMember.first_name || "ع"}
+                        path={selectedMember.avatar_url}
+                        className="size-full"
+                        userId={selectedMember.id}
+                      />
+                    )}
+                  </div>
+                  <div className="member-summary-copy min-w-0">
+                    <h2 className="text-xl font-black leading-snug text-white">
+                      {memberDisplayName(selectedMember)}
+                    </h2>
+                    <p className="mt-1 text-sm font-bold text-[#F6D37E]">
+                      {selectedMember.kind === "extra" ? "فرد مضاف إلى الشجرة" : "عضو مرتبط بالنظام"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/12 bg-black/10 p-3.5">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-black text-white/70">
+                    <GitBranch className="size-4 text-[#F6D37E]" />
+                    مسار العائلة
+                  </div>
+                  <p className="text-sm font-black leading-7 text-[#F8E7B5]">
+                    {selectedLineage.length > 0 ? selectedLineage.join(" ← ") : "غير محدد"}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
+                  <div className="member-info-row">
+                    <span>الفرع</span>
+                    <strong>
+                      {selectedMember.father_name ? `فرع ${selectedMember.father_name}` : "جذور العائلة"}
+                    </strong>
+                  </div>
+                  <div className="member-info-row">
+                    <span>السجل</span>
+                    <strong>{selectedMember.kind === "extra" ? "مضاف يدويًا" : "حساب معتمد"}</strong>
+                  </div>
+                </div>
+
+                <div className="mt-auto grid gap-2 pt-1">
+                  {selectedMember.kind === "profile" && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        router.navigate({
+                          to: "/members/$userId",
+                          params: { userId: selectedMember.id },
+                        })
+                      }
+                      className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D6AD4B] px-4 text-sm font-black text-[#153D2F] shadow-lg shadow-black/10 transition hover:bg-[#E1BB5C]"
+                    >
+                      عرض الملف
+                      <ArrowLeft className="size-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => highlightRelationship(selectedMember.id)}
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#D6AD4B] bg-transparent px-4 text-sm font-black text-white transition hover:bg-white/10"
+                  >
+                    <GitBranch className="size-4 text-[#F6D37E]" />
+                    تحديد صلة القرابة
+                  </button>
+                  {isPriv && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditing(selectedMember.id);
+                        setDraftParent(selectedMember.parent_id);
+                      }}
+                      className="flex min-h-11 items-center justify-center gap-2 rounded-2xl text-sm font-black text-[#F8E7B5] transition hover:bg-white/10"
+                    >
+                      <Pencil className="size-4" />
+                      تعديل الارتباط
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-52 flex-col items-center justify-center px-5 text-center">
+                <div className="flex size-16 items-center justify-center rounded-full border border-[#D6AD4B]/40 bg-white/5 text-[#F6D37E]">
+                  <UsersRound className="size-8" />
+                </div>
+                <h2 className="mt-4 text-lg font-black text-white">اختر فردًا من الشجرة</h2>
+                <p className="mt-2 max-w-56 text-sm font-bold leading-6 text-white/60">
+                  ستظهر هنا بياناته ومسار صلة القرابة به.
+                </p>
+              </div>
+            )}
+          </aside>
+
+          <div
+            ref={containerRef}
+            className="family-tree-canvas relative w-full overflow-hidden rounded-[28px] border border-[#DCCDA8] shadow-[0_18px_45px_rgba(40,58,48,0.14)] md:rounded-[34px]"
+          >
+            {loading ? (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#FAF7EE]/75 backdrop-blur-sm">
+                <Loader2 className="size-10 animate-spin text-[#B78A2B]" />
+              </div>
+            ) : treeData.length > 0 ? (
+              <Tree
+                data={treeData[0]}
+                orientation="vertical"
+                translate={translate}
+                zoom={zoom}
+                onUpdate={(state) => {
+                  if (Math.abs(state.zoom - zoom) > 0.01) setZoom(state.zoom);
+                  if (
+                    Math.abs(state.translate.x - translate.x) > 1 ||
+                    Math.abs(state.translate.y - translate.y) > 1
+                  ) {
+                    setTranslate(state.translate);
+                  }
+                }}
+                pathFunc="diagonal"
+                pathClassFunc={(link) => {
+                  const targetId = link.target.data.attributes?.memberId as string;
+                  const sourceId = link.source.data.attributes?.memberId as string;
+                  if (pathIds.has(targetId) && pathIds.has(sourceId)) return "tree-link-active";
+                  return "tree-link-curved";
+                }}
+                nodeSize={{ x: NODE_W + 72, y: NODE_H + 74 }}
+                renderCustomNodeElement={renderNode}
+                collapsible={false}
+                zoomable
+                draggable
+                transitionDuration={useNativeIOSNodes ? 0 : 500}
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-[#6F766F]">
+                <Trees className="mb-3 size-9 text-[#B78A2B]" />
+                <p className="text-base font-black">لا توجد بيانات لعرضها في الشجرة</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {editingMember && (
@@ -819,25 +966,111 @@ function FamilyTreePage() {
       </div>
 
       <style>{`
+        .family-tree-workspace {
+          display: grid;
+          grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+          grid-template-areas: "member tree";
+          gap: 16px;
+          align-items: stretch;
+          direction: ltr;
+        }
+
+        .member-panel {
+          grid-area: member;
+          direction: rtl;
+          min-width: 0;
+          overflow: hidden;
+          border: 1px solid rgba(214, 173, 75, 0.48);
+          border-radius: 30px;
+          color: white;
+          background:
+            radial-gradient(circle at 14% 8%, rgba(246, 211, 126, 0.14), transparent 28%),
+            linear-gradient(155deg, #0f5a3f 0%, #073b2c 100%);
+          box-shadow: 0 18px 45px rgba(25, 60, 44, 0.18);
+        }
+
+        .member-panel-content {
+          display: flex;
+          height: 100%;
+          min-height: 0;
+          flex-direction: column;
+          gap: 16px;
+          padding: 20px;
+        }
+
+        .member-summary {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          padding-block: 4px;
+          text-align: center;
+        }
+
+        .member-summary-copy {
+          text-align: center;
+        }
+
+        .member-avatar {
+          display: flex;
+          width: 88px;
+          height: 88px;
+          flex: 0 0 auto;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          border: 4px solid #d6ad4b;
+          border-radius: 999px;
+          background: #fffdf7;
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+        }
+
+        .member-info-row {
+          display: flex;
+          min-width: 0;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.06);
+          padding: 12px 13px;
+          font-size: 13px;
+        }
+
+        .member-info-row span {
+          color: rgba(255, 255, 255, 0.62);
+          font-weight: 700;
+        }
+
+        .member-info-row strong {
+          min-width: 0;
+          overflow: hidden;
+          color: #f8e7b5;
+          font-weight: 900;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
         .tree-link-curved {
           fill: none;
-          stroke: #D4AF37;
-          stroke-width: 3.5px;
+          stroke: #b99745;
+          stroke-width: 2.8px;
           stroke-linecap: round;
-          opacity: 0.2;
-          transition: all 0.5s ease;
+          opacity: 0.62;
+          transition: all 0.35s ease;
         }
 
         .tree-link-active {
           fill: none;
-          stroke: #D4AF37;
-          stroke-width: 6px;
+          stroke: #0f5a3f;
+          stroke-width: 5px;
           stroke-linecap: round;
           opacity: 1;
-          filter: drop-shadow(0 0 8px rgba(212,175,55,0.8));
+          filter: drop-shadow(0 3px 5px rgba(15, 90, 63, 0.26));
           stroke-dasharray: 1000;
           stroke-dashoffset: 1000;
-          animation: draw-path 1.5s ease forwards;
+          animation: draw-path 1s ease forwards;
         }
 
         @keyframes draw-path {
@@ -849,15 +1082,18 @@ function FamilyTreePage() {
         .rd3t-tree-container {
           width: 100%;
           height: 100%;
-          background: #051410;
+          background-color: #faf7ee;
           background-image:
-            radial-gradient(circle at 2px 2px, rgba(212,175,55,0.05) 1px, transparent 0);
-          background-size: 32px 32px;
+            radial-gradient(circle at 2px 2px, rgba(164, 128, 48, 0.09) 1.2px, transparent 0),
+            linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(244, 236, 218, 0.42));
+          background-size: 30px 30px, 100% 100%;
         }
 
         .family-tree-canvas {
-          height: calc(100vh - 240px);
-          min-height: 500px;
+          grid-area: tree;
+          direction: rtl;
+          height: min(760px, calc(100vh - 250px));
+          min-height: 600px;
           overscroll-behavior: contain;
           -webkit-user-select: none;
           user-select: none;
@@ -865,7 +1101,7 @@ function FamilyTreePage() {
 
         @supports (height: 100dvh) {
           .family-tree-canvas {
-            height: calc(100dvh - 240px - env(safe-area-inset-bottom, 0px));
+            height: min(760px, calc(100dvh - 250px - env(safe-area-inset-bottom, 0px)));
           }
         }
 
@@ -876,13 +1112,8 @@ function FamilyTreePage() {
           user-select: none;
         }
 
-        /* Modern Organic Nodes */
         .node-group {
-          filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
-        }
-
-        .is-me {
-          transform: scale(1.1);
+          filter: drop-shadow(0 8px 14px rgba(38, 54, 46, 0.1));
         }
 
         .tree-node-content {
@@ -900,7 +1131,7 @@ function FamilyTreePage() {
         }
 
         .ios-native-tree-node:focus-visible > rect {
-          stroke: #FFF3C4;
+          stroke: #0f5a3f;
           stroke-width: 4px;
         }
 
@@ -926,10 +1157,97 @@ function FamilyTreePage() {
           }
         }
 
-        @media (orientation: landscape) and (max-height: 700px) {
+        @media (max-width: 1023px) {
+          .family-tree-workspace {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-areas:
+              "member"
+              "tree";
+            gap: 12px;
+          }
+
+          .member-panel {
+            border-radius: 26px;
+          }
+
+          .member-panel-content {
+            gap: 13px;
+            padding: 17px;
+          }
+
+          .member-summary {
+            flex-direction: row;
+            justify-content: flex-start;
+            text-align: right;
+          }
+
+          .member-summary-copy {
+            text-align: right;
+          }
+
+          .member-avatar {
+            width: 70px;
+            height: 70px;
+          }
+
           .family-tree-canvas {
-            height: calc(100dvh - 170px - env(safe-area-inset-bottom, 0px));
-            min-height: 380px;
+            height: min(68vh, 700px);
+            min-height: 520px;
+          }
+
+          @supports (height: 100dvh) {
+            .family-tree-canvas {
+              height: min(68dvh, 700px);
+            }
+          }
+        }
+
+        @media (max-width: 560px) {
+          .member-panel-content {
+            padding: 15px;
+          }
+
+          .member-info-row {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 3px;
+          }
+
+          .family-tree-canvas {
+            min-height: 500px;
+          }
+        }
+
+        @media (orientation: landscape) and (max-height: 700px) {
+          .family-tree-workspace {
+            grid-template-columns: minmax(230px, 270px) minmax(0, 1fr);
+            grid-template-areas: "member tree";
+          }
+
+          .member-panel-content {
+            gap: 10px;
+            overflow-y: auto;
+            padding: 14px;
+          }
+
+          .member-summary {
+            flex-direction: row;
+            gap: 10px;
+            text-align: right;
+          }
+
+          .member-summary-copy {
+            text-align: right;
+          }
+
+          .member-avatar {
+            width: 58px;
+            height: 58px;
+          }
+
+          .family-tree-canvas {
+            height: calc(100dvh - 190px - env(safe-area-inset-bottom, 0px));
+            min-height: 430px;
           }
         }
       `}</style>
@@ -948,11 +1266,22 @@ function FamilyTreePage() {
   );
 }
 
-function ControlBtn({ onClick, icon }: { onClick: () => void; icon: React.ReactNode }) {
+function ControlBtn({
+  onClick,
+  icon,
+  label,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className="size-10 md:size-12 rounded-xl bg-[#F2F2F7] text-[#1B4332] flex items-center justify-center hover:bg-[#1B4332] hover:text-white transition-all shadow-sm shrink-0"
+      aria-label={label}
+      title={label}
+      className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[#E3DCCB] bg-[#F7F5F0] text-[#153D2F] shadow-sm transition-all hover:border-[#0F5139] hover:bg-[#0F5139] hover:text-white"
     >
       {icon}
     </button>
