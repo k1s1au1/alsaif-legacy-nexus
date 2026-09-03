@@ -1,54 +1,101 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "manager" | "member" | "chairman" | "guest";
+export type AppRole =
+  | "chairman"
+  | "vice_chairman"
+  | "technical_admin"
+  | "member"
+  | "guest"
+  // legacy values kept for backward compatibility with old rows
+  | "admin"
+  | "manager";
 
 export type Section =
-  "meetings" | "tasks" | "trips" | "finance" | "heritage" | "news" | "community";
+  | "meetings"
+  | "trips"
+  | "occasions"
+  | "tasks"
+  | "news"
+  | "community"
+  | "faith"
+  | "heritage"
+  | "finance";
 
 export const SECTIONS: Section[] = [
   "meetings",
-  "tasks",
   "trips",
-  "finance",
-  "heritage",
+  "occasions",
+  "tasks",
   "news",
   "community",
+  "faith",
+  "heritage",
+  "finance",
 ];
 
-export function sectionLabel(section: Section): string {
-  switch (section) {
+/** Maps legacy/DB section aliases to the official section keys. */
+export function normalizeSection(section: string): Section {
+  const s = (section || "").trim().toLowerCase();
+  if (s === "events" || s === "occasion") return "occasions";
+  if (s === "majlis") return "news";
+  if (s === "family_tree" || s === "legacy") return "heritage";
+  return s as Section;
+}
+
+export function sectionLabel(section: Section | string): string {
+  switch (normalizeSection(String(section))) {
     case "meetings":
       return "الاجتماعات";
+    case "trips":
+      return "الرحلات";
+    case "occasions":
+      return "المناسبات";
     case "tasks":
       return "المهام";
-    case "trips":
-      return "الترفيه";
-    case "finance":
-      return "المالية";
-    case "heritage":
-      return "إرث السيف";
     case "news":
       return "الأخبار";
     case "community":
       return "ركن الأعضاء";
+    case "faith":
+      return "نفحات إيمانية";
+    case "heritage":
+      return "إرث السيف وشجرة العائلة";
+    case "finance":
+      return "المالية";
+    default:
+      return String(section);
   }
+}
+
+export function sectionHeadLabel(section: Section | string): string {
+  const s = normalizeSection(String(section));
+  if (s === "heritage") return "مسؤول الإرث وشجرة العائلة";
+  return `مسؤول ${sectionLabel(s)}`;
 }
 
 export function roleLabel(role: AppRole | string | null): string {
   switch (role) {
-    case "admin":
-      return "مسؤول";
-    case "manager":
-      return "مسؤول قسم";
     case "chairman":
       return "رئيس المجلس";
+    case "vice_chairman":
+      return "نائب رئيس المجلس";
+    case "technical_admin":
+    case "admin":
+      return "المسؤول التقني";
     case "guest":
       return "ضيف المجلس";
+    case "manager":
+      return "عضو";
     default:
       return "عضو";
   }
 }
+
+export type PrivateRequestLike = {
+  author_id: string;
+  visibility: "leadership" | "chairman_only";
+};
 
 export function useUserRole() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -77,7 +124,9 @@ export function useUserRole() {
       if (!active) return;
 
       setRoles(((r ?? []) as { role: AppRole }[]).map((x) => x.role));
-      setSectionHeads(((sh ?? []) as unknown as { section: Section }[]).map((x) => x.section));
+      setSectionHeads(
+        ((sh ?? []) as unknown as { section: string }[]).map((x) => normalizeSection(x.section)),
+      );
       setIsLoading(false);
     })();
     return () => {
@@ -85,34 +134,66 @@ export function useUserRole() {
     };
   }, []);
 
-  const isAdmin = roles.includes("admin");
-  const isManager = roles.includes("manager");
   const isChairman = roles.includes("chairman");
-  const isPrivileged = isAdmin || isChairman;
+  const isViceChairman = roles.includes("vice_chairman");
+  const isTechnicalAdmin = roles.includes("technical_admin") || roles.includes("admin");
+  const isCouncilLeadership = isChairman || isViceChairman;
+  const isGuest = roles.includes("guest");
 
-  const canManage = (section: Section) => {
-    // Technical Admin and Chairman have full access
-    if (isAdmin || isChairman) return true;
+  /** Is this user explicitly assigned as head of the given section? */
+  const managesSection = (section: Section | string) =>
+    sectionHeads.includes(normalizeSection(String(section)));
 
-    // Section Heads only have access to their assigned sections
-    // Note: 'events' in UI is 'events' in DB, 'majlis' is 'news'
-    const dbSection = section === "news" ? "majlis" : section === "tasks" ? "events" : section;
-    return sectionHeads.includes(dbSection as any);
+  /** Can this user manage the section content (leadership or its section head)? */
+  const canManageSection = (section: Section | string) =>
+    isCouncilLeadership || managesSection(section);
+
+  const canManageRoles = isChairman;
+  const canManageSectionHeads = isCouncilLeadership;
+  const canCreateOfficialOccasion = isCouncilLeadership || managesSection("occasions");
+  const canViewAuditLog = isCouncilLeadership;
+
+  const canViewPrivateRequest = (request: PrivateRequestLike | null | undefined) => {
+    if (!request) return false;
+    if (userId && request.author_id === userId) return true;
+    if (request.visibility === "chairman_only") return isChairman;
+    return isCouncilLeadership;
   };
 
-  const primaryRole: AppRole | null =
-    (roles.find((r) => ["admin", "chairman", "manager", "member", "guest"].includes(r)) as AppRole) || null;
+  const primaryRole: AppRole | null = isChairman
+    ? "chairman"
+    : isViceChairman
+      ? "vice_chairman"
+      : isTechnicalAdmin
+        ? "technical_admin"
+        : isGuest
+          ? "guest"
+          : roles.length
+            ? "member"
+            : null;
 
   return {
     userId,
     roles,
     sectionHeads,
     isLoading,
-    isAdmin,
-    isManager,
     isChairman,
-    isPrivileged,
-    canManage,
+    isViceChairman,
+    isTechnicalAdmin,
+    isCouncilLeadership,
+    isGuest,
+    managesSection,
+    canManageSection,
+    canManageRoles,
+    canManageSectionHeads,
+    canCreateOfficialOccasion,
+    canViewAuditLog,
+    canViewPrivateRequest,
     primaryRole,
+    // ---- legacy aliases (kept so existing screens keep working) ----
+    isAdmin: isChairman,
+    isManager: sectionHeads.length > 0,
+    isPrivileged: isCouncilLeadership,
+    canManage: canManageSection,
   };
 }
