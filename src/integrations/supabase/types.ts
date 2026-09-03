@@ -1584,6 +1584,8 @@ export type Database = {
         | "head_finance"
         | "head_heritage"
         | "guest"
+        | "vice_chairman"
+        | "technical_admin"
       archive_media_type: "image" | "video"
       archive_section: "family" | "meetings" | "events" | "trips"
       bank_transfer_status: "pending" | "approved" | "rejected"
@@ -1753,6 +1755,8 @@ export const Constants = {
         "head_finance",
         "head_heritage",
         "guest",
+        "vice_chairman",
+        "technical_admin",
       ],
       archive_media_type: ["image", "video"],
       archive_section: ["family", "meetings", "events", "trips"],
