@@ -395,6 +395,35 @@ export type Database = {
           },
         ]
       }
+      event_invitees: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_invitees_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           cover_image_url: string | null
@@ -406,10 +435,12 @@ export type Database = {
           id: string
           location: string | null
           location_url: string | null
+          pinned: boolean
           starts_at: string
           status: Database["public"]["Enums"]["event_status"]
           title: string
           updated_at: string
+          visibility: Database["public"]["Enums"]["event_visibility"]
         }
         Insert: {
           cover_image_url?: string | null
@@ -421,10 +452,12 @@ export type Database = {
           id?: string
           location?: string | null
           location_url?: string | null
+          pinned?: boolean
           starts_at: string
           status?: Database["public"]["Enums"]["event_status"]
           title: string
           updated_at?: string
+          visibility?: Database["public"]["Enums"]["event_visibility"]
         }
         Update: {
           cover_image_url?: string | null
@@ -436,10 +469,12 @@ export type Database = {
           id?: string
           location?: string | null
           location_url?: string | null
+          pinned?: boolean
           starts_at?: string
           status?: Database["public"]["Enums"]["event_status"]
           title?: string
           updated_at?: string
+          visibility?: Database["public"]["Enums"]["event_visibility"]
         }
         Relationships: []
       }
@@ -1068,6 +1103,71 @@ export type Database = {
         }
         Relationships: []
       }
+      private_request_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          request_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          request_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          request_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_request_messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "private_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      private_requests: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["private_request_status"]
+          title: string
+          updated_at: string
+          visibility: Database["public"]["Enums"]["private_request_visibility"]
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["private_request_status"]
+          title: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["private_request_visibility"]
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["private_request_status"]
+          title?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["private_request_visibility"]
+        }
+        Relationships: []
+      }
       profile_change_requests: {
         Row: {
           changes: Json
@@ -1498,12 +1598,19 @@ export type Database = {
         Args: { _body: string; _exclude: string; _title: string; _url: string }
         Returns: undefined
       }
+      can_create_official_occasion: { Args: { _u: string }; Returns: boolean }
+      can_manage_roles: { Args: { _u: string }; Returns: boolean }
       can_manage_section: {
         Args: { _section: string; _user: string }
         Returns: boolean
       }
       can_user_send: {
         Args: { _conv: string; _user: string }
+        Returns: boolean
+      }
+      can_view_event: { Args: { _event: string; _u: string }; Returns: boolean }
+      can_view_private_request: {
+        Args: { _r: string; _u: string }
         Returns: boolean
       }
       count_fcm_tokens: { Args: never; Returns: number }
@@ -1548,6 +1655,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_chairman: { Args: { _u: string }; Returns: boolean }
       is_conversation_admin: {
         Args: { _conv: string; _user: string }
         Returns: boolean
@@ -1556,11 +1664,23 @@ export type Database = {
         Args: { _conv: string; _user: string }
         Returns: boolean
       }
+      is_council_leadership: { Args: { _u: string }; Returns: boolean }
       is_guest: { Args: { _user_id: string }; Returns: boolean }
+      is_technical_admin: { Args: { _u: string }; Returns: boolean }
+      is_vice_chairman: { Args: { _u: string }; Returns: boolean }
+      log_admin_action: {
+        Args: { _action: string; _details?: Json; _target?: string }
+        Returns: undefined
+      }
+      manages_section: {
+        Args: { _section: string; _u: string }
+        Returns: boolean
+      }
       mark_conversation_read: {
         Args: { _conversation_id: string }
         Returns: undefined
       }
+      normalize_section: { Args: { _s: string }; Returns: string }
       public_stats: { Args: never; Returns: Json }
       review_profile_change_request: {
         Args: { _approve: boolean; _id: string; _note?: string }
@@ -1600,6 +1720,7 @@ export type Database = {
         | "religious"
         | "social"
         | "other"
+      event_visibility: "public" | "private" | "official"
       family_project_status:
         | "pending"
         | "approved"
@@ -1614,6 +1735,14 @@ export type Database = {
       meeting_status: "scheduled" | "cancelled" | "completed"
       message_kind: "text" | "image" | "video" | "audio" | "file"
       presence_status: "online" | "offline"
+      private_request_status:
+        | "new"
+        | "seen"
+        | "in_progress"
+        | "awaiting_member"
+        | "resolved"
+        | "closed"
+      private_request_visibility: "leadership" | "chairman_only"
       task_priority: "low" | "medium" | "high"
       task_status: "todo" | "in_progress" | "done"
     }
@@ -1773,6 +1902,7 @@ export const Constants = {
         "social",
         "other",
       ],
+      event_visibility: ["public", "private", "official"],
       family_project_status: [
         "pending",
         "approved",
@@ -1788,6 +1918,15 @@ export const Constants = {
       meeting_status: ["scheduled", "cancelled", "completed"],
       message_kind: ["text", "image", "video", "audio", "file"],
       presence_status: ["online", "offline"],
+      private_request_status: [
+        "new",
+        "seen",
+        "in_progress",
+        "awaiting_member",
+        "resolved",
+        "closed",
+      ],
+      private_request_visibility: ["leadership", "chairman_only"],
       task_priority: ["low", "medium", "high"],
       task_status: ["todo", "in_progress", "done"],
     },
