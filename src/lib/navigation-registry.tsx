@@ -15,7 +15,6 @@ import {
   ShieldCheck,
   Ticket,
   Trees,
-  History,
   PartyPopper,
 } from "lucide-react";
 
