@@ -12,16 +12,37 @@ function findTreeSvg() {
   const canvas = document.querySelector<HTMLElement>(".family-tree-canvas");
   if (!canvas) return null;
 
-  return Array.from(canvas.querySelectorAll<SVGSVGElement>(".rd3t-tree-container > svg")).find(
-    (svg) => !svg.hasAttribute("data-minimap-repaired"),
-  ) ?? null;
+  return (
+    Array.from(canvas.querySelectorAll<SVGSVGElement>(".rd3t-tree-container > svg")).find(
+      (svg) => !svg.hasAttribute("data-minimap-repaired"),
+    ) ?? null
+  );
 }
 
 function findTreeGroup(svg: SVGSVGElement) {
-  return (
-    svg.querySelector<SVGGElement>("g.rd3t-g") ??
-    svg.querySelector<SVGGElement>("g")
+  return svg.querySelector<SVGGElement>("g.rd3t-g") ?? svg.querySelector<SVGGElement>("g");
+}
+
+function compactNodes(treeClone: SVGGElement) {
+  let nodeGroups = Array.from(
+    treeClone.querySelectorAll<SVGGElement>("g.rd3t-node, g.rd3t-leaf-node"),
   );
+
+  if (nodeGroups.length === 0) {
+    nodeGroups = Array.from(treeClone.querySelectorAll<SVGGElement>("g.node-group"));
+  }
+
+  nodeGroups.forEach((node, index) => {
+    while (node.firstChild) node.removeChild(node.firstChild);
+    const card = createSvgElement("rect");
+    card.setAttribute("x", "-22");
+    card.setAttribute("y", "-14");
+    card.setAttribute("width", "44");
+    card.setAttribute("height", "28");
+    card.setAttribute("rx", "8");
+    card.setAttribute("class", index === 0 ? "legacy-mini-root" : "legacy-mini-node");
+    node.appendChild(card);
+  });
 }
 
 function makeMinimap(sourceSvg: SVGSVGElement, target: HTMLElement) {
@@ -60,29 +81,12 @@ function makeMinimap(sourceSvg: SVGSVGElement, target: HTMLElement) {
   treeClone.removeAttribute("style");
   treeClone.querySelectorAll("foreignObject, text, image").forEach((node) => node.remove());
 
-  treeClone
-    .querySelectorAll<SVGPathElement>("path")
-    .forEach((path) => {
-      path.removeAttribute("style");
-      path.setAttribute("class", "legacy-mini-link");
-    });
-
-  const nodeGroups = Array.from(
-    treeClone.querySelectorAll<SVGGElement>("g.rd3t-node, g.rd3t-leaf-node, g.node-group"),
-  );
-
-  nodeGroups.forEach((node, index) => {
-    while (node.firstChild) node.removeChild(node.firstChild);
-    const card = createSvgElement("rect");
-    card.setAttribute("x", "-22");
-    card.setAttribute("y", "-14");
-    card.setAttribute("width", "44");
-    card.setAttribute("height", "28");
-    card.setAttribute("rx", "8");
-    card.setAttribute("class", index === 0 ? "legacy-mini-root" : "legacy-mini-node");
-    node.appendChild(card);
+  treeClone.querySelectorAll<SVGPathElement>("path").forEach((path) => {
+    path.removeAttribute("style");
+    path.setAttribute("class", "legacy-mini-link");
   });
 
+  compactNodes(treeClone);
   miniSvg.appendChild(treeClone);
 
   const groupMatrix = sourceGroup.getCTM();
@@ -102,7 +106,7 @@ function makeMinimap(sourceSvg: SVGSVGElement, target: HTMLElement) {
       viewport.setAttribute("class", "legacy-mini-viewport");
       miniSvg.appendChild(viewport);
     } catch {
-      // A visible minimap is still useful even if a browser cannot invert the SVG matrix.
+      // The overview remains usable even when a browser cannot invert the SVG matrix.
     }
   }
 
@@ -117,14 +121,13 @@ function makeMinimap(sourceSvg: SVGSVGElement, target: HTMLElement) {
     const vb = miniSvg.viewBox.baseVal;
     const wantedX = vb.x + ((clientX - miniRect.left) / miniRect.width) * vb.width;
     const wantedY = vb.y + ((clientY - miniRect.top) / miniRect.height) * vb.height;
-
     const wantedInViewport = new DOMPoint(wantedX, wantedY).matrixTransform(matrix);
+
     const sourceRect = sourceSvg.getBoundingClientRect();
     const centerX = sourceRect.width / 2;
     const centerY = sourceRect.height / 2;
     const dx = centerX - wantedInViewport.x;
     const dy = centerY - wantedInViewport.y;
-
     const startClientX = sourceRect.left + centerX;
     const startClientY = sourceRect.top + centerY;
 
@@ -234,8 +237,7 @@ export function LegacyMiniMapRepair() {
           currentTarget = target;
           targetObserver = new MutationObserver(() => {
             if (rendering) return;
-            const repaired = target.querySelector("svg[data-minimap-repaired='true']");
-            if (!repaired) render();
+            if (!target.querySelector("svg[data-minimap-repaired='true']")) render();
           });
           targetObserver.observe(target, { childList: true });
         }
@@ -248,7 +250,11 @@ export function LegacyMiniMapRepair() {
       });
     };
 
-    const pageObserver = new MutationObserver(() => render());
+    const pageObserver = new MutationObserver(() => {
+      const target = document.querySelector<HTMLElement>(".legacy-minimap-body");
+      const source = findTreeSvg();
+      if (!target || !source || !target.querySelector("svg[data-minimap-repaired='true']")) render();
+    });
     pageObserver.observe(document.body, { childList: true, subtree: true });
 
     const onResize = () => render();
