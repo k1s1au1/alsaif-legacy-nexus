@@ -1,0 +1,173 @@
+/* Targeted fixes for the approved legacy/family-tree reference design. */
+
+/* ---------- Family tree background ---------- */
+.family-tree-canvas::before {
+  inset: 3% 1.5% 0 !important;
+  opacity: 0.24 !important;
+  filter: blur(1px) saturate(0.58) sepia(0.13) !important;
+  background-image: url('/family-tree-background.svg') !important;
+  background-repeat: no-repeat !important;
+  background-position: center bottom !important;
+  background-size: min(96%, 1120px) auto !important;
+}
+
+.family-tree-canvas::after {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.14) 30%, rgba(255,253,248,.08) 66%, rgba(248,241,225,.44) 100%),
+    radial-gradient(ellipse at 50% 58%, transparent 0 47%, rgba(255,253,248,.26) 74%, rgba(255,253,248,.62) 100%) !important;
+}
+
+/* Keep the artwork decorative and always behind the real SVG tree. */
+.family-tree-canvas .rd3t-tree-container,
+.family-tree-canvas .rd3t-tree-container > svg {
+  background: transparent !important;
+}
+
+/* ---------- Heritage: remove all banner imagery ---------- */
+.legacy-heritage-hero {
+  min-height: 178px !important;
+  display: grid !important;
+  align-items: center !important;
+  background:
+    radial-gradient(circle at 84% 24%, rgba(191,148,66,.10), transparent 28%),
+    linear-gradient(135deg, rgba(255,253,248,.98), rgba(247,242,231,.98)) !important;
+  border: 1px solid rgba(191,148,66,.26) !important;
+  box-shadow: 0 12px 30px rgba(44,65,56,.08) !important;
+}
+
+.legacy-heritage-hero::before {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
+
+.legacy-heritage-hero::after {
+  height: 100% !important;
+  background:
+    linear-gradient(90deg, transparent 0 65%, rgba(11,91,67,.035) 100%) !important;
+  pointer-events: none;
+}
+
+.legacy-heritage-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 760px;
+  margin-inline-start: auto;
+  padding: 26px 32px !important;
+  color: var(--legacy-green-deep) !important;
+}
+
+.legacy-heritage-copy h1,
+.legacy-heritage-copy h2,
+.legacy-heritage-copy p {
+  color: inherit !important;
+  text-shadow: none !important;
+}
+
+.legacy-heritage-copy h1 {
+  font-size: clamp(30px, 3vw, 46px) !important;
+}
+
+.legacy-heritage-copy h2 {
+  color: var(--legacy-gold) !important;
+}
+
+.legacy-heritage-copy p {
+  color: #68716c !important;
+}
+
+/* Remove the decorative mobile image block as well. */
+.legacy-heritage-mobile-visual {
+  display: none !important;
+}
+
+.legacy-heritage-mobile-card {
+  grid-template-columns: 1fr !important;
+}
+
+/* ---------- Repaired minimap ---------- */
+.legacy-minimap-body {
+  position: relative;
+  min-height: 112px;
+  padding: 5px !important;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.legacy-minimap-body > svg[data-minimap-repaired='true'] {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible;
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+}
+
+.legacy-minimap-body .legacy-mini-link {
+  fill: none;
+  stroke: #c29a48;
+  stroke-width: 8;
+  stroke-linecap: round;
+  opacity: .58;
+}
+
+.legacy-minimap-body .legacy-mini-node {
+  fill: #fffaf0;
+  stroke: #c29a48;
+  stroke-width: 6;
+}
+
+.legacy-minimap-body .legacy-mini-root {
+  fill: #0b5b43;
+  stroke: #c29a48;
+  stroke-width: 7;
+}
+
+.legacy-minimap-body .legacy-mini-viewport {
+  fill: rgba(11,91,67,.08);
+  stroke: #0b5b43;
+  stroke-width: 7;
+  rx: 12;
+  vector-effect: non-scaling-stroke;
+}
+
+.legacy-minimap-body::after {
+  content: 'اسحب أو اضغط للانتقال';
+  position: absolute;
+  left: 8px;
+  bottom: 5px;
+  padding: 2px 6px;
+  border-radius: 7px;
+  background: rgba(255,253,248,.86);
+  color: #6f746f;
+  font-size: 8px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+/* Tablet portrait still follows the phone composition. */
+html[data-legacy-tablet-layout='portrait'] .family-tree-canvas::before {
+  background-size: auto 82% !important;
+  background-position: center 72% !important;
+  opacity: .18 !important;
+}
+
+@media (max-width: 640px) {
+  .family-tree-canvas::before {
+    inset: 8% -20% 0 !important;
+    background-size: auto 78% !important;
+    background-position: center 70% !important;
+    opacity: .16 !important;
+  }
+
+  .legacy-heritage-hero {
+    min-height: 150px !important;
+    border-radius: 0 0 22px 22px !important;
+  }
+
+  .legacy-heritage-copy {
+    padding: 22px 18px !important;
+    text-align: center !important;
+  }
+}
