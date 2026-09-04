@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TermsGate } from "@/components/terms-gate";
 import { AlertCircle, Home, RefreshCcw } from "lucide-react";
 import { AppShellLayout } from "@/components/app-shell";
+import { LegacyExperienceEnhancer } from "@/components/legacy-experience-enhancer";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -66,7 +67,6 @@ export const Route = createFileRoute("/_authenticated")({
         }
       }
 
-
       return { user: data.user };
     } catch (e) {
       // Re-throw redirects so the router handles them
@@ -83,6 +83,7 @@ export const Route = createFileRoute("/_authenticated")({
   component: () => (
     <TermsGate>
       <AppShellLayout>
+        <LegacyExperienceEnhancer />
         <Outlet />
       </AppShellLayout>
     </TermsGate>
