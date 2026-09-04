@@ -1,25 +1,45 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
   ChevronDown,
   ChevronUp,
+  FileText,
   GitBranch,
+  Layers3,
   Maximize2,
   Minimize2,
   Minus,
   Plus,
+  Quote,
   RotateCcw,
   Search,
   Trees,
-  X,
+  UserPlus,
+  UsersRound,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import "./legacy-reference.css";
 
 type LegacyPage = "family-tree" | "heritage";
 
+type FamilyStats = {
+  total: number;
+  generations: number;
+  branches: number;
+  heritage: number;
+};
+
+type BranchSummary = {
+  id: string;
+  name: string;
+  count: number;
+};
+
 const SECTION_HOST_ATTR = "data-legacy-section-host";
+const LEFT_HOST_ATTR = "data-legacy-tree-left-host";
+const RIGHT_HOST_ATTR = "data-legacy-tree-right-host";
 const CANVAS_HOST_ATTR = "data-legacy-tree-overlay-host";
 
 function isLegacyPage(pathname: string): LegacyPage | null {
@@ -35,61 +55,161 @@ function setNativeInputValue(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+function LegacyTabs({ active }: { active: LegacyPage }) {
+  return (
+    <div className="legacy-reference-tabs" role="tablist" aria-label="إرث العائلة">
+      <Link
+        to="/family-tree"
+        className="legacy-reference-tab"
+        data-active={active === "family-tree"}
+        role="tab"
+        aria-selected={active === "family-tree"}
+      >
+        <Trees size={17} />
+        <span>شجرة العائلة</span>
+      </Link>
+      <Link
+        to="/heritage"
+        className="legacy-reference-tab"
+        data-active={active === "heritage"}
+        role="tab"
+        aria-selected={active === "heritage"}
+      >
+        <BookOpen size={17} />
+        <span>الإرث</span>
+      </Link>
+    </div>
+  );
+}
+
+function SearchBox({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="legacy-reference-search">
+      <Search size={17} />
+      <input
+        type="search"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+      />
+    </label>
+  );
+}
+
 export function LegacyExperienceEnhancer() {
   const pathname = useLocation({ select: (location) => location.pathname });
   const page = isLegacyPage(pathname);
+
   const [sectionHost, setSectionHost] = useState<HTMLElement | null>(null);
+  const [leftHost, setLeftHost] = useState<HTMLElement | null>(null);
+  const [rightHost, setRightHost] = useState<HTMLElement | null>(null);
   const [canvasHost, setCanvasHost] = useState<HTMLElement | null>(null);
   const [canvas, setCanvas] = useState<HTMLElement | null>(null);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [miniMapOpen, setMiniMapOpen] = useState(true);
-  const [fullscreenSearch, setFullscreenSearch] = useState("");
+  const [treeSearch, setTreeSearch] = useState("");
+  const [stats, setStats] = useState<FamilyStats>({ total: 0, generations: 0, branches: 0, heritage: 0 });
+  const [branches, setBranches] = useState<BranchSummary[]>([]);
+  const [latestMember, setLatestMember] = useState<string>("");
   const miniMapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!page || typeof document === "undefined") {
       setSectionHost(null);
+      setLeftHost(null);
+      setRightHost(null);
       setCanvasHost(null);
       setCanvas(null);
       return;
     }
 
-    let sectionNode: HTMLElement | null = null;
-    let canvasOverlayNode: HTMLElement | null = null;
+    let ownedSection: HTMLElement | null = null;
+    let ownedLeft: HTMLElement | null = null;
+    let ownedRight: HTMLElement | null = null;
+    let ownedCanvas: HTMLElement | null = null;
 
-    const mountHosts = () => {
+    const ensureHosts = () => {
       const pageRoot = document.querySelector<HTMLElement>(
         page === "family-tree" ? ".family-tree-page" : ".heritage-page-content",
       );
+      if (!pageRoot) return;
 
-      if (pageRoot && !sectionNode) {
+      let sectionNode = pageRoot.querySelector<HTMLElement>(`[${SECTION_HOST_ATTR}]`);
+      if (!sectionNode) {
         sectionNode = document.createElement("div");
         sectionNode.setAttribute(SECTION_HOST_ATTR, "true");
         pageRoot.insertBefore(sectionNode, pageRoot.firstChild);
-        setSectionHost(sectionNode);
+        ownedSection = sectionNode;
+      }
+      setSectionHost(sectionNode);
+
+      if (page !== "family-tree") {
+        setLeftHost(null);
+        setRightHost(null);
+        setCanvasHost(null);
+        setCanvas(null);
+        return;
       }
 
-      if (page === "family-tree" && !canvasOverlayNode) {
-        const treeCanvas = document.querySelector<HTMLElement>(".family-tree-canvas");
-        if (treeCanvas) {
-          canvasOverlayNode = document.createElement("div");
-          canvasOverlayNode.setAttribute(CANVAS_HOST_ATTR, "true");
-          treeCanvas.appendChild(canvasOverlayNode);
-          setCanvas(treeCanvas);
-          setCanvasHost(canvasOverlayNode);
-        }
+      const workspace = pageRoot.querySelector<HTMLElement>(".family-tree-workspace");
+      const treeCanvas = pageRoot.querySelector<HTMLElement>(".family-tree-canvas");
+      if (!workspace || !treeCanvas) return;
+
+      let leftNode = workspace.querySelector<HTMLElement>(`[${LEFT_HOST_ATTR}]`);
+      if (!leftNode) {
+        leftNode = document.createElement("aside");
+        leftNode.setAttribute(LEFT_HOST_ATTR, "true");
+        workspace.insertBefore(leftNode, workspace.firstChild);
+        ownedLeft = leftNode;
       }
+
+      let rightNode = workspace.querySelector<HTMLElement>(`[${RIGHT_HOST_ATTR}]`);
+      if (!rightNode) {
+        rightNode = document.createElement("aside");
+        rightNode.setAttribute(RIGHT_HOST_ATTR, "true");
+        workspace.appendChild(rightNode);
+        ownedRight = rightNode;
+      }
+
+      let canvasNode = treeCanvas.querySelector<HTMLElement>(`[${CANVAS_HOST_ATTR}]`);
+      if (!canvasNode) {
+        canvasNode = document.createElement("div");
+        canvasNode.setAttribute(CANVAS_HOST_ATTR, "true");
+        treeCanvas.appendChild(canvasNode);
+        ownedCanvas = canvasNode;
+      }
+
+      setLeftHost(leftNode);
+      setRightHost(rightNode);
+      setCanvasHost(canvasNode);
+      setCanvas(treeCanvas);
+
+      const sourceSearch = pageRoot.querySelector<HTMLInputElement>('header input[type="search"]');
+      if (sourceSearch) setTreeSearch(sourceSearch.value ?? "");
     };
 
-    mountHosts();
-    const observer = new MutationObserver(mountHosts);
+    ensureHosts();
+    const observer = new MutationObserver(ensureHosts);
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       observer.disconnect();
-      sectionNode?.remove();
-      canvasOverlayNode?.remove();
+      ownedSection?.remove();
+      ownedLeft?.remove();
+      ownedRight?.remove();
+      ownedCanvas?.remove();
       setSectionHost(null);
+      setLeftHost(null);
+      setRightHost(null);
       setCanvasHost(null);
       setCanvas(null);
     };
@@ -127,6 +247,98 @@ export function LegacyExperienceEnhancer() {
   }, []);
 
   useEffect(() => {
+    if (!page) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const [profilesRes, extrasRes, heritageRes] = await Promise.all([
+          supabase.from("profiles").select("id,parent_id,first_name,created_at"),
+          (supabase as any).from("family_tree_extras").select("id,parent_id,first_name,created_at"),
+          supabase
+            .from("majlis_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("kind", "discussion")
+            .ilike("title", "[إرث]%"),
+        ]);
+
+        const rows = [
+          ...((profilesRes.data ?? []) as any[]),
+          ...(((extrasRes as any).data ?? []) as any[]),
+        ].map((row) => ({
+          id: String(row.id),
+          parent_id: row.parent_id ? String(row.parent_id) : null,
+          first_name: String(row.first_name ?? "فرد من العائلة"),
+          created_at: row.created_at ? String(row.created_at) : "",
+        }));
+
+        if (cancelled) return;
+
+        const byId = new Map(rows.map((row) => [row.id, row]));
+        const children = new Map<string, string[]>();
+        for (const row of rows) {
+          if (!row.parent_id || !byId.has(row.parent_id)) continue;
+          const list = children.get(row.parent_id) ?? [];
+          list.push(row.id);
+          children.set(row.parent_id, list);
+        }
+
+        const roots = rows.filter((row) => !row.parent_id || !byId.has(row.parent_id));
+        const depthCache = new Map<string, number>();
+        const getDepth = (id: string, trail = new Set<string>()): number => {
+          if (depthCache.has(id)) return depthCache.get(id)!;
+          if (trail.has(id)) return 1;
+          const row = byId.get(id);
+          if (!row?.parent_id || !byId.has(row.parent_id)) return 1;
+          const nextTrail = new Set(trail);
+          nextTrail.add(id);
+          const depth = 1 + getDepth(row.parent_id, nextTrail);
+          depthCache.set(id, depth);
+          return depth;
+        };
+
+        const countDescendants = (id: string, seen = new Set<string>()): number => {
+          if (seen.has(id)) return 0;
+          const nextSeen = new Set(seen);
+          nextSeen.add(id);
+          return (children.get(id) ?? []).reduce(
+            (total, childId) => total + 1 + countDescendants(childId, nextSeen),
+            0,
+          );
+        };
+
+        const branchRows = roots
+          .map((root) => ({
+            id: root.id,
+            name: root.first_name.startsWith("فرع") ? root.first_name : `فرع ${root.first_name}`,
+            count: countDescendants(root.id) + 1,
+          }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 6);
+
+        const latest = [...rows]
+          .filter((row) => row.created_at)
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+
+        setBranches(branchRows);
+        setLatestMember(latest?.first_name ?? "");
+        setStats({
+          total: rows.length,
+          generations: rows.length ? Math.max(...rows.map((row) => getDepth(row.id))) : 0,
+          branches: roots.length,
+          heritage: heritageRes.count ?? 0,
+        });
+      } catch (error) {
+        console.warn("Legacy family summary unavailable", error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
+
+  useEffect(() => {
     if (!canvas) return;
 
     if (isFullscreen) {
@@ -134,11 +346,6 @@ export function LegacyExperienceEnhancer() {
       document.documentElement.classList.add("legacy-tree-fullscreen-open");
       const previousOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-
-      const sourceSearch = document.querySelector<HTMLInputElement>(
-        '.family-tree-page input[type="search"]',
-      );
-      setFullscreenSearch(sourceSearch?.value ?? "");
 
       const handleKeydown = (event: KeyboardEvent) => {
         if (event.key === "Escape") setIsFullscreen(false);
@@ -159,14 +366,14 @@ export function LegacyExperienceEnhancer() {
   }, [canvas, isFullscreen]);
 
   useEffect(() => {
-    if (!isFullscreen || !miniMapOpen || !canvas || !miniMapRef.current) return;
+    if (!miniMapOpen || !canvas || !miniMapRef.current) return;
 
-    let animationFrame = 0;
+    let frame = 0;
     const target = miniMapRef.current;
 
     const syncMiniMap = () => {
-      cancelAnimationFrame(animationFrame);
-      animationFrame = requestAnimationFrame(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
         const sourceSvg = Array.from(canvas.querySelectorAll<SVGSVGElement>("svg")).find(
           (svg) => !svg.hasAttribute("data-legacy-minimap-clone"),
         );
@@ -175,16 +382,8 @@ export function LegacyExperienceEnhancer() {
         const clone = sourceSvg.cloneNode(true) as SVGSVGElement;
         clone.setAttribute("data-legacy-minimap-clone", "true");
         clone.setAttribute("aria-hidden", "true");
-        clone.removeAttribute("tabindex");
-
-        const rect = sourceSvg.getBoundingClientRect();
-        if (!clone.getAttribute("viewBox") && rect.width > 0 && rect.height > 0) {
-          clone.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
-        }
-
         clone.style.width = "100%";
         clone.style.height = "100%";
-        clone.style.display = "block";
         clone.style.pointerEvents = "none";
         clone.style.background = "transparent";
         target.replaceChildren(clone);
@@ -195,24 +394,22 @@ export function LegacyExperienceEnhancer() {
     const sourceSvg = Array.from(canvas.querySelectorAll<SVGSVGElement>("svg")).find(
       (svg) => !svg.hasAttribute("data-legacy-minimap-clone"),
     );
-    const observer = sourceSvg
-      ? new MutationObserver(syncMiniMap)
-      : new MutationObserver(syncMiniMap);
+    const observer = new MutationObserver(syncMiniMap);
     observer.observe(sourceSvg ?? canvas, {
       attributes: true,
       childList: true,
       subtree: true,
-      attributeFilter: ["transform", "d", "x", "y", "width", "height", "style"],
+      attributeFilter: ["transform", "d", "x", "y", "style"],
     });
     window.addEventListener("resize", syncMiniMap);
 
     return () => {
-      cancelAnimationFrame(animationFrame);
+      cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener("resize", syncMiniMap);
       target.replaceChildren();
     };
-  }, [canvas, isFullscreen, miniMapOpen]);
+  }, [canvas, miniMapOpen, isFullscreen]);
 
   useEffect(() => {
     if (page !== "family-tree") {
@@ -221,6 +418,16 @@ export function LegacyExperienceEnhancer() {
     }
   }, [page]);
 
+  const sourceSearch = useMemo(() => {
+    if (page !== "family-tree" || typeof document === "undefined") return null;
+    return document.querySelector<HTMLInputElement>('.family-tree-page header input[type="search"]');
+  }, [page, sectionHost]);
+
+  const handleTreeSearch = (value: string) => {
+    setTreeSearch(value);
+    if (sourceSearch) setNativeInputValue(sourceSearch, value);
+  };
+
   const clickTreeControl = (label: string) => {
     const button = Array.from(
       document.querySelectorAll<HTMLButtonElement>(".family-tree-page button[aria-label]"),
@@ -228,460 +435,170 @@ export function LegacyExperienceEnhancer() {
     button?.click();
   };
 
-  const handleFullscreenSearch = (value: string) => {
-    setFullscreenSearch(value);
-    const sourceSearch = document.querySelector<HTMLInputElement>(
-      '.family-tree-page input[type="search"]',
+  const clickAddMember = () => {
+    const button = Array.from(document.querySelectorAll<HTMLButtonElement>(".family-tree-page button")).find(
+      (candidate) => candidate.textContent?.includes("إضافة فرد"),
     );
-    if (sourceSearch) setNativeInputValue(sourceSearch, value);
+    button?.click();
   };
 
   if (!page) return null;
 
+  const familyHeader = sectionHost
+    ? createPortal(
+        <section className="legacy-reference-shell" dir="rtl">
+          <div className="legacy-tree-header">
+            <SearchBox
+              value={treeSearch}
+              onChange={handleTreeSearch}
+              placeholder="ابحث عن اسم أو رقم فرد..."
+            />
+            <div className="legacy-tree-title">
+              <h1>شجرة عائلة السيف</h1>
+              <p>إرث العائلة</p>
+            </div>
+            <div aria-hidden="true" />
+          </div>
+          <LegacyTabs active="family-tree" />
+        </section>,
+        sectionHost,
+      )
+    : null;
+
+  const heritageHeader = sectionHost
+    ? createPortal(
+        <section className="legacy-reference-shell" dir="rtl">
+          <div className="legacy-heritage-hero">
+            <div className="legacy-heritage-copy">
+              <h1>إرث العائلة</h1>
+              <h2>قصص الأجداد ... جذور ممتدة ... وهوية خالدة</h2>
+              <p>
+                نحفظ تاريخنا لنصنع مستقبلًا يليق بعائلتنا، وفي كل ذكرى حكاية وفي كل فرع امتداد.
+              </p>
+            </div>
+          </div>
+          <div className="legacy-heritage-tabs-wrap">
+            <LegacyTabs active="heritage" />
+          </div>
+
+          <div className="legacy-mobile-stats" aria-label="إحصائيات العائلة">
+            <div className="legacy-mobile-stat"><strong>{stats.total}</strong><span>إجمالي الأفراد</span></div>
+            <div className="legacy-mobile-stat"><strong>{stats.generations}</strong><span>الأجيال</span></div>
+            <div className="legacy-mobile-stat"><strong>{stats.branches}</strong><span>الفروع</span></div>
+            <div className="legacy-mobile-stat"><strong>{stats.heritage}</strong><span>الموروثات</span></div>
+          </div>
+
+          <div className="legacy-heritage-mobile-card">
+            <div className="legacy-heritage-mobile-visual">
+              <div className="legacy-tree-emblem"><Trees size={42} /></div>
+            </div>
+            <div className="legacy-heritage-mobile-copy">
+              <h3>اكتشف شجرة عائلتك</h3>
+              <p>تصفح الفروع والأفراد وتعرّف على روابط العائلة</p>
+              <Link to="/family-tree"><Maximize2 size={17} /> عرض الشجرة</Link>
+            </div>
+          </div>
+        </section>,
+        sectionHost,
+      )
+    : null;
+
+  const leftSidebar = leftHost
+    ? createPortal(
+        <div className="legacy-tree-side-card" dir="rtl">
+          <h3 className="legacy-tree-side-title">إحصائيات العائلة</h3>
+          <div className="legacy-stat-list">
+            <div className="legacy-stat-row"><span>إجمالي الأفراد</span><strong>{stats.total}</strong></div>
+            <div className="legacy-stat-row"><span>الأجيال الموثقة</span><strong>{stats.generations}</strong></div>
+            <div className="legacy-stat-row"><span>الفروع الرئيسية</span><strong>{stats.branches}</strong></div>
+            <div className="legacy-stat-row"><span>الموروثات</span><strong>{stats.heritage}</strong></div>
+          </div>
+          <button className="legacy-add-person" type="button" onClick={clickAddMember}>
+            <UserPlus size={16} /> إضافة فرد جديد
+          </button>
+          <div className="legacy-side-quote">
+            <b>”</b>
+            <p>ما يضيع أصل وله فرع<br />ولا ينقطع ظل وله جذور</p>
+          </div>
+        </div>,
+        leftHost,
+      )
+    : null;
+
+  const rightSidebar = rightHost
+    ? createPortal(
+        <div className="legacy-tree-side-card" dir="rtl">
+          <h3 className="legacy-tree-side-title">الفروع الرئيسية</h3>
+          <div className="legacy-stat-list">
+            {branches.length > 0 ? (
+              branches.map((branch) => (
+                <div className="legacy-branch-row" key={branch.id}>
+                  <span>{branch.name}</span>
+                  <strong>{branch.count}</strong>
+                </div>
+              ))
+            ) : (
+              <div className="legacy-branch-row"><span>جاري تحديد الفروع</span><strong>—</strong></div>
+            )}
+          </div>
+          <div className="legacy-stat-list" style={{ marginTop: "auto" }}>
+            <div className="legacy-stat-row"><span>آخر إضافة</span><strong style={{ fontSize: 11 }}>{latestMember || "—"}</strong></div>
+            <div className="legacy-stat-row"><span>صلات القرابة</span><UsersRound size={17} /></div>
+            <div className="legacy-stat-row"><span>خريطة الفروع</span><GitBranch size={17} /></div>
+          </div>
+        </div>,
+        rightHost,
+      )
+    : null;
+
+  const canvasOverlay = canvasHost
+    ? createPortal(
+        <div className="legacy-tree-overlay" dir="rtl">
+          <div className="legacy-canvas-tools">
+            <button className="legacy-canvas-tool" type="button" aria-label="تكبير" onClick={() => clickTreeControl("تكبير الشجرة")}><Plus size={17} /></button>
+            <button className="legacy-canvas-tool" type="button" aria-label="تصغير" onClick={() => clickTreeControl("تصغير الشجرة")}><Minus size={17} /></button>
+            <button className="legacy-canvas-tool" type="button" aria-label="إعادة الضبط" onClick={() => clickTreeControl("إعادة ضبط العرض")}><RotateCcw size={16} /></button>
+          </div>
+
+          <button className="legacy-fullscreen-button" type="button" onClick={() => setIsFullscreen(true)}>
+            <Maximize2 size={16} /> عرض كامل
+          </button>
+
+          <div className={`legacy-minimap-shell ${miniMapOpen ? "" : "legacy-minimap-collapsed"}`}>
+            <div className="legacy-minimap-head">
+              <span>الخريطة المصغرة</span>
+              <button type="button" onClick={() => setMiniMapOpen((value) => !value)} aria-label={miniMapOpen ? "طي الخريطة المصغرة" : "فتح الخريطة المصغرة"}>
+                {miniMapOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              </button>
+            </div>
+            {miniMapOpen && <div className="legacy-minimap-body" ref={miniMapRef} />}
+          </div>
+
+          {isFullscreen && (
+            <div className="legacy-fullscreen-toolbar">
+              <div className="legacy-fullscreen-title"><Trees size={18} /><span>شجرة عائلة السيف</span></div>
+              <SearchBox value={treeSearch} onChange={handleTreeSearch} placeholder="ابحث عن فرد..." />
+              <div className="legacy-fullscreen-actions">
+                <button className="legacy-canvas-tool" type="button" onClick={() => clickTreeControl("تكبير الشجرة")}><Plus size={17} /></button>
+                <button className="legacy-canvas-tool" type="button" onClick={() => clickTreeControl("تصغير الشجرة")}><Minus size={17} /></button>
+                <button className="legacy-canvas-tool" type="button" onClick={() => clickTreeControl("إعادة ضبط العرض")}><RotateCcw size={16} /></button>
+              </div>
+              <button className="legacy-fullscreen-exit" type="button" onClick={() => setIsFullscreen(false)}>
+                <Minimize2 size={15} /> الخروج من ملء الشاشة
+              </button>
+            </div>
+          )}
+        </div>,
+        canvasHost,
+      )
+    : null;
+
   return (
     <>
-      <style>{`
-        [${SECTION_HOST_ATTR}] { display: block; }
-        .legacy-section-bar {
-          direction: rtl;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 14px;
-          padding: 14px 16px;
-          margin-bottom: 16px;
-          border: 1px solid #e4dcc8;
-          border-radius: 24px;
-          background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(248,245,236,.98));
-          box-shadow: 0 10px 28px rgba(28, 67, 50, .07);
-        }
-        .legacy-section-copy { min-width: 0; }
-        .legacy-section-title {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          color: #153d2f;
-          font-weight: 900;
-          font-size: 18px;
-          line-height: 1.2;
-        }
-        .legacy-section-subtitle {
-          margin-top: 4px;
-          color: #7b7b76;
-          font-size: 12px;
-          font-weight: 700;
-        }
-        .legacy-section-tabs {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(122px, 1fr));
-          gap: 6px;
-          padding: 5px;
-          border-radius: 18px;
-          background: #f1eee6;
-          flex-shrink: 0;
-        }
-        .legacy-section-tab {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          min-height: 42px;
-          padding: 0 15px;
-          border-radius: 14px;
-          color: #4c5a53;
-          font-size: 13px;
-          font-weight: 900;
-          transition: background .2s ease, color .2s ease, box-shadow .2s ease;
-        }
-        .legacy-section-tab[data-active="true"] {
-          color: white;
-          background: #0f5139;
-          box-shadow: 0 8px 18px rgba(15, 81, 57, .18);
-        }
-        [${CANVAS_HOST_ATTR}] { position: absolute; inset: 0; z-index: 25; pointer-events: none; }
-        .legacy-fullscreen-trigger {
-          pointer-events: auto;
-          position: absolute;
-          top: 14px;
-          left: 14px;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          min-height: 44px;
-          padding: 0 14px;
-          border: 1px solid rgba(15, 81, 57, .15);
-          border-radius: 14px;
-          background: rgba(255,255,255,.94);
-          color: #153d2f;
-          box-shadow: 0 8px 24px rgba(31, 55, 45, .12);
-          backdrop-filter: blur(14px);
-          font-weight: 900;
-          font-size: 12px;
-        }
-        .legacy-tree-fullscreen {
-          position: fixed !important;
-          inset: 0 !important;
-          width: 100vw !important;
-          height: 100dvh !important;
-          min-height: 100dvh !important;
-          max-height: none !important;
-          z-index: 9999 !important;
-          border: 0 !important;
-          border-radius: 0 !important;
-          background:
-            radial-gradient(circle at 20% 10%, rgba(214,173,75,.08), transparent 28%),
-            linear-gradient(180deg, #fbf9f2, #f7f3e8) !important;
-          box-shadow: none !important;
-        }
-        .dark .legacy-tree-fullscreen {
-          background: linear-gradient(180deg, #111817, #0d1312) !important;
-        }
-        .legacy-tree-fullscreen .legacy-fullscreen-trigger { display: none; }
-        .legacy-fullscreen-ui { position: absolute; inset: 0; z-index: 40; pointer-events: none; direction: rtl; }
-        .legacy-fullscreen-toolbar {
-          pointer-events: auto;
-          position: absolute;
-          top: 14px;
-          right: 14px;
-          left: 14px;
-          min-height: 58px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px;
-          border: 1px solid rgba(15,81,57,.13);
-          border-radius: 20px;
-          background: rgba(255,255,255,.91);
-          box-shadow: 0 12px 34px rgba(31,55,45,.12);
-          backdrop-filter: blur(18px);
-        }
-        .dark .legacy-fullscreen-toolbar,
-        .dark .legacy-minimap-panel { background: rgba(18,24,23,.92); border-color: rgba(230,194,92,.18); }
-        .legacy-fullscreen-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding-inline: 8px 12px;
-          color: #153d2f;
-          font-size: 14px;
-          font-weight: 900;
-          white-space: nowrap;
-        }
-        .dark .legacy-fullscreen-title { color: #f8fafc; }
-        .legacy-fullscreen-search {
-          position: relative;
-          min-width: 180px;
-          max-width: 380px;
-          flex: 1;
-        }
-        .legacy-fullscreen-search input {
-          width: 100%;
-          min-height: 42px;
-          border: 1px solid #e3dccb;
-          border-radius: 14px;
-          background: rgba(247,245,240,.95);
-          padding: 0 39px 0 12px;
-          color: #153d2f;
-          font-size: 14px;
-          font-weight: 800;
-          outline: none;
-        }
-        .legacy-fullscreen-search svg { position: absolute; right: 13px; top: 12px; color: #7b7b76; }
-        .legacy-tree-tools { display: flex; align-items: center; gap: 6px; margin-inline-start: auto; }
-        .legacy-tree-tool {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 42px;
-          height: 42px;
-          border: 1px solid #e3dccb;
-          border-radius: 13px;
-          background: #f8f6f0;
-          color: #153d2f;
-        }
-        .legacy-tree-tool:hover { background: #0f5139; color: white; border-color: #0f5139; }
-        .legacy-tree-exit {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          min-height: 42px;
-          padding: 0 13px;
-          border-radius: 13px;
-          background: #0f5139;
-          color: white;
-          font-size: 12px;
-          font-weight: 900;
-        }
-        .legacy-minimap-panel {
-          pointer-events: auto;
-          position: absolute;
-          right: 18px;
-          bottom: 18px;
-          width: min(300px, calc(100% - 36px));
-          border: 1px solid rgba(15,81,57,.14);
-          border-radius: 20px;
-          overflow: hidden;
-          background: rgba(255,255,255,.93);
-          box-shadow: 0 16px 38px rgba(31,55,45,.14);
-          backdrop-filter: blur(16px);
-        }
-        .legacy-minimap-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          min-height: 44px;
-          padding: 0 12px;
-          color: #153d2f;
-          font-size: 12px;
-          font-weight: 900;
-        }
-        .dark .legacy-minimap-head { color: #f8fafc; }
-        .legacy-minimap-toggle {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 34px;
-          height: 34px;
-          border-radius: 10px;
-          background: rgba(15,81,57,.08);
-        }
-        .legacy-minimap-body {
-          height: 170px;
-          margin: 0 10px 10px;
-          overflow: hidden;
-          border: 1px solid #e7e0cf;
-          border-radius: 14px;
-          background: #f8f5eb;
-        }
-        .legacy-minimap-collapsed { width: auto; min-width: 155px; }
-
-        html[data-legacy-tablet-layout="portrait"] .family-tree-workspace {
-          grid-template-columns: minmax(0, 1fr) !important;
-          grid-template-areas: "member" "tree" !important;
-        }
-        html[data-legacy-tablet-layout="portrait"] .family-tree-workspace .member-panel {
-          grid-area: member !important;
-          width: 100% !important;
-        }
-        html[data-legacy-tablet-layout="portrait"] .family-tree-canvas:not(.legacy-tree-fullscreen) {
-          grid-area: tree !important;
-          width: 100% !important;
-          height: min(68dvh, 700px) !important;
-          min-height: 560px !important;
-        }
-        html[data-legacy-tablet-layout="portrait"] .heritage-page-content {
-          max-width: 760px !important;
-          margin-inline: auto !important;
-          padding-inline: 16px !important;
-        }
-        html[data-legacy-tablet-layout="portrait"] .heritage-page-content .heritage-filters {
-          flex-direction: column !important;
-          align-items: stretch !important;
-        }
-        html[data-legacy-tablet-layout="portrait"] .heritage-page-content .heritage-filters > * {
-          width: 100% !important;
-        }
-        html[data-legacy-tablet-layout="portrait"] .heritage-page-content [class*="columns-"] {
-          columns: 1 !important;
-        }
-        html[data-legacy-tablet-layout="portrait"] .heritage-hero-section > div > .relative.z-10 {
-          flex-direction: column !important;
-          align-items: center !important;
-          text-align: center !important;
-        }
-
-        html[data-legacy-tablet-layout="landscape"] .family-tree-workspace {
-          grid-template-columns: minmax(250px, 300px) minmax(0, 1fr) !important;
-          grid-template-areas: "member tree" !important;
-        }
-        html[data-legacy-tablet-layout="landscape"] .family-tree-workspace .member-panel { grid-area: member !important; }
-        html[data-legacy-tablet-layout="landscape"] .family-tree-canvas:not(.legacy-tree-fullscreen) {
-          grid-area: tree !important;
-          height: clamp(620px, 70dvh, 820px) !important;
-        }
-        html[data-legacy-tablet-layout="landscape"] .heritage-page-content {
-          max-width: 72rem !important;
-        }
-        html[data-legacy-tablet-layout="landscape"] .heritage-page-content .heritage-filters {
-          flex-direction: row !important;
-          align-items: center !important;
-        }
-        html[data-legacy-tablet-layout="landscape"] .heritage-page-content [class*="columns-"] {
-          columns: 2 !important;
-        }
-
-        @media (max-width: 640px) {
-          .legacy-section-bar { flex-direction: column; align-items: stretch; padding: 12px; border-radius: 20px; }
-          .legacy-section-copy { text-align: right; padding-inline: 4px; }
-          .legacy-section-tabs { width: 100%; grid-template-columns: 1fr 1fr; }
-          .legacy-fullscreen-trigger { top: 10px; left: 10px; width: 44px; padding: 0; justify-content: center; }
-          .legacy-fullscreen-trigger span { display: none; }
-          .legacy-fullscreen-toolbar {
-            top: 8px;
-            right: 8px;
-            left: 8px;
-            flex-wrap: wrap;
-            min-height: 0;
-            border-radius: 16px;
-          }
-          .legacy-fullscreen-title { order: 1; flex: 1; }
-          .legacy-tree-exit { order: 2; width: 42px; padding: 0; }
-          .legacy-tree-exit span { display: none; }
-          .legacy-fullscreen-search { order: 3; flex-basis: calc(100% - 150px); min-width: 150px; }
-          .legacy-tree-tools { order: 4; margin-inline-start: 0; }
-          .legacy-tree-tool { width: 38px; height: 38px; }
-          .legacy-minimap-panel { right: 10px; bottom: 78px; width: min(260px, calc(100% - 20px)); }
-          .legacy-minimap-body { height: 130px; }
-        }
-      `}</style>
-
-      {sectionHost &&
-        createPortal(
-          <div className="legacy-section-bar" dir="rtl">
-            <div className="legacy-section-copy">
-              <div className="legacy-section-title">
-                <GitBranch size={20} />
-                <span>إرث العائلة</span>
-              </div>
-              <div className="legacy-section-subtitle">النسب والموروث في قسم واحد مرتب ومترابط</div>
-            </div>
-            <nav className="legacy-section-tabs" aria-label="أقسام إرث العائلة">
-              <Link
-                to="/family-tree"
-                className="legacy-section-tab"
-                data-active={page === "family-tree"}
-                aria-current={page === "family-tree" ? "page" : undefined}
-              >
-                <Trees size={17} />
-                شجرة العائلة
-              </Link>
-              <Link
-                to="/heritage"
-                className="legacy-section-tab"
-                data-active={page === "heritage"}
-                aria-current={page === "heritage" ? "page" : undefined}
-              >
-                <BookOpen size={17} />
-                الإرث
-              </Link>
-            </nav>
-          </div>,
-          sectionHost,
-        )}
-
-      {canvasHost &&
-        createPortal(
-          <>
-            {!isFullscreen && (
-              <button
-                type="button"
-                className="legacy-fullscreen-trigger"
-                onClick={() => setIsFullscreen(true)}
-                aria-label="عرض شجرة العائلة بملء الشاشة"
-                title="عرض شجرة العائلة بملء الشاشة"
-              >
-                <Maximize2 size={18} />
-                <span>ملء الشاشة</span>
-              </button>
-            )}
-
-            {isFullscreen && (
-              <div className="legacy-fullscreen-ui">
-                <div className="legacy-fullscreen-toolbar">
-                  <div className="legacy-fullscreen-title">
-                    <Trees size={20} />
-                    <span>شجرة عائلة السيف</span>
-                  </div>
-
-                  <div className="legacy-fullscreen-search">
-                    <Search size={17} />
-                    <input
-                      type="search"
-                      value={fullscreenSearch}
-                      onChange={(event) => handleFullscreenSearch(event.target.value)}
-                      placeholder="ابحث عن فرد..."
-                      aria-label="البحث داخل شجرة العائلة"
-                    />
-                  </div>
-
-                  <div className="legacy-tree-tools" aria-label="أدوات عرض الشجرة">
-                    <button
-                      type="button"
-                      className="legacy-tree-tool"
-                      onClick={() => clickTreeControl("تكبير الشجرة")}
-                      aria-label="تكبير"
-                      title="تكبير"
-                    >
-                      <Plus size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      className="legacy-tree-tool"
-                      onClick={() => clickTreeControl("تصغير الشجرة")}
-                      aria-label="تصغير"
-                      title="تصغير"
-                    >
-                      <Minus size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      className="legacy-tree-tool"
-                      onClick={() => clickTreeControl("إعادة ضبط العرض")}
-                      aria-label="احتواء الشجرة"
-                      title="احتواء الشجرة"
-                    >
-                      <RotateCcw size={17} />
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="legacy-tree-exit"
-                    onClick={() => setIsFullscreen(false)}
-                    aria-label="الخروج من ملء الشاشة"
-                  >
-                    <Minimize2 size={17} />
-                    <span>إنهاء العرض الكامل</span>
-                  </button>
-                </div>
-
-                <aside
-                  className={cn(
-                    "legacy-minimap-panel",
-                    !miniMapOpen && "legacy-minimap-collapsed",
-                  )}
-                  aria-label="خريطة الفروع المصغرة"
-                >
-                  <div className="legacy-minimap-head">
-                    <span className="flex items-center gap-2">
-                      <GitBranch size={16} />
-                      خريطة الفروع
-                    </span>
-                    <button
-                      type="button"
-                      className="legacy-minimap-toggle"
-                      onClick={() => setMiniMapOpen((open) => !open)}
-                      aria-label={miniMapOpen ? "طي خريطة الفروع" : "فتح خريطة الفروع"}
-                      title={miniMapOpen ? "طي الخريطة" : "فتح الخريطة"}
-                    >
-                      {miniMapOpen ? <ChevronDown size={17} /> : <ChevronUp size={17} />}
-                    </button>
-                  </div>
-                  {miniMapOpen && (
-                    <div
-                      ref={miniMapRef}
-                      className="legacy-minimap-body"
-                      data-legacy-minimap-body="true"
-                    />
-                  )}
-                </aside>
-              </div>
-            )}
-          </>,
-          canvasHost,
-        )}
+      {page === "family-tree" ? familyHeader : heritageHeader}
+      {page === "family-tree" && leftSidebar}
+      {page === "family-tree" && rightSidebar}
+      {page === "family-tree" && canvasOverlay}
     </>
   );
 }
