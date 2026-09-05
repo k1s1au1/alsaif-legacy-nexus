@@ -1753,6 +1753,7 @@ const SECTION_OPTIONS: { key: string; label: string }[] = [
   { key: "heritage", label: "إرث السيف" },
   { key: "majlis", label: "الأخبار" },
   { key: "community", label: "ركن الأعضاء" },
+  { key: "faith", label: "نفحات إيمانية" },
 ];
 
 function MemberAdminRow({
