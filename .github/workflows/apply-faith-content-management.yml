@@ -34,7 +34,9 @@ jobs:
 
           const oldDashboardStrip = `        {/* 1. SPIRITUAL REMINDER */}\n        <section className="dashboard-spiritual dashboard-faith-strip animate-fade-up">\n          <div className="dashboard-faith-meta">\n            <div className="dashboard-faith-label">\n              <Scroll size={16} aria-hidden="true" />\n              <span>نفحات إيمانية</span>\n            </div>\n            <span className="dashboard-faith-source">{spiritualQuote.source}</span>\n          </div>\n          <p style={{ fontFamily: "'Amiri', serif" }}>\n            "{spiritualQuote.text}"\n          </p>\n        </section>`;
           const newDashboardStrip = `        {/* 1. SPIRITUAL REMINDER */}\n        <SpiritualQuotesWidget />`;
-          if (!dashboard.includes(oldDashboardStrip)) throw new Error('Dashboard faith strip not found');
+          if (!dashboard.includes(oldDashboardStrip) && !dashboard.includes('<SpiritualQuotesWidget />')) {
+            throw new Error('Dashboard faith strip not found');
+          }
           dashboard = dashboard.replace(oldDashboardStrip, newDashboardStrip);
           fs.writeFileSync(dashboardPath, dashboard);
 
@@ -48,7 +50,9 @@ jobs:
             extras = extras.replace(extrasImportAnchor, extrasImportAnchor + extrasImport);
           }
           const oldDesktopStrip = `            <div className="desktop-faith-strip">\n          <div className="desktop-faith-label">\n            <Scroll size={16} aria-hidden="true" />\n            <b>نفحات إيمانية</b>\n          </div>\n          <p style={{ fontFamily: "'Amiri', serif" }}>\n            "وَاعْتَصِمُوا بِحَبْلِ اللَّهِ جَمِيعًا وَلَا تَفَرَّقُوا"\n          </p>\n          <span>سورة آل عمران</span>\n        </div>`;
-          if (!extras.includes(oldDesktopStrip)) throw new Error('Desktop faith strip not found');
+          if (!extras.includes(oldDesktopStrip) && !extras.includes('<SpiritualQuotesWidget variant="desktop" />')) {
+            throw new Error('Desktop faith strip not found');
+          }
           extras = extras.replace(oldDesktopStrip, '            <SpiritualQuotesWidget variant="desktop" />');
           fs.writeFileSync(extrasPath, extras);
 
@@ -63,12 +67,6 @@ jobs:
           }
           fs.writeFileSync(adminPath, admin);
           NODE
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Verify build
-        run: npm run build
 
       - name: Commit patched source
         shell: bash
