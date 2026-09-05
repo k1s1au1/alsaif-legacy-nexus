@@ -37,6 +37,7 @@ import {
 import Autoplay from "embla-carousel-autoplay";
 import { TripImage } from "@/components/trip-image";
 import { IntegratedHub } from "@/components/dashboard/integrated-hub";
+import { SpiritualQuotesWidget } from "@/components/dashboard/spiritual-quotes-widget";
 import { PollsPopup } from "@/components/dashboard/polls-popup";
 import { showIsland } from "@/components/dynamic-island";
 import { useWidgetUpdater } from "@/hooks/use-widget-updater";
@@ -497,18 +498,7 @@ function Dashboard() {
     <AppShell title="لوحة العائلة" user={{ name: "", role: "", initial: "س" }}>
       <div className="dashboard-page max-w-6xl mx-auto space-y-12 pb-20 px-4 md:px-0">
         {/* 1. SPIRITUAL REMINDER */}
-        <section className="dashboard-spiritual dashboard-faith-strip animate-fade-up">
-          <div className="dashboard-faith-meta">
-            <div className="dashboard-faith-label">
-              <Scroll size={16} aria-hidden="true" />
-              <span>نفحات إيمانية</span>
-            </div>
-            <span className="dashboard-faith-source">{spiritualQuote.source}</span>
-          </div>
-          <p style={{ fontFamily: "'Amiri', serif" }}>
-            "{spiritualQuote.text}"
-          </p>
-        </section>
+        <SpiritualQuotesWidget />
 
         {/* 2. INTERACTIVE NAJDI WELCOME PAVILION */}
         <section

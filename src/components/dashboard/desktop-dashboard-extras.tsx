@@ -33,6 +33,7 @@ import {
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { useUserRole } from "@/hooks/use-user-role";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
+import { SpiritualQuotesWidget } from "@/components/dashboard/spiritual-quotes-widget";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -370,16 +371,7 @@ export function DesktopDashboardExtras({
       <div className="desktop-rebuild-root">
         {!contentOnly && (
           <>
-            <div className="desktop-faith-strip">
-          <div className="desktop-faith-label">
-            <Scroll size={16} aria-hidden="true" />
-            <b>نفحات إيمانية</b>
-          </div>
-          <p style={{ fontFamily: "'Amiri', serif" }}>
-            "وَاعْتَصِمُوا بِحَبْلِ اللَّهِ جَمِيعًا وَلَا تَفَرَّقُوا"
-          </p>
-          <span>سورة آل عمران</span>
-        </div>
+            <SpiritualQuotesWidget variant="desktop" />
 
         <section className="desktop-overview-shell">
           <div className="desktop-portal-stage">
