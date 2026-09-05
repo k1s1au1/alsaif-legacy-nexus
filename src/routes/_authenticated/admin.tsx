@@ -652,6 +652,31 @@ function AdminPage() {
     }
   };
 
+  // Keep the selected tab within the sections this user is actually allowed to open.
+  // This hook must stay before every conditional return so React hook order never changes.
+  useEffect(() => {
+    const allowedTabs: AdminTab[] = [];
+
+    if (isCouncilLeadership) {
+      allowedTabs.push(
+        "governance",
+        "requests",
+        "membership_alerts",
+        "members",
+        "polls",
+        "profile_changes",
+        "master_archive",
+        "suggestions",
+      );
+    }
+    if (isSiteChairman) allowedTabs.push("member_requests");
+    if (canSeeTechTools) allowedTabs.push("bugs");
+
+    if (allowedTabs.length > 0 && !allowedTabs.includes(tab)) {
+      setTab(allowedTabs[0]);
+    }
+  }, [isCouncilLeadership, isSiteChairman, canSeeTechTools, tab]);
+
   if (loading && !profile.name)
     return (
       <div className="h-screen flex items-center justify-center bg-background">
@@ -771,14 +796,17 @@ function AdminPage() {
   ] as AdminSection[]).filter((section) => section.visible);
 
   const activeAdminSection =
-    adminSections.find((section) => section.key === tab) || adminSections[0];
+    adminSections.find((section) => section.key === tab) ||
+    adminSections[0] || {
+      key: "requests" as AdminTab,
+      label: "الإدارة",
+      shortLabel: "الإدارة",
+      description: "لا توجد وحدة إدارية متاحة لهذه الصلاحية.",
+      icon: Shield,
+      visible: false,
+    };
+  const hasVisibleAdminSection = adminSections.length > 0;
 
-  // Keep the selected tab within the sections this user is actually allowed to open.
-  useEffect(() => {
-    if (adminSections.length && !adminSections.some((section) => section.key === tab)) {
-      setTab(adminSections[0].key);
-    }
-  }, [adminSections, tab]);
   const ActiveAdminIcon = activeAdminSection?.icon || Shield;
   const todayLabel = new Intl.DateTimeFormat("ar-SA", {
     weekday: "long",
@@ -862,7 +890,7 @@ function AdminPage() {
           </div>
         </header>
 
-        {!isA ? (
+        {!isA || !hasVisibleAdminSection ? (
           <div className="admin-restricted-card animate-fade-up">
             <div>
               <Shield size={36} />
