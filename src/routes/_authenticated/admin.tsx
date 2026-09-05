@@ -772,6 +772,13 @@ function AdminPage() {
 
   const activeAdminSection =
     adminSections.find((section) => section.key === tab) || adminSections[0];
+
+  // Keep the selected tab within the sections this user is actually allowed to open.
+  useEffect(() => {
+    if (adminSections.length && !adminSections.some((section) => section.key === tab)) {
+      setTab(adminSections[0].key);
+    }
+  }, [adminSections, tab]);
   const ActiveAdminIcon = activeAdminSection?.icon || Shield;
   const todayLabel = new Intl.DateTimeFormat("ar-SA", {
     weekday: "long",
@@ -1020,8 +1027,8 @@ function AdminPage() {
                       onToggleSectionHead={toggleSectionHead}
                       onDelete={deleteMember}
                       fullName={m.arabic_name || m.full_name || "عضو"}
-                      canManageSections={isPowerUser}
-                      canManageRoles={isPowerUser}
+                      canManageSections={isCouncilLeadership}
+                      canManageRoles={isSiteChairman}
                     />
                   ))}
                   {filteredMembers.length === 0 && (
