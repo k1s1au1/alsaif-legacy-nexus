@@ -163,12 +163,20 @@ const REQ_TABS = [
 function AdminPage() {
   const {
     userId: meId,
-    isAdmin: isSystemAdmin,
     isChairman: isSiteChairman,
-    isPrivileged: isA,
+    isViceChairman,
+    isTechnicalAdmin,
+    isCouncilLeadership,
+    sectionHeads,
+    primaryRole,
   } = useUserRole();
 
-  const isPowerUser = isSiteChairman || isSystemAdmin;
+  // Technical admin keeps access to technical tools only; section heads see their own tools.
+  const isSystemAdmin = isTechnicalAdmin;
+  const isA = isCouncilLeadership || isTechnicalAdmin || sectionHeads.length > 0;
+  const isPowerUser = isCouncilLeadership;
+  const canSeeTechTools = isCouncilLeadership || isTechnicalAdmin;
+
 
   const [profile, setProfile] = useState({
     name: "",
