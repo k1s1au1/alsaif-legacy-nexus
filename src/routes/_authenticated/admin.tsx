@@ -54,6 +54,7 @@ import { deleteMemberAccount } from "@/lib/api/members-admin.functions";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
+import { CouncilGovernance } from "@/components/admin/council-governance";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { isFamilyOccasionEvent } from "@/lib/family-occasion-events";
@@ -97,6 +98,7 @@ type ReqRow = {
 };
 
 type AdminTab =
+  | "governance"
   | "requests"
   | "membership_alerts"
   | "members"
@@ -163,12 +165,20 @@ const REQ_TABS = [
 function AdminPage() {
   const {
     userId: meId,
-    isAdmin: isSystemAdmin,
     isChairman: isSiteChairman,
-    isPrivileged: isA,
+    isViceChairman,
+    isTechnicalAdmin,
+    isCouncilLeadership,
+    sectionHeads,
+    primaryRole,
   } = useUserRole();
 
-  const isPowerUser = isSiteChairman || isSystemAdmin;
+  // Technical admin keeps access to technical tools only; section heads see their own tools.
+  const isSystemAdmin = isTechnicalAdmin;
+  const isA = isCouncilLeadership || isTechnicalAdmin || sectionHeads.length > 0;
+  const isPowerUser = isCouncilLeadership;
+  const canSeeTechTools = isCouncilLeadership || isTechnicalAdmin;
+
 
   const [profile, setProfile] = useState({
     name: "",
@@ -254,7 +264,7 @@ function AdminPage() {
       if (p) {
         setProfile({
           name: p.arabic_name || p.full_name || "عضو",
-          role: roleLabel(isSiteChairman ? "chairman" : isSystemAdmin ? "admin" : "manager"),
+          role: roleLabel(primaryRole),
           initial: (p.arabic_name?.[0] || "ع").toUpperCase(),
           avatarPath: p.avatar_url,
         });
@@ -279,7 +289,7 @@ function AdminPage() {
                   .eq("kind", "request")
                   .order("created_at", { ascending: false })
               : Promise.resolve({ data: [], error: null }),
-            isSystemAdmin || isSiteChairman
+            canSeeTechTools
               ? supabase
                   .from("bug_reports" as any)
                   .select("*")
@@ -423,7 +433,7 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [meId, isA, isSystemAdmin, isSiteChairman, activeDayKey]);
+  }, [meId, isA, canSeeTechTools, isSiteChairman, primaryRole, activeDayKey]);
 
   useEffect(() => {
     loadData();
@@ -671,7 +681,14 @@ function AdminPage() {
     visible: boolean;
   };
   const adminSections: AdminSection[] = ([
-
+    {
+      key: "governance",
+      label: "إدارة المجلس والصلاحيات",
+      shortLabel: "الصلاحيات",
+      description: "رئيس المجلس ونائبه والمسؤول التقني ومسؤولو الأقسام وتعيين الرتب.",
+      icon: Crown,
+      visible: isCouncilLeadership,
+    },
     {
       key: "requests",
       label: "طلبات العضوية",
@@ -679,7 +696,7 @@ function AdminPage() {
       description: "مراجعة طلبات الانضمام واعتماد الأعضاء الجدد.",
       icon: UserPlus,
       count: reqCounts.pending,
-      visible: true,
+      visible: isCouncilLeadership,
     },
     {
       key: "membership_alerts",
@@ -688,7 +705,7 @@ function AdminPage() {
       description: "سجل مباشر لطلبات العضوية الجديدة وحالات الموافقة والرفض.",
       icon: BellRing,
       count: reqCounts.pending,
-      visible: isSystemAdmin || isSiteChairman,
+      visible: isCouncilLeadership,
     },
     {
       key: "members",
@@ -697,7 +714,7 @@ function AdminPage() {
       description: "إدارة السجل الرسمي للأعضاء والأدوار والصلاحيات.",
       icon: Users,
       count: members.length,
-      visible: true,
+      visible: isCouncilLeadership,
     },
     {
       key: "polls",
@@ -706,7 +723,7 @@ function AdminPage() {
       description: "إدارة الاستفتاءات والقرارات ومتابعة نتائج التصويت.",
       icon: BarChart3,
       count: polls.length,
-      visible: true,
+      visible: isCouncilLeadership,
     },
     {
       key: "profile_changes",
@@ -714,7 +731,7 @@ function AdminPage() {
       shortLabel: "الهوية",
       description: "مراجعة طلبات تعديل الاسم والجنس وتاريخ الميلاد ومنع انتحال الهوية.",
       icon: Shield,
-      visible: isSystemAdmin || isSiteChairman,
+      visible: isCouncilLeadership,
     },
     {
       key: "member_requests",
@@ -732,7 +749,7 @@ function AdminPage() {
       description: "الرجوع إلى السجلات التاريخية لجميع أعمال المجلس.",
       icon: Archive,
       count: archiveCount,
-      visible: isSystemAdmin || isSiteChairman,
+      visible: isCouncilLeadership,
     },
     {
       key: "bugs",
@@ -741,7 +758,7 @@ function AdminPage() {
       description: "متابعة البلاغات التقنية وإغلاق الحالات المعالجة.",
       icon: Shield,
       count: openBugCount,
-      visible: isSystemAdmin || isSiteChairman,
+      visible: canSeeTechTools,
     },
     {
       key: "suggestions",
@@ -749,12 +766,19 @@ function AdminPage() {
       shortLabel: "المقترحات",
       description: "استقبال أفكار الأعضاء وفرز المقترحات التطويرية.",
       icon: Inbox,
-      visible: isSystemAdmin || isSiteChairman,
+      visible: isCouncilLeadership,
     },
   ] as AdminSection[]).filter((section) => section.visible);
 
   const activeAdminSection =
     adminSections.find((section) => section.key === tab) || adminSections[0];
+
+  // Keep the selected tab within the sections this user is actually allowed to open.
+  useEffect(() => {
+    if (adminSections.length && !adminSections.some((section) => section.key === tab)) {
+      setTab(adminSections[0].key);
+    }
+  }, [adminSections, tab]);
   const ActiveAdminIcon = activeAdminSection?.icon || Shield;
   const todayLabel = new Intl.DateTimeFormat("ar-SA", {
     weekday: "long",
@@ -916,13 +940,15 @@ function AdminPage() {
                 </header>
                 <div className="admin-content-body">
 
-            {tab === "membership_alerts" && (isSystemAdmin || isSiteChairman) && (
+            {tab === "governance" && isCouncilLeadership && <CouncilGovernance />}
+
+            {tab === "membership_alerts" && isCouncilLeadership && (
               <MembershipAlerts canManage={isPowerUser} />
             )}
 
-            {tab === "suggestions" && (isSystemAdmin || isSiteChairman) && <SuggestionsManager />}
+            {tab === "suggestions" && isCouncilLeadership && <SuggestionsManager />}
 
-            {tab === "profile_changes" && (isSystemAdmin || isSiteChairman) && (
+            {tab === "profile_changes" && isCouncilLeadership && (
               <ProfileChangeRequests />
             )}
 
@@ -1001,8 +1027,8 @@ function AdminPage() {
                       onToggleSectionHead={toggleSectionHead}
                       onDelete={deleteMember}
                       fullName={m.arabic_name || m.full_name || "عضو"}
-                      canManageSections={isPowerUser}
-                      canManageRoles={isPowerUser}
+                      canManageSections={isCouncilLeadership}
+                      canManageRoles={isSiteChairman}
                     />
                   ))}
                   {filteredMembers.length === 0 && (
@@ -1107,7 +1133,7 @@ function AdminPage() {
               </section>
             )}
 
-            {tab === "bugs" && (isSystemAdmin || isSiteChairman) && (
+            {tab === "bugs" && canSeeTechTools && (
               <section className="animate-fade-up space-y-6">
                 <div className="space-y-1">
                   <h3 className="text-xl font-black text-primary tracking-tight">
