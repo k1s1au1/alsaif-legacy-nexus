@@ -115,6 +115,7 @@ function FamilyTreePage() {
   const [useNativeIOSNodes] = useState(shouldUseNativeIOSNodes);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lastContainerWidthRef = useRef(0);
+  const mobileTreeInitializedRef = useRef(false);
 
   // Normalizing Arabic text for better search
   const normalize = (text: string) => {
@@ -190,7 +191,12 @@ function FamilyTreePage() {
 
         if (force || Math.abs(width - lastContainerWidthRef.current) > 1) {
           lastContainerWidthRef.current = width;
-          setTranslate({ x: width / 2, y: useNativeIOSNodes ? 112 : 96 });
+          const isMobileTree = width < 768;
+          setTranslate({ x: width / 2, y: isMobileTree ? 150 : useNativeIOSNodes ? 112 : 96 });
+          if (isMobileTree && !mobileTreeInitializedRef.current) {
+            mobileTreeInitializedRef.current = true;
+            setZoom(0.52);
+          }
         }
       });
     };
@@ -680,11 +686,12 @@ function FamilyTreePage() {
               <ControlBtn
                 label="إعادة ضبط العرض"
                 onClick={() => {
-                  setZoom(0.68);
+                  const mobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+                  setZoom(mobile ? 0.52 : 0.68);
                   if (containerRef.current) {
                     setTranslate({
                       x: containerRef.current.clientWidth / 2,
-                      y: useNativeIOSNodes ? 112 : 96,
+                      y: mobile ? 150 : useNativeIOSNodes ? 112 : 96,
                     });
                   }
                 }}
