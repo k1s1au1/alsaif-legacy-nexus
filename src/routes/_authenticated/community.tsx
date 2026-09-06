@@ -25,12 +25,15 @@ const COMMUNITY_CACHE_PREFIX = "member_corner_posts";
 function CommunityPage(){
  const {
    userId:meId,
-   canManage,
+   canManageSection,
    isChairman,
-   primaryRole,
+   isViceChairman,
+   isTechnicalAdmin,
+   managesSection,
    isLoading:roleLoading,
  }=useUserRole();
- const isHead=canManage("community");
+ const isHead=canManageSection("community");
+
  const [profile,setProfile]=useState({name:"",role:"",initial:"ع",avatarPath:null as string|null});
  const [posts,setPosts]=useState<Post[]>([]);
  const [comments,setComments]=useState<any[]>([]);
@@ -229,12 +232,15 @@ function CommunityPage(){
    ...profile,
    role:isChairman
      ?"رئيس المجلس"
-     :primaryRole==="admin"
-       ?"مسؤول تقني"
-       :isHead||primaryRole==="manager"
-         ?"مسؤول قسم"
-         :"عضو",
- }),[profile,isChairman,primaryRole,isHead]);
+     :isViceChairman
+       ?"نائب رئيس المجلس"
+       :isTechnicalAdmin
+         ?"المسؤول التقني"
+         :managesSection("community")
+           ?"مسؤول ركن الأعضاء"
+           :"عضو",
+ }),[profile,isChairman,isViceChairman,isTechnicalAdmin,managesSection]);
+
 
  const filtered=useMemo(()=>{
    const visible=posts.filter(post=>post.kind!=="request");
