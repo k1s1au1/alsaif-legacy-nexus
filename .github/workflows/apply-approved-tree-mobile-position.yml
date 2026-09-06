@@ -1,0 +1,52 @@
+name: Apply approved family tree mobile positioning
+
+on:
+  push:
+    branches:
+      - fix/mobile-family-tree-approved-design
+
+permissions:
+  contents: write
+
+jobs:
+  patch-mobile-position:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tune mobile tree position
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'src/routes/_authenticated/family-tree.tsx';
+          let s = fs.readFileSync(path, 'utf8');
+
+          const refAnchor = '  const lastContainerWidthRef = useRef(0);\n';
+          if (!s.includes('mobileTreeInitializedRef')) {
+            if (!s.includes(refAnchor)) throw new Error('mobile init ref anchor not found');
+            s = s.replace(refAnchor, refAnchor + '  const mobileTreeInitializedRef = useRef(false);\n');
+          }
+
+          const oldPosition = `          lastContainerWidthRef.current = width;\n          setTranslate({ x: width / 2, y: useNativeIOSNodes ? 112 : 96 });`;
+          const newPosition = `          lastContainerWidthRef.current = width;\n          const isMobileTree = width < 768;\n          setTranslate({ x: width / 2, y: isMobileTree ? 150 : useNativeIOSNodes ? 112 : 96 });\n          if (isMobileTree && !mobileTreeInitializedRef.current) {\n            mobileTreeInitializedRef.current = true;\n            setZoom(0.52);\n          }`;
+          if (s.includes(oldPosition)) s = s.replace(oldPosition, newPosition);
+
+          const oldReset = `                onClick={() => {\n                  setZoom(0.68);\n                  if (containerRef.current) {\n                    setTranslate({\n                      x: containerRef.current.clientWidth / 2,\n                      y: useNativeIOSNodes ? 112 : 96,\n                    });\n                  }\n                }}`;
+          const newReset = `                onClick={() => {\n                  const mobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;\n                  setZoom(mobile ? 0.52 : 0.68);\n                  if (containerRef.current) {\n                    setTranslate({\n                      x: containerRef.current.clientWidth / 2,\n                      y: mobile ? 150 : useNativeIOSNodes ? 112 : 96,\n                    });\n                  }\n                }}`;
+          if (s.includes(oldReset)) s = s.replace(oldReset, newReset);
+
+          fs.writeFileSync(path, s);
+          NODE
+
+      - name: Commit source
+        shell: bash
+        run: |
+          rm .github/workflows/apply-approved-tree-mobile-position.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/_authenticated/family-tree.tsx .github/workflows/apply-approved-tree-mobile-position.yml
+          git commit -m "ضبط حجم وموضع شجرة العائلة للجوال"
+          git push origin HEAD:${GITHUB_REF_NAME}
