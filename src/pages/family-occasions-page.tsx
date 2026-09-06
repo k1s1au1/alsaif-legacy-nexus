@@ -664,7 +664,12 @@ function FamilyOccasionsPage() {
           </button>
         </section>
 
-        {items.length === 0 ? (
+        {loading ? (
+          <section className="mt-6 rounded-[30px] border border-border bg-card p-10 text-center">
+            <CalendarDays className="mx-auto size-10 animate-pulse" />
+            <h2 className="mt-4 text-xl font-black">جاري تحميل المناسبات…</h2>
+          </section>
+        ) : items.length === 0 ? (
           <section className="mt-6 rounded-[30px] border border-border bg-card p-10 text-center">
             <CalendarDays className="mx-auto size-10" />
             <h2 className="mt-4 text-xl font-black">لا توجد مناسبات حتى الآن</h2>
@@ -673,10 +678,16 @@ function FamilyOccasionsPage() {
           <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((o) => {
               const ex = extra(o.details);
+              const badge =
+                o.visibility === "official"
+                  ? { label: "مناسبة عائلة السيف", cls: "bg-gold-primary/15 text-gold-primary" }
+                  : o.visibility === "private"
+                    ? { label: "خاصة", cls: "bg-primary/10 text-primary" }
+                    : { label: "مناسبة عضو", cls: "bg-muted text-muted-foreground" };
               return (
                 <article
                   key={o.id}
-                  className="rounded-[28px] border border-border bg-card p-4 transition-all hover:shadow-md"
+                  className={`rounded-[28px] border bg-card p-4 transition-all hover:shadow-md ${o.visibility === "official" ? "border-gold-primary/50 shadow-sm" : "border-border"}`}
                 >
                   <div className="grid grid-cols-[92px_1fr] gap-4">
                     <button
@@ -700,20 +711,32 @@ function FamilyOccasionsPage() {
                       </div>
                     </button>
                     <div>
-                      <span className="text-[11px] font-black text-gold-primary">
-                        {meta(o.type).title}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-black text-gold-primary">
+                          {meta(o.type).title}
+                        </span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${badge.cls}`}>
+                          {badge.label}
+                        </span>
+                      </div>
                       <h3 className="mt-1 truncate text-lg font-black">
                         {o.title || COPY[o.type].heading}
                       </h3>
+                      {o.visibility === "private" && (
+                        <p className="mt-1 text-[11px] font-bold text-muted-foreground">
+                          {o.inviteeCount} مدعو · {o.attendeeCount} تأكيد حضور
+                        </p>
+                      )}
                       <div className="mt-4 flex gap-2">
-                        <button
-                          onClick={() => edit(o)}
-                          className="flex-1 rounded-xl bg-primary/5 py-2"
-                          title="تعديل"
-                        >
-                          <Pencil className="mx-auto size-4" />
-                        </button>
+                        {o.canEdit && (
+                          <button
+                            onClick={() => edit(o)}
+                            className="flex-1 rounded-xl bg-primary/5 py-2"
+                            title="تعديل"
+                          >
+                            <Pencil className="mx-auto size-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => void shareOccasion(o)}
                           className="flex-1 rounded-xl bg-gold-primary/10 py-2 text-gold-primary"
@@ -721,16 +744,15 @@ function FamilyOccasionsPage() {
                         >
                           <Share2 className="mx-auto size-4" />
                         </button>
-                        <button
-                          onClick={() =>
-                            window.confirm("حذف المناسبة؟") &&
-                            persist(items.filter((v) => v.id !== o.id))
-                          }
-                          className="flex-1 rounded-xl bg-red-500/5 py-2 text-red-600"
-                          title="حذف"
-                        >
-                          <Trash2 className="mx-auto size-4" />
-                        </button>
+                        {o.canEdit && (
+                          <button
+                            onClick={() => void remove(o.id)}
+                            className="flex-1 rounded-xl bg-red-500/5 py-2 text-red-600"
+                            title="حذف"
+                          >
+                            <Trash2 className="mx-auto size-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -739,6 +761,7 @@ function FamilyOccasionsPage() {
             })}
           </section>
         )}
+
       </main>
 
       {open && (
