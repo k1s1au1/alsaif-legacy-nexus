@@ -180,7 +180,7 @@ const COPY: Record<
   },
 };
 
-const STORAGE = "alsaif:family-occasions";
+const ROOT_UNUSED = "";
 const ROOT = "/occasion-templates";
 const OCCASION_FONTS: Array<{ id: OccasionFont; label: string; family: string }> = [
   {
