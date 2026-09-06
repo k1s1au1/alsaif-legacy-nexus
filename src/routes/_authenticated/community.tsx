@@ -232,12 +232,15 @@ function CommunityPage(){
    ...profile,
    role:isChairman
      ?"رئيس المجلس"
-     :primaryRole==="admin"
-       ?"مسؤول تقني"
-       :isHead||primaryRole==="manager"
-         ?"مسؤول قسم"
-         :"عضو",
- }),[profile,isChairman,primaryRole,isHead]);
+     :isViceChairman
+       ?"نائب رئيس المجلس"
+       :isTechnicalAdmin
+         ?"المسؤول التقني"
+         :managesSection("community")
+           ?"مسؤول ركن الأعضاء"
+           :"عضو",
+ }),[profile,isChairman,isViceChairman,isTechnicalAdmin,managesSection]);
+
 
  const filtered=useMemo(()=>{
    const visible=posts.filter(post=>post.kind!=="request");
