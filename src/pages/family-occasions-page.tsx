@@ -89,7 +89,17 @@ type Occasion = {
   birthdayAudience?: BirthdayAudience;
 };
 
+/** Occasion as stored in Supabase (source of truth) with access metadata. */
+type StoredOccasion = Occasion & {
+  visibility: OccasionVisibility;
+  createdBy: string;
+  inviteeCount: number;
+  attendeeCount: number;
+  canEdit: boolean;
+};
+
 type Meta = { key: OccasionType; title: string; icon: any; designs: number };
+
 
 const TYPES: Meta[] = [
   { key: "wedding", title: "زواج / ملكة", icon: Heart, designs: 3 },
