@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">خلفية شجرة العائلة</title>
+  <desc id="desc">شجرة كبيرة هادئة بدرجات عاجية وذهبية وخضراء باهتة للاستخدام كخلفية لشجرة العائلة.</desc>
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="34%" r="70%">
+      <stop offset="0" stop-color="#fffdf6" stop-opacity="0.98"/>
+      <stop offset="0.58" stop-color="#f7f0df" stop-opacity="0.84"/>
+      <stop offset="1" stop-color="#efe3c8" stop-opacity="0.5"/>
+    </radialGradient>
+    <linearGradient id="trunk" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9d8052"/>
+      <stop offset="0.5" stop-color="#b69a67"/>
+      <stop offset="1" stop-color="#7b6748"/>
+    </linearGradient>
+    <radialGradient id="leaf" cx="35%" cy="30%" r="70%">
+      <stop offset="0" stop-color="#d8c68f"/>
+      <stop offset="0.6" stop-color="#b7b68c"/>
+      <stop offset="1" stop-color="#7e927b"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.8"/>
+    </filter>
+    <filter id="wash" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <g opacity="0.22" filter="url(#wash)" fill="#c7b783">
+    <ellipse cx="250" cy="850" rx="300" ry="90"/>
+    <ellipse cx="1360" cy="860" rx="330" ry="100"/>
+  </g>
+  <g opacity="0.26" fill="#87957d">
+    <circle cx="145" cy="760" r="78"/><circle cx="260" cy="720" r="55"/><circle cx="1390" cy="735" r="72"/><circle cx="1500" cy="790" r="52"/>
+  </g>
+  <g opacity="0.34" stroke="#9a8259" stroke-linecap="round" fill="none">
+    <path d="M780 920 C760 780 800 675 790 575 C780 490 745 420 700 350" stroke-width="56"/>
+    <path d="M820 920 C850 780 820 675 830 575 C840 485 885 415 940 345" stroke-width="48"/>
+    <path d="M795 650 C690 585 620 520 555 430" stroke-width="28"/>
+    <path d="M820 635 C925 560 1025 500 1115 410" stroke-width="26"/>
+    <path d="M770 555 C650 515 540 475 430 405" stroke-width="18"/>
+    <path d="M850 550 C980 505 1100 455 1230 390" stroke-width="18"/>
+    <path d="M785 480 C720 395 670 330 630 245" stroke-width="16"/>
+    <path d="M840 470 C905 390 965 315 1025 245" stroke-width="16"/>
+  </g>
+  <g opacity="0.38" fill="url(#leaf)" filter="url(#soft)">
+    <circle cx="515" cy="360" r="155"/><circle cx="675" cy="280" r="180"/><circle cx="845" cy="250" r="190"/><circle cx="1015" cy="290" r="175"/><circle cx="1170" cy="380" r="150"/>
+    <circle cx="420" cy="500" r="130"/><circle cx="600" cy="470" r="170"/><circle cx="810" cy="430" r="205"/><circle cx="1025" cy="470" r="170"/><circle cx="1210" cy="520" r="125"/>
+  </g>
+  <g opacity="0.22" fill="#d7c47d">
+    <circle cx="560" cy="255" r="24"/><circle cx="640" cy="190" r="18"/><circle cx="730" cy="220" r="20"/><circle cx="865" cy="165" r="22"/><circle cx="955" cy="215" r="18"/><circle cx="1080" cy="245" r="23"/>
+    <circle cx="390" cy="430" r="18"/><circle cx="505" cy="520" r="20"/><circle cx="1130" cy="520" r="18"/><circle cx="1250" cy="445" r="20"/>
+  </g>
+  <g opacity="0.16" stroke="#b59857" stroke-width="2" fill="none">
+    <path d="M120 890 Q410 825 700 890 T1480 900"/>
+    <path d="M80 925 Q400 865 760 930 T1520 935"/>
+  </g>
+</svg>
