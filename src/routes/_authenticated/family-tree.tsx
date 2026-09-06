@@ -115,6 +115,7 @@ function FamilyTreePage() {
   const [useNativeIOSNodes] = useState(shouldUseNativeIOSNodes);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lastContainerWidthRef = useRef(0);
+  const mobileTreeInitializedRef = useRef(false);
 
   // Normalizing Arabic text for better search
   const normalize = (text: string) => {
@@ -190,7 +191,12 @@ function FamilyTreePage() {
 
         if (force || Math.abs(width - lastContainerWidthRef.current) > 1) {
           lastContainerWidthRef.current = width;
-          setTranslate({ x: width / 2, y: useNativeIOSNodes ? 112 : 96 });
+          const isMobileTree = width < 768;
+          setTranslate({ x: width / 2, y: isMobileTree ? 150 : useNativeIOSNodes ? 112 : 96 });
+          if (isMobileTree && !mobileTreeInitializedRef.current) {
+            mobileTreeInitializedRef.current = true;
+            setZoom(0.52);
+          }
         }
       });
     };
@@ -680,11 +686,12 @@ function FamilyTreePage() {
               <ControlBtn
                 label="إعادة ضبط العرض"
                 onClick={() => {
-                  setZoom(0.68);
+                  const mobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+                  setZoom(mobile ? 0.52 : 0.68);
                   if (containerRef.current) {
                     setTranslate({
                       x: containerRef.current.clientWidth / 2,
-                      y: useNativeIOSNodes ? 112 : 96,
+                      y: mobile ? 150 : useNativeIOSNodes ? 112 : 96,
                     });
                   }
                 }}
@@ -816,8 +823,34 @@ function FamilyTreePage() {
 
           <div
             ref={containerRef}
-            className="family-tree-canvas relative w-full overflow-hidden rounded-[28px] border border-[#DCCDA8] shadow-[0_18px_45px_rgba(40,58,48,0.14)] md:rounded-[34px]"
+            className="family-tree-canvas family-tree-approved relative w-full overflow-hidden rounded-[28px] border border-[#DCCDA8] shadow-[0_18px_45px_rgba(40,58,48,0.14)] md:rounded-[34px]"
           >
+            <div className="family-tree-approved-heading">
+              <div className="family-tree-approved-copy">
+                <span className="family-tree-approved-icon"><Trees size={22} /></span>
+                <div>
+                  <h2>شجرة العائلة</h2>
+                  <p>اكتشف روابط العائلة وتعرّف على أصولك</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="family-tree-approved-fit"
+                onClick={() => {
+                  const mobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+                  setZoom(mobile ? 0.52 : 0.68);
+                  if (containerRef.current) {
+                    setTranslate({
+                      x: containerRef.current.clientWidth / 2,
+                      y: mobile ? 148 : useNativeIOSNodes ? 112 : 96,
+                    });
+                  }
+                }}
+              >
+                <Maximize2 size={17} />
+                <span>عرض الكل</span>
+              </button>
+            </div>
             {loading ? (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#FAF7EE]/75 backdrop-blur-sm">
                 <Loader2 className="size-10 animate-spin text-[#B78A2B]" />
@@ -1082,11 +1115,14 @@ function FamilyTreePage() {
         .rd3t-tree-container {
           width: 100%;
           height: 100%;
-          background-color: #faf7ee;
+          background-color: #fbf8ef;
           background-image:
-            radial-gradient(circle at 2px 2px, rgba(164, 128, 48, 0.09) 1.2px, transparent 0),
-            linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(244, 236, 218, 0.42));
-          background-size: 30px 30px, 100% 100%;
+            linear-gradient(180deg, rgba(255,253,247,0.28), rgba(250,245,232,0.2)),
+            url('/family-tree-background-approved.svg'),
+            radial-gradient(circle at 2px 2px, rgba(164, 128, 48, 0.045) 1px, transparent 0);
+          background-position: center, center bottom, 0 0;
+          background-repeat: no-repeat, no-repeat, repeat;
+          background-size: 100% 100%, min(1080px, 96%) auto, 34px 34px;
         }
 
         .family-tree-canvas {
@@ -1110,6 +1146,70 @@ function FamilyTreePage() {
           touch-action: none;
           -webkit-user-select: none;
           user-select: none;
+        }
+
+        .family-tree-approved-heading {
+          position: absolute;
+          z-index: 25;
+          top: 16px;
+          right: 18px;
+          left: 18px;
+          display: none;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          pointer-events: none;
+        }
+
+        .family-tree-approved-copy {
+          display: flex;
+          align-items: flex-start;
+          gap: 9px;
+          color: #0f5139;
+          text-align: right;
+        }
+
+        .family-tree-approved-icon {
+          display: grid;
+          width: 36px;
+          height: 36px;
+          flex: 0 0 auto;
+          place-items: center;
+          color: #0f5a3f;
+        }
+
+        .family-tree-approved-copy h2 {
+          margin: 0;
+          font-size: 20px;
+          line-height: 1.25;
+          font-weight: 900;
+          letter-spacing: -0.02em;
+        }
+
+        .family-tree-approved-copy p {
+          margin: 3px 0 0;
+          color: #68736d;
+          font-size: 11px;
+          line-height: 1.45;
+          font-weight: 700;
+        }
+
+        .family-tree-approved-fit {
+          pointer-events: auto;
+          display: inline-flex;
+          min-height: 42px;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          border: 1px solid #e1d6b9;
+          border-radius: 15px;
+          background: rgba(255, 253, 247, 0.9);
+          padding: 0 13px;
+          color: #0f5139;
+          font-size: 12px;
+          font-weight: 900;
+          box-shadow: 0 8px 22px rgba(55, 68, 59, 0.08);
+          backdrop-filter: blur(10px);
         }
 
         .node-group {
@@ -1202,6 +1302,43 @@ function FamilyTreePage() {
           }
         }
 
+        @media (max-width: 767px) {
+          .family-tree-workspace {
+            display: block;
+          }
+
+          .family-tree-workspace > .member-panel {
+            display: none;
+          }
+
+          .family-tree-canvas.family-tree-approved {
+            height: clamp(360px, 42dvh, 470px);
+            min-height: 0;
+            border-radius: 24px;
+            overscroll-behavior-y: auto;
+          }
+
+          .family-tree-approved-heading {
+            display: flex;
+          }
+
+          .family-tree-approved .rd3t-tree-container {
+            background-position: center, center 72%, 0 0;
+            background-size: 100% 100%, 132% auto, 34px 34px;
+          }
+
+          .family-tree-approved .rd3t-tree-container,
+          .family-tree-approved .rd3t-tree-container > svg {
+            touch-action: pan-y !important;
+            overscroll-behavior-y: auto;
+          }
+
+          .family-tree-approved .rd3t-tree-container > svg {
+            padding-top: 54px;
+            box-sizing: border-box;
+          }
+        }
+
         @media (max-width: 560px) {
           .member-panel-content {
             padding: 15px;
@@ -1213,7 +1350,7 @@ function FamilyTreePage() {
             gap: 3px;
           }
 
-          .family-tree-canvas {
+          .family-tree-canvas:not(.family-tree-approved) {
             min-height: 500px;
           }
         }
