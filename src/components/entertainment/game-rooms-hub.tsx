@@ -9,6 +9,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
+  Bot,
   Check,
   ChevronLeft,
   Clipboard,
@@ -28,6 +29,7 @@ import {
   Target,
   Timer,
   Trophy,
+  Trash2,
   UserCheck,
   Users,
   Wifi,
@@ -51,6 +53,7 @@ type GameKey =
   | "trivia";
 
 type RoomPhase = "lobby" | "playing" | "results";
+type BotDifficulty = "easy" | "medium" | "hard";
 
 type Player = {
   id: string;
@@ -59,6 +62,8 @@ type Player = {
   ready: boolean;
   joinedAt: number;
   isHost?: boolean;
+  isBot?: boolean;
+  difficulty?: BotDifficulty;
 };
 
 type RoomState = {
@@ -67,6 +72,7 @@ type RoomState = {
   round: number;
   scores: Record<string, number>;
   data: Record<string, any>;
+  bots: Player[];
 };
 
 type RoomAction = {
@@ -88,6 +94,7 @@ type GameMeta = {
   icon: LucideIcon;
   minPlayers: number;
   exactPlayers?: number;
+  maxPlayers?: number;
 };
 
 const GAMES: GameMeta[] = [
@@ -97,6 +104,7 @@ const GAMES: GameMeta[] = [
     short: "يد خاصة لكل لاعب ومطابقة ألوان وأرقام وأوراق سحب وتخطي.",
     icon: Zap,
     minPlayers: 2,
+    maxPlayers: 10,
   },
   {
     id: "saudi-deal",
@@ -105,6 +113,7 @@ const GAMES: GameMeta[] = [
     icon: Crown,
     minPlayers: 4,
     exactPlayers: 4,
+    maxPlayers: 4,
   },
   {
     id: "word-duel",
@@ -155,6 +164,7 @@ const GAMES: GameMeta[] = [
     icon: Target,
     minPlayers: 4,
     exactPlayers: 4,
+    maxPlayers: 4,
   },
 ];
 
@@ -242,6 +252,26 @@ const BALOOT_SUIT_LABEL: Record<BalootSuit, string> = {
   hearts: "♥",
   diamonds: "♦",
   clubs: "♣",
+};
+const BOT_NAMES = ["نواف", "تركي", "سلمان", "فيصل", "مشعل", "راكان", "سعود", "بدر", "فهد", "عبدالعزيز"];
+const BOT_WORDS: Record<string, string[]> = {
+  ا: ["أمل", "أسد", "أرض"],
+  ب: ["باب", "بحر", "برق"],
+  ت: ["تمر", "تاريخ", "تفاح"],
+  ج: ["جبل", "جسر", "جميل"],
+  ح: ["حصان", "حلم", "حديقة"],
+  د: ["دار", "درب", "دليل"],
+  ر: ["رياض", "ربيع", "رمل"],
+  س: ["سيف", "سماء", "سلام"],
+  ع: ["علم", "عائلة", "عسل"],
+  ف: ["فجر", "فخر", "فرح"],
+  ق: ["قمر", "قهوة", "قلب"],
+  ك: ["كتاب", "كرم", "كنز"],
+  م: ["مجلس", "مطر", "مجد"],
+  ن: ["نجم", "نخلة", "نور"],
+  هـ: ["هدية", "هلال", "هواء"],
+  ه: ["هدية", "هلال", "هواء"],
+  و: ["وطن", "ورد", "وفاء"],
 };
 
 function shuffle<T>(items: T[]): T[] {
@@ -446,7 +476,21 @@ function initialGameData(game: GameKey, players: Player[], round = 0): Record<st
 }
 
 function lobbyState(game: GameKey = "trivia"): RoomState {
-  return { phase: "lobby", game, round: 0, scores: {}, data: {} };
+  return { phase: "lobby", game, round: 0, scores: {}, data: {}, bots: [] };
+}
+
+function makeBotPlayer(existing: Player[], difficulty: BotDifficulty): Player {
+  const usedNames = new Set(existing.map((player) => player.name));
+  const baseName = BOT_NAMES.find((name) => !usedNames.has(`بوت ${name}`)) ?? `لاعب ${existing.length + 1}`;
+  return {
+    id: `bot-${makeGuestId()}`,
+    name: `بوت ${baseName}`,
+    avatarUrl: null,
+    ready: true,
+    joinedAt: Date.now() + existing.length,
+    isBot: true,
+    difficulty,
+  };
 }
 
 function startState(previous: RoomState, players: Player[]): RoomState {
@@ -862,11 +906,40 @@ function reduceBaloot(state: RoomState, action: RoomAction, players: Player[]): 
 }
 
 function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]): RoomState {
+  const bots = state.bots ?? [];
+  if (action.type === "add-bot" && state.phase === "lobby") {
+    const limit = gameMeta(state.game).maxPlayers ?? 12;
+    if (players.length >= limit) return state;
+    return { ...state, bots: [...bots, makeBotPlayer(players, action.value as BotDifficulty)] };
+  }
+  if (action.type === "fill-bots" && state.phase === "lobby") {
+    const meta = gameMeta(state.game);
+    const target = meta.exactPlayers ?? meta.minPlayers;
+    const nextBots = bots.slice();
+    const nextPlayers = players.slice();
+    while (nextPlayers.length < target) {
+      const bot = makeBotPlayer(nextPlayers, action.value as BotDifficulty);
+      nextBots.push(bot);
+      nextPlayers.push(bot);
+    }
+    return { ...state, bots: nextBots };
+  }
+  if (action.type === "remove-bot" && state.phase === "lobby") {
+    return { ...state, bots: bots.filter((bot) => bot.id !== action.value) };
+  }
+  if (action.type === "set-bot-difficulty" && state.phase === "lobby") {
+    return {
+      ...state,
+      bots: bots.map((bot) =>
+        bot.id === action.value?.botId ? { ...bot, difficulty: action.value.difficulty as BotDifficulty } : bot,
+      ),
+    };
+  }
   if (action.type === "set-game" && state.phase === "lobby") {
-    return lobbyState(action.value as GameKey);
+    return { ...lobbyState(action.value as GameKey), bots };
   }
   if (action.type === "start" && state.phase === "lobby") return startState(state, players);
-  if (action.type === "lobby") return lobbyState(state.game);
+  if (action.type === "lobby") return { ...lobbyState(state.game), bots };
   if (action.type === "finish") return { ...state, phase: "results" };
   if (state.phase !== "playing") return state;
 
@@ -989,6 +1062,279 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
   }
 
   return state;
+}
+
+function randomItem<T>(items: T[]): T | undefined {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function botDifficulty(bot: Player): BotDifficulty {
+  return bot.difficulty ?? "medium";
+}
+
+function unoBotAction(state: RoomState, bot: Player, players: Player[]): RoomAction | null {
+  const data = state.data;
+  const hand = (data.hands[bot.id] ?? []) as UnoCard[];
+  if (!hand.length) return null;
+  if (hand.length <= 2 && !data.unoCalled[bot.id]) return { type: "uno-call", playerId: bot.id };
+
+  let playable = hand.filter((card) => unoPlayable(card, data, hand));
+  if (data.drawnCardId) playable = playable.filter((card) => card.id === data.drawnCardId);
+  if (!playable.length) {
+    return data.drawnCardId
+      ? { type: "uno-pass", playerId: bot.id }
+      : { type: "uno-draw", playerId: bot.id };
+  }
+
+  const difficulty = botDifficulty(bot);
+  if (!data.drawnCardId && difficulty === "easy" && Math.random() < 0.22) {
+    return { type: "uno-draw", playerId: bot.id };
+  }
+  const valueScore: Record<string, number> = { wild4: 9, draw2: 8, skip: 7, reverse: 6, wild: 5 };
+  if (difficulty === "medium") playable.sort((a, b) => (valueScore[b.value] ?? 0) - (valueScore[a.value] ?? 0));
+  if (difficulty === "hard") {
+    const colorCount = UNO_COLORS.reduce<Record<string, number>>((acc, color) => {
+      acc[color] = hand.filter((card) => card.color === color).length;
+      return acc;
+    }, {});
+    playable.sort((a, b) =>
+      ((valueScore[b.value] ?? 0) + (colorCount[b.color] ?? 0)) -
+      ((valueScore[a.value] ?? 0) + (colorCount[a.color] ?? 0)),
+    );
+  }
+  const card = difficulty === "easy" ? randomItem(playable)! : playable[0];
+  let color: Exclude<UnoColor, "wild"> | undefined;
+  if (card.color === "wild") {
+    if (difficulty === "easy") color = randomItem(UNO_COLORS)!;
+    else {
+      color = UNO_COLORS.slice().sort(
+        (a, b) => hand.filter((item) => item.color === b).length - hand.filter((item) => item.color === a).length,
+      )[0];
+    }
+  }
+  return { type: "uno-play", playerId: bot.id, value: { cardId: card.id, color } };
+}
+
+function dealTargetWealth(data: any, playerId: string) {
+  return [...(data.banks[playerId] ?? []), ...(data.properties[playerId] ?? [])]
+    .reduce((sum: number, card: DealCard) => sum + card.value, 0);
+}
+
+function dealBotAction(state: RoomState, bot: Player, players: Player[]): RoomAction | null {
+  const data = state.data;
+  const hand = (data.hands[bot.id] ?? []) as DealCard[];
+  if (data.needsDraw) return { type: "deal-draw", playerId: bot.id };
+  const difficulty = botDifficulty(bot);
+  if (hand.length > 7) {
+    const card = difficulty === "easy"
+      ? randomItem(hand)!
+      : hand.slice().sort((a, b) => a.value - b.value)[0];
+    return { type: "deal-discard", playerId: bot.id, value: card.id };
+  }
+  if (data.actionsLeft <= 0 || !hand.length || (difficulty === "easy" && data.actionsLeft < 3 && Math.random() < 0.18)) {
+    return { type: "deal-end", playerId: bot.id };
+  }
+
+  const properties = hand.filter((card) => card.type === "property");
+  const actions = hand.filter((card) => card.type === "action");
+  const money = hand.filter((card) => card.type === "money");
+  let card: DealCard | undefined;
+  if (difficulty === "hard" && properties.length) {
+    const owned = (data.properties[bot.id] ?? []) as DealCard[];
+    card = properties.slice().sort((a, b) => {
+      const groupA = DEAL_GROUPS.find((group) => group.id === a.group);
+      const groupB = DEAL_GROUPS.find((group) => group.id === b.group);
+      const needA = (groupA?.size ?? 9) - owned.filter((item) => item.group === a.group).length;
+      const needB = (groupB?.size ?? 9) - owned.filter((item) => item.group === b.group).length;
+      return needA - needB;
+    })[0];
+  } else if (difficulty !== "easy") {
+    card = properties[0] ?? actions[0] ?? money[0];
+  } else {
+    card = randomItem(hand);
+  }
+  if (!card) return { type: "deal-end", playerId: bot.id };
+  if (card.type === "property") return { type: "deal-property", playerId: bot.id, value: { cardId: card.id } };
+  if (card.type === "money") return { type: "deal-bank", playerId: bot.id, value: { cardId: card.id } };
+
+  if (difficulty === "easy" && Math.random() < 0.45) {
+    return { type: "deal-bank", playerId: bot.id, value: { cardId: card.id } };
+  }
+  if (card.action === "draw2") return { type: "deal-action", playerId: bot.id, value: { cardId: card.id } };
+
+  const opponents = players.filter((player) => player.id !== bot.id);
+  if (card.action === "rent") {
+    const target = difficulty === "hard"
+      ? opponents.slice().sort((a, b) => dealTargetWealth(data, b.id) - dealTargetWealth(data, a.id))[0]
+      : randomItem(opponents);
+    if (target && dealTargetWealth(data, target.id) > 0) {
+      return { type: "deal-action", playerId: bot.id, value: { cardId: card.id, targetId: target.id } };
+    }
+  }
+
+  if (card.action === "steal") {
+    const choices = opponents.flatMap((target) =>
+      ((data.properties[target.id] ?? []) as DealCard[])
+        .filter((property) => {
+          const group = DEAL_GROUPS.find((item) => item.id === property.group);
+          const count = (data.properties[target.id] as DealCard[]).filter((item) => item.group === property.group).length;
+          return !group || count < group.size;
+        })
+        .map((property) => ({ target, property })),
+    );
+    const choice = difficulty === "hard"
+      ? choices.slice().sort((a, b) => {
+          const owned = (data.properties[bot.id] ?? []) as DealCard[];
+          return owned.filter((item) => item.group === b.property.group).length - owned.filter((item) => item.group === a.property.group).length;
+        })[0]
+      : randomItem(choices);
+    if (choice) {
+      return {
+        type: "deal-action",
+        playerId: bot.id,
+        value: { cardId: card.id, targetId: choice.target.id, propertyId: choice.property.id },
+      };
+    }
+  }
+  return { type: "deal-bank", playerId: bot.id, value: { cardId: card.id } };
+}
+
+function balootBotAction(state: RoomState, bot: Player, players: Player[]): RoomAction | null {
+  const data = state.data;
+  const hand = (data.hands[bot.id] ?? []) as BalootCard[];
+  const difficulty = botDifficulty(bot);
+
+  if (data.stage === "bidding") {
+    const sunPoints = hand.reduce((sum, card) => sum + balootCardPoints(card, "sun", null), 0);
+    const allowedSuits = BALOOT_SUITS.filter((suit) => data.biddingRound === 1 || suit !== data.buyCard.suit);
+    const bestSuit = allowedSuits.slice().sort(
+      (a, b) => hand.filter((card) => card.suit === b).length - hand.filter((card) => card.suit === a).length,
+    )[0];
+    const bestSuitCount = hand.filter((card) => card.suit === bestSuit).length + (data.buyCard.suit === bestSuit ? 1 : 0);
+
+    if (difficulty === "easy") {
+      if (Math.random() < 0.42) return { type: "baloot-pass", playerId: bot.id };
+      const mode = Math.random() < 0.5 ? "sun" : "hokm";
+      return { type: "baloot-bid", playerId: bot.id, value: { mode, trump: bestSuit } };
+    }
+    if (difficulty === "medium") {
+      if (bestSuitCount >= 3) return { type: "baloot-bid", playerId: bot.id, value: { mode: "hokm", trump: bestSuit } };
+      if (sunPoints >= 24) return { type: "baloot-bid", playerId: bot.id, value: { mode: "sun" } };
+      return { type: "baloot-pass", playerId: bot.id };
+    }
+    const suitPower = hand
+      .filter((card) => card.suit === bestSuit)
+      .reduce((sum, card) => sum + balootCardPoints(card, "hokm", bestSuit), 0);
+    if (bestSuitCount >= 3 && suitPower >= 24) {
+      return { type: "baloot-bid", playerId: bot.id, value: { mode: "hokm", trump: bestSuit } };
+    }
+    if (sunPoints >= 28) return { type: "baloot-bid", playerId: bot.id, value: { mode: "sun" } };
+    return { type: "baloot-pass", playerId: bot.id };
+  }
+
+  if (data.stage !== "playing" || !hand.length) return null;
+  const contract = data.contract as { mode: "sun" | "hokm"; trump: BalootSuit | null };
+  const leadSuit = data.trick[0]?.card?.suit as BalootSuit | undefined;
+  const legal = leadSuit && hand.some((card) => card.suit === leadSuit)
+    ? hand.filter((card) => card.suit === leadSuit)
+    : hand.slice();
+  if (!legal.length) return null;
+  let card: BalootCard;
+  if (difficulty === "easy") {
+    card = randomItem(legal)!;
+  } else if (!data.trick.length) {
+    card = legal.slice().sort((a, b) =>
+      difficulty === "hard"
+        ? balootCardPoints(b, contract.mode, contract.trump) - balootCardPoints(a, contract.mode, contract.trump)
+        : balootCardPoints(a, contract.mode, contract.trump) - balootCardPoints(b, contract.mode, contract.trump),
+    )[0];
+  } else {
+    const trickLead = data.trick[0].card.suit as BalootSuit;
+    const currentBest = data.trick.reduce((best: any, play: any) =>
+      balootCardStrength(play.card, trickLead, contract.mode, contract.trump) >
+      balootCardStrength(best.card, trickLead, contract.mode, contract.trump)
+        ? play
+        : best,
+    );
+    const botIndex = players.findIndex((player) => player.id === bot.id);
+    const winnerIndex = players.findIndex((player) => player.id === currentBest.playerId);
+    const lowest = legal.slice().sort((a, b) => balootCardPoints(a, contract.mode, contract.trump) - balootCardPoints(b, contract.mode, contract.trump));
+    if (difficulty === "hard" && botIndex % 2 === winnerIndex % 2) {
+      card = lowest[0];
+    } else if (difficulty === "hard") {
+      const bestStrength = balootCardStrength(currentBest.card, trickLead, contract.mode, contract.trump);
+      const winners = lowest.filter((candidate) => balootCardStrength(candidate, trickLead, contract.mode, contract.trump) > bestStrength);
+      card = winners[0] ?? lowest[0];
+    } else {
+      card = lowest[0];
+    }
+  }
+  return { type: "baloot-play", playerId: bot.id, value: card.id };
+}
+
+function chooseBotAction(state: RoomState, players: Player[]): RoomAction | null {
+  if (state.phase !== "playing") return null;
+  const bots = players.filter((player) => player.isBot);
+  if (!bots.length) return null;
+  const data = state.data;
+
+  if (state.game === "uno") {
+    const active = players[data.turnIndex % Math.max(players.length, 1)];
+    return active?.isBot ? unoBotAction(state, active, players) : null;
+  }
+  if (state.game === "saudi-deal") {
+    const active = players[data.turnIndex % Math.max(players.length, 1)];
+    return active?.isBot ? dealBotAction(state, active, players) : null;
+  }
+  if (state.game === "baloot") {
+    const active = data.stage === "bidding" ? players[data.bidTurnIndex] : players[data.turnIndex];
+    return active?.isBot ? balootBotAction(state, active, players) : null;
+  }
+  if (state.game === "trivia" && !data.revealed) {
+    const bot = bots.find((player) => data.answers[player.id] == null);
+    if (!bot) return null;
+    const question = TRIVIA_QUESTIONS[data.questionIndex % TRIVIA_QUESTIONS.length];
+    const chance = botDifficulty(bot) === "easy" ? 0.35 : botDifficulty(bot) === "medium" ? 0.68 : 0.92;
+    const wrong = question.options.map((_, index) => index).filter((index) => index !== question.correct);
+    const answer = Math.random() < chance ? question.correct : randomItem(wrong)!;
+    return { type: "answer", playerId: bot.id, value: answer };
+  }
+  if (state.game === "judge" && !data.revealed) {
+    const bot = bots.find((player) => data.votes[player.id] == null);
+    if (!bot) return null;
+    const target = randomItem(players.filter((player) => player.id !== bot.id)) ?? players[0];
+    return target ? { type: "vote", playerId: bot.id, value: target.id } : null;
+  }
+  if (state.game === "auction" && !data.revealed) {
+    const bot = bots.find((player) => data.bids[player.id] == null);
+    if (!bot) return null;
+    const base = botDifficulty(bot) === "easy" ? 3 : botDifficulty(bot) === "medium" ? 6 : 9;
+    return { type: "bid", playerId: bot.id, value: Math.max(1, base + Math.floor(Math.random() * 5) - 2) };
+  }
+  if (state.game === "challenge30") {
+    const active = players[data.activeIndex % Math.max(players.length, 1)];
+    if (!active?.isBot) return null;
+    if (data.finished) return { type: "next", playerId: active.id };
+    if (Date.now() >= data.endsAt) return { type: "end-turn", playerId: active.id };
+    const correctChance = botDifficulty(active) === "easy" ? 0.45 : botDifficulty(active) === "medium" ? 0.72 : 0.9;
+    return { type: Math.random() < correctChance ? "correct" : "skip", playerId: active.id };
+  }
+  if (state.game === "word-duel") {
+    const active = players[data.turnIndex % Math.max(players.length, 1)];
+    if (!active?.isBot) return null;
+    const options = BOT_WORDS[data.currentLetter] ?? [`${data.currentLetter}لام`];
+    const used = new Set((data.words ?? []).map((item: { word: string }) => item.word));
+    const word = options.find((item) => !used.has(item)) ?? `${data.currentLetter}${Math.floor(Math.random() * 99)}ار`;
+    return { type: "word", playerId: active.id, value: word };
+  }
+  return null;
+}
+
+function botThinkDelay(bot: Player | undefined) {
+  if (!bot) return 850;
+  if (botDifficulty(bot) === "easy") return 1250;
+  if (botDifficulty(bot) === "hard") return 520;
+  return 820;
 }
 
 function readDeviceId() {
@@ -1168,7 +1514,8 @@ export function GameRoomsHub() {
   const hostApply = useCallback(
     async (action: RoomAction) => {
       if (hostRef.current !== meRef.current.id) return;
-      const next = applyRoomAction(stateRef.current, action, playersRef.current);
+      const participants = [...playersRef.current, ...(stateRef.current.bots ?? [])];
+      const next = applyRoomAction(stateRef.current, action, participants);
       if (next === stateRef.current) return;
       stateRef.current = next;
       setState(next);
@@ -1358,6 +1705,18 @@ export function GameRoomsHub() {
     );
   }, [roomCode, state, hostId, ready]);
 
+  useEffect(() => {
+    if (!connected || hostId !== me.id || state.phase !== "playing") return;
+    const currentPlayers = [...players, ...(state.bots ?? [])];
+    const action = chooseBotAction(state, currentPlayers);
+    if (!action) return;
+    const bot = currentPlayers.find((player) => player.id === action.playerId && player.isBot);
+    const timer = window.setTimeout(() => {
+      void hostApply(action);
+    }, botThinkDelay(bot));
+    return () => window.clearTimeout(timer);
+  }, [connected, hostId, me.id, players, state, hostApply]);
+
   useEffect(() => () => {
     const channel = channelRef.current;
     if (channel) void supabase.removeChannel(channel);
@@ -1385,10 +1744,11 @@ export function GameRoomsHub() {
 
   const isHost = hostId === me.id;
   const selectedMeta = gameMeta(state.game);
+  const participants = useMemo(() => [...players, ...(state.bots ?? [])], [players, state.bots]);
   const minimumReached = selectedMeta.exactPlayers
-    ? players.length === selectedMeta.exactPlayers
-    : players.length >= selectedMeta.minPlayers;
-  const allReady = minimumReached && players.every((player) => player.ready);
+    ? participants.length === selectedMeta.exactPlayers
+    : participants.length >= selectedMeta.minPlayers;
+  const allReady = minimumReached && participants.every((player) => player.ready);
 
   if (booting) {
     return (
@@ -1417,7 +1777,7 @@ export function GameRoomsHub() {
         roomCode={roomCode}
         connected={connected}
         isHost={isHost}
-        playersCount={players.length}
+        playersCount={participants.length}
         onShare={shareRoom}
         onLeave={() => void leaveRoom()}
       />
@@ -1425,7 +1785,7 @@ export function GameRoomsHub() {
       {state.phase === "lobby" ? (
         <Lobby
           state={state}
-          players={players}
+          players={participants}
           me={me}
           isHost={isHost}
           ready={ready}
@@ -1434,10 +1794,14 @@ export function GameRoomsHub() {
           onReady={() => void toggleReady()}
           onSelectGame={(game) => void dispatch("set-game", game)}
           onStart={() => void dispatch("start")}
+          onAddBot={(difficulty) => void dispatch("add-bot", difficulty)}
+          onFillBots={(difficulty) => void dispatch("fill-bots", difficulty)}
+          onRemoveBot={(botId) => void dispatch("remove-bot", botId)}
+          onBotDifficulty={(botId, difficulty) => void dispatch("set-bot-difficulty", { botId, difficulty })}
         />
       ) : state.phase === "results" ? (
         <Results
-          players={players}
+          players={participants}
           scores={state.scores}
           isHost={isHost}
           onLobby={() => void dispatch("lobby")}
@@ -1445,7 +1809,7 @@ export function GameRoomsHub() {
       ) : (
         <GameBoard
           state={state}
-          players={players}
+          players={participants}
           me={me}
           isHost={isHost}
           now={now}
@@ -1662,6 +2026,10 @@ function Lobby({
   onReady,
   onSelectGame,
   onStart,
+  onAddBot,
+  onFillBots,
+  onRemoveBot,
+  onBotDifficulty,
 }: {
   state: RoomState;
   players: Player[];
@@ -1673,9 +2041,16 @@ function Lobby({
   onReady: () => void;
   onSelectGame: (game: GameKey) => void;
   onStart: () => void;
+  onAddBot: (difficulty: BotDifficulty) => void;
+  onFillBots: (difficulty: BotDifficulty) => void;
+  onRemoveBot: (botId: string) => void;
+  onBotDifficulty: (botId: string, difficulty: BotDifficulty) => void;
 }) {
   const selected = gameMeta(state.game);
   const SelectedIcon = selected.icon;
+  const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>("medium");
+  const roomLimit = selected.maxPlayers ?? 12;
+  const targetPlayers = selected.exactPlayers ?? selected.minPlayers;
   return (
     <div className="grid gap-5 lg:grid-cols-[1.3fr_.7fr]">
       <Surface className="p-5 sm:p-8">
@@ -1736,18 +2111,74 @@ function Lobby({
                   <p className="truncate text-sm font-black text-primary">
                     {player.name} {player.id === me.id ? "(أنت)" : ""}
                   </p>
-                  <p className={cn("text-[11px] font-bold", player.ready ? "text-emerald-600" : "text-muted-foreground")}>
-                    {player.ready ? "جاهز" : "بانتظار الجاهزية"}
-                  </p>
+                  {player.isBot ? (
+                    <select
+                      value={player.difficulty ?? "medium"}
+                      disabled={!isHost}
+                      onChange={(event) => onBotDifficulty(player.id, event.target.value as BotDifficulty)}
+                      className="mt-1 rounded-lg border border-border bg-card px-2 py-1 text-[11px] font-black text-primary outline-none"
+                    >
+                      <option value="easy">سهل</option>
+                      <option value="medium">متوسط</option>
+                      <option value="hard">صعب</option>
+                    </select>
+                  ) : (
+                    <p className={cn("text-[11px] font-bold", player.ready ? "text-emerald-600" : "text-muted-foreground")}>
+                      {player.ready ? "جاهز" : "بانتظار الجاهزية"}
+                    </p>
+                  )}
                 </div>
                 {player.id === (players.find((item) => item.isHost)?.id ?? "") || player.isHost ? (
                   <Crown className="size-5 text-gold-primary" />
+                ) : player.isBot && isHost ? (
+                  <button type="button" onClick={() => onRemoveBot(player.id)} aria-label={`حذف ${player.name}`} className="flex size-8 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600">
+                    <Trash2 className="size-4" />
+                  </button>
                 ) : player.ready ? (
                   <Check className="size-5 text-emerald-500" />
                 ) : null}
               </div>
             ))}
           </div>
+
+          {isHost && (
+            <div className="mt-4 space-y-3 border-t border-border/60 pt-4">
+              <div className="grid grid-cols-3 gap-2">
+                {(["easy", "medium", "hard"] as BotDifficulty[]).map((difficulty) => (
+                  <button
+                    key={difficulty}
+                    type="button"
+                    onClick={() => setBotDifficulty(difficulty)}
+                    className={cn(
+                      "rounded-xl px-2 py-2 text-[11px] font-black",
+                      botDifficulty === difficulty ? "bg-gold-primary text-[#10251e]" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {difficulty === "easy" ? "سهل" : difficulty === "medium" ? "متوسط" : "صعب"}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={players.length >= roomLimit}
+                  onClick={() => onAddBot(botDifficulty)}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/8 text-xs font-black text-primary disabled:opacity-35"
+                >
+                  <Bot className="size-4" /> إضافة بوت
+                </button>
+                <button
+                  type="button"
+                  disabled={players.length >= targetPlayers}
+                  onClick={() => onFillBots(botDifficulty)}
+                  className="min-h-11 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground disabled:opacity-35"
+                >
+                  إكمال المقاعد
+                </button>
+              </div>
+              <p className="text-center text-[11px] font-bold text-muted-foreground">تقدر تبدأ وحدك، والبوتات جاهزة تلقائيًا</p>
+            </div>
+          )}
         </Surface>
 
         <Surface className="overflow-hidden p-5 sm:p-7">
@@ -1801,6 +2232,13 @@ function Lobby({
 
 function PlayerAvatar({ player, size = "md" }: { player: Player; size?: "sm" | "md" | "lg" }) {
   const sizeClass = size === "sm" ? "size-8 text-xs" : size === "lg" ? "size-16 text-xl" : "size-11 text-sm";
+  if (player.isBot) {
+    return (
+      <span className={cn(sizeClass, "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gold-primary to-amber-700 text-[#10251e] ring-2 ring-gold-primary/35")}>
+        <Bot className={size === "lg" ? "size-8" : size === "sm" ? "size-4" : "size-5"} />
+      </span>
+    );
+  }
   return player.avatarUrl ? (
     <img src={player.avatarUrl} alt="" className={cn(sizeClass, "shrink-0 rounded-full object-cover ring-2 ring-gold-primary/35")} />
   ) : (
