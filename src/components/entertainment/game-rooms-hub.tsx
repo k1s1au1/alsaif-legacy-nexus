@@ -23,7 +23,9 @@ import {
   Loader2,
   LogOut,
   MapPin,
+  Maximize2,
   Medal,
+  Minimize2,
   Mountain,
   Play,
   RefreshCcw,
@@ -2313,38 +2315,131 @@ function GameBoard({
   const meta = gameMeta(state.game);
   const GameIcon = meta.icon;
   const logoUrl = useSiteLogo();
+  const [gameMode, setGameMode] = useState(false);
+  const gameModeRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!gameMode) return;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overscrollBehavior = "none";
+
+    const leaveOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setGameMode(false);
+    };
+    const syncFullscreenExit = () => {
+      const webkitDocument = document as Document & { webkitFullscreenElement?: Element | null };
+      if (!document.fullscreenElement && !webkitDocument.webkitFullscreenElement) setGameMode(false);
+    };
+
+    window.addEventListener("keydown", leaveOnEscape);
+    document.addEventListener("fullscreenchange", syncFullscreenExit);
+    document.addEventListener("webkitfullscreenchange", syncFullscreenExit);
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
+      window.removeEventListener("keydown", leaveOnEscape);
+      document.removeEventListener("fullscreenchange", syncFullscreenExit);
+      document.removeEventListener("webkitfullscreenchange", syncFullscreenExit);
+    };
+  }, [gameMode]);
+
+  const enterGameMode = async () => {
+    setGameMode(true);
+    const element = gameModeRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> | void }) | null;
+    try {
+      if (element?.requestFullscreen) await element.requestFullscreen();
+      else await element?.webkitRequestFullscreen?.();
+    } catch {
+      // iOS browsers may reject the native API; the fixed 100dvh game shell remains active.
+    }
+  };
+
+  const leaveGameMode = async () => {
+    setGameMode(false);
+    const webkitDocument = document as Document & {
+      webkitExitFullscreen?: () => Promise<void> | void;
+      webkitFullscreenElement?: Element | null;
+    };
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (webkitDocument.webkitFullscreenElement) await webkitDocument.webkitExitFullscreen?.();
+    } catch {
+      // The visual game shell is closed even if the browser owns fullscreen state.
+    }
+  };
+
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_260px]">
-      <Surface className="min-h-[520px] overflow-hidden p-5 sm:p-8">
-        <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5">
+    <div
+      ref={gameModeRef}
+      className={cn(
+        "grid gap-5 lg:grid-cols-[1fr_260px]",
+        gameMode && "fixed inset-0 z-[9999] block h-screen h-[100dvh] w-screen overflow-hidden bg-[#031d18]",
+      )}
+    >
+      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none")}>
+        <div
+          className={cn(
+            "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
+            gameMode && "mb-0 min-h-16 shrink-0 border-white/10 bg-[#062c25]/95 px-3 pb-2 text-white shadow-lg backdrop-blur-xl",
+          )}
+          style={gameMode ? { paddingTop: "max(.5rem, env(safe-area-inset-top))" } : undefined}
+        >
           <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-gold-primary/15">
-              <GameIcon className="size-6 text-gold-primary" />
+            <div className={cn("flex size-12 items-center justify-center rounded-2xl bg-gold-primary/15", gameMode && "size-10 rounded-xl bg-[#e6c675]/15")}>
+              <GameIcon className={cn("size-6 text-gold-primary", gameMode && "size-5 text-[#e6c675]")} />
             </div>
             <div>
-              <p className="text-xs font-bold text-muted-foreground">الجولة {state.round + 1}</p>
-              <h3 className="text-xl font-black text-primary">{meta.label}</h3>
+              <p className={cn("text-xs font-bold text-muted-foreground", gameMode && "text-white/55")}>الجولة {state.round + 1}</p>
+              <h3 className={cn("text-xl font-black text-primary", gameMode && "text-base text-white")}>{meta.label}</h3>
             </div>
           </div>
-          {isHost && (
-            <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
-              إنهاء اللعبة
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {!gameMode && (
+              <button
+                type="button"
+                onClick={() => void enterGameMode()}
+                className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground shadow lg:hidden"
+              >
+                <Maximize2 className="size-4" /> وضع اللعبة
+              </button>
+            )}
+            {!gameMode && isHost && (
+              <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
+                إنهاء اللعبة
+              </button>
+            )}
+            {gameMode && (
+              <button
+                type="button"
+                onClick={() => void leaveGameMode()}
+                className="flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-black text-white"
+                aria-label="إغلاق وضع اللعبة"
+              >
+                <Minimize2 className="size-4" /> رجوع
+              </button>
+            )}
+          </div>
         </div>
 
-        {state.game === "uno" && <UnoRoom state={state} players={players} me={me} logoUrl={logoUrl} dispatch={dispatch} />}
-        {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} logoUrl={logoUrl} dispatch={dispatch} />}
-        {state.game === "trivia" && <TriviaGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
-        {state.game === "judge" && <JudgeGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
-        {state.game === "challenge30" && <ChallengeGame state={state} players={players} me={me} isHost={isHost} now={now} dispatch={dispatch} />}
-        {state.game === "auction" && <AuctionRoom state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
-        {state.game === "word-duel" && <WordDuelRoom state={state} players={players} me={me} dispatch={dispatch} />}
-        {state.game === "wheel" && <WheelRoom state={state} players={players} isHost={isHost} dispatch={dispatch} />}
-        {state.game === "baloot" && <BalootRoom state={state} players={players} me={me} isHost={isHost} logoUrl={logoUrl} dispatch={dispatch} />}
+        <div
+          className={cn(gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2 sm:px-4")}
+          style={gameMode ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
+        >
+          {state.game === "uno" && <UnoRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
+          {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
+          {state.game === "trivia" && <TriviaGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
+          {state.game === "judge" && <JudgeGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
+          {state.game === "challenge30" && <ChallengeGame state={state} players={players} me={me} isHost={isHost} now={now} dispatch={dispatch} />}
+          {state.game === "auction" && <AuctionRoom state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
+          {state.game === "word-duel" && <WordDuelRoom state={state} players={players} me={me} dispatch={dispatch} />}
+          {state.game === "wheel" && <WheelRoom state={state} players={players} isHost={isHost} dispatch={dispatch} />}
+          {state.game === "baloot" && <BalootRoom state={state} players={players} me={me} isHost={isHost} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
+        </div>
       </Surface>
 
-      <ScoreRail players={players} scores={state.scores} hostId={players.find((player) => player.isHost)?.id} />
+      {!gameMode && <ScoreRail players={players} scores={state.scores} hostId={players.find((player) => player.isHost)?.id} />}
     </div>
   );
 }
@@ -2426,16 +2521,16 @@ function GameTableSurface({
       ? "from-[#f5e6bd] via-[#76502b] to-[#e2c17d]"
       : "from-[#d9b568] via-[#68401f] to-[#bd8b3e]";
   return (
-    <div className={cn("rounded-[38px] bg-gradient-to-br p-[6px] shadow-[0_28px_65px_-34px_rgba(2,20,16,.9)]", trimClass)}>
+    <div className={cn("rounded-[46%] bg-gradient-to-br p-[5px] shadow-[0_28px_65px_-34px_rgba(2,20,16,.9)] sm:rounded-[38px] sm:p-[6px]", trimClass)}>
       <div
-        className={cn("relative isolate overflow-hidden rounded-[31px] border border-[#f2d999]/50 bg-[#073d32] text-white", className)}
+        className={cn("relative isolate overflow-hidden rounded-[45%] border border-[#f2d999]/50 bg-[#073d32] text-white sm:rounded-[31px]", className)}
         style={{
           backgroundImage:
             "linear-gradient(135deg, rgba(255,255,255,.025) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.025) 50%, rgba(255,255,255,.025) 75%, transparent 75%, transparent)",
           backgroundSize: "28px 28px",
         }}
       >
-        <div aria-hidden className="pointer-events-none absolute inset-3 rounded-[23px] border border-[#e5c878]/18" />
+        <div aria-hidden className="pointer-events-none absolute inset-3 rounded-[44%] border border-[#e5c878]/18 sm:rounded-[23px]" />
         {children}
       </div>
     </div>
@@ -2527,9 +2622,17 @@ function BrandedCardBack({
   );
 }
 
-function CardHandTray({ children, className }: { children: ReactNode; className?: string }) {
+function CardHandTray({
+  children,
+  className,
+  immersive = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  immersive?: boolean;
+}) {
   return (
-    <div className="rounded-[32px] bg-gradient-to-br from-[#b58a43] via-[#5d381d] to-[#9d6d30] p-1.5 shadow-[0_18px_40px_-28px_rgba(0,0,0,.85)]">
+    <div className={cn("rounded-[32px] bg-gradient-to-br from-[#b58a43] via-[#5d381d] to-[#9d6d30] p-1.5 shadow-[0_18px_40px_-28px_rgba(0,0,0,.85)]", immersive && "sticky bottom-0 z-30 rounded-b-none")}>
       <div className={cn("flex min-h-48 gap-2 overflow-x-auto rounded-[26px] border border-[#e7cb8e]/30 bg-[#07382f] p-4 pb-5", className)}>
         {children}
       </div>
@@ -2592,12 +2695,14 @@ function UnoRoom({
   players,
   me,
   logoUrl,
+  immersive,
   dispatch,
 }: {
   state: RoomState;
   players: Player[];
   me: Player;
   logoUrl: string | null;
+  immersive: boolean;
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const data = state.data;
@@ -2623,9 +2728,9 @@ function UnoRoom({
   };
 
   return (
-    <div className="space-y-6">
-      <GameTableSurface trim="uno" className="min-h-[510px] sm:min-h-[590px]">
-        <div className="relative z-10 flex min-h-[510px] flex-col justify-between p-3 sm:min-h-[590px] sm:p-5">
+    <div className={cn("space-y-6", immersive && "space-y-3")}>
+      <GameTableSurface trim="uno" className={cn("min-h-[480px] sm:min-h-[590px]", immersive && "h-[54dvh] min-h-[440px] max-h-[540px]")}>
+        <div className={cn("relative z-10 flex min-h-[480px] flex-col justify-between px-7 py-4 sm:min-h-[590px] sm:p-5", immersive && "h-full min-h-0")}>
           <div className="flex min-h-[92px] gap-2 overflow-x-auto pb-1">
             {opponents.map((player) => {
               const cardCount = data.hands[player.id]?.length ?? 0;
@@ -2725,7 +2830,7 @@ function UnoRoom({
             </button>
           )}
         </div>
-        <CardHandTray>
+        <CardHandTray immersive={immersive}>
           {hand.map((card) => {
             const playable = amActive && unoPlayable(card, data, hand) && (!data.drawnCardId || data.drawnCardId === card.id);
             return <UnoCardFace key={card.id} card={card} active={playable} onClick={() => play(card)} />;
@@ -2831,21 +2936,21 @@ function PlayerDealSeat({
     <TablePlayerSeat
       player={player}
       active={highlight}
-      detail={`${data.hands[player.id]?.length ?? 0} أوراق`}
+      detail={`${data.hands[player.id]?.length ?? 0} ورق · ${sets}/3`}
       className={cn("w-full", className)}
     >
-      <div className="mt-2 flex h-8 items-end justify-center -space-x-2 space-x-reverse overflow-hidden">
+      <div className="mt-1 flex h-5 items-end justify-center -space-x-1.5 space-x-reverse overflow-hidden sm:mt-2 sm:h-8 sm:-space-x-2">
         {properties.slice(0, 7).map((property) => (
           <span
             key={property.id}
             title={property.label}
-            className="h-7 w-5 shrink-0 rounded-t border border-white/70 shadow"
+            className="h-5 w-4 shrink-0 rounded-t border border-white/70 shadow sm:h-7 sm:w-5"
             style={{ backgroundColor: dealGroup(property)?.color ?? "#49645b" }}
           />
         ))}
         {!properties.length && <span className="self-center text-[10px] font-bold text-white/40">لا توجد أملاك</span>}
       </div>
-      <div className="mt-2 flex items-center justify-between gap-1 border-t border-white/10 pt-1.5 text-[10px] font-black text-white/70 sm:text-[11px]">
+      <div className="mt-2 hidden items-center justify-between gap-1 border-t border-white/10 pt-1.5 text-[11px] font-black text-white/70 sm:flex">
         <span>{sets}/3 مجموعات</span>
         <span className="text-[#edcc7c]">{bank.reduce((sum, card) => sum + card.value, 0)}م</span>
       </div>
@@ -2858,12 +2963,14 @@ function SaudiDealRoom({
   players,
   me,
   logoUrl,
+  immersive,
   dispatch,
 }: {
   state: RoomState;
   players: Player[];
   me: Player;
   logoUrl: string | null;
+  immersive: boolean;
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const data = state.data;
@@ -2873,8 +2980,13 @@ function SaudiDealRoom({
   const seatedPlayers = useMemo(() => orderPlayersAroundMe(players, me.id), [players, me.id]);
   const lastDiscard = data.discard[data.discard.length - 1] as DealCard | undefined;
   const [pendingAction, setPendingAction] = useState<DealCard | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const selectedCard = hand.find((card) => card.id === selectedCardId) ?? null;
 
   useEffect(() => setPendingAction(null), [data.turnIndex]);
+  useEffect(() => {
+    if (selectedCardId && !hand.some((card) => card.id === selectedCardId)) setSelectedCardId(null);
+  }, [hand, selectedCardId]);
 
   const useAction = (card: DealCard) => {
     if (card.action === "draw2") {
@@ -2892,9 +3004,28 @@ function SaudiDealRoom({
   ];
 
   return (
-    <div className="space-y-6">
-      <GameTableSurface className="min-h-[570px] sm:min-h-[680px]">
-        <div className="relative z-10 grid min-h-[570px] grid-cols-[72px_minmax(112px,1fr)_72px] grid-rows-[118px_minmax(300px,1fr)_118px] gap-1.5 p-2 sm:min-h-[680px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[138px_minmax(360px,1fr)_138px] sm:gap-3 sm:p-5">
+    <div className={cn("space-y-5", immersive && "space-y-3")}>
+      <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-3 py-2.5 text-[#173e34] shadow-sm sm:px-5 sm:py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {active && <PlayerAvatar player={active} size="sm" />}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-black sm:text-base">الدور عند {active?.name ?? "—"}</p>
+            <p className="truncate text-xs font-bold text-[#173e34]/55">{data.lastAction}</p>
+          </div>
+        </div>
+        <div className="rounded-xl bg-[#0b5b47] px-3 py-2 text-center text-white">
+          <p className="text-[10px] font-bold text-white/60">{data.needsDraw ? "الخطوة التالية" : "المتبقي"}</p>
+          <p className="text-sm font-black text-[#efd07d]">{data.needsDraw ? "اسحب" : `${data.actionsLeft} حركات`}</p>
+        </div>
+      </div>
+
+      <GameTableSurface className={cn("min-h-[500px] sm:min-h-[680px]", immersive && "h-[48dvh] min-h-[340px] max-h-[460px] sm:min-h-[440px] sm:max-h-[580px]")}>
+        <div
+          className={cn(
+            "relative z-10 grid min-h-[500px] grid-cols-[66px_minmax(120px,1fr)_66px] grid-rows-[94px_minmax(270px,1fr)_94px] gap-1 p-2 sm:min-h-[680px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[138px_minmax(360px,1fr)_138px] sm:gap-3 sm:p-5",
+            immersive && "h-full min-h-0 grid-rows-[72px_minmax(190px,1fr)_72px] sm:min-h-0 sm:grid-rows-[94px_minmax(250px,1fr)_94px]",
+          )}
+        >
           {seatedPlayers.slice(0, 4).map((player, index) => (
             <PlayerDealSeat
               key={player.id}
@@ -2905,38 +3036,28 @@ function SaudiDealRoom({
             />
           ))}
 
-          <div className="relative z-10 col-span-3 col-start-1 row-start-2 flex flex-col items-center justify-center gap-3 sm:gap-4">
-            <div className="max-w-[190px] rounded-full border border-[#edcc7c]/35 bg-black/25 px-3 py-1.5 text-center backdrop-blur-sm sm:max-w-[260px] sm:px-5 sm:py-2">
-              <p className="truncate text-[11px] font-black text-[#f0d184] sm:text-sm">الدور عند {active?.name ?? "—"}</p>
-              <p className="mt-0.5 truncate text-[10px] font-bold text-white/60 sm:text-xs">{data.lastAction}</p>
-            </div>
-
-            <TableBrandSeal logoUrl={logoUrl} className="size-24 sm:size-40" />
-
-            <div className="flex items-end justify-center gap-2 sm:gap-3">
+          <div className="relative z-10 col-span-3 col-start-1 row-start-2 flex flex-col items-center justify-center gap-2">
+            <div className="relative h-[134px] w-[240px] sm:h-[190px] sm:w-[330px]">
+              <TableBrandSeal logoUrl={logoUrl} className="absolute left-1/2 top-1/2 size-[82px] -translate-x-1/2 -translate-y-1/2 sm:size-32" />
               <button
                 type="button"
                 aria-label={`سحب ${hand.length ? 2 : 5} أوراق من رزمة سعودي ديل`}
                 disabled={!amActive || !data.needsDraw}
                 onClick={() => void dispatch("deal-draw")}
-                className="transition enabled:hover:-translate-y-1 enabled:active:scale-95 disabled:opacity-55"
+                className="absolute right-0 top-1/2 -translate-y-1/2 transition enabled:hover:-translate-y-[54%] enabled:active:scale-95 disabled:opacity-55"
               >
                 <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "سعودي ديل"} count={data.drawPile.length} compact className="h-24 w-16 sm:h-28 sm:w-[72px]" />
               </button>
               {lastDiscard ? (
-                <DealCardFace card={lastDiscard} compact />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2"><DealCardFace card={lastDiscard} compact /></div>
               ) : (
-                <div className="flex h-24 w-16 items-center justify-center rounded-2xl border-2 border-dashed border-white/20 text-center text-[10px] font-black text-white/35 sm:h-28 sm:w-[72px]">
+                <div className="absolute left-0 top-1/2 flex h-24 w-16 -translate-y-1/2 items-center justify-center rounded-2xl border-2 border-dashed border-white/20 text-center text-[10px] font-black text-white/35 sm:h-28 sm:w-[72px]">
                   الأوراق<br />الملعوبة
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-2 rounded-full bg-black/25 px-3 py-1 text-[10px] font-black text-white/65 sm:text-xs">
-              <span>الحركات: <b className="text-[#f0d184]">{data.actionsLeft}</b></span>
-              <span className="text-white/25">•</span>
-              <span>الرزمة: <b className="text-[#f0d184]">{data.drawPile.length}</b></span>
-            </div>
+            <p className="max-w-[220px] truncate rounded-full bg-black/25 px-3 py-1 text-center text-[10px] font-bold text-white/60 sm:max-w-[300px] sm:text-xs">{data.lastAction}</p>
           </div>
         </div>
       </GameTableSurface>
@@ -2998,11 +3119,11 @@ function SaudiDealRoom({
         </div>
       )}
 
-      <div>
+      <div className={cn(immersive && "sticky bottom-0 z-30 -mx-2 rounded-t-[28px] bg-[#031d18]/95 p-2 pt-3 shadow-[0_-18px_40px_-26px_rgba(0,0,0,.9)] backdrop-blur-xl")}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold text-muted-foreground">أوراقك الخاصة</p>
-            <p className="font-black text-primary">{hand.length} أوراق</p>
+            <p className={cn("font-black text-primary", immersive && "text-white")}>{hand.length} أوراق</p>
           </div>
           {amActive && !data.needsDraw && (
             <button
@@ -3017,30 +3138,75 @@ function SaudiDealRoom({
         </div>
 
         {hand.length > 7 && <p className="mb-3 rounded-xl bg-rose-500/10 p-3 text-center text-xs font-black text-rose-700">يجب التخلص من {hand.length - 7} أوراق قبل إنهاء الدور</p>}
-        <CardHandTray className="min-h-64 gap-3">
+
+        {selectedCard && amActive && !data.needsDraw && (data.actionsLeft > 0 || hand.length > 7) && (
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            {selectedCard.type === "property" && data.actionsLeft > 0 && (
+              <button
+                type="button"
+                onClick={() => void dispatch("deal-property", { cardId: selectedCard.id })}
+                className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gold-primary px-4 text-sm font-black text-[#10251e] shadow"
+              >
+                <MapPin className="size-5" /> إضافة للمجموعة
+              </button>
+            )}
+            {selectedCard.type === "money" && data.actionsLeft > 0 && (
+              <button
+                type="button"
+                onClick={() => void dispatch("deal-bank", { cardId: selectedCard.id })}
+                className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 text-sm font-black text-white shadow"
+              >
+                <Banknote className="size-5" /> إيداع بالبنك
+              </button>
+            )}
+            {selectedCard.type === "action" && data.actionsLeft > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => useAction(selectedCard)}
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gold-primary px-3 text-sm font-black text-[#10251e] shadow"
+                >
+                  <Sparkles className="size-5" /> استخدام البطاقة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void dispatch("deal-bank", { cardId: selectedCard.id })}
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-600 px-3 text-sm font-black text-white"
+                >
+                  <Banknote className="size-5" /> إيداع بالبنك
+                </button>
+              </>
+            )}
+            {hand.length > 7 && (
+              <button
+                type="button"
+                onClick={() => void dispatch("deal-discard", selectedCard.id)}
+                className="col-span-2 min-h-11 rounded-2xl bg-rose-600 px-4 text-sm font-black text-white"
+              >
+                التخلص من البطاقة
+              </button>
+            )}
+          </div>
+        )}
+
+        {amActive && !data.needsDraw && data.actionsLeft > 0 && !selectedCard && (
+          <p className={cn("mb-3 text-center text-xs font-bold text-muted-foreground", immersive && "text-white/55")}>اختر بطاقة من يدك لتظهر الحركة المناسبة</p>
+        )}
+
+        <CardHandTray className={cn("min-h-60 gap-3 pt-5", immersive && "min-h-[205px] max-h-[34dvh]")}>
           {hand.map((card) => (
-            <div key={card.id} className="w-32 shrink-0 space-y-2">
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => setSelectedCardId(card.id)}
+              aria-pressed={selectedCardId === card.id}
+              className={cn(
+                "w-32 shrink-0 rounded-2xl text-right transition sm:w-36",
+                selectedCardId === card.id ? "-translate-y-2 ring-4 ring-[#f0cd72] ring-offset-2 ring-offset-[#07382f]" : "opacity-90 hover:-translate-y-1 hover:opacity-100",
+              )}
+            >
               <DealCardFace card={card} />
-              {amActive && !data.needsDraw && data.actionsLeft > 0 && (
-                <div className="grid gap-1.5">
-                  {card.type === "property" && (
-                    <button type="button" onClick={() => void dispatch("deal-property", { cardId: card.id })} className="rounded-xl bg-primary px-2 py-2 text-[11px] font-black text-primary-foreground">إضافة للأراضي</button>
-                  )}
-                  {card.type === "money" && (
-                    <button type="button" onClick={() => void dispatch("deal-bank", { cardId: card.id })} className="rounded-xl bg-emerald-600 px-2 py-2 text-[11px] font-black text-white">إيداع بالبنك</button>
-                  )}
-                  {card.type === "action" && (
-                    <>
-                      <button type="button" onClick={() => useAction(card)} className="rounded-xl bg-gold-primary px-2 py-2 text-[11px] font-black text-[#10251e]">استخدام الأكشن</button>
-                      <button type="button" onClick={() => void dispatch("deal-bank", { cardId: card.id })} className="rounded-xl bg-emerald-600 px-2 py-2 text-[11px] font-black text-white">إيداع بالبنك</button>
-                    </>
-                  )}
-                </div>
-              )}
-              {amActive && hand.length > 7 && (
-                <button type="button" onClick={() => void dispatch("deal-discard", card.id)} className="w-full rounded-xl bg-rose-600 px-2 py-2 text-[11px] font-black text-white">تخلص من الورقة</button>
-              )}
-            </div>
+            </button>
           ))}
         </CardHandTray>
       </div>
@@ -3480,26 +3646,28 @@ function WheelRoom({
 function BalootCardFace({
   card,
   compact = false,
+  mini = false,
   active = true,
   onClick,
 }: {
   card: BalootCard;
   compact?: boolean;
+  mini?: boolean;
   active?: boolean;
   onClick?: () => void;
 }) {
   const red = card.suit === "hearts" || card.suit === "diamonds";
   const content = (
     <>
-      <span className="absolute right-2 top-1 text-lg font-black">{card.rank}</span>
-      <span className={cn("font-serif", compact ? "text-3xl" : "text-5xl sm:text-6xl")}>{BALOOT_SUIT_LABEL[card.suit]}</span>
-      <span className="absolute bottom-1 left-2 rotate-180 text-lg font-black">{card.rank}</span>
+      <span className={cn("absolute right-2 top-1 font-black", mini ? "text-sm" : "text-lg")}>{card.rank}</span>
+      <span className={cn("font-serif", mini ? "text-2xl" : compact ? "text-3xl" : "text-5xl sm:text-6xl")}>{BALOOT_SUIT_LABEL[card.suit]}</span>
+      <span className={cn("absolute bottom-1 left-2 rotate-180 font-black", mini ? "text-sm" : "text-lg")}>{card.rank}</span>
     </>
   );
   const className = cn(
     "relative flex shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-lg",
     red ? "text-red-600" : "text-slate-950",
-    compact ? "h-24 w-16" : "h-36 w-24 sm:h-44 sm:w-28",
+    mini ? "h-16 w-11" : compact ? "h-24 w-16" : "h-36 w-24 sm:h-44 sm:w-28",
     !active && "opacity-35",
   );
   if (!onClick) return <div className={className}>{content}</div>;
@@ -3564,6 +3732,7 @@ function BalootRoom({
   me,
   isHost,
   logoUrl,
+  immersive,
   dispatch,
 }: {
   state: RoomState;
@@ -3571,6 +3740,7 @@ function BalootRoom({
   me: Player;
   isHost: boolean;
   logoUrl: string | null;
+  immersive: boolean;
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const data = state.data;
@@ -3591,8 +3761,8 @@ function BalootRoom({
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <BalootTeams players={players} data={data} />
-        <GameTableSurface trim="ivory" className="min-h-[560px] sm:min-h-[650px]">
-          <div className="relative z-10 grid min-h-[560px] grid-cols-[72px_minmax(112px,1fr)_72px] grid-rows-[118px_minmax(290px,1fr)_118px] gap-1.5 p-2 sm:min-h-[650px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[136px_minmax(330px,1fr)_136px] sm:gap-3 sm:p-5">
+        <GameTableSurface trim="ivory" className={cn("min-h-[500px] sm:min-h-[650px]", immersive && "h-[50dvh] min-h-[350px] max-h-[480px] sm:min-h-[440px] sm:max-h-[580px]")}>
+          <div className={cn("relative z-10 grid min-h-[500px] grid-cols-[66px_minmax(120px,1fr)_66px] grid-rows-[94px_minmax(270px,1fr)_94px] gap-1 p-2 sm:min-h-[650px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[136px_minmax(330px,1fr)_136px] sm:gap-3 sm:p-5", immersive && "h-full min-h-0 grid-rows-[72px_minmax(200px,1fr)_72px] sm:min-h-0 sm:grid-rows-[94px_minmax(250px,1fr)_94px]")}>
             {seatedPlayers.slice(0, 4).map((player, index) => (
               <BalootTableSeat
                 key={player.id}
@@ -3655,7 +3825,7 @@ function BalootRoom({
 
         <div>
           <p className="mb-3 text-xs font-black text-muted-foreground">أوراقك الخاصة قبل الشراء</p>
-          <CardHandTray>
+          <CardHandTray immersive={immersive}>
             {hand.map((card) => <BalootCardFace key={card.id} card={card} />)}
           </CardHandTray>
         </div>
@@ -3693,11 +3863,11 @@ function BalootRoom({
   const mustFollow = leadSuit && hand.some((card) => card.suit === leadSuit);
   const myTurn = active?.id === me.id;
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", immersive && "space-y-3")}>
       <BalootTeams players={players} data={data} />
 
-      <GameTableSurface trim="ivory" className="min-h-[600px] sm:min-h-[700px]">
-        <div className="relative z-10 grid min-h-[600px] grid-cols-[72px_minmax(112px,1fr)_72px] grid-rows-[118px_minmax(340px,1fr)_118px] gap-1.5 p-2 sm:min-h-[700px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[136px_minmax(380px,1fr)_136px] sm:gap-3 sm:p-5">
+      <GameTableSurface trim="ivory" className={cn("min-h-[520px] sm:min-h-[700px]", immersive && "h-[52dvh] min-h-[370px] max-h-[500px] sm:min-h-[460px] sm:max-h-[600px]")}>
+        <div className={cn("relative z-10 grid min-h-[520px] grid-cols-[66px_minmax(120px,1fr)_66px] grid-rows-[94px_minmax(290px,1fr)_94px] gap-1 p-2 sm:min-h-[700px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[136px_minmax(380px,1fr)_136px] sm:gap-3 sm:p-5", immersive && "h-full min-h-0 grid-rows-[72px_minmax(220px,1fr)_72px] sm:min-h-0 sm:grid-rows-[94px_minmax(270px,1fr)_94px]")}>
           {seatedPlayers.slice(0, 4).map((player, index) => (
             <BalootTableSeat
               key={player.id}
@@ -3716,8 +3886,8 @@ function BalootRoom({
               <span className="max-w-28 truncate text-white/75 sm:max-w-none">الدور عند {active?.name ?? "—"}</span>
             </div>
 
-            <div className="relative h-[278px] w-[214px] sm:h-[310px] sm:w-[280px]">
-              <TableBrandSeal logoUrl={logoUrl} className="absolute left-1/2 top-1/2 size-24 -translate-x-1/2 -translate-y-1/2 sm:size-36" />
+            <div className={cn("relative h-[278px] w-[214px] sm:h-[310px] sm:w-[280px]", immersive && "h-[198px] w-[180px] sm:h-[230px] sm:w-[230px]")}>
+              <TableBrandSeal logoUrl={logoUrl} className={cn("absolute left-1/2 top-1/2 size-24 -translate-x-1/2 -translate-y-1/2 sm:size-36", immersive && "size-16 sm:size-24")} />
               {data.trick.map((play: { playerId: string; card: BalootCard }, index: number) => {
                 const player = players.find((item) => item.id === play.playerId);
                 const trickPositions = [
@@ -3728,7 +3898,7 @@ function BalootRoom({
                 ];
                 return (
                   <div key={play.playerId} className={cn("absolute space-y-0.5 text-center", trickPositions[index])}>
-                    <BalootCardFace card={play.card} compact />
+                    <BalootCardFace card={play.card} compact mini={immersive} />
                     <p className="max-w-16 truncate text-[9px] font-black text-white/70">{player?.name}</p>
                   </div>
                 );
@@ -3751,7 +3921,7 @@ function BalootRoom({
           <div><p className="text-xs font-bold text-muted-foreground">أوراقك الخاصة</p><p className="font-black text-primary">{hand.length} أوراق</p></div>
           {myTurn && mustFollow && <span className="rounded-full bg-gold-primary/15 px-3 py-1 text-[11px] font-black text-gold-primary">الزم النوع {BALOOT_SUIT_LABEL[leadSuit!]}</span>}
         </div>
-        <CardHandTray>
+        <CardHandTray immersive={immersive}>
           {hand.map((card) => {
             const legal = myTurn && (!mustFollow || card.suit === leadSuit);
             return <BalootCardFace key={card.id} card={card} active={legal} onClick={() => void dispatch("baloot-play", card.id)} />;
