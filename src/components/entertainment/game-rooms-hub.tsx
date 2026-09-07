@@ -40,6 +40,8 @@ import { TRIVIA_QUESTIONS } from "@/data/trivia-questions";
 import { cn } from "@/lib/utils";
 
 type GameKey =
+  | "uno"
+  | "saudi-deal"
   | "word-duel"
   | "baloot"
   | "wheel"
@@ -85,9 +87,25 @@ type GameMeta = {
   short: string;
   icon: LucideIcon;
   minPlayers: number;
+  exactPlayers?: number;
 };
 
 const GAMES: GameMeta[] = [
+  {
+    id: "uno",
+    label: "أونو",
+    short: "يد خاصة لكل لاعب ومطابقة ألوان وأرقام وأوراق سحب وتخطي.",
+    icon: Zap,
+    minPlayers: 2,
+  },
+  {
+    id: "saudi-deal",
+    label: "سعودي ديل",
+    short: "اجمع الأراضي، كوّن ثلاث مجموعات، واستخدم بطاقات الأكشن.",
+    icon: Crown,
+    minPlayers: 4,
+    exactPlayers: 4,
+  },
   {
     id: "word-duel",
     label: "سجال الحروف",
@@ -133,9 +151,10 @@ const GAMES: GameMeta[] = [
   {
     id: "baloot",
     label: "البلوت",
-    short: "حاسبة صكّة مشتركة تتحدث عند الجميع لحظيًا.",
+    short: "توزيع وشراء صن أو حكم وأكلات بين فريقين من أربعة لاعبين.",
     icon: Target,
-    minPlayers: 2,
+    minPlayers: 4,
+    exactPlayers: 4,
   },
 ];
 
@@ -174,6 +193,199 @@ const AUCTION_PROMPTS = [
 const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق", "ك", "م", "ن", "هـ", "و"];
 const SESSION_KEY = "alsaif-live-game-room-v1";
 
+type UnoColor = "red" | "blue" | "green" | "yellow" | "wild";
+type UnoCard = {
+  id: string;
+  color: UnoColor;
+  value: string;
+};
+
+type DealCard = {
+  id: string;
+  type: "property" | "money" | "action";
+  label: string;
+  value: number;
+  group?: string;
+  action?: "draw2" | "rent" | "steal";
+};
+
+type BalootSuit = "spades" | "hearts" | "diamonds" | "clubs";
+type BalootCard = {
+  id: string;
+  suit: BalootSuit;
+  rank: "7" | "8" | "9" | "J" | "Q" | "K" | "10" | "A";
+};
+
+const UNO_COLORS: Exclude<UnoColor, "wild">[] = ["red", "blue", "green", "yellow"];
+const UNO_COLOR_LABELS: Record<Exclude<UnoColor, "wild">, string> = {
+  red: "أحمر",
+  blue: "أزرق",
+  green: "أخضر",
+  yellow: "أصفر",
+};
+
+const DEAL_GROUPS = [
+  { id: "najd", label: "نجد", color: "#b7791f", size: 2 },
+  { id: "hijaz", label: "الحجاز", color: "#2563eb", size: 3 },
+  { id: "sharqiya", label: "الشرقية", color: "#0891b2", size: 3 },
+  { id: "shamal", label: "الشمال", color: "#7c3aed", size: 2 },
+  { id: "janoub", label: "الجنوب", color: "#16a34a", size: 3 },
+  { id: "wasat", label: "الوسطى", color: "#dc2626", size: 3 },
+  { id: "sahil", label: "الساحل", color: "#ea580c", size: 2 },
+  { id: "wadi", label: "الوادي", color: "#475569", size: 2 },
+] as const;
+
+const BALOOT_SUITS: BalootSuit[] = ["spades", "hearts", "diamonds", "clubs"];
+const BALOOT_RANKS: BalootCard["rank"][] = ["7", "8", "9", "J", "Q", "K", "10", "A"];
+const BALOOT_SUIT_LABEL: Record<BalootSuit, string> = {
+  spades: "♠",
+  hearts: "♥",
+  diamonds: "♦",
+  clubs: "♣",
+};
+
+function shuffle<T>(items: T[]): T[] {
+  const copy = items.slice();
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swap]] = [copy[swap], copy[index]];
+  }
+  return copy;
+}
+
+function copyData<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function buildUnoDeck(): UnoCard[] {
+  const cards: UnoCard[] = [];
+  let id = 0;
+  UNO_COLORS.forEach((color) => {
+    cards.push({ id: `uno-${id++}`, color, value: "0" });
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "draw2"].forEach((value) => {
+      cards.push({ id: `uno-${id++}`, color, value });
+      cards.push({ id: `uno-${id++}`, color, value });
+    });
+  });
+  for (let index = 0; index < 4; index += 1) {
+    cards.push({ id: `uno-${id++}`, color: "wild", value: "wild" });
+    cards.push({ id: `uno-${id++}`, color: "wild", value: "wild4" });
+  }
+  return shuffle(cards);
+}
+
+function initialUnoData(players: Player[]) {
+  const deck = buildUnoDeck();
+  const hands: Record<string, UnoCard[]> = {};
+  players.forEach((player) => {
+    hands[player.id] = deck.splice(0, 7);
+  });
+  let firstIndex = deck.findIndex((card) => card.color !== "wild");
+  if (firstIndex < 0) firstIndex = 0;
+  const [first] = deck.splice(firstIndex, 1);
+  return {
+    hands,
+    drawPile: deck,
+    discard: [first],
+    currentColor: first.color,
+    turnIndex: 0,
+    direction: 1,
+    drawnCardId: null,
+    unoCalled: {},
+    winnerId: null,
+  };
+}
+
+function buildDealDeck(): DealCard[] {
+  const cards: DealCard[] = [];
+  let id = 0;
+  DEAL_GROUPS.forEach((group) => {
+    for (let index = 0; index < group.size * 2; index += 1) {
+      cards.push({
+        id: `deal-${id++}`,
+        type: "property",
+        label: `أرض ${group.label}`,
+        value: Math.max(1, group.size - 1),
+        group: group.id,
+      });
+    }
+  });
+  [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 5, 5, 10].forEach((value) => {
+    cards.push({ id: `deal-${id++}`, type: "money", label: `${value} مليون`, value });
+  });
+  for (let index = 0; index < 6; index += 1) {
+    cards.push({ id: `deal-${id++}`, type: "action", label: "فرصة استثمار", value: 1, action: "draw2" });
+  }
+  for (let index = 0; index < 8; index += 1) {
+    cards.push({ id: `deal-${id++}`, type: "action", label: "تحصيل إيجار", value: 2, action: "rent" });
+  }
+  for (let index = 0; index < 5; index += 1) {
+    cards.push({ id: `deal-${id++}`, type: "action", label: "استحواذ على أرض", value: 3, action: "steal" });
+  }
+  return shuffle(cards);
+}
+
+function initialDealData(players: Player[]) {
+  const deck = buildDealDeck();
+  const hands: Record<string, DealCard[]> = {};
+  const banks: Record<string, DealCard[]> = {};
+  const properties: Record<string, DealCard[]> = {};
+  players.forEach((player) => {
+    hands[player.id] = deck.splice(0, 5);
+    banks[player.id] = [];
+    properties[player.id] = [];
+  });
+  return {
+    hands,
+    banks,
+    properties,
+    drawPile: deck,
+    discard: [],
+    turnIndex: 0,
+    needsDraw: true,
+    actionsLeft: 3,
+    winnerId: null,
+    lastAction: "بدأت الجولة",
+  };
+}
+
+function buildBalootDeck(): BalootCard[] {
+  let id = 0;
+  return shuffle(
+    BALOOT_SUITS.flatMap((suit) =>
+      BALOOT_RANKS.map((rank) => ({ id: `baloot-${id++}`, suit, rank })),
+    ),
+  );
+}
+
+function initialBalootData(players: Player[], matchScore: [number, number] = [0, 0], dealerIndex = 3) {
+  const deck = buildBalootDeck();
+  const hands: Record<string, BalootCard[]> = {};
+  players.forEach((player) => {
+    hands[player.id] = deck.splice(0, 5);
+  });
+  const buyCard = deck.shift()!;
+  return {
+    stage: "bidding",
+    hands,
+    drawPile: deck,
+    buyCard,
+    dealerIndex,
+    bidTurnIndex: nextIndex(dealerIndex, players.length),
+    biddingRound: 1,
+    passes: 0,
+    contract: null,
+    trick: [],
+    leaderIndex: 0,
+    turnIndex: 0,
+    teamTricks: [0, 0],
+    rawPoints: [0, 0],
+    matchScore,
+    roundPoints: null,
+    lastTrickWinnerId: null,
+  };
+}
+
 function gameMeta(id: GameKey) {
   return GAMES.find((game) => game.id === id) ?? GAMES[0];
 }
@@ -201,6 +413,10 @@ function nextIndex(current: number, length: number) {
 
 function initialGameData(game: GameKey, players: Player[], round = 0): Record<string, any> {
   switch (game) {
+    case "uno":
+      return initialUnoData(players);
+    case "saudi-deal":
+      return initialDealData(players);
     case "trivia":
       return { questionIndex: round % TRIVIA_QUESTIONS.length, answers: {}, revealed: false };
     case "judge":
@@ -225,7 +441,7 @@ function initialGameData(game: GameKey, players: Player[], round = 0): Record<st
     case "wheel":
       return { winnerId: null, spin: 0 };
     case "baloot":
-      return { us: 0, them: 0, history: [] };
+      return initialBalootData(players);
   }
 }
 
@@ -247,6 +463,404 @@ function startState(previous: RoomState, players: Player[]): RoomState {
   };
 }
 
+function wrappedIndex(index: number, length: number) {
+  if (!length) return 0;
+  return ((index % length) + length) % length;
+}
+
+function unoAdvance(index: number, direction: number, steps: number, players: Player[]) {
+  return wrappedIndex(index + direction * steps, players.length);
+}
+
+function refillUnoDrawPile(data: any) {
+  if (data.drawPile.length || data.discard.length <= 1) return;
+  const top = data.discard[data.discard.length - 1];
+  data.drawPile = shuffle(data.discard.slice(0, -1));
+  data.discard = [top];
+}
+
+function takeUnoCards(data: any, count: number): UnoCard[] {
+  const result: UnoCard[] = [];
+  for (let index = 0; index < count; index += 1) {
+    refillUnoDrawPile(data);
+    const card = data.drawPile.shift();
+    if (card) result.push(card);
+  }
+  return result;
+}
+
+function unoPlayable(card: UnoCard, data: any, hand: UnoCard[]) {
+  const top = data.discard[data.discard.length - 1] as UnoCard;
+  if (card.value === "wild4") {
+    return !hand.some((item) => item.id !== card.id && item.color === data.currentColor);
+  }
+  return card.color === "wild" || card.color === data.currentColor || card.value === top.value;
+}
+
+function reduceUno(state: RoomState, action: RoomAction, players: Player[]): RoomState {
+  const data = copyData(state.data);
+  const active = players[data.turnIndex % Math.max(players.length, 1)];
+  if (active?.id !== action.playerId || data.winnerId) return state;
+  const hand = (data.hands[action.playerId] ?? []) as UnoCard[];
+
+  if (action.type === "uno-call" && hand.length <= 2) {
+    data.unoCalled[action.playerId] = true;
+    return { ...state, data };
+  }
+
+  if (action.type === "uno-draw") {
+    if (data.drawnCardId) return state;
+    const [card] = takeUnoCards(data, 1);
+    if (!card) return state;
+    hand.push(card);
+    data.hands[action.playerId] = hand;
+    data.drawnCardId = card.id;
+    return { ...state, data };
+  }
+
+  if (action.type === "uno-pass" && data.drawnCardId) {
+    data.drawnCardId = null;
+    data.unoCalled[action.playerId] = false;
+    data.turnIndex = unoAdvance(data.turnIndex, data.direction, 1, players);
+    return { ...state, data };
+  }
+
+  if (action.type !== "uno-play") return state;
+  const cardIndex = hand.findIndex((card) => card.id === action.value?.cardId);
+  if (cardIndex < 0) return state;
+  const card = hand[cardIndex];
+  if (data.drawnCardId && data.drawnCardId !== card.id) return state;
+  if (!unoPlayable(card, data, hand)) return state;
+  if (card.color === "wild" && !UNO_COLORS.includes(action.value?.color)) return state;
+
+  hand.splice(cardIndex, 1);
+  data.hands[action.playerId] = hand;
+  data.discard.push(card);
+  data.currentColor = card.color === "wild" ? action.value.color : card.color;
+  data.drawnCardId = null;
+
+  if (hand.length === 0) {
+    data.winnerId = action.playerId;
+    const scores = { ...state.scores, [action.playerId]: scoreFor(state.scores, action.playerId) + 1 };
+    return { ...state, phase: "results", scores, data };
+  }
+
+  if (hand.length !== 1) data.unoCalled[action.playerId] = false;
+  let direction = data.direction as number;
+  let steps = 1;
+  if (card.value === "reverse") {
+    direction *= -1;
+    data.direction = direction;
+    steps = players.length === 2 ? 2 : 1;
+  }
+  if (card.value === "skip") steps = 2;
+  if (card.value === "draw2" || card.value === "wild4") {
+    const targetIndex = unoAdvance(data.turnIndex, direction, 1, players);
+    const target = players[targetIndex];
+    if (target) {
+      const targetHand = (data.hands[target.id] ?? []) as UnoCard[];
+      targetHand.push(...takeUnoCards(data, card.value === "draw2" ? 2 : 4));
+      data.hands[target.id] = targetHand;
+    }
+    steps = 2;
+  }
+  data.turnIndex = unoAdvance(data.turnIndex, direction, steps, players);
+  return { ...state, data };
+}
+
+function refillDealDrawPile(data: any) {
+  if (data.drawPile.length || !data.discard.length) return;
+  data.drawPile = shuffle(data.discard);
+  data.discard = [];
+}
+
+function takeDealCards(data: any, count: number): DealCard[] {
+  const result: DealCard[] = [];
+  for (let index = 0; index < count; index += 1) {
+    refillDealDrawPile(data);
+    const card = data.drawPile.shift();
+    if (card) result.push(card);
+  }
+  return result;
+}
+
+function completedDealSets(cards: DealCard[]) {
+  return DEAL_GROUPS.filter((group) => cards.filter((card) => card.group === group.id).length >= group.size).length;
+}
+
+function finishDealMove(state: RoomState, data: any, playerId: string, players: Player[]): RoomState {
+  const sets = completedDealSets(data.properties[playerId] ?? []);
+  if (sets >= 3) {
+    data.winnerId = playerId;
+    const scores = { ...state.scores, [playerId]: scoreFor(state.scores, playerId) + 1 };
+    return { ...state, phase: "results", scores, data };
+  }
+  data.actionsLeft -= 1;
+  if (data.actionsLeft <= 0) {
+    data.turnIndex = nextIndex(data.turnIndex, players.length);
+    data.actionsLeft = 3;
+    data.needsDraw = true;
+  }
+  return { ...state, data };
+}
+
+function takeDealPayment(data: any, payerId: string, amount: number): DealCard[] {
+  const bank = (data.banks[payerId] ?? []) as DealCard[];
+  const properties = (data.properties[payerId] ?? []) as DealCard[];
+  const paid: DealCard[] = [];
+  let total = 0;
+  while (bank.length && total < amount) {
+    const card = bank.shift()!;
+    paid.push(card);
+    total += card.value;
+  }
+  while (properties.length && total < amount) {
+    const card = properties.pop()!;
+    paid.push(card);
+    total += card.value;
+  }
+  data.banks[payerId] = bank;
+  data.properties[payerId] = properties;
+  return paid;
+}
+
+function reduceDeal(state: RoomState, action: RoomAction, players: Player[]): RoomState {
+  const data = copyData(state.data);
+  const active = players[data.turnIndex % Math.max(players.length, 1)];
+  if (active?.id !== action.playerId || data.winnerId) return state;
+  const hand = (data.hands[action.playerId] ?? []) as DealCard[];
+
+  if (action.type === "deal-draw" && data.needsDraw) {
+    hand.push(...takeDealCards(data, hand.length ? 2 : 5));
+    data.hands[action.playerId] = hand;
+    data.needsDraw = false;
+    data.lastAction = `${active.name} سحب أوراقه`;
+    return { ...state, data };
+  }
+
+  if (action.type === "deal-discard" && hand.length > 7) {
+    const index = hand.findIndex((card) => card.id === action.value);
+    if (index < 0) return state;
+    const [card] = hand.splice(index, 1);
+    data.discard.push(card);
+    data.hands[action.playerId] = hand;
+    return { ...state, data };
+  }
+
+  if (action.type === "deal-end" && !data.needsDraw && hand.length <= 7) {
+    data.turnIndex = nextIndex(data.turnIndex, players.length);
+    data.actionsLeft = 3;
+    data.needsDraw = true;
+    data.lastAction = `انتهى دور ${active.name}`;
+    return { ...state, data };
+  }
+
+  if (data.needsDraw || data.actionsLeft <= 0) return state;
+  const cardIndex = hand.findIndex((card) => card.id === action.value?.cardId);
+  if (cardIndex < 0) return state;
+  const card = hand[cardIndex];
+
+  if (action.type === "deal-bank" && (card.type === "money" || card.type === "action")) {
+    hand.splice(cardIndex, 1);
+    data.hands[action.playerId] = hand;
+    data.banks[action.playerId].push(card);
+    data.lastAction = `${active.name} أضاف بطاقة إلى البنك`;
+    return finishDealMove(state, data, action.playerId, players);
+  }
+
+  if (action.type === "deal-property" && card.type === "property") {
+    hand.splice(cardIndex, 1);
+    data.hands[action.playerId] = hand;
+    data.properties[action.playerId].push(card);
+    data.lastAction = `${active.name} أضاف ${card.label}`;
+    return finishDealMove(state, data, action.playerId, players);
+  }
+
+  if (action.type !== "deal-action" || card.type !== "action") return state;
+  const targetId = action.value?.targetId as string | undefined;
+  if (card.action !== "draw2" && (!targetId || targetId === action.playerId)) return state;
+  hand.splice(cardIndex, 1);
+  data.hands[action.playerId] = hand;
+  data.discard.push(card);
+
+  if (card.action === "draw2") {
+    hand.push(...takeDealCards(data, 2));
+    data.lastAction = `${active.name} حصل على فرصة استثمار`;
+  }
+
+  if (card.action === "rent" && targetId) {
+    const ownProperties = data.properties[action.playerId] as DealCard[];
+    const groupCounts = DEAL_GROUPS.map((group) => ownProperties.filter((item) => item.group === group.id).length);
+    const rent = Math.max(1, Math.min(5, ...groupCounts));
+    const payment = takeDealPayment(data, targetId, rent);
+    payment.forEach((paidCard) => {
+      if (paidCard.type === "property") data.properties[action.playerId].push(paidCard);
+      else data.banks[action.playerId].push(paidCard);
+    });
+    const target = players.find((player) => player.id === targetId);
+    data.lastAction = `${active.name} حصّل ${rent} مليون من ${target?.name ?? "لاعب"}`;
+  }
+
+  if (card.action === "steal" && targetId) {
+    const targetProperties = data.properties[targetId] as DealCard[];
+    const propertyIndex = targetProperties.findIndex((item) => item.id === action.value?.propertyId);
+    if (propertyIndex >= 0) {
+      const property = targetProperties[propertyIndex];
+      const group = DEAL_GROUPS.find((item) => item.id === property.group);
+      const groupCount = targetProperties.filter((item) => item.group === property.group).length;
+      if (!group || groupCount < group.size) {
+        targetProperties.splice(propertyIndex, 1);
+        data.properties[action.playerId].push(property);
+        data.lastAction = `${active.name} استحوذ على ${property.label}`;
+      }
+    }
+  }
+
+  return finishDealMove(state, data, action.playerId, players);
+}
+
+function finishBalootBidding(data: any, players: Player[], buyerIndex: number, mode: "sun" | "hokm", trump: BalootSuit | null) {
+  players.forEach((player, index) => {
+    const extra = index === buyerIndex ? 2 : 3;
+    if (index === buyerIndex) data.hands[player.id].push(data.buyCard);
+    data.hands[player.id].push(...data.drawPile.splice(0, extra));
+  });
+  data.contract = { mode, trump, buyerId: players[buyerIndex].id, buyerIndex };
+  data.stage = "playing";
+  data.leaderIndex = buyerIndex;
+  data.turnIndex = buyerIndex;
+  data.trick = [];
+  data.teamTricks = [0, 0];
+  data.rawPoints = [0, 0];
+  data.roundPoints = null;
+  return data;
+}
+
+function balootCardStrength(card: BalootCard, leadSuit: BalootSuit, mode: "sun" | "hokm", trump: BalootSuit | null) {
+  const sunOrder: BalootCard["rank"][] = ["7", "8", "9", "J", "Q", "K", "10", "A"];
+  const hokmOrder: BalootCard["rank"][] = ["7", "8", "Q", "K", "10", "A", "9", "J"];
+  if (mode === "hokm" && trump && card.suit === trump) return 200 + hokmOrder.indexOf(card.rank);
+  if (card.suit === leadSuit) return 100 + sunOrder.indexOf(card.rank);
+  return 0;
+}
+
+function balootCardPoints(card: BalootCard, mode: "sun" | "hokm", trump: BalootSuit | null) {
+  if (mode === "hokm" && card.suit === trump) {
+    return ({ J: 20, "9": 14, A: 11, "10": 10, K: 4, Q: 3, "8": 0, "7": 0 } as Record<string, number>)[card.rank];
+  }
+  return ({ A: 11, "10": 10, K: 4, Q: 3, J: 2, "9": 0, "8": 0, "7": 0 } as Record<string, number>)[card.rank];
+}
+
+function reduceBaloot(state: RoomState, action: RoomAction, players: Player[]): RoomState {
+  if (players.length !== 4) return state;
+  const data = copyData(state.data);
+
+  if (data.stage === "round-end" && action.type === "baloot-next-round") {
+    const nextData = initialBalootData(players, data.matchScore, nextIndex(data.dealerIndex, players.length));
+    return { ...state, round: state.round + 1, data: nextData };
+  }
+
+  if (data.stage === "bidding") {
+    const bidder = players[data.bidTurnIndex];
+    if (bidder?.id !== action.playerId) return state;
+    if (action.type === "baloot-pass") {
+      data.passes += 1;
+      if (data.passes >= players.length) {
+        if (data.biddingRound === 1) {
+          data.biddingRound = 2;
+          data.passes = 0;
+          data.bidTurnIndex = nextIndex(data.dealerIndex, players.length);
+        } else {
+          return {
+            ...state,
+            data: initialBalootData(players, data.matchScore, nextIndex(data.dealerIndex, players.length)),
+          };
+        }
+      } else {
+        data.bidTurnIndex = nextIndex(data.bidTurnIndex, players.length);
+      }
+      return { ...state, data };
+    }
+    if (action.type === "baloot-bid") {
+      const mode = action.value?.mode as "sun" | "hokm";
+      if (mode !== "sun" && mode !== "hokm") return state;
+      let trump: BalootSuit | null = null;
+      if (mode === "hokm") {
+        trump = data.biddingRound === 1 ? data.buyCard.suit : action.value?.trump;
+        if (!BALOOT_SUITS.includes(trump as BalootSuit)) return state;
+        if (data.biddingRound === 2 && trump === data.buyCard.suit) return state;
+      }
+      return { ...state, data: finishBalootBidding(data, players, data.bidTurnIndex, mode, trump) };
+    }
+    return state;
+  }
+
+  if (data.stage !== "playing" || action.type !== "baloot-play") return state;
+  const active = players[data.turnIndex];
+  if (active?.id !== action.playerId) return state;
+  const hand = (data.hands[action.playerId] ?? []) as BalootCard[];
+  const cardIndex = hand.findIndex((card) => card.id === action.value);
+  if (cardIndex < 0) return state;
+  const card = hand[cardIndex];
+  const leadSuit = data.trick[0]?.card?.suit as BalootSuit | undefined;
+  if (leadSuit && hand.some((item) => item.suit === leadSuit) && card.suit !== leadSuit) return state;
+
+  hand.splice(cardIndex, 1);
+  data.hands[action.playerId] = hand;
+  data.trick.push({ playerId: action.playerId, card });
+  if (data.trick.length < 4) {
+    data.turnIndex = nextIndex(data.turnIndex, players.length);
+    return { ...state, data };
+  }
+
+  const contract = data.contract as { mode: "sun" | "hokm"; trump: BalootSuit | null; buyerId: string; buyerIndex: number };
+  const trickLead = data.trick[0].card.suit as BalootSuit;
+  const winningPlay = data.trick.reduce((best: any, play: any) =>
+    balootCardStrength(play.card, trickLead, contract.mode, contract.trump) >
+    balootCardStrength(best.card, trickLead, contract.mode, contract.trump)
+      ? play
+      : best,
+  );
+  const winnerIndex = players.findIndex((player) => player.id === winningPlay.playerId);
+  const winningTeam = winnerIndex % 2;
+  const trickPoints = data.trick.reduce(
+    (sum: number, play: any) => sum + balootCardPoints(play.card, contract.mode, contract.trump),
+    0,
+  );
+  data.rawPoints[winningTeam] += trickPoints;
+  data.teamTricks[winningTeam] += 1;
+  data.lastTrickWinnerId = winningPlay.playerId;
+
+  const roundFinished = players.every((player) => data.hands[player.id].length === 0);
+  if (!roundFinished) {
+    data.trick = [];
+    data.leaderIndex = winnerIndex;
+    data.turnIndex = winnerIndex;
+    return { ...state, data };
+  }
+
+  data.rawPoints[winningTeam] += 10;
+  const totalPoints = contract.mode === "sun" ? 26 : 16;
+  let teamZero = contract.mode === "sun" ? Math.round(data.rawPoints[0] / 5) : Math.round(data.rawPoints[0] / 10);
+  teamZero = Math.max(0, Math.min(totalPoints, teamZero));
+  let roundPoints: [number, number] = [teamZero, totalPoints - teamZero];
+  const buyerTeam = contract.buyerIndex % 2;
+  if (roundPoints[buyerTeam] <= roundPoints[1 - buyerTeam]) {
+    roundPoints = buyerTeam === 0 ? [0, totalPoints] : [totalPoints, 0];
+  }
+  data.roundPoints = roundPoints;
+  data.matchScore = [data.matchScore[0] + roundPoints[0], data.matchScore[1] + roundPoints[1]];
+  data.stage = "round-end";
+  data.trick = [];
+
+  const scores = { ...state.scores };
+  players.forEach((player, index) => {
+    scores[player.id] = data.matchScore[index % 2];
+  });
+  const matchFinished = data.matchScore[0] >= 152 || data.matchScore[1] >= 152;
+  return { ...state, phase: matchFinished ? "results" : state.phase, scores, data };
+}
+
 function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]): RoomState {
   if (action.type === "set-game" && state.phase === "lobby") {
     return lobbyState(action.value as GameKey);
@@ -255,6 +869,10 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
   if (action.type === "lobby") return lobbyState(state.game);
   if (action.type === "finish") return { ...state, phase: "results" };
   if (state.phase !== "playing") return state;
+
+  if (state.game === "uno") return reduceUno(state, action, players);
+  if (state.game === "saudi-deal") return reduceDeal(state, action, players);
+  if (state.game === "baloot") return reduceBaloot(state, action, players);
 
   const data = state.data;
   const scores = { ...state.scores };
@@ -368,35 +986,6 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
   if (state.game === "wheel" && action.type === "spin" && players.length) {
     const winner = players[Math.floor(Math.random() * players.length)];
     return { ...state, data: { winnerId: winner.id, spin: (data.spin ?? 0) + 1 } };
-  }
-
-  if (state.game === "baloot") {
-    if (action.type === "score") {
-      const us = Math.max(0, Number(action.value?.us) || 0);
-      const them = Math.max(0, Number(action.value?.them) || 0);
-      return {
-        ...state,
-        data: {
-          ...data,
-          us: data.us + us,
-          them: data.them + them,
-          history: [{ us, them }, ...(data.history ?? [])].slice(0, 20),
-        },
-      };
-    }
-    if (action.type === "undo" && data.history?.length) {
-      const [last, ...history] = data.history;
-      return {
-        ...state,
-        data: {
-          ...data,
-          us: Math.max(0, data.us - last.us),
-          them: Math.max(0, data.them - last.them),
-          history,
-        },
-      };
-    }
-    if (action.type === "reset-score") return { ...state, data: initialGameData("baloot", players) };
   }
 
   return state;
@@ -796,7 +1385,9 @@ export function GameRoomsHub() {
 
   const isHost = hostId === me.id;
   const selectedMeta = gameMeta(state.game);
-  const minimumReached = players.length >= selectedMeta.minPlayers;
+  const minimumReached = selectedMeta.exactPlayers
+    ? players.length === selectedMeta.exactPlayers
+    : players.length >= selectedMeta.minPlayers;
   const allReady = minimumReached && players.every((player) => player.ready);
 
   if (booting) {
@@ -1195,7 +1786,9 @@ function Lobby({
           )}
           <p className="mt-3 text-center text-[11px] font-bold text-muted-foreground">
             {!minimumReached
-              ? `تحتاج اللعبة إلى ${selected.minPlayers} لاعبين على الأقل`
+              ? selected.exactPlayers
+                ? `هذه اللعبة تحتاج ${selected.exactPlayers} لاعبين بالضبط`
+                : `تحتاج اللعبة إلى ${selected.minPlayers} لاعبين على الأقل`
               : allReady
                 ? "الكل جاهز — يمكن البدء"
                 : "بانتظار جاهزية جميع اللاعبين"}
@@ -1286,20 +1879,22 @@ function GameBoard({
               <h3 className="text-xl font-black text-primary">{meta.label}</h3>
             </div>
           </div>
-          {isHost && state.game !== "baloot" && (
+          {isHost && (
             <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
               إنهاء اللعبة
             </button>
           )}
         </div>
 
+        {state.game === "uno" && <UnoRoom state={state} players={players} me={me} dispatch={dispatch} />}
+        {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} dispatch={dispatch} />}
         {state.game === "trivia" && <TriviaGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
         {state.game === "judge" && <JudgeGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
         {state.game === "challenge30" && <ChallengeGame state={state} players={players} me={me} isHost={isHost} now={now} dispatch={dispatch} />}
         {state.game === "auction" && <AuctionRoom state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
         {state.game === "word-duel" && <WordDuelRoom state={state} players={players} me={me} dispatch={dispatch} />}
         {state.game === "wheel" && <WheelRoom state={state} players={players} isHost={isHost} dispatch={dispatch} />}
-        {state.game === "baloot" && <BalootRoom state={state} isHost={isHost} dispatch={dispatch} />}
+        {state.game === "baloot" && <BalootRoom state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
       </Surface>
 
       <ScoreRail players={players} scores={state.scores} hostId={players.find((player) => player.isHost)?.id} />
@@ -1360,6 +1955,409 @@ function PrimaryAction({
     >
       {children}
     </button>
+  );
+}
+
+function unoValueLabel(value: string) {
+  if (value === "skip") return "تخطي";
+  if (value === "reverse") return "عكس";
+  if (value === "draw2") return "+2";
+  if (value === "wild") return "اختيار لون";
+  if (value === "wild4") return "+4";
+  return value;
+}
+
+function UnoCardFace({
+  card,
+  small = false,
+  active = true,
+  onClick,
+}: {
+  card: UnoCard;
+  small?: boolean;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const colorClass: Record<UnoColor, string> = {
+    red: "from-rose-500 to-red-700",
+    blue: "from-blue-500 to-blue-800",
+    green: "from-emerald-500 to-green-800",
+    yellow: "from-amber-300 to-amber-500 text-[#2b2513]",
+    wild: "from-slate-900 via-[#183a32] to-black",
+  };
+  const content = (
+    <>
+      <span className="absolute right-2 top-1.5 text-xs font-black">{unoValueLabel(card.value)}</span>
+      <span className="flex aspect-[.72] w-[70%] rotate-12 items-center justify-center rounded-[50%] bg-white/90 text-center text-xl font-black text-slate-900 shadow-inner sm:text-2xl">
+        {unoValueLabel(card.value)}
+      </span>
+      <span className="absolute bottom-1.5 left-2 rotate-180 text-xs font-black">{unoValueLabel(card.value)}</span>
+    </>
+  );
+  const className = cn(
+    "relative flex shrink-0 select-none items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-gradient-to-br font-black text-white shadow-xl",
+    colorClass[card.color],
+    small ? "h-24 w-16" : "h-36 w-24 sm:h-44 sm:w-28",
+    !active && "opacity-35 grayscale-[.35]",
+  );
+  if (!onClick) return <div className={className}>{content}</div>;
+  return (
+    <button type="button" disabled={!active} onClick={onClick} className={cn(className, active && "transition hover:-translate-y-2 active:scale-95")}>
+      {content}
+    </button>
+  );
+}
+
+function UnoRoom({
+  state,
+  players,
+  me,
+  dispatch,
+}: {
+  state: RoomState;
+  players: Player[];
+  me: Player;
+  dispatch: (type: string, value?: any) => Promise<void>;
+}) {
+  const data = state.data;
+  const hand = (data.hands[me.id] ?? []) as UnoCard[];
+  const active = players[data.turnIndex % Math.max(players.length, 1)];
+  const amActive = active?.id === me.id;
+  const top = data.discard[data.discard.length - 1] as UnoCard;
+  const [choosingWild, setChoosingWild] = useState<UnoCard | null>(null);
+  const colorClass: Record<string, string> = {
+    red: "bg-red-600",
+    blue: "bg-blue-600",
+    green: "bg-emerald-600",
+    yellow: "bg-amber-400 text-slate-900",
+  };
+
+  const play = (card: UnoCard) => {
+    if (card.color === "wild") {
+      setChoosingWild(card);
+      return;
+    }
+    void dispatch("uno-play", { cardId: card.id });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {players.filter((player) => player.id !== me.id).map((player) => (
+          <div key={player.id} className={cn("min-w-32 rounded-2xl border p-3 text-center", active?.id === player.id ? "border-gold-primary bg-gold-primary/10" : "border-border bg-muted/30")}>
+            <PlayerAvatar player={player} />
+            <p className="mt-2 truncate text-xs font-black text-primary">{player.name}</p>
+            <p className="text-xs font-bold text-muted-foreground">{data.hands[player.id]?.length ?? 0} أوراق</p>
+            {data.unoCalled[player.id] && <span className="mt-1 inline-block rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black text-white">أونو!</span>}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid items-center gap-5 rounded-[32px] bg-gradient-to-br from-[#083f34] to-[#061d18] p-5 text-white sm:grid-cols-[1fr_auto_1fr] sm:p-8">
+        <div className="text-center sm:text-right">
+          <p className="text-xs font-black text-gold-primary">الدور الآن</p>
+          <p className="mt-1 text-xl font-black">{active?.name ?? "—"}</p>
+          <div className="mt-3 flex items-center justify-center gap-2 sm:justify-start">
+            <span className={cn("size-4 rounded-full", colorClass[data.currentColor])} />
+            <span className="text-sm font-bold text-white/70">اللون: {UNO_COLOR_LABELS[data.currentColor as Exclude<UnoColor, "wild">]}</span>
+          </div>
+        </div>
+
+        <div className="flex justify-center gap-3">
+          <button
+            type="button"
+            disabled={!amActive || Boolean(data.drawnCardId)}
+            onClick={() => void dispatch("uno-draw")}
+            className="relative h-36 w-24 rounded-2xl border-4 border-white bg-gradient-to-br from-slate-950 via-rose-700 to-slate-950 shadow-2xl disabled:opacity-40 sm:h-44 sm:w-28"
+          >
+            <span className="absolute inset-3 flex rotate-12 items-center justify-center rounded-[50%] border-2 border-white/70 text-lg font-black">أونو</span>
+          </button>
+          <UnoCardFace card={top} />
+        </div>
+
+        <div className="text-center sm:text-left">
+          <p className="text-xs font-bold text-white/55">المتبقي في الرزمة</p>
+          <p className="text-4xl font-black text-gold-primary">{data.drawPile.length}</p>
+          <p className="mt-2 text-xs font-bold text-white/60">{data.direction === 1 ? "اتجاه اللعب المعتاد" : "اتجاه اللعب معكوس"}</p>
+        </div>
+      </div>
+
+      {choosingWild && (
+        <div className="rounded-3xl border-2 border-gold-primary bg-gold-primary/8 p-5 text-center">
+          <p className="mb-4 font-black text-primary">اختر اللون الذي سيكمل عليه اللعب</p>
+          <div className="grid grid-cols-4 gap-2">
+            {UNO_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => {
+                  void dispatch("uno-play", { cardId: choosingWild.id, color });
+                  setChoosingWild(null);
+                }}
+                className={cn("h-14 rounded-2xl text-xs font-black text-white", colorClass[color])}
+              >
+                {UNO_COLOR_LABELS[color]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold text-muted-foreground">أوراقك الخاصة</p>
+            <p className="font-black text-primary">{hand.length} أوراق</p>
+          </div>
+          {amActive && hand.length <= 2 && !data.unoCalled[me.id] && (
+            <button type="button" onClick={() => void dispatch("uno-call")} className="rounded-full bg-rose-600 px-5 py-2 text-sm font-black text-white shadow-lg">
+              أونو!
+            </button>
+          )}
+        </div>
+        <div className="flex min-h-48 gap-2 overflow-x-auto rounded-3xl bg-muted/30 p-4 pb-5">
+          {hand.map((card) => {
+            const playable = amActive && unoPlayable(card, data, hand) && (!data.drawnCardId || data.drawnCardId === card.id);
+            return <UnoCardFace key={card.id} card={card} active={playable} onClick={() => play(card)} />;
+          })}
+        </div>
+      </div>
+
+      {amActive && data.drawnCardId && (
+        <PrimaryAction onClick={() => void dispatch("uno-pass")} tone="muted">تمرير الدور بدون لعب الورقة</PrimaryAction>
+      )}
+      {!amActive && <p className="text-center text-sm font-bold text-muted-foreground">بانتظار {active?.name} — ستتحدث الطاولة عندك تلقائيًا</p>}
+    </div>
+  );
+}
+
+function dealGroup(card: DealCard) {
+  return DEAL_GROUPS.find((group) => group.id === card.group);
+}
+
+function DealCardFace({ card, compact = false }: { card: DealCard; compact?: boolean }) {
+  const group = dealGroup(card);
+  const background = card.type === "property"
+    ? group?.color
+    : card.type === "money"
+      ? "#0b5b47"
+      : "#7c3f12";
+  return (
+    <div
+      className={cn(
+        "relative flex shrink-0 flex-col overflow-hidden rounded-2xl border-4 border-white p-3 text-white shadow-xl",
+        compact ? "h-24 w-16" : "h-40 w-28 sm:h-44 sm:w-32",
+      )}
+      style={{ backgroundColor: background }}
+    >
+      <span className="text-[10px] font-black text-white/75">
+        {card.type === "property" ? "أرض" : card.type === "money" ? "نقد" : "أكشن"}
+      </span>
+      <span className={cn("mt-auto text-center font-black leading-5", compact ? "text-[10px]" : "text-sm")}>{card.label}</span>
+      <span className="mt-auto self-end rounded-full bg-black/20 px-2 py-1 text-[10px] font-black">{card.value}م</span>
+    </div>
+  );
+}
+
+function PlayerDealTable({ player, data, highlight }: { player: Player; data: any; highlight: boolean }) {
+  const properties = (data.properties[player.id] ?? []) as DealCard[];
+  const bank = (data.banks[player.id] ?? []) as DealCard[];
+  const sets = completedDealSets(properties);
+  return (
+    <div className={cn("rounded-3xl border-2 p-4", highlight ? "border-gold-primary bg-gold-primary/8" : "border-border bg-muted/20")}>
+      <div className="flex items-center gap-2">
+        <PlayerAvatar player={player} size="sm" />
+        <span className="min-w-0 flex-1 truncate text-sm font-black text-primary">{player.name}</span>
+        <span className="rounded-full bg-primary px-2 py-1 text-[10px] font-black text-primary-foreground">{sets}/3 مجموعات</span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {DEAL_GROUPS.map((group) => {
+          const count = properties.filter((card) => card.group === group.id).length;
+          if (!count) return null;
+          return (
+            <span key={group.id} className="rounded-full px-2.5 py-1 text-[10px] font-black text-white" style={{ backgroundColor: group.color }}>
+              {group.label} {count}/{group.size}
+            </span>
+          );
+        })}
+        {!properties.length && <span className="text-[11px] font-bold text-muted-foreground">لا توجد أراضٍ</span>}
+      </div>
+      <div className="mt-3 flex items-center justify-between text-xs font-black">
+        <span className="text-muted-foreground">البنك</span>
+        <span className="text-emerald-600">{bank.reduce((sum, card) => sum + card.value, 0)} مليون</span>
+      </div>
+    </div>
+  );
+}
+
+function SaudiDealRoom({
+  state,
+  players,
+  me,
+  dispatch,
+}: {
+  state: RoomState;
+  players: Player[];
+  me: Player;
+  dispatch: (type: string, value?: any) => Promise<void>;
+}) {
+  const data = state.data;
+  const active = players[data.turnIndex % Math.max(players.length, 1)];
+  const amActive = active?.id === me.id;
+  const hand = (data.hands[me.id] ?? []) as DealCard[];
+  const [pendingAction, setPendingAction] = useState<DealCard | null>(null);
+
+  useEffect(() => setPendingAction(null), [data.turnIndex]);
+
+  const useAction = (card: DealCard) => {
+    if (card.action === "draw2") {
+      void dispatch("deal-action", { cardId: card.id });
+      return;
+    }
+    setPendingAction(card);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-[32px] bg-gradient-to-br from-[#5e3b12] via-[#8b5a1f] to-[#1d160d] p-5 text-white sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {active && <PlayerAvatar player={active} />}
+            <div>
+              <p className="text-xs font-black text-gold-primary">الدور عند {active?.name ?? "—"}</p>
+              <p className="mt-1 text-sm font-bold text-white/70">{data.lastAction}</p>
+            </div>
+          </div>
+          <div className="flex gap-2 text-center">
+            <div className="rounded-2xl bg-black/20 px-4 py-2">
+              <p className="text-[10px] font-bold text-white/60">الحركات</p>
+              <p className="text-xl font-black text-gold-primary">{data.actionsLeft}</p>
+            </div>
+            <div className="rounded-2xl bg-black/20 px-4 py-2">
+              <p className="text-[10px] font-bold text-white/60">الرزمة</p>
+              <p className="text-xl font-black text-gold-primary">{data.drawPile.length}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {players.map((player) => (
+          <PlayerDealTable key={player.id} player={player} data={data} highlight={active?.id === player.id} />
+        ))}
+      </div>
+
+      {pendingAction?.action === "rent" && (
+        <div className="rounded-3xl border-2 border-gold-primary bg-gold-primary/8 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-black text-primary">من سيدفع الإيجار؟</p>
+              <p className="text-xs font-bold text-muted-foreground">قيمة الإيجار تعتمد على أكبر مجموعة لديك</p>
+            </div>
+            <button type="button" onClick={() => setPendingAction(null)} className="text-xs font-black text-muted-foreground">إلغاء</button>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {players.filter((player) => player.id !== me.id).map((player) => (
+              <button
+                key={player.id}
+                type="button"
+                onClick={() => {
+                  void dispatch("deal-action", { cardId: pendingAction.id, targetId: player.id });
+                  setPendingAction(null);
+                }}
+                className="flex items-center gap-2 rounded-2xl bg-card p-3 text-right font-black text-primary shadow"
+              >
+                <PlayerAvatar player={player} size="sm" /> {player.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {pendingAction?.action === "steal" && (
+        <div className="rounded-3xl border-2 border-gold-primary bg-gold-primary/8 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-black text-primary">اختر أرضًا للاستحواذ</p>
+              <p className="text-xs font-bold text-muted-foreground">لا يمكن أخذ أرض من مجموعة مكتملة</p>
+            </div>
+            <button type="button" onClick={() => setPendingAction(null)} className="text-xs font-black text-muted-foreground">إلغاء</button>
+          </div>
+          <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+            {players.filter((player) => player.id !== me.id).flatMap((player) =>
+              ((data.properties[player.id] ?? []) as DealCard[]).map((property) => (
+                <button
+                  key={property.id}
+                  type="button"
+                  onClick={() => {
+                    void dispatch("deal-action", { cardId: pendingAction.id, targetId: player.id, propertyId: property.id });
+                    setPendingAction(null);
+                  }}
+                  className="space-y-2"
+                >
+                  <DealCardFace card={property} compact />
+                  <span className="block max-w-20 truncate text-[10px] font-black text-primary">من {player.name}</span>
+                </button>
+              )),
+            )}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold text-muted-foreground">أوراقك الخاصة</p>
+            <p className="font-black text-primary">{hand.length} أوراق</p>
+          </div>
+          {amActive && data.needsDraw && (
+            <button type="button" onClick={() => void dispatch("deal-draw")} className="rounded-2xl bg-gold-primary px-5 py-3 text-sm font-black text-[#10251e] shadow">
+              سحب {hand.length ? 2 : 5} أوراق
+            </button>
+          )}
+          {amActive && !data.needsDraw && (
+            <button
+              type="button"
+              disabled={hand.length > 7}
+              onClick={() => void dispatch("deal-end")}
+              className="rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground disabled:opacity-35"
+            >
+              إنهاء دوري
+            </button>
+          )}
+        </div>
+
+        {hand.length > 7 && <p className="mb-3 rounded-xl bg-rose-500/10 p-3 text-center text-xs font-black text-rose-700">يجب التخلص من {hand.length - 7} أوراق قبل إنهاء الدور</p>}
+        <div className="flex min-h-60 gap-3 overflow-x-auto rounded-3xl bg-muted/30 p-4 pb-5">
+          {hand.map((card) => (
+            <div key={card.id} className="w-32 shrink-0 space-y-2">
+              <DealCardFace card={card} />
+              {amActive && !data.needsDraw && data.actionsLeft > 0 && (
+                <div className="grid gap-1.5">
+                  {card.type === "property" && (
+                    <button type="button" onClick={() => void dispatch("deal-property", { cardId: card.id })} className="rounded-xl bg-primary px-2 py-2 text-[11px] font-black text-primary-foreground">إضافة للأراضي</button>
+                  )}
+                  {card.type === "money" && (
+                    <button type="button" onClick={() => void dispatch("deal-bank", { cardId: card.id })} className="rounded-xl bg-emerald-600 px-2 py-2 text-[11px] font-black text-white">إيداع بالبنك</button>
+                  )}
+                  {card.type === "action" && (
+                    <>
+                      <button type="button" onClick={() => useAction(card)} className="rounded-xl bg-gold-primary px-2 py-2 text-[11px] font-black text-[#10251e]">استخدام الأكشن</button>
+                      <button type="button" onClick={() => void dispatch("deal-bank", { cardId: card.id })} className="rounded-xl bg-emerald-600 px-2 py-2 text-[11px] font-black text-white">إيداع بالبنك</button>
+                    </>
+                  )}
+                </div>
+              )}
+              {amActive && hand.length > 7 && (
+                <button type="button" onClick={() => void dispatch("deal-discard", card.id)} className="w-full rounded-xl bg-rose-600 px-2 py-2 text-[11px] font-black text-white">تخلص من الورقة</button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {!amActive && <p className="text-center text-sm font-bold text-muted-foreground">بانتظار حركة {active?.name}</p>}
+    </div>
   );
 }
 
@@ -1790,82 +2788,200 @@ function WheelRoom({
   );
 }
 
+function BalootCardFace({
+  card,
+  compact = false,
+  active = true,
+  onClick,
+}: {
+  card: BalootCard;
+  compact?: boolean;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const red = card.suit === "hearts" || card.suit === "diamonds";
+  const content = (
+    <>
+      <span className="absolute right-2 top-1 text-lg font-black">{card.rank}</span>
+      <span className={cn("font-serif", compact ? "text-3xl" : "text-5xl sm:text-6xl")}>{BALOOT_SUIT_LABEL[card.suit]}</span>
+      <span className="absolute bottom-1 left-2 rotate-180 text-lg font-black">{card.rank}</span>
+    </>
+  );
+  const className = cn(
+    "relative flex shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-lg",
+    red ? "text-red-600" : "text-slate-950",
+    compact ? "h-24 w-16" : "h-36 w-24 sm:h-44 sm:w-28",
+    !active && "opacity-35",
+  );
+  if (!onClick) return <div className={className}>{content}</div>;
+  return (
+    <button type="button" disabled={!active} onClick={onClick} className={cn(className, active && "transition hover:-translate-y-2 active:scale-95")}>
+      {content}
+    </button>
+  );
+}
+
+function BalootTeams({ players, data }: { players: Player[]; data: any }) {
+  const first = players.filter((_, index) => index % 2 === 0);
+  const second = players.filter((_, index) => index % 2 === 1);
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {[first, second].map((team, index) => (
+        <div key={index} className={cn("rounded-3xl border-2 p-4 text-center", index === 0 ? "border-emerald-500/30 bg-emerald-500/8" : "border-rose-500/30 bg-rose-500/8")}>
+          <p className={cn("text-xs font-black", index === 0 ? "text-emerald-600" : "text-rose-600")}>الفريق {index === 0 ? "الأول" : "الثاني"}</p>
+          <p className="mt-1 truncate text-xs font-bold text-muted-foreground">{team.map((player) => player.name).join(" + ")}</p>
+          <p className="mt-2 text-4xl font-black text-primary">{data.matchScore?.[index] ?? 0}</p>
+          <p className="text-[10px] font-bold text-muted-foreground">من 152</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function BalootRoom({
   state,
+  players,
+  me,
   isHost,
   dispatch,
 }: {
   state: RoomState;
+  players: Player[];
+  me: Player;
   isHost: boolean;
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const data = state.data;
-  const [us, setUs] = useState("");
-  const [them, setThem] = useState("");
-  const submit = () => {
-    if (!us && !them) return;
-    void dispatch("score", { us: Number(us) || 0, them: Number(them) || 0 });
-    setUs("");
-    setThem("");
-  };
-  return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:gap-5">
-        <div className="rounded-[32px] border-2 border-emerald-500/30 bg-emerald-500/8 p-5 text-center sm:p-8">
-          <p className="text-sm font-black text-emerald-600">لنا</p>
-          <p className="mt-2 text-6xl font-black tracking-tighter text-primary sm:text-8xl">{data.us}</p>
-        </div>
-        <div className="rounded-[32px] border-2 border-rose-500/30 bg-rose-500/8 p-5 text-center sm:p-8">
-          <p className="text-sm font-black text-rose-600">لهم</p>
-          <p className="mt-2 text-6xl font-black tracking-tighter text-primary sm:text-8xl">{data.them}</p>
-        </div>
-      </div>
+  const hand = (data.hands[me.id] ?? []) as BalootCard[];
+  const bidder = players[data.bidTurnIndex];
+  const active = players[data.turnIndex];
+  const contract = data.contract as { mode: "sun" | "hokm"; trump: BalootSuit | null; buyerId: string } | null;
 
-      <div className="rounded-3xl bg-muted/30 p-4 sm:p-5">
-        <p className="mb-3 text-center text-xs font-black text-muted-foreground">أي لاعب يقدر يسجل النتيجة من جواله</p>
-        <div className="grid grid-cols-2 gap-3" dir="rtl">
-          <label>
-            <span className="mb-1 block text-center text-xs font-black text-emerald-600">لنا</span>
-            <input type="number" min={0} value={us} onChange={(event) => setUs(event.target.value)} className="h-14 w-full rounded-2xl border-2 border-border bg-card px-3 text-center text-xl font-black text-primary outline-none focus:border-emerald-500" />
-          </label>
-          <label>
-            <span className="mb-1 block text-center text-xs font-black text-rose-600">لهم</span>
-            <input type="number" min={0} value={them} onChange={(event) => setThem(event.target.value)} className="h-14 w-full rounded-2xl border-2 border-border bg-card px-3 text-center text-xl font-black text-primary outline-none focus:border-rose-500" />
-          </label>
+  if (data.stage === "bidding") {
+    const myBid = bidder?.id === me.id;
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <BalootTeams players={players} data={data} />
+        <div className="rounded-[34px] bg-gradient-to-br from-[#083f34] to-[#061c17] p-6 text-center text-white sm:p-9">
+          <p className="text-xs font-black text-gold-primary">المشترى · اللفة {data.biddingRound === 1 ? "الأولى" : "الثانية"}</p>
+          <div className="mt-5 flex justify-center"><BalootCardFace card={data.buyCard} /></div>
+          <p className="mt-4 text-lg font-black">الشراء عند {bidder?.name ?? "—"}</p>
+          <p className="mt-1 text-xs font-bold text-white/60">{data.biddingRound === 1 ? "صن أو حكم بنوع المشترى" : "صن أو حكم ثانٍ بنوع مختلف"}</p>
         </div>
-        <button type="button" disabled={!us && !them} onClick={submit} className="mt-3 h-14 w-full rounded-2xl bg-primary font-black text-primary-foreground disabled:opacity-35">
-          تسجيل النتيجة عند الجميع
-        </button>
-      </div>
 
-      {data.history?.length > 0 && (
-        <div>
-          <p className="mb-3 text-xs font-black text-muted-foreground">آخر الجولات</p>
-          <div className="space-y-2">
-            {data.history.slice(0, 5).map((item: { us: number; them: number }, index: number) => (
-              <div key={index} className="grid grid-cols-[1fr_auto_1fr] items-center rounded-2xl bg-muted/35 px-5 py-3 text-center font-black">
-                <span className="text-emerald-600">+{item.us}</span>
-                <span className="text-xs text-muted-foreground">جولة {data.history.length - index}</span>
-                <span className="text-rose-600">+{item.them}</span>
+        {myBid ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <PrimaryAction onClick={() => void dispatch("baloot-bid", { mode: "sun" })} tone="gold">صن</PrimaryAction>
+              {data.biddingRound === 1 && (
+                <PrimaryAction onClick={() => void dispatch("baloot-bid", { mode: "hokm" })}>
+                  حكم {BALOOT_SUIT_LABEL[data.buyCard.suit as BalootSuit]}
+                </PrimaryAction>
+              )}
+            </div>
+            {data.biddingRound === 2 && (
+              <div className="grid grid-cols-4 gap-2">
+                {BALOOT_SUITS.filter((suit) => suit !== data.buyCard.suit).map((suit) => (
+                  <button
+                    key={suit}
+                    type="button"
+                    onClick={() => void dispatch("baloot-bid", { mode: "hokm", trump: suit })}
+                    className={cn("h-14 rounded-2xl bg-card text-3xl font-black shadow", suit === "hearts" || suit === "diamonds" ? "text-red-600" : "text-slate-950")}
+                  >
+                    {BALOOT_SUIT_LABEL[suit]}
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
+            <PrimaryAction onClick={() => void dispatch("baloot-pass")} tone="muted">{data.biddingRound === 1 ? "بس" : "ولا"}</PrimaryAction>
+          </div>
+        ) : (
+          <p className="text-center text-sm font-bold text-muted-foreground">بانتظار قرار {bidder?.name}</p>
+        )}
+
+        <div>
+          <p className="mb-3 text-xs font-black text-muted-foreground">أوراقك الخاصة قبل الشراء</p>
+          <div className="flex gap-2 overflow-x-auto rounded-3xl bg-muted/30 p-4">
+            {hand.map((card) => <BalootCardFace key={card.id} card={card} />)}
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {isHost && (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <PrimaryAction onClick={() => void dispatch("undo")} disabled={!data.history?.length} tone="muted">
-            تراجع
-          </PrimaryAction>
-          <PrimaryAction onClick={() => void dispatch("reset-score")} tone="danger">
-            تصفير الصكّة
-          </PrimaryAction>
-          <PrimaryAction onClick={() => void dispatch("finish")} tone="gold">
-            إنهاء الصكّة
-          </PrimaryAction>
+  if (data.stage === "round-end") {
+    const buyer = players.find((player) => player.id === contract?.buyerId);
+    return (
+      <div className="mx-auto max-w-2xl space-y-6 text-center">
+        <BalootTeams players={players} data={data} />
+        <div className="rounded-[34px] bg-gold-primary/12 p-7">
+          <Trophy className="mx-auto size-10 text-gold-primary" />
+          <h4 className="mt-3 text-2xl font-black text-primary">انتهت الجولة</h4>
+          <p className="mt-2 text-sm font-bold text-muted-foreground">
+            شراء {buyer?.name} · {contract?.mode === "sun" ? "صن" : `حكم ${contract?.trump ? BALOOT_SUIT_LABEL[contract.trump] : ""}`}
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-card p-4"><p className="text-xs font-bold text-muted-foreground">الفريق الأول</p><p className="text-4xl font-black text-emerald-600">+{data.roundPoints?.[0] ?? 0}</p></div>
+            <div className="rounded-2xl bg-card p-4"><p className="text-xs font-bold text-muted-foreground">الفريق الثاني</p><p className="text-4xl font-black text-rose-600">+{data.roundPoints?.[1] ?? 0}</p></div>
+          </div>
+          <p className="mt-4 text-xs font-bold text-muted-foreground">الأكلات: {data.teamTricks[0]} للفريق الأول · {data.teamTricks[1]} للفريق الثاني</p>
         </div>
-      )}
+        {isHost ? (
+          <PrimaryAction onClick={() => void dispatch("baloot-next-round")} tone="gold"><RefreshCcw className="size-5" /> توزيع الجولة التالية</PrimaryAction>
+        ) : (
+          <p className="text-sm font-bold text-muted-foreground">بانتظار المضيف للتوزيع التالي</p>
+        )}
+      </div>
+    );
+  }
+
+  const leadSuit = data.trick[0]?.card?.suit as BalootSuit | undefined;
+  const mustFollow = leadSuit && hand.some((card) => card.suit === leadSuit);
+  const myTurn = active?.id === me.id;
+  return (
+    <div className="space-y-6">
+      <BalootTeams players={players} data={data} />
+
+      <div className="rounded-[34px] bg-gradient-to-br from-[#0b5b47] to-[#061d18] p-5 text-white sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-gold-primary">{contract?.mode === "sun" ? "صن" : `حكم ${contract?.trump ? BALOOT_SUIT_LABEL[contract.trump] : ""}`}</p>
+            <p className="mt-1 text-lg font-black">الدور عند {active?.name ?? "—"}</p>
+          </div>
+          <div className="flex gap-2">
+            <span className="rounded-2xl bg-white/10 px-4 py-2 text-xs font-black">أكلات 1: {data.teamTricks[0]}</span>
+            <span className="rounded-2xl bg-white/10 px-4 py-2 text-xs font-black">أكلات 2: {data.teamTricks[1]}</span>
+          </div>
+        </div>
+
+        <div className="mt-6 grid min-h-56 grid-cols-2 place-items-center gap-3 rounded-3xl border border-white/10 bg-black/15 p-4 sm:grid-cols-4">
+          {data.trick.map((play: { playerId: string; card: BalootCard }) => {
+            const player = players.find((item) => item.id === play.playerId);
+            return (
+              <div key={play.playerId} className="space-y-2 text-center">
+                <BalootCardFace card={play.card} compact />
+                <p className="max-w-20 truncate text-[10px] font-black text-white/70">{player?.name}</p>
+              </div>
+            );
+          })}
+          {!data.trick.length && <p className="col-span-full text-sm font-bold text-white/45">الفائز بالأكلة السابقة يبدأ</p>}
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <div><p className="text-xs font-bold text-muted-foreground">أوراقك الخاصة</p><p className="font-black text-primary">{hand.length} أوراق</p></div>
+          {myTurn && mustFollow && <span className="rounded-full bg-gold-primary/15 px-3 py-1 text-[11px] font-black text-gold-primary">الزم النوع {BALOOT_SUIT_LABEL[leadSuit!]}</span>}
+        </div>
+        <div className="flex min-h-48 gap-2 overflow-x-auto rounded-3xl bg-muted/30 p-4 pb-5">
+          {hand.map((card) => {
+            const legal = myTurn && (!mustFollow || card.suit === leadSuit);
+            return <BalootCardFace key={card.id} card={card} active={legal} onClick={() => void dispatch("baloot-play", card.id)} />;
+          })}
+        </div>
+      </div>
+
+      {!myTurn && <p className="text-center text-sm font-bold text-muted-foreground">بانتظار رمية {active?.name}</p>}
     </div>
   );
 }
