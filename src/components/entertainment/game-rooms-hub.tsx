@@ -2242,6 +2242,10 @@ function Lobby({
 
 function PlayerAvatar({ player, size = "md" }: { player: Player; size?: "sm" | "md" | "lg" }) {
   const sizeClass = size === "sm" ? "size-8 text-xs" : size === "lg" ? "size-16 text-xl" : "size-11 text-sm";
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => setImageFailed(false), [player.avatarUrl]);
+
   if (player.isBot) {
     return (
       <span className={cn(sizeClass, "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gold-primary to-amber-700 text-[#10251e] ring-2 ring-gold-primary/35")}>
@@ -2249,8 +2253,13 @@ function PlayerAvatar({ player, size = "md" }: { player: Player; size?: "sm" | "
       </span>
     );
   }
-  return player.avatarUrl ? (
-    <img src={player.avatarUrl} alt="" className={cn(sizeClass, "shrink-0 rounded-full object-cover ring-2 ring-gold-primary/35")} />
+  return player.avatarUrl && !imageFailed ? (
+    <img
+      src={player.avatarUrl}
+      alt=""
+      onError={() => setImageFailed(true)}
+      className={cn(sizeClass, "shrink-0 rounded-full object-cover ring-2 ring-gold-primary/35")}
+    />
   ) : (
     <span className={cn(sizeClass, "flex shrink-0 items-center justify-center rounded-full bg-primary font-black text-primary-foreground ring-2 ring-gold-primary/35")}>
       {player.name.slice(0, 1)}
@@ -2382,49 +2391,63 @@ function GameBoard({
         <div
           className={cn(
             "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
-            gameMode && "mb-0 min-h-16 shrink-0 border-white/10 bg-[#062c25]/95 px-3 pb-2 text-white shadow-lg backdrop-blur-xl",
+            gameMode && "relative mb-0 min-h-[82px] shrink-0 border-white/10 bg-[radial-gradient(circle_at_50%_0%,#0b5a48_0%,#052d26_58%,#031f1a_100%)] px-3 pb-2 text-white shadow-lg",
           )}
           style={gameMode ? { paddingTop: "max(.5rem, env(safe-area-inset-top))" } : undefined}
         >
-          <div className="flex items-center gap-3">
-            <div className={cn("flex size-12 items-center justify-center rounded-2xl bg-gold-primary/15", gameMode && "size-10 rounded-xl bg-[#e6c675]/15")}>
-              <GameIcon className={cn("size-6 text-gold-primary", gameMode && "size-5 text-[#e6c675]")} />
-            </div>
-            <div>
-              <p className={cn("text-xs font-bold text-muted-foreground", gameMode && "text-white/55")}>الجولة {state.round + 1}</p>
-              <h3 className={cn("text-xl font-black text-primary", gameMode && "text-base text-white")}>{meta.label}</h3>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {!gameMode && (
-              <button
-                type="button"
-                onClick={() => void enterGameMode()}
-                className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground shadow lg:hidden"
-              >
-                <Maximize2 className="size-4" /> وضع اللعبة
-              </button>
-            )}
-            {!gameMode && isHost && (
-              <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
-                إنهاء اللعبة
-              </button>
-            )}
-            {gameMode && (
+          {gameMode ? (
+            <>
+              <div className="pointer-events-none absolute inset-x-20 bottom-2 top-2 flex items-center justify-center gap-2 text-center">
+                <GameIcon className="size-7 shrink-0 text-[#e8c66f] drop-shadow" />
+                <div>
+                  <h3 className="text-[1.35rem] font-black leading-none text-[#edcf7d]">{meta.label}</h3>
+                  <p className="mt-1 text-[11px] font-bold text-white/50">الجولة {state.round + 1}</p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => void leaveGameMode()}
-                className="flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-black text-white"
+                className="relative z-10 flex min-h-11 items-center gap-2 rounded-full border border-[#e8c66f]/25 bg-white/10 px-4 text-sm font-black text-white shadow"
                 aria-label="إغلاق وضع اللعبة"
               >
                 <Minimize2 className="size-4" /> رجوع
               </button>
-            )}
-          </div>
+              <span aria-hidden className="relative z-10 flex size-11 items-center justify-center rounded-full border border-[#e8c66f]/25 bg-[#e8c66f]/10">
+                <Users className="size-5 text-[#e8c66f]" />
+                <span className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full bg-[#e8c66f] text-[10px] font-black text-[#06352c]">{players.length}</span>
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-2xl bg-gold-primary/15">
+                  <GameIcon className="size-6 text-gold-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground">الجولة {state.round + 1}</p>
+                  <h3 className="text-xl font-black text-primary">{meta.label}</h3>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void enterGameMode()}
+                  className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground shadow lg:hidden"
+                >
+                  <Maximize2 className="size-4" /> وضع اللعبة
+                </button>
+                {isHost && (
+                  <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
+                    إنهاء اللعبة
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <div
-          className={cn(gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2 sm:px-4")}
+          className={cn(gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_50%_12%,rgba(23,102,80,.32),transparent_42%),linear-gradient(#031d18,#021713)] px-2 py-2 sm:px-4")}
           style={gameMode ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
         >
           {state.game === "uno" && <UnoRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
@@ -2520,18 +2543,31 @@ function GameTableSurface({
     : trim === "ivory"
       ? "from-[#f5e6bd] via-[#76502b] to-[#e2c17d]"
       : "from-[#d9b568] via-[#68401f] to-[#bd8b3e]";
+  const heritageTable = trim === "gold";
   return (
-    <div className={cn("rounded-[46%] bg-gradient-to-br p-[5px] shadow-[0_28px_65px_-34px_rgba(2,20,16,.9)] sm:rounded-[38px] sm:p-[6px]", trimClass)}>
-      <div
-        className={cn("relative isolate overflow-hidden rounded-[45%] border border-[#f2d999]/50 bg-[#073d32] text-white sm:rounded-[31px]", className)}
-        style={{
-          backgroundImage:
-            "linear-gradient(135deg, rgba(255,255,255,.025) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.025) 50%, rgba(255,255,255,.025) 75%, transparent 75%, transparent)",
-          backgroundSize: "28px 28px",
-        }}
-      >
-        <div aria-hidden className="pointer-events-none absolute inset-3 rounded-[44%] border border-[#e5c878]/18 sm:rounded-[23px]" />
-        {children}
+    <div
+      className={cn(
+        "rounded-[48%] bg-gradient-to-br p-[6px] shadow-[0_34px_70px_-30px_rgba(0,0,0,.95)] sm:rounded-[38px] sm:p-[7px]",
+        heritageTable && "p-[9px] sm:p-[10px]",
+        trimClass,
+      )}
+      style={heritageTable ? {
+        backgroundImage: "repeating-linear-gradient(112deg,#2d170b 0 9px,#7a4b25 9px 17px,#3b2110 17px 24px,#a46d35 24px 30px)",
+      } : undefined}
+    >
+      <div className="rounded-[47%] bg-gradient-to-br from-[#f2d58b] via-[#8f602f] to-[#e6c06a] p-[2px] sm:rounded-[32px]">
+        <div
+          className={cn("relative isolate overflow-hidden rounded-[46%] border border-[#f2d999]/45 bg-[#073d32] text-white sm:rounded-[29px]", className)}
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 50% 44%, rgba(19,112,84,.35), transparent 48%), linear-gradient(135deg, rgba(236,207,124,.035) 25%, transparent 25%, transparent 50%, rgba(236,207,124,.035) 50%, rgba(236,207,124,.035) 75%, transparent 75%, transparent)",
+            backgroundSize: "auto, 28px 28px",
+          }}
+        >
+          <div aria-hidden className="pointer-events-none absolute inset-3 rounded-[44%] border border-[#e5c878]/28 sm:rounded-[23px]" />
+          <div aria-hidden className="pointer-events-none absolute inset-5 rounded-[43%] border border-[#e5c878]/10 sm:rounded-[20px]" />
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -2958,6 +2994,64 @@ function PlayerDealSeat({
   );
 }
 
+function DealImmersiveSeat({
+  player,
+  data,
+  active,
+  position,
+}: {
+  player: Player;
+  data: any;
+  active: boolean;
+  position: "top" | "right" | "bottom" | "left";
+}) {
+  const cardCount = data.hands[player.id]?.length ?? 0;
+  const positionClass = {
+    top: "left-1/2 top-3 -translate-x-1/2",
+    right: "right-0.5 top-1/2 -translate-y-1/2",
+    bottom: "bottom-3 left-1/2 -translate-x-1/2",
+    left: "left-0.5 top-1/2 -translate-y-1/2",
+  }[position];
+
+  const identity = (
+    <div className="flex flex-col items-center">
+      <div className={cn("rounded-full border-2 bg-[#062d26] p-1 shadow-xl transition", active ? "border-[#f3cf72] shadow-[0_0_22px_rgba(240,196,91,.75)]" : "border-[#d3b768]/70")}>
+        <PlayerAvatar player={player} />
+      </div>
+      <div className={cn("-mt-1 flex min-w-[72px] max-w-[92px] items-center justify-center gap-1 rounded-full border px-2.5 py-1 text-center text-[11px] font-black shadow-lg", active ? "border-[#f3cf72] bg-[#0a4c3e] text-[#f5d47c]" : "border-[#d3b768]/70 bg-[#06352c] text-white")}>
+        <span className="truncate">{player.name.split(" ")[0]}</span>
+        {player.isBot && <Bot className="size-3 shrink-0 text-[#edcc7c]" />}
+      </div>
+    </div>
+  );
+
+  const cards = (
+    <div className="relative h-10 w-20" aria-label={`${cardCount} أوراق`}>
+      {Array.from({ length: Math.min(cardCount, 5) }).map((_, index, visibleCards) => {
+        const middle = (visibleCards.length - 1) / 2;
+        const offset = (index - middle) * 8;
+        const angle = (index - middle) * 7;
+        return (
+          <span
+            key={index}
+            aria-hidden
+            className="absolute bottom-0 left-1/2 flex h-9 w-6 origin-bottom items-center justify-center rounded border-2 border-[#f5e5b9] bg-gradient-to-br from-[#0d5c4a] via-[#052d26] to-[#0a4c3e] text-[7px] font-black text-[#e7ca79] shadow-md"
+            style={{ transform: `translateX(calc(-50% + ${offset}px)) rotate(${angle}deg)` }}
+          >
+            س
+          </span>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div className={cn("absolute z-30 flex w-24 flex-col items-center", positionClass)}>
+      {position === "bottom" ? <>{cards}{identity}</> : <>{identity}{cards}</>}
+    </div>
+  );
+}
+
 function SaudiDealRoom({
   state,
   players,
@@ -2985,8 +3079,12 @@ function SaudiDealRoom({
 
   useEffect(() => setPendingAction(null), [data.turnIndex]);
   useEffect(() => {
-    if (selectedCardId && !hand.some((card) => card.id === selectedCardId)) setSelectedCardId(null);
-  }, [hand, selectedCardId]);
+    if (selectedCardId && !hand.some((card) => card.id === selectedCardId)) {
+      setSelectedCardId(null);
+      return;
+    }
+    if (!selectedCardId && hand.length && amActive && !data.needsDraw) setSelectedCardId(hand[0].id);
+  }, [hand, selectedCardId, amActive, data.needsDraw]);
 
   const useAction = (card: DealCard) => {
     if (card.action === "draw2") {
@@ -3005,62 +3103,111 @@ function SaudiDealRoom({
 
   return (
     <div className={cn("space-y-5", immersive && "space-y-3")}>
-      <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-3 py-2.5 text-[#173e34] shadow-sm sm:px-5 sm:py-3">
+      <div className={cn("grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-3 py-2.5 text-[#173e34] shadow-sm sm:px-5 sm:py-3", immersive && "sticky top-0 z-40 rounded-[24px] px-4 shadow-[0_12px_28px_-20px_rgba(0,0,0,.9)]")}>
         <div className="flex min-w-0 items-center gap-2.5">
           {active && <PlayerAvatar player={active} size="sm" />}
           <div className="min-w-0">
-            <p className="truncate text-sm font-black sm:text-base">الدور عند {active?.name ?? "—"}</p>
+            <p className="truncate text-sm font-black sm:text-base">الدور عند {active?.name?.split(" ")[0] ?? "—"}</p>
             <p className="truncate text-xs font-bold text-[#173e34]/55">{data.lastAction}</p>
           </div>
         </div>
         <div className="rounded-xl bg-[#0b5b47] px-3 py-2 text-center text-white">
           <p className="text-[10px] font-bold text-white/60">{data.needsDraw ? "الخطوة التالية" : "المتبقي"}</p>
-          <p className="text-sm font-black text-[#efd07d]">{data.needsDraw ? "اسحب" : `${data.actionsLeft} حركات`}</p>
+          <p className="text-sm font-black text-[#efd07d]">
+            {data.needsDraw
+              ? "اسحب أوراقك"
+              : data.actionsLeft === 2
+                ? "حركتان متبقيتان"
+                : data.actionsLeft === 1
+                  ? "حركة متبقية"
+                  : "انتهت الحركات"}
+          </p>
         </div>
       </div>
 
-      <GameTableSurface className={cn("min-h-[500px] sm:min-h-[680px]", immersive && "h-[48dvh] min-h-[340px] max-h-[460px] sm:min-h-[440px] sm:max-h-[580px]")}>
-        <div
-          className={cn(
-            "relative z-10 grid min-h-[500px] grid-cols-[66px_minmax(120px,1fr)_66px] grid-rows-[94px_minmax(270px,1fr)_94px] gap-1 p-2 sm:min-h-[680px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[138px_minmax(360px,1fr)_138px] sm:gap-3 sm:p-5",
-            immersive && "h-full min-h-0 grid-rows-[72px_minmax(190px,1fr)_72px] sm:min-h-0 sm:grid-rows-[94px_minmax(250px,1fr)_94px]",
-          )}
-        >
-          {seatedPlayers.slice(0, 4).map((player, index) => (
-            <PlayerDealSeat
-              key={player.id}
-              player={player}
-              data={data}
-              highlight={active?.id === player.id}
-              className={cn("relative z-20 max-w-[190px]", seatPositions[index])}
-            />
-          ))}
+      {immersive ? (
+        <GameTableSurface className="h-[62dvh] min-h-[510px] max-h-[700px]">
+          <div className="relative z-10 h-full min-h-0 w-full">
+            {seatedPlayers.slice(0, 4).map((player, index) => (
+              <DealImmersiveSeat
+                key={player.id}
+                player={player}
+                data={data}
+                active={active?.id === player.id}
+                position={(["bottom", "left", "top", "right"] as const)[index]}
+              />
+            ))}
 
-          <div className="relative z-10 col-span-3 col-start-1 row-start-2 flex flex-col items-center justify-center gap-2">
-            <div className="relative h-[134px] w-[240px] sm:h-[190px] sm:w-[330px]">
-              <TableBrandSeal logoUrl={logoUrl} className="absolute left-1/2 top-1/2 size-[82px] -translate-x-1/2 -translate-y-1/2 sm:size-32" />
-              <button
-                type="button"
-                aria-label={`سحب ${hand.length ? 2 : 5} أوراق من رزمة سعودي ديل`}
-                disabled={!amActive || !data.needsDraw}
-                onClick={() => void dispatch("deal-draw")}
-                className="absolute right-0 top-1/2 -translate-y-1/2 transition enabled:hover:-translate-y-[54%] enabled:active:scale-95 disabled:opacity-55"
-              >
-                <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "سعودي ديل"} count={data.drawPile.length} compact className="h-24 w-16 sm:h-28 sm:w-[72px]" />
-              </button>
-              {lastDiscard ? (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2"><DealCardFace card={lastDiscard} compact /></div>
-              ) : (
-                <div className="absolute left-0 top-1/2 flex h-24 w-16 -translate-y-1/2 items-center justify-center rounded-2xl border-2 border-dashed border-white/20 text-center text-[10px] font-black text-white/35 sm:h-28 sm:w-[72px]">
-                  الأوراق<br />الملعوبة
+            <div className="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3">
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  aria-label={`سحب ${hand.length ? 2 : 5} أوراق من رزمة سعودي ديل`}
+                  disabled={!amActive || !data.needsDraw}
+                  onClick={() => void dispatch("deal-draw")}
+                  className="transition enabled:hover:-translate-y-1 enabled:active:scale-95 disabled:opacity-65"
+                >
+                  <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "السيف"} count={data.drawPile.length} compact className="h-[72px] w-12 rounded-lg" />
+                </button>
+
+                <div className="rounded-full border border-[#f0d17a]/55 bg-[#06392f]/90 p-1.5 shadow-[0_0_28px_rgba(224,187,92,.2)]">
+                  <TableBrandSeal logoUrl={logoUrl} className="size-[74px] border-[3px] sm:size-24" />
                 </div>
-              )}
-            </div>
 
-            <p className="max-w-[220px] truncate rounded-full bg-black/25 px-3 py-1 text-center text-[10px] font-bold text-white/60 sm:max-w-[300px] sm:text-xs">{data.lastAction}</p>
+                {lastDiscard ? (
+                  <div className="h-[72px] w-12 overflow-hidden rounded-lg">
+                    <div className="origin-top-left scale-[.65]"><DealCardFace card={lastDiscard} compact /></div>
+                  </div>
+                ) : (
+                  <div className="flex h-[72px] w-12 items-center justify-center rounded-lg border-2 border-dashed border-white/25 text-center text-[8px] font-black leading-3 text-white/40">
+                    الأوراق<br />الملعوبة
+                  </div>
+                )}
+              </div>
+
+              <p className="max-w-[270px] truncate rounded-full border border-white/5 bg-black/25 px-4 py-1.5 text-center text-[11px] font-bold text-white/65">{data.lastAction}</p>
+            </div>
           </div>
-        </div>
-      </GameTableSurface>
+        </GameTableSurface>
+      ) : (
+        <GameTableSurface className="min-h-[500px] sm:min-h-[680px]">
+          <div className="relative z-10 grid min-h-[500px] grid-cols-[66px_minmax(120px,1fr)_66px] grid-rows-[94px_minmax(270px,1fr)_94px] gap-1 p-2 sm:min-h-[680px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[138px_minmax(360px,1fr)_138px] sm:gap-3 sm:p-5">
+            {seatedPlayers.slice(0, 4).map((player, index) => (
+              <PlayerDealSeat
+                key={player.id}
+                player={player}
+                data={data}
+                highlight={active?.id === player.id}
+                className={cn("relative z-20 max-w-[190px]", seatPositions[index])}
+              />
+            ))}
+
+            <div className="relative z-10 col-span-3 col-start-1 row-start-2 flex flex-col items-center justify-center gap-2">
+              <div className="relative h-[134px] w-[240px] sm:h-[190px] sm:w-[330px]">
+                <TableBrandSeal logoUrl={logoUrl} className="absolute left-1/2 top-1/2 size-[82px] -translate-x-1/2 -translate-y-1/2 sm:size-32" />
+                <button
+                  type="button"
+                  aria-label={`سحب ${hand.length ? 2 : 5} أوراق من رزمة سعودي ديل`}
+                  disabled={!amActive || !data.needsDraw}
+                  onClick={() => void dispatch("deal-draw")}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 transition enabled:hover:-translate-y-[54%] enabled:active:scale-95 disabled:opacity-55"
+                >
+                  <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "سعودي ديل"} count={data.drawPile.length} compact className="h-24 w-16 sm:h-28 sm:w-[72px]" />
+                </button>
+                {lastDiscard ? (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2"><DealCardFace card={lastDiscard} compact /></div>
+                ) : (
+                  <div className="absolute left-0 top-1/2 flex h-24 w-16 -translate-y-1/2 items-center justify-center rounded-2xl border-2 border-dashed border-white/20 text-center text-[10px] font-black text-white/35 sm:h-28 sm:w-[72px]">
+                    الأوراق<br />الملعوبة
+                  </div>
+                )}
+              </div>
+
+              <p className="max-w-[220px] truncate rounded-full bg-black/25 px-3 py-1 text-center text-[10px] font-bold text-white/60 sm:max-w-[300px] sm:text-xs">{data.lastAction}</p>
+            </div>
+          </div>
+        </GameTableSurface>
+      )}
 
       {pendingAction?.action === "rent" && (
         <div className="rounded-3xl border-2 border-gold-primary bg-gold-primary/8 p-5">
@@ -3119,33 +3266,16 @@ function SaudiDealRoom({
         </div>
       )}
 
-      <div className={cn(immersive && "sticky bottom-0 z-30 -mx-2 rounded-t-[28px] bg-[#031d18]/95 p-2 pt-3 shadow-[0_-18px_40px_-26px_rgba(0,0,0,.9)] backdrop-blur-xl")}>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold text-muted-foreground">أوراقك الخاصة</p>
-            <p className={cn("font-black text-primary", immersive && "text-white")}>{hand.length} أوراق</p>
-          </div>
-          {amActive && !data.needsDraw && (
-            <button
-              type="button"
-              disabled={hand.length > 7}
-              onClick={() => void dispatch("deal-end")}
-              className="rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground disabled:opacity-35"
-            >
-              إنهاء دوري
-            </button>
-          )}
-        </div>
-
+      <div className={cn(immersive && "sticky bottom-0 z-30 -mx-2 rounded-t-[30px] border-t border-[#dfbd66]/20 bg-[#031d18]/96 p-2 pt-3 shadow-[0_-24px_48px_-26px_rgba(0,0,0,.95)] backdrop-blur-xl")}>
         {hand.length > 7 && <p className="mb-3 rounded-xl bg-rose-500/10 p-3 text-center text-xs font-black text-rose-700">يجب التخلص من {hand.length - 7} أوراق قبل إنهاء الدور</p>}
 
         {selectedCard && amActive && !data.needsDraw && (data.actionsLeft > 0 || hand.length > 7) && (
-          <div className="mb-3 grid grid-cols-2 gap-2">
+          <div className={cn("mb-3 grid grid-cols-2 gap-2", immersive && "rounded-[24px] bg-[#0a372f]/70 p-1.5")}>
             {selectedCard.type === "property" && data.actionsLeft > 0 && (
               <button
                 type="button"
                 onClick={() => void dispatch("deal-property", { cardId: selectedCard.id })}
-                className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gold-primary px-4 text-sm font-black text-[#10251e] shadow"
+                className={cn("col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gold-primary px-4 text-sm font-black text-[#10251e] shadow", immersive && "min-h-14 rounded-[20px] bg-gradient-to-b from-[#f5d982] to-[#cda44b] text-base shadow-[0_10px_28px_-14px_rgba(238,196,94,.85)]")}
               >
                 <MapPin className="size-5" /> إضافة للمجموعة
               </button>
@@ -3154,7 +3284,7 @@ function SaudiDealRoom({
               <button
                 type="button"
                 onClick={() => void dispatch("deal-bank", { cardId: selectedCard.id })}
-                className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 text-sm font-black text-white shadow"
+                className={cn("col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 text-sm font-black text-white shadow", immersive && "min-h-14 rounded-[20px] border border-[#e8c86e]/50 bg-[#0a4d40] text-base")}
               >
                 <Banknote className="size-5" /> إيداع بالبنك
               </button>
@@ -3164,7 +3294,7 @@ function SaudiDealRoom({
                 <button
                   type="button"
                   onClick={() => useAction(selectedCard)}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gold-primary px-3 text-sm font-black text-[#10251e] shadow"
+                  className={cn("flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gold-primary px-3 text-sm font-black text-[#10251e] shadow", immersive && "min-h-14 rounded-[20px] bg-gradient-to-b from-[#f5d982] to-[#cda44b] text-base")}
                 >
                   <Sparkles className="size-5" /> استخدام البطاقة
                 </button>
@@ -3189,11 +3319,28 @@ function SaudiDealRoom({
           </div>
         )}
 
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
+          <div>
+            <p className={cn("text-xs font-bold text-muted-foreground", immersive && "text-[#d6bd7b]/60")}>أوراقك الخاصة</p>
+            <p className={cn("font-black text-primary", immersive && "text-lg text-white")}>{hand.length} أوراق</p>
+          </div>
+          {amActive && !data.needsDraw && (
+            <button
+              type="button"
+              disabled={hand.length > 7}
+              onClick={() => void dispatch("deal-end")}
+              className={cn("rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground disabled:opacity-35", immersive && "border border-[#e1bd66]/30 bg-white/10 text-white")}
+            >
+              إنهاء دوري
+            </button>
+          )}
+        </div>
+
         {amActive && !data.needsDraw && data.actionsLeft > 0 && !selectedCard && (
           <p className={cn("mb-3 text-center text-xs font-bold text-muted-foreground", immersive && "text-white/55")}>اختر بطاقة من يدك لتظهر الحركة المناسبة</p>
         )}
 
-        <CardHandTray className={cn("min-h-60 gap-3 pt-5", immersive && "min-h-[205px] max-h-[34dvh]")}>
+        <CardHandTray className={cn("min-h-60 gap-3 pt-5", immersive && "min-h-[220px] max-h-[36dvh] gap-0 overflow-y-hidden px-3 pb-3 pt-8")}>
           {hand.map((card) => (
             <button
               key={card.id}
@@ -3202,7 +3349,8 @@ function SaudiDealRoom({
               aria-pressed={selectedCardId === card.id}
               className={cn(
                 "w-32 shrink-0 rounded-2xl text-right transition sm:w-36",
-                selectedCardId === card.id ? "-translate-y-2 ring-4 ring-[#f0cd72] ring-offset-2 ring-offset-[#07382f]" : "opacity-90 hover:-translate-y-1 hover:opacity-100",
+                immersive && "-ml-5 w-28 first:ml-0 sm:w-32",
+                selectedCardId === card.id ? "-translate-y-3 ring-4 ring-[#f0cd72] ring-offset-2 ring-offset-[#07382f]" : "opacity-90 hover:-translate-y-1 hover:opacity-100",
               )}
             >
               <DealCardFace card={card} />
