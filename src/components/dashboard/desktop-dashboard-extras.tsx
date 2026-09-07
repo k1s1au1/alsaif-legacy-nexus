@@ -1,3 +1,4 @@
+import { listOccasions } from "@/lib/api/occasions";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -239,46 +240,41 @@ export function DesktopDashboardExtras({
   const [occasions, setOccasions] = useState<LocalOccasion[]>([]);
 
   useEffect(() => {
-    const read = () => {
+    let alive = true;
+    const read = async () => {
       try {
-        const raw = localStorage.getItem("alsaif:family-occasions");
-        const rows = raw ? JSON.parse(raw) : [];
+        const rows = await listOccasions({ userId: null, canManageOccasions: false });
+        if (!alive) return;
         const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, "0");
-        const day = String(today.getDate()).padStart(2, "0");
-        const key = `${year}-${month}-${day}`;
-
+        const key = [
+          today.getFullYear(),
+          String(today.getMonth() + 1).padStart(2, "0"),
+          String(today.getDate()).padStart(2, "0"),
+        ].join("-");
         setOccasions(
-          Array.isArray(rows)
-            ? rows
-                .filter((item: LocalOccasion) => item?.id && item?.date && item.date >= key)
-                .sort(
-                  (a: LocalOccasion, b: LocalOccasion) =>
-                    new Date(`${a.date}T${a.time || "23:59"}:00`).getTime() -
-                    new Date(`${b.date}T${b.time || "23:59"}:00`).getTime(),
-                )
-            : [],
+          rows
+            .filter((item) => item?.id && item?.date && item.date >= key)
+            .sort(
+              (a, b) =>
+                new Date(`${a.date}T${a.time || "23:59"}:00`).getTime() -
+                new Date(`${b.date}T${b.time || "23:59"}:00`).getTime(),
+            ) as unknown as LocalOccasion[],
         );
       } catch {
-        setOccasions([]);
+        if (alive) setOccasions([]);
       }
     };
 
     const onVisibility = () => {
-      if (!document.hidden) read();
+      if (!document.hidden) void read();
     };
 
-    read();
-    const syncId = window.setInterval(read, 3000);
-    window.addEventListener("storage", read);
-    window.addEventListener("focus", read);
+    void read();
+    window.addEventListener("focus", () => void read());
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      window.clearInterval(syncId);
-      window.removeEventListener("storage", read);
-      window.removeEventListener("focus", read);
+      alive = false;
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
