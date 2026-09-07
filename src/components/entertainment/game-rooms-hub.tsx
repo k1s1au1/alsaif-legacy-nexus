@@ -4399,12 +4399,12 @@ function BalootTeams({ players, data, compact = false }: { players: Player[]; da
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[22px] border border-[#d8bc72]/30 bg-[#052d26]/95 p-2 text-white shadow-lg backdrop-blur-xl">
         <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-emerald-400/10 px-3 py-2">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-lg font-black text-emerald-300">{data.matchScore?.[0] ?? 0}</span>
-          <div className="min-w-0"><p className="text-[10px] font-black text-emerald-300">لنا</p><p className="truncate text-[9px] font-bold text-white/55">{first.map((player) => player.name.split(" ")[0]).join(" + ")}</p></div>
+          <div className="min-w-0"><p className="text-[10px] font-black text-emerald-300">الفريق 1</p><p className="truncate text-[9px] font-bold text-white/55">{first.map((player) => player.name.split(" ")[0]).join(" + ")}</p></div>
         </div>
         <span className="text-xs font-black text-[#eacb78]">152</span>
         <div className="flex min-w-0 flex-row-reverse items-center gap-2 rounded-2xl bg-[#d7ac55]/10 px-3 py-2 text-left">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#d7ac55]/15 text-lg font-black text-[#edcb78]">{data.matchScore?.[1] ?? 0}</span>
-          <div className="min-w-0"><p className="text-[10px] font-black text-[#edcb78]">لهم</p><p className="truncate text-[9px] font-bold text-white/55">{second.map((player) => player.name.split(" ")[0]).join(" + ")}</p></div>
+          <div className="min-w-0"><p className="text-[10px] font-black text-[#edcb78]">الفريق 2</p><p className="truncate text-[9px] font-bold text-white/55">{second.map((player) => player.name.split(" ")[0]).join(" + ")}</p></div>
         </div>
       </div>
     );
@@ -4601,7 +4601,7 @@ function BalootRoom({
               })}
               {!data.trick.length && <p className="absolute inset-x-4 top-1/2 -translate-y-1/2 text-center text-[11px] font-bold text-white/45 sm:text-sm">ارمِ ورقتك هنا<br />الفائز بالأكلة يبدأ التالية</p>}
             </div>
-            <div className="flex gap-2 text-[10px] font-black text-white/70 sm:text-xs"><span className="rounded-full bg-emerald-400/10 px-3 py-1 text-emerald-200">لنا {data.teamTricks[0]} أكلات</span><span className="rounded-full bg-[#d8af58]/10 px-3 py-1 text-[#efd07d]">لهم {data.teamTricks[1]} أكلات</span></div>
+            <div className="flex gap-2 text-[10px] font-black text-white/70 sm:text-xs"><span className="rounded-full bg-emerald-400/10 px-3 py-1 text-emerald-200">فريق 1 · {data.teamTricks[0]} أكلات</span><span className="rounded-full bg-[#d8af58]/10 px-3 py-1 text-[#efd07d]">فريق 2 · {data.teamTricks[1]} أكلات</span></div>
           </div>
         </div>
       </GameTableSurface>
