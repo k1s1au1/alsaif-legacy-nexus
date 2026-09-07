@@ -2623,14 +2623,20 @@ function GameBoard({
       className={cn(
         "grid gap-5 lg:grid-cols-[1fr_260px]",
         gameMode && "fixed inset-0 z-[9999] block h-screen h-[100dvh] w-screen overflow-hidden bg-[#031d18]",
+        gameMode && state.game === "saudi-deal" && "bg-cover bg-center",
         gameMode && preferences.reducedMotion && "[&_*]:!animate-none [&_*]:!transition-none",
       )}
+      style={gameMode && state.game === "saudi-deal" ? {
+        backgroundImage: "linear-gradient(rgba(1,31,25,.28),rgba(1,24,20,.5)),url('/assets/games/saudi-deal-majlis-bg.webp')",
+        backgroundPosition: "center top",
+      } : undefined}
     >
-      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none")}>
+      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && state.game === "saudi-deal" && "bg-transparent")}>
         <div
           className={cn(
             "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
             gameMode && "relative mb-0 min-h-[82px] shrink-0 border-white/10 bg-[radial-gradient(circle_at_50%_0%,#0b5a48_0%,#052d26_58%,#031f1a_100%)] px-3 pb-2 text-white shadow-lg",
+            gameMode && state.game === "saudi-deal" && "bg-none bg-[#032b24]/85 backdrop-blur-md",
           )}
           style={gameMode ? { paddingTop: "max(.5rem, env(safe-area-inset-top))" } : undefined}
         >
@@ -2688,7 +2694,10 @@ function GameBoard({
         </div>
 
         <div
-          className={cn(gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_50%_12%,rgba(23,102,80,.32),transparent_42%),linear-gradient(#031d18,#021713)] px-2 py-2 sm:px-4")}
+          className={cn(
+            gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_50%_12%,rgba(23,102,80,.32),transparent_42%),linear-gradient(#031d18,#021713)] px-2 py-2 sm:px-4",
+            gameMode && state.game === "saudi-deal" && "bg-none bg-transparent",
+          )}
           style={gameMode ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
         >
           {state.game === "uno" && <UnoRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
@@ -3451,14 +3460,14 @@ function DealPublicPropertyCard({
       onClick={onTarget}
       aria-label={targetable ? `استحواذ على ${card.label}` : `${card.label}${protectedProperty ? "، مجموعة محمية" : ""}`}
       className={cn(
-        "relative flex h-[78px] w-[54px] shrink-0 flex-col overflow-hidden rounded-[10px] border-2 border-[#fff9e8] bg-[#fbf4e5] text-[#123c32] shadow-[0_7px_15px_-7px_rgba(0,0,0,.9)] transition sm:h-24 sm:w-16",
+        "relative flex h-[70px] w-12 shrink-0 flex-col overflow-hidden rounded-[9px] border-2 border-[#fff9e8] bg-[#fbf4e5] text-[#123c32] shadow-[0_7px_15px_-7px_rgba(0,0,0,.9)] transition sm:h-24 sm:w-16",
         targetable && "-translate-y-1 cursor-pointer ring-2 ring-[#ffd66e] shadow-[0_0_20px_rgba(255,209,92,.75)]",
         protectedProperty && "opacity-80",
       )}
       style={{ borderTopColor: group?.color ?? "#49645b", borderTopWidth: 7 }}
     >
-      <PropertyIcon className="mx-auto mt-2 size-5 sm:size-6" style={{ color: group?.color ?? "#49645b" }} />
-      <span className="mt-1 line-clamp-2 px-1 text-center text-[9px] font-black leading-3 sm:text-[10px]">{card.label}</span>
+      <PropertyIcon className="mx-auto mt-1.5 size-4 sm:mt-2 sm:size-6" style={{ color: group?.color ?? "#49645b" }} />
+      <span className="mt-1 line-clamp-2 px-1 text-center text-[8px] font-black leading-[10px] sm:text-[10px] sm:leading-3">{card.label}</span>
       <span className="mt-auto w-full border-t border-[#123c32]/10 py-1 text-center text-[8px] font-black" style={{ color: group?.color }}>{group?.label}</span>
       {targetable && <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-[#f2c85f] text-[#093e34] shadow"><Target className="size-3.5" /></span>}
       {protectedProperty && <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-[#0b5948] text-[#efd17d] shadow"><ShieldCheck className="size-3.5" /></span>}
@@ -3509,9 +3518,9 @@ function DealPublicRack({
   const bank = (data.banks[player.id] ?? []) as DealCard[];
   const bankTotal = bank.reduce((sum, card) => sum + card.value, 0);
   const positionClass = {
-    top: "left-1/2 top-2 w-[60%] max-w-[310px] -translate-x-1/2",
-    right: "right-1.5 top-[28%] w-[29%] max-w-[138px]",
-    left: "left-1.5 top-[28%] w-[29%] max-w-[138px]",
+    top: "left-1/2 top-2 w-[56%] max-w-[300px] -translate-x-1/2",
+    right: "right-1 top-[31%] w-[24%] max-w-[112px]",
+    left: "left-1 top-[31%] w-[24%] max-w-[112px]",
   }[position];
   const groupProgress = DEAL_GROUPS.map((group) => ({
     group,
@@ -3530,24 +3539,31 @@ function DealPublicRack({
         <span className={cn("-mt-1 max-w-[110px] truncate rounded-full border px-3 py-1 text-[10px] font-black shadow", active ? "border-[#f3cf72] bg-[#0a4c3e] text-[#f5d47c]" : "border-[#d3b768]/70 bg-[#06352c] text-white")}>{player.name.split(" ")[0]}</span>
       </button>
 
-      <div className={cn("mt-1 w-full rounded-2xl border bg-[#052d26]/95 p-1.5 shadow-xl backdrop-blur-sm", targetingRent ? "border-[#ffd468] ring-2 ring-[#ffd468]/25" : "border-[#dabb6c]/55")}>
-        <div className={cn("scrollbar-none flex gap-1 overflow-auto pb-1", position !== "top" && "max-h-[172px] flex-col items-center overflow-y-auto overflow-x-hidden sm:max-h-[212px]")}>
-          {properties.length ? properties.map((property) => {
-            const protectedProperty = isProtectedDealProperty(properties, property);
-            const targetable = Boolean(targetingProperty && !protectedProperty);
-            return (
-              <DealPublicPropertyCard
-                key={property.id}
-                card={property}
-                protectedProperty={protectedProperty}
-                targetable={targetable}
-                onTarget={() => onPropertyTarget(property)}
-              />
-            );
-          }) : <span className="flex min-h-12 w-full items-center justify-center text-center text-[9px] font-bold text-white/35">لا توجد أراضٍ</span>}
-        </div>
+      <div className={cn("mt-1 flex w-full flex-col items-center", targetingRent && "rounded-2xl ring-2 ring-[#ffd468]/40")}>
+        {properties.length ? (
+          <div className={cn(
+            "scrollbar-none flex max-w-full justify-center gap-1 overflow-x-auto rounded-xl border border-[#dabb6c]/45 bg-[#052d26]/80 p-1 shadow-xl backdrop-blur-sm",
+            position !== "top" && "grid max-h-[160px] grid-cols-1 justify-items-center overflow-x-hidden overflow-y-auto",
+          )}>
+            {properties.map((property) => {
+              const protectedProperty = isProtectedDealProperty(properties, property);
+              const targetable = Boolean(targetingProperty && !protectedProperty);
+              return (
+                <DealPublicPropertyCard
+                  key={property.id}
+                  card={property}
+                  protectedProperty={protectedProperty}
+                  targetable={targetable}
+                  onTarget={() => onPropertyTarget(property)}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <span className="rounded-full border border-dashed border-white/20 bg-[#052d26]/75 px-3 py-1 text-center text-[9px] font-bold text-white/40 shadow">لا أراضٍ</span>
+        )}
 
-        <div className="mt-1 flex flex-wrap items-center justify-center gap-1 border-t border-white/10 pt-1">
+        <div className="mt-1 flex max-w-full flex-wrap items-center justify-center gap-1 rounded-full border border-[#dabb6c]/35 bg-[#052d26]/90 px-2 py-1 shadow backdrop-blur-sm">
           {groupProgress.slice(0, 3).map(({ group, count }) => (
             <span key={group.id} className="rounded-full px-1.5 py-0.5 text-[8px] font-black text-white" style={{ backgroundColor: group.color }}>{count}/{group.size}</span>
           ))}
@@ -3636,7 +3652,15 @@ function SaudiDealRoom({
         : "انتهت الحركات";
 
   return (
-    <div className={cn("space-y-3", immersive && "-mx-1")}> 
+    <div
+      className={cn(
+        "relative isolate space-y-3",
+        immersive ? "-mx-1 px-4 sm:px-8" : "overflow-hidden rounded-[34px] bg-cover bg-center p-3 sm:p-6",
+      )}
+      style={!immersive ? {
+        backgroundImage: "linear-gradient(rgba(1,31,25,.3),rgba(1,24,20,.56)),url('/assets/games/saudi-deal-majlis-bg.webp')",
+      } : undefined}
+    >
       <div className="mx-auto flex w-full max-w-2xl items-center justify-center gap-3 rounded-full border border-[#dfbf6c]/35 bg-[#073d32] px-4 py-2.5 text-white shadow-[0_10px_28px_-20px_rgba(0,0,0,.9)]">
         {active && <PlayerAvatar player={active} size="sm" />}
         <div className="min-w-0 text-center">
@@ -3651,12 +3675,15 @@ function SaudiDealRoom({
       </div>
 
       <div
-        className="mx-auto w-full max-w-5xl rounded-[36px] border border-[#e6c472]/65 p-[7px] shadow-[0_28px_70px_-36px_rgba(0,0,0,.95)] sm:p-[10px]"
-        style={{ backgroundImage: "repeating-linear-gradient(112deg,#2a160b 0 10px,#6d3f20 10px 18px,#3b2110 18px 26px,#9a642f 26px 32px)" }}
+        className="mx-auto w-full max-w-4xl rounded-[36px] border border-[#e6c472]/70 p-[7px] shadow-[0_28px_70px_-26px_rgba(0,0,0,.98)] sm:p-[10px]"
+        style={{
+          backgroundColor: "#4a2915",
+          backgroundImage: "radial-gradient(circle at 18% 8%,rgba(255,203,116,.22),transparent 23%),linear-gradient(90deg,rgba(20,8,3,.72),transparent 12%,transparent 88%,rgba(20,8,3,.72)),repeating-linear-gradient(104deg,#2a150a 0 7px,#72421f 7px 14px,#3a1e0e 14px 22px,#9b6530 22px 28px)",
+        }}
       >
         <div className="overflow-hidden rounded-[29px] border border-[#f2d487]/30 bg-[#073d32]">
           <div
-            className={cn("relative min-h-[530px] overflow-hidden sm:min-h-[650px] lg:min-h-[710px]", immersive && "min-h-[540px]")}
+            className={cn("relative min-h-[500px] overflow-hidden sm:min-h-[620px] lg:min-h-[690px]", immersive && "min-h-[470px]")}
             style={{
               backgroundImage: "radial-gradient(circle at 50% 47%,rgba(27,121,91,.34),transparent 43%),linear-gradient(135deg,rgba(239,205,115,.04) 25%,transparent 25%,transparent 50%,rgba(239,205,115,.04) 50%,rgba(239,205,115,.04) 75%,transparent 75%,transparent)",
               backgroundSize: "auto,28px 28px",
@@ -3691,8 +3718,12 @@ function SaudiDealRoom({
               </div>
             )}
 
-            <div className="absolute left-1/2 top-[56%] z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 sm:top-[55%]">
-              <div className="flex items-center justify-center gap-2 sm:gap-4">
+            <div className="absolute left-1/2 top-[57%] z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 sm:top-[56%]">
+              <div className="rounded-full border border-[#f0d17a]/55 bg-[#06392f]/90 p-1.5 shadow-[0_0_30px_rgba(224,187,92,.25)]">
+                <TableBrandSeal logoUrl={logoUrl} className="size-[76px] border-[3px] sm:size-[98px]" />
+              </div>
+
+              <div className="flex items-center justify-center gap-3 sm:gap-4">
                 <button
                   type="button"
                   aria-label={`سحب ${hand.length ? 2 : 5} أوراق من رزمة سعودي ديل`}
@@ -3703,10 +3734,6 @@ function SaudiDealRoom({
                   <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "السيف"} count={data.drawPile.length} compact className="h-[78px] w-[52px] rounded-[10px]" />
                   {amActive && data.needsDraw && <span className="absolute -inset-2 -z-10 animate-pulse rounded-2xl bg-[#f0cb68]/20 blur" />}
                 </button>
-
-                <div className="rounded-full border border-[#f0d17a]/55 bg-[#06392f]/90 p-1.5 shadow-[0_0_30px_rgba(224,187,92,.25)]">
-                  <TableBrandSeal logoUrl={logoUrl} className="size-[78px] border-[3px] sm:size-[98px]" />
-                </div>
 
                 {lastDiscard ? (
                   <button
@@ -3725,7 +3752,7 @@ function SaudiDealRoom({
                 )}
               </div>
 
-              <p className="max-w-[260px] truncate rounded-full border border-white/5 bg-black/25 px-4 py-1.5 text-center text-[10px] font-bold text-white/55 sm:max-w-[360px] sm:text-xs">{data.lastAction}</p>
+              <p className="max-w-[220px] truncate rounded-full border border-white/5 bg-black/30 px-4 py-1.5 text-center text-[10px] font-bold text-white/55 sm:max-w-[360px] sm:text-xs">{data.lastAction}</p>
             </div>
 
             <button
@@ -3846,9 +3873,9 @@ function SaudiDealRoom({
                         type="button"
                         onClick={() => setActionHelpCard(card)}
                         aria-label={`شرح بطاقة ${card.label}`}
-                        className={cn("absolute -left-1.5 top-2 z-40 flex items-center rounded-full border border-[#f5da8a] bg-[#fff8df] font-black text-[#744313] shadow-lg transition active:scale-95", selected ? "h-7 gap-1 px-2 text-[9px]" : "size-6 justify-center")}
+                        className={cn("absolute top-1.5 z-40 flex items-center rounded-full border border-[#f5da8a] bg-[#fff8df] font-black text-[#744313] shadow-lg transition active:scale-95", selected ? "-left-1.5 h-7 gap-1 px-2 text-[9px]" : "left-1 size-5 justify-center")}
                       >
-                        <HelpCircle className="size-3.5" /> {selected && <span>شرح</span>}
+                        <HelpCircle className={selected ? "size-3.5" : "size-3"} /> {selected && <span>شرح</span>}
                       </button>
                     )}
                   </div>
