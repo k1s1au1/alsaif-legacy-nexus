@@ -483,6 +483,7 @@ function FamilyOccasionsPage() {
   const [members, setMembers] = useState<Array<{ id: string; name: string }>>([]);
   const [visibility, setVisibility] = useState<OccasionVisibility>("public");
   const [invitees, setInvitees] = useState<string[]>([]);
+  const [inviteeQuery, setInviteeQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [viewingOccasion, setViewingOccasion] = useState<Occasion | null>(null);
@@ -548,6 +549,7 @@ function FamilyOccasionsPage() {
     setAudience("adult");
     setVisibility("public");
     setInvitees([]);
+    setInviteeQuery("");
     setX({ inviteMode: "public", showLogo: true, fontFamily: "ibm", fontScale: 1 });
   }
 
