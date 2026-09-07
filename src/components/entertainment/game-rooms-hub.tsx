@@ -9,17 +9,22 @@ import {
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
+  Banknote,
   Bot,
+  Building2,
   Check,
   ChevronLeft,
   Clipboard,
   Crown,
   Gavel,
   HelpCircle,
+  Landmark,
   Link2,
   Loader2,
   LogOut,
+  MapPin,
   Medal,
+  Mountain,
   Play,
   RefreshCcw,
   RotateCw,
@@ -30,8 +35,10 @@ import {
   Timer,
   Trophy,
   Trash2,
+  Trees,
   UserCheck,
   Users,
+  Waves,
   Wifi,
   WifiOff,
   Zap,
@@ -39,6 +46,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TRIVIA_QUESTIONS } from "@/data/trivia-questions";
+import { useSiteLogo } from "@/hooks/use-site-logo";
 import { cn } from "@/lib/utils";
 
 type GameKey =
@@ -235,14 +243,14 @@ const UNO_COLOR_LABELS: Record<Exclude<UnoColor, "wild">, string> = {
 };
 
 const DEAL_GROUPS = [
-  { id: "najd", label: "نجد", color: "#b7791f", size: 2 },
-  { id: "hijaz", label: "الحجاز", color: "#2563eb", size: 3 },
-  { id: "sharqiya", label: "الشرقية", color: "#0891b2", size: 3 },
-  { id: "shamal", label: "الشمال", color: "#7c3aed", size: 2 },
-  { id: "janoub", label: "الجنوب", color: "#16a34a", size: 3 },
-  { id: "wasat", label: "الوسطى", color: "#dc2626", size: 3 },
-  { id: "sahil", label: "الساحل", color: "#ea580c", size: 2 },
-  { id: "wadi", label: "الوادي", color: "#475569", size: 2 },
+  { id: "najd", label: "نجد", color: "#a66a1f", size: 2, cities: ["الدرعية", "الرياض"] },
+  { id: "hijaz", label: "الحجاز", color: "#245a9b", size: 3, cities: ["مكة المكرمة", "المدينة المنورة", "جدة"] },
+  { id: "sharqiya", label: "الشرقية", color: "#087f8c", size: 3, cities: ["الأحساء", "الدمام", "الخبر"] },
+  { id: "shamal", label: "الشمال", color: "#7650a8", size: 2, cities: ["العلا", "تبوك"] },
+  { id: "janoub", label: "الجنوب", color: "#397b45", size: 3, cities: ["أبها", "جازان", "الباحة"] },
+  { id: "wasat", label: "الوسطى", color: "#a8443c", size: 3, cities: ["القصيم", "شقراء", "الخرج"] },
+  { id: "sahil", label: "الساحل", color: "#c1652d", size: 2, cities: ["ينبع", "أملج"] },
+  { id: "wadi", label: "الوادي", color: "#52636e", size: 2, cities: ["نجران", "وادي الدواسر"] },
 ] as const;
 
 const BALOOT_SUITS: BalootSuit[] = ["spades", "hearts", "diamonds", "clubs"];
@@ -334,7 +342,7 @@ function buildDealDeck(): DealCard[] {
       cards.push({
         id: `deal-${id++}`,
         type: "property",
-        label: `أرض ${group.label}`,
+        label: group.cities[index % group.cities.length],
         value: Math.max(1, group.size - 1),
         group: group.id,
       });
@@ -2304,6 +2312,7 @@ function GameBoard({
 }) {
   const meta = gameMeta(state.game);
   const GameIcon = meta.icon;
+  const logoUrl = useSiteLogo();
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_260px]">
       <Surface className="min-h-[520px] overflow-hidden p-5 sm:p-8">
@@ -2324,15 +2333,15 @@ function GameBoard({
           )}
         </div>
 
-        {state.game === "uno" && <UnoRoom state={state} players={players} me={me} dispatch={dispatch} />}
-        {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} dispatch={dispatch} />}
+        {state.game === "uno" && <UnoRoom state={state} players={players} me={me} logoUrl={logoUrl} dispatch={dispatch} />}
+        {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} logoUrl={logoUrl} dispatch={dispatch} />}
         {state.game === "trivia" && <TriviaGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
         {state.game === "judge" && <JudgeGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
         {state.game === "challenge30" && <ChallengeGame state={state} players={players} me={me} isHost={isHost} now={now} dispatch={dispatch} />}
         {state.game === "auction" && <AuctionRoom state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
         {state.game === "word-duel" && <WordDuelRoom state={state} players={players} me={me} dispatch={dispatch} />}
         {state.game === "wheel" && <WheelRoom state={state} players={players} isHost={isHost} dispatch={dispatch} />}
-        {state.game === "baloot" && <BalootRoom state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
+        {state.game === "baloot" && <BalootRoom state={state} players={players} me={me} isHost={isHost} logoUrl={logoUrl} dispatch={dispatch} />}
       </Surface>
 
       <ScoreRail players={players} scores={state.scores} hostId={players.find((player) => player.isHost)?.id} />
@@ -2396,6 +2405,138 @@ function PrimaryAction({
   );
 }
 
+function orderPlayersAroundMe(players: Player[], meId: string) {
+  const myIndex = players.findIndex((player) => player.id === meId);
+  if (myIndex <= 0) return players;
+  return [...players.slice(myIndex), ...players.slice(0, myIndex)];
+}
+
+function GameTableSurface({
+  children,
+  className,
+  trim = "gold",
+}: {
+  children: ReactNode;
+  className?: string;
+  trim?: "gold" | "uno" | "ivory";
+}) {
+  const trimClass = trim === "uno"
+    ? "from-rose-600 via-amber-400 to-blue-700"
+    : trim === "ivory"
+      ? "from-[#f5e6bd] via-[#76502b] to-[#e2c17d]"
+      : "from-[#d9b568] via-[#68401f] to-[#bd8b3e]";
+  return (
+    <div className={cn("rounded-[38px] bg-gradient-to-br p-[6px] shadow-[0_28px_65px_-34px_rgba(2,20,16,.9)]", trimClass)}>
+      <div
+        className={cn("relative isolate overflow-hidden rounded-[31px] border border-[#f2d999]/50 bg-[#073d32] text-white", className)}
+        style={{
+          backgroundImage:
+            "linear-gradient(135deg, rgba(255,255,255,.025) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.025) 50%, rgba(255,255,255,.025) 75%, transparent 75%, transparent)",
+          backgroundSize: "28px 28px",
+        }}
+      >
+        <div aria-hidden className="pointer-events-none absolute inset-3 rounded-[23px] border border-[#e5c878]/18" />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function TableBrandSeal({
+  logoUrl,
+  className,
+}: {
+  logoUrl: string | null;
+  className?: string;
+}) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "pointer-events-none flex size-28 shrink-0 items-center justify-center rounded-full border-2 border-[#d8b663]/70 bg-[#f8f3e6]/95 p-2 shadow-[0_12px_32px_-18px_rgba(0,0,0,.9)] sm:size-36",
+        className,
+      )}
+    >
+      {logoUrl ? (
+        <img src={logoUrl} alt="" className="size-full object-contain" />
+      ) : (
+        <span className="flex size-full items-center justify-center rounded-full border border-[#b9954d] text-center text-base font-black text-[#0b4d3f] sm:text-xl">
+          السيف
+        </span>
+      )}
+    </div>
+  );
+}
+
+function TablePlayerSeat({
+  player,
+  active,
+  detail,
+  children,
+  className,
+}: {
+  player: Player;
+  active: boolean;
+  detail?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "min-w-0 rounded-2xl border bg-[#031f1a]/88 p-2 text-center shadow-[0_10px_22px_-14px_rgba(0,0,0,.95)] backdrop-blur-sm transition sm:p-3",
+        active ? "border-[#e1bd66] ring-2 ring-[#e1bd66]/25" : "border-white/15",
+        className,
+      )}
+    >
+      <div className="flex min-w-0 items-center justify-center gap-1.5">
+        <PlayerAvatar player={player} size="sm" />
+        <p className="min-w-0 truncate text-xs font-black text-white sm:text-sm">{player.name}</p>
+        {player.isBot && <Bot className="size-3.5 shrink-0 text-[#e1bd66]" />}
+      </div>
+      {detail && <div className="mt-1 text-[11px] font-bold text-white/65 sm:text-xs">{detail}</div>}
+      {children}
+    </div>
+  );
+}
+
+function BrandedCardBack({
+  label = "السيف",
+  count,
+  compact = false,
+  className,
+}: {
+  label?: string;
+  count?: number;
+  compact?: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl border-[3px] border-[#f6e8c2] bg-gradient-to-br from-[#0d5c4a] via-[#052d26] to-[#0a4c3e] p-1 text-[#f0d184] shadow-xl",
+        compact ? "h-20 w-14" : "h-28 w-[76px] sm:h-32 sm:w-[86px]",
+        className,
+      )}
+    >
+      <span aria-hidden className="absolute inset-1 rounded-lg border border-[#d6b45f]/65" />
+      <span aria-hidden className="absolute inset-2 rotate-45 rounded-lg border border-[#d6b45f]/20" />
+      <span className="relative text-center text-xs font-black leading-4 sm:text-sm">{label}</span>
+      {count != null && <span className="absolute bottom-1.5 rounded-full bg-black/35 px-2 py-0.5 text-[10px] font-black text-white">{count}</span>}
+    </div>
+  );
+}
+
+function CardHandTray({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className="rounded-[32px] bg-gradient-to-br from-[#b58a43] via-[#5d381d] to-[#9d6d30] p-1.5 shadow-[0_18px_40px_-28px_rgba(0,0,0,.85)]">
+      <div className={cn("flex min-h-48 gap-2 overflow-x-auto rounded-[26px] border border-[#e7cb8e]/30 bg-[#07382f] p-4 pb-5", className)}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function unoValueLabel(value: string) {
   if (value === "skip") return "تخطي";
   if (value === "reverse") return "عكس";
@@ -2450,11 +2591,13 @@ function UnoRoom({
   state,
   players,
   me,
+  logoUrl,
   dispatch,
 }: {
   state: RoomState;
   players: Player[];
   me: Player;
+  logoUrl: string | null;
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const data = state.data;
@@ -2469,6 +2612,7 @@ function UnoRoom({
     green: "bg-emerald-600",
     yellow: "bg-amber-400 text-slate-900",
   };
+  const opponents = players.filter((player) => player.id !== me.id);
 
   const play = (card: UnoCard) => {
     if (card.color === "wild") {
@@ -2480,45 +2624,73 @@ function UnoRoom({
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {players.filter((player) => player.id !== me.id).map((player) => (
-          <div key={player.id} className={cn("min-w-32 rounded-2xl border p-3 text-center", active?.id === player.id ? "border-gold-primary bg-gold-primary/10" : "border-border bg-muted/30")}>
-            <PlayerAvatar player={player} />
-            <p className="mt-2 truncate text-xs font-black text-primary">{player.name}</p>
-            <p className="text-xs font-bold text-muted-foreground">{data.hands[player.id]?.length ?? 0} أوراق</p>
-            {data.unoCalled[player.id] && <span className="mt-1 inline-block rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black text-white">أونو!</span>}
+      <GameTableSurface trim="uno" className="min-h-[510px] sm:min-h-[590px]">
+        <div className="relative z-10 flex min-h-[510px] flex-col justify-between p-3 sm:min-h-[590px] sm:p-5">
+          <div className="flex min-h-[92px] gap-2 overflow-x-auto pb-1">
+            {opponents.map((player) => {
+              const cardCount = data.hands[player.id]?.length ?? 0;
+              return (
+                <TablePlayerSeat
+                  key={player.id}
+                  player={player}
+                  active={active?.id === player.id}
+                  detail={`${cardCount} أوراق`}
+                  className="min-w-[112px] flex-1 sm:min-w-[132px]"
+                >
+                  <div className="mt-1.5 flex justify-center -space-x-2 space-x-reverse">
+                    {Array.from({ length: Math.min(cardCount, 4) }).map((_, index) => (
+                      <BrandedCardBack key={index} label="" compact className="h-8 w-5 rounded-md border-2 p-0 shadow" />
+                    ))}
+                  </div>
+                  {data.unoCalled[player.id] && <span className="mt-1 inline-block rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black text-white">أونو!</span>}
+                </TablePlayerSeat>
+              );
+            })}
           </div>
-        ))}
-      </div>
 
-      <div className="grid items-center gap-5 rounded-[32px] bg-gradient-to-br from-[#083f34] to-[#061d18] p-5 text-white sm:grid-cols-[1fr_auto_1fr] sm:p-8">
-        <div className="text-center sm:text-right">
-          <p className="text-xs font-black text-gold-primary">الدور الآن</p>
-          <p className="mt-1 text-xl font-black">{active?.name ?? "—"}</p>
-          <div className="mt-3 flex items-center justify-center gap-2 sm:justify-start">
-            <span className={cn("size-4 rounded-full", colorClass[data.currentColor])} />
-            <span className="text-sm font-bold text-white/70">اللون: {UNO_COLOR_LABELS[data.currentColor as Exclude<UnoColor, "wild">]}</span>
+          <div className="grid flex-1 grid-cols-[minmax(68px,1fr)_auto_minmax(68px,1fr)] items-center gap-2 py-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-5">
+            <div className="text-center sm:text-right">
+              <p className="text-[11px] font-black text-[#edcc7c] sm:text-sm">الدور الآن</p>
+              <p className="mt-1 truncate text-sm font-black sm:text-xl">{active?.name ?? "—"}</p>
+              <div className="mt-2 flex items-center justify-center gap-1.5 sm:justify-start">
+                <span className={cn("size-3.5 shrink-0 rounded-full ring-2 ring-white/25", colorClass[data.currentColor])} />
+                <span className="text-[10px] font-bold text-white/65 sm:text-sm">
+                  {UNO_COLOR_LABELS[data.currentColor as Exclude<UnoColor, "wild">] ?? data.currentColor}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-3">
+              <TableBrandSeal logoUrl={logoUrl} className="size-24 sm:size-32" />
+              <div className="flex items-end justify-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  aria-label="سحب ورقة من رزمة أونو"
+                  disabled={!amActive || Boolean(data.drawnCardId)}
+                  onClick={() => void dispatch("uno-draw")}
+                  className="transition enabled:hover:-translate-y-1 enabled:active:scale-95 disabled:opacity-45"
+                >
+                  <BrandedCardBack label="أونو" count={data.drawPile.length} compact className="h-24 w-16 sm:h-28 sm:w-[76px]" />
+                </button>
+                <UnoCardFace card={top} small />
+              </div>
+            </div>
+
+            <div className="text-center sm:text-left">
+              <p className="text-[10px] font-bold text-white/55 sm:text-xs">اتجاه اللعب</p>
+              <p className="mt-1 text-2xl font-black text-[#edcc7c] sm:text-4xl">{data.direction === 1 ? "↺" : "↻"}</p>
+              <p className="mt-1 text-[10px] font-bold leading-4 text-white/60 sm:text-xs">{data.direction === 1 ? "المعتاد" : "معكوس"}</p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex justify-center gap-3">
-          <button
-            type="button"
-            disabled={!amActive || Boolean(data.drawnCardId)}
-            onClick={() => void dispatch("uno-draw")}
-            className="relative h-36 w-24 rounded-2xl border-4 border-white bg-gradient-to-br from-slate-950 via-rose-700 to-slate-950 shadow-2xl disabled:opacity-40 sm:h-44 sm:w-28"
-          >
-            <span className="absolute inset-3 flex rotate-12 items-center justify-center rounded-[50%] border-2 border-white/70 text-lg font-black">أونو</span>
-          </button>
-          <UnoCardFace card={top} />
+          <TablePlayerSeat
+            player={me}
+            active={amActive}
+            detail={`يدك · ${hand.length} أوراق`}
+            className="mx-auto w-full max-w-[220px] border-[#dfbd6a]/40"
+          />
         </div>
-
-        <div className="text-center sm:text-left">
-          <p className="text-xs font-bold text-white/55">المتبقي في الرزمة</p>
-          <p className="text-4xl font-black text-gold-primary">{data.drawPile.length}</p>
-          <p className="mt-2 text-xs font-bold text-white/60">{data.direction === 1 ? "اتجاه اللعب المعتاد" : "اتجاه اللعب معكوس"}</p>
-        </div>
-      </div>
+      </GameTableSurface>
 
       {choosingWild && (
         <div className="rounded-3xl border-2 border-gold-primary bg-gold-primary/8 p-5 text-center">
@@ -2553,12 +2725,12 @@ function UnoRoom({
             </button>
           )}
         </div>
-        <div className="flex min-h-48 gap-2 overflow-x-auto rounded-3xl bg-muted/30 p-4 pb-5">
+        <CardHandTray>
           {hand.map((card) => {
             const playable = amActive && unoPlayable(card, data, hand) && (!data.drawnCardId || data.drawnCardId === card.id);
             return <UnoCardFace key={card.id} card={card} active={playable} onClick={() => play(card)} />;
           })}
-        </div>
+        </CardHandTray>
       </div>
 
       {amActive && data.drawnCardId && (
@@ -2573,58 +2745,111 @@ function dealGroup(card: DealCard) {
   return DEAL_GROUPS.find((group) => group.id === card.group);
 }
 
+function dealGroupIcon(groupId?: string): LucideIcon {
+  if (groupId === "najd") return Landmark;
+  if (groupId === "hijaz") return Building2;
+  if (groupId === "sharqiya") return Waves;
+  if (groupId === "shamal") return Mountain;
+  if (groupId === "janoub") return Trees;
+  if (groupId === "wasat") return Building2;
+  if (groupId === "sahil") return Waves;
+  if (groupId === "wadi") return Mountain;
+  return MapPin;
+}
+
 function DealCardFace({ card, compact = false }: { card: DealCard; compact?: boolean }) {
   const group = dealGroup(card);
-  const background = card.type === "property"
-    ? group?.color
-    : card.type === "money"
-      ? "#0b5b47"
-      : "#7c3f12";
+  const PropertyIcon = dealGroupIcon(card.group);
+  const ActionIcon = card.action === "draw2" ? Sparkles : card.action === "rent" ? Banknote : Gavel;
+
+  if (card.type === "property") {
+    return (
+      <div
+        className={cn(
+          "relative flex shrink-0 flex-col overflow-hidden rounded-2xl border-[3px] border-[#fffaf0] bg-[#fbf5e8] text-[#123b32] shadow-xl",
+          compact ? "h-28 w-[72px]" : "h-44 w-32 sm:h-48 sm:w-36",
+        )}
+      >
+        <div className={cn("flex items-center justify-between gap-1 px-2 text-white", compact ? "h-7" : "h-10 px-3")} style={{ backgroundColor: group?.color ?? "#49645b" }}>
+          <span className={cn("truncate font-black", compact ? "text-[9px]" : "text-xs")}>{group?.label ?? "مدينة"}</span>
+          <MapPin className={compact ? "size-3" : "size-4"} />
+        </div>
+        <div
+          className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-1 text-center"
+          style={{
+            backgroundImage: `linear-gradient(145deg, ${group?.color ?? "#49645b"}16, transparent 58%)`,
+          }}
+        >
+          <PropertyIcon className={cn("mb-1", compact ? "size-6" : "size-11")} style={{ color: group?.color ?? "#49645b" }} />
+          <span className={cn("font-black leading-tight", compact ? "text-[10px]" : "text-sm sm:text-base")}>{card.label}</span>
+          {!compact && <span className="mt-1 text-[10px] font-bold text-[#123b32]/55">ملكية سعودية</span>}
+        </div>
+        <div className={cn("flex items-center justify-between border-t border-[#173f35]/10 px-2 font-black", compact ? "h-6 text-[9px]" : "h-8 px-3 text-[11px]")}>
+          <span>سعودي ديل</span>
+          <span style={{ color: group?.color }}>{card.value}م</span>
+        </div>
+      </div>
+    );
+  }
+
+  const isMoney = card.type === "money";
+  const FeatureIcon = isMoney ? Banknote : ActionIcon;
   return (
     <div
       className={cn(
-        "relative flex shrink-0 flex-col overflow-hidden rounded-2xl border-4 border-white p-3 text-white shadow-xl",
-        compact ? "h-24 w-16" : "h-40 w-28 sm:h-44 sm:w-32",
+        "relative flex shrink-0 flex-col overflow-hidden rounded-2xl border-[3px] border-[#fff5d9] p-2 text-white shadow-xl",
+        isMoney ? "bg-gradient-to-br from-[#0f6b54] via-[#073c32] to-[#04251f]" : "bg-gradient-to-br from-[#a7702d] via-[#744313] to-[#321d0b]",
+        compact ? "h-28 w-[72px]" : "h-44 w-32 sm:h-48 sm:w-36",
       )}
-      style={{ backgroundColor: background }}
     >
-      <span className="text-[10px] font-black text-white/75">
-        {card.type === "property" ? "أرض" : card.type === "money" ? "نقد" : "أكشن"}
+      <span aria-hidden className="absolute inset-1 rounded-xl border border-[#f3d58d]/35" />
+      <span className={cn("relative font-black text-white/70", compact ? "text-[9px]" : "text-xs")}>
+        {isMoney ? "بنك السيف" : "بطاقة حركة"}
       </span>
-      <span className={cn("mt-auto text-center font-black leading-5", compact ? "text-[10px]" : "text-sm")}>{card.label}</span>
-      <span className="mt-auto self-end rounded-full bg-black/20 px-2 py-1 text-[10px] font-black">{card.value}م</span>
+      <FeatureIcon className={cn("relative mx-auto mt-auto text-[#f0cf78]", compact ? "size-7" : "size-12")} />
+      <span className={cn("relative mt-2 text-center font-black leading-tight", compact ? "text-[10px]" : "text-sm sm:text-base")}>{card.label}</span>
+      <span className={cn("relative mt-auto self-end rounded-full bg-black/25 px-2 py-1 font-black", compact ? "text-[9px]" : "text-[11px]")}>{card.value}م</span>
     </div>
   );
 }
 
-function PlayerDealTable({ player, data, highlight }: { player: Player; data: any; highlight: boolean }) {
+function PlayerDealSeat({
+  player,
+  data,
+  highlight,
+  className,
+}: {
+  player: Player;
+  data: any;
+  highlight: boolean;
+  className?: string;
+}) {
   const properties = (data.properties[player.id] ?? []) as DealCard[];
   const bank = (data.banks[player.id] ?? []) as DealCard[];
   const sets = completedDealSets(properties);
   return (
-    <div className={cn("rounded-3xl border-2 p-4", highlight ? "border-gold-primary bg-gold-primary/8" : "border-border bg-muted/20")}>
-      <div className="flex items-center gap-2">
-        <PlayerAvatar player={player} size="sm" />
-        <span className="min-w-0 flex-1 truncate text-sm font-black text-primary">{player.name}</span>
-        <span className="rounded-full bg-primary px-2 py-1 text-[10px] font-black text-primary-foreground">{sets}/3 مجموعات</span>
+    <TablePlayerSeat
+      player={player}
+      active={highlight}
+      detail={`${data.hands[player.id]?.length ?? 0} أوراق`}
+      className={cn("w-full", className)}
+    >
+      <div className="mt-2 flex h-8 items-end justify-center -space-x-2 space-x-reverse overflow-hidden">
+        {properties.slice(0, 7).map((property) => (
+          <span
+            key={property.id}
+            title={property.label}
+            className="h-7 w-5 shrink-0 rounded-t border border-white/70 shadow"
+            style={{ backgroundColor: dealGroup(property)?.color ?? "#49645b" }}
+          />
+        ))}
+        {!properties.length && <span className="self-center text-[10px] font-bold text-white/40">لا توجد أملاك</span>}
       </div>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {DEAL_GROUPS.map((group) => {
-          const count = properties.filter((card) => card.group === group.id).length;
-          if (!count) return null;
-          return (
-            <span key={group.id} className="rounded-full px-2.5 py-1 text-[10px] font-black text-white" style={{ backgroundColor: group.color }}>
-              {group.label} {count}/{group.size}
-            </span>
-          );
-        })}
-        {!properties.length && <span className="text-[11px] font-bold text-muted-foreground">لا توجد أراضٍ</span>}
+      <div className="mt-2 flex items-center justify-between gap-1 border-t border-white/10 pt-1.5 text-[10px] font-black text-white/70 sm:text-[11px]">
+        <span>{sets}/3 مجموعات</span>
+        <span className="text-[#edcc7c]">{bank.reduce((sum, card) => sum + card.value, 0)}م</span>
       </div>
-      <div className="mt-3 flex items-center justify-between text-xs font-black">
-        <span className="text-muted-foreground">البنك</span>
-        <span className="text-emerald-600">{bank.reduce((sum, card) => sum + card.value, 0)} مليون</span>
-      </div>
-    </div>
+    </TablePlayerSeat>
   );
 }
 
@@ -2632,17 +2857,21 @@ function SaudiDealRoom({
   state,
   players,
   me,
+  logoUrl,
   dispatch,
 }: {
   state: RoomState;
   players: Player[];
   me: Player;
+  logoUrl: string | null;
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const data = state.data;
   const active = players[data.turnIndex % Math.max(players.length, 1)];
   const amActive = active?.id === me.id;
   const hand = (data.hands[me.id] ?? []) as DealCard[];
+  const seatedPlayers = useMemo(() => orderPlayersAroundMe(players, me.id), [players, me.id]);
+  const lastDiscard = data.discard[data.discard.length - 1] as DealCard | undefined;
   const [pendingAction, setPendingAction] = useState<DealCard | null>(null);
 
   useEffect(() => setPendingAction(null), [data.turnIndex]);
@@ -2655,35 +2884,62 @@ function SaudiDealRoom({
     setPendingAction(card);
   };
 
+  const seatPositions = [
+    "col-start-2 row-start-3 self-end justify-self-center",
+    "col-start-1 row-start-2 self-center justify-self-start",
+    "col-start-2 row-start-1 self-start justify-self-center",
+    "col-start-3 row-start-2 self-center justify-self-end",
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="rounded-[32px] bg-gradient-to-br from-[#5e3b12] via-[#8b5a1f] to-[#1d160d] p-5 text-white sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            {active && <PlayerAvatar player={active} />}
-            <div>
-              <p className="text-xs font-black text-gold-primary">الدور عند {active?.name ?? "—"}</p>
-              <p className="mt-1 text-sm font-bold text-white/70">{data.lastAction}</p>
+      <GameTableSurface className="min-h-[570px] sm:min-h-[680px]">
+        <div className="relative z-10 grid min-h-[570px] grid-cols-[72px_minmax(112px,1fr)_72px] grid-rows-[118px_minmax(300px,1fr)_118px] gap-1.5 p-2 sm:min-h-[680px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[138px_minmax(360px,1fr)_138px] sm:gap-3 sm:p-5">
+          {seatedPlayers.slice(0, 4).map((player, index) => (
+            <PlayerDealSeat
+              key={player.id}
+              player={player}
+              data={data}
+              highlight={active?.id === player.id}
+              className={cn("relative z-20 max-w-[190px]", seatPositions[index])}
+            />
+          ))}
+
+          <div className="relative z-10 col-span-3 col-start-1 row-start-2 flex flex-col items-center justify-center gap-3 sm:gap-4">
+            <div className="max-w-[190px] rounded-full border border-[#edcc7c]/35 bg-black/25 px-3 py-1.5 text-center backdrop-blur-sm sm:max-w-[260px] sm:px-5 sm:py-2">
+              <p className="truncate text-[11px] font-black text-[#f0d184] sm:text-sm">الدور عند {active?.name ?? "—"}</p>
+              <p className="mt-0.5 truncate text-[10px] font-bold text-white/60 sm:text-xs">{data.lastAction}</p>
             </div>
-          </div>
-          <div className="flex gap-2 text-center">
-            <div className="rounded-2xl bg-black/20 px-4 py-2">
-              <p className="text-[10px] font-bold text-white/60">الحركات</p>
-              <p className="text-xl font-black text-gold-primary">{data.actionsLeft}</p>
+
+            <TableBrandSeal logoUrl={logoUrl} className="size-24 sm:size-40" />
+
+            <div className="flex items-end justify-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                aria-label={`سحب ${hand.length ? 2 : 5} أوراق من رزمة سعودي ديل`}
+                disabled={!amActive || !data.needsDraw}
+                onClick={() => void dispatch("deal-draw")}
+                className="transition enabled:hover:-translate-y-1 enabled:active:scale-95 disabled:opacity-55"
+              >
+                <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "سعودي ديل"} count={data.drawPile.length} compact className="h-24 w-16 sm:h-28 sm:w-[72px]" />
+              </button>
+              {lastDiscard ? (
+                <DealCardFace card={lastDiscard} compact />
+              ) : (
+                <div className="flex h-24 w-16 items-center justify-center rounded-2xl border-2 border-dashed border-white/20 text-center text-[10px] font-black text-white/35 sm:h-28 sm:w-[72px]">
+                  الأوراق<br />الملعوبة
+                </div>
+              )}
             </div>
-            <div className="rounded-2xl bg-black/20 px-4 py-2">
-              <p className="text-[10px] font-bold text-white/60">الرزمة</p>
-              <p className="text-xl font-black text-gold-primary">{data.drawPile.length}</p>
+
+            <div className="flex items-center gap-2 rounded-full bg-black/25 px-3 py-1 text-[10px] font-black text-white/65 sm:text-xs">
+              <span>الحركات: <b className="text-[#f0d184]">{data.actionsLeft}</b></span>
+              <span className="text-white/25">•</span>
+              <span>الرزمة: <b className="text-[#f0d184]">{data.drawPile.length}</b></span>
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        {players.map((player) => (
-          <PlayerDealTable key={player.id} player={player} data={data} highlight={active?.id === player.id} />
-        ))}
-      </div>
+      </GameTableSurface>
 
       {pendingAction?.action === "rent" && (
         <div className="rounded-3xl border-2 border-gold-primary bg-gold-primary/8 p-5">
@@ -2748,11 +3004,6 @@ function SaudiDealRoom({
             <p className="text-xs font-bold text-muted-foreground">أوراقك الخاصة</p>
             <p className="font-black text-primary">{hand.length} أوراق</p>
           </div>
-          {amActive && data.needsDraw && (
-            <button type="button" onClick={() => void dispatch("deal-draw")} className="rounded-2xl bg-gold-primary px-5 py-3 text-sm font-black text-[#10251e] shadow">
-              سحب {hand.length ? 2 : 5} أوراق
-            </button>
-          )}
           {amActive && !data.needsDraw && (
             <button
               type="button"
@@ -2766,7 +3017,7 @@ function SaudiDealRoom({
         </div>
 
         {hand.length > 7 && <p className="mb-3 rounded-xl bg-rose-500/10 p-3 text-center text-xs font-black text-rose-700">يجب التخلص من {hand.length - 7} أوراق قبل إنهاء الدور</p>}
-        <div className="flex min-h-60 gap-3 overflow-x-auto rounded-3xl bg-muted/30 p-4 pb-5">
+        <CardHandTray className="min-h-64 gap-3">
           {hand.map((card) => (
             <div key={card.id} className="w-32 shrink-0 space-y-2">
               <DealCardFace card={card} />
@@ -2791,7 +3042,7 @@ function SaudiDealRoom({
               )}
             </div>
           ))}
-        </div>
+        </CardHandTray>
       </div>
 
       {!amActive && <p className="text-center text-sm font-bold text-muted-foreground">بانتظار حركة {active?.name}</p>}
@@ -3276,17 +3527,50 @@ function BalootTeams({ players, data }: { players: Player[]; data: any }) {
   );
 }
 
+function BalootTableSeat({
+  player,
+  players,
+  data,
+  active,
+  className,
+}: {
+  player: Player;
+  players: Player[];
+  data: any;
+  active: boolean;
+  className?: string;
+}) {
+  const cardCount = data.hands[player.id]?.length ?? 0;
+  const teamIndex = Math.max(0, players.findIndex((item) => item.id === player.id)) % 2;
+  return (
+    <TablePlayerSeat
+      player={player}
+      active={active}
+      detail={`الفريق ${teamIndex === 0 ? "الأول" : "الثاني"} · ${cardCount} أوراق`}
+      className={cn("w-full", className)}
+    >
+      <div className="mt-2 flex justify-center -space-x-2 space-x-reverse">
+        {Array.from({ length: Math.min(cardCount, 4) }).map((_, index) => (
+          <BrandedCardBack key={index} label="" compact className="h-8 w-5 rounded-md border-2 p-0 shadow" />
+        ))}
+      </div>
+    </TablePlayerSeat>
+  );
+}
+
 function BalootRoom({
   state,
   players,
   me,
   isHost,
+  logoUrl,
   dispatch,
 }: {
   state: RoomState;
   players: Player[];
   me: Player;
   isHost: boolean;
+  logoUrl: string | null;
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const data = state.data;
@@ -3294,18 +3578,50 @@ function BalootRoom({
   const bidder = players[data.bidTurnIndex];
   const active = players[data.turnIndex];
   const contract = data.contract as { mode: "sun" | "hokm"; trump: BalootSuit | null; buyerId: string } | null;
+  const seatedPlayers = useMemo(() => orderPlayersAroundMe(players, me.id), [players, me.id]);
+  const seatPositions = [
+    "col-start-2 row-start-3 self-end justify-self-center",
+    "col-start-1 row-start-2 self-center justify-self-start",
+    "col-start-2 row-start-1 self-start justify-self-center",
+    "col-start-3 row-start-2 self-center justify-self-end",
+  ];
 
   if (data.stage === "bidding") {
     const myBid = bidder?.id === me.id;
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <BalootTeams players={players} data={data} />
-        <div className="rounded-[34px] bg-gradient-to-br from-[#083f34] to-[#061c17] p-6 text-center text-white sm:p-9">
-          <p className="text-xs font-black text-gold-primary">المشترى · اللفة {data.biddingRound === 1 ? "الأولى" : "الثانية"}</p>
-          <div className="mt-5 flex justify-center"><BalootCardFace card={data.buyCard} /></div>
-          <p className="mt-4 text-lg font-black">الشراء عند {bidder?.name ?? "—"}</p>
-          <p className="mt-1 text-xs font-bold text-white/60">{data.biddingRound === 1 ? "صن أو حكم بنوع المشترى" : "صن أو حكم ثانٍ بنوع مختلف"}</p>
-        </div>
+        <GameTableSurface trim="ivory" className="min-h-[560px] sm:min-h-[650px]">
+          <div className="relative z-10 grid min-h-[560px] grid-cols-[72px_minmax(112px,1fr)_72px] grid-rows-[118px_minmax(290px,1fr)_118px] gap-1.5 p-2 sm:min-h-[650px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[136px_minmax(330px,1fr)_136px] sm:gap-3 sm:p-5">
+            {seatedPlayers.slice(0, 4).map((player, index) => (
+              <BalootTableSeat
+                key={player.id}
+                player={player}
+                players={players}
+                data={data}
+                active={bidder?.id === player.id}
+                className={cn("relative z-20 max-w-[190px]", seatPositions[index])}
+              />
+            ))}
+
+            <div className="relative z-10 col-span-3 col-start-1 row-start-2 flex flex-col items-center justify-center gap-3 text-center">
+              <div className="rounded-full border border-[#edcc7c]/35 bg-black/25 px-4 py-2 backdrop-blur-sm">
+                <p className="text-[11px] font-black text-[#f0d184] sm:text-sm">المشترى · اللفة {data.biddingRound === 1 ? "الأولى" : "الثانية"}</p>
+                <p className="mt-0.5 text-[10px] font-bold text-white/60 sm:text-xs">الشراء عند {bidder?.name ?? "—"}</p>
+              </div>
+              <div className="flex items-center justify-center gap-4">
+                <TableBrandSeal logoUrl={logoUrl} className="size-24 sm:size-36" />
+                <div className="space-y-1">
+                  <BalootCardFace card={data.buyCard} compact />
+                  <span className="block text-[10px] font-black text-white/55">ورقة الشراء</span>
+                </div>
+              </div>
+              <p className="max-w-[230px] text-[11px] font-bold leading-5 text-white/65 sm:text-sm">
+                {data.biddingRound === 1 ? "صن أو حكم بنوع المشترى" : "صن أو حكم ثانٍ بنوع مختلف"}
+              </p>
+            </div>
+          </div>
+        </GameTableSurface>
 
         {myBid ? (
           <div className="space-y-3">
@@ -3339,9 +3655,9 @@ function BalootRoom({
 
         <div>
           <p className="mb-3 text-xs font-black text-muted-foreground">أوراقك الخاصة قبل الشراء</p>
-          <div className="flex gap-2 overflow-x-auto rounded-3xl bg-muted/30 p-4">
+          <CardHandTray>
             {hand.map((card) => <BalootCardFace key={card.id} card={card} />)}
-          </div>
+          </CardHandTray>
         </div>
       </div>
     );
@@ -3380,43 +3696,67 @@ function BalootRoom({
     <div className="space-y-6">
       <BalootTeams players={players} data={data} />
 
-      <div className="rounded-[34px] bg-gradient-to-br from-[#0b5b47] to-[#061d18] p-5 text-white sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-black text-gold-primary">{contract?.mode === "sun" ? "صن" : `حكم ${contract?.trump ? BALOOT_SUIT_LABEL[contract.trump] : ""}`}</p>
-            <p className="mt-1 text-lg font-black">الدور عند {active?.name ?? "—"}</p>
-          </div>
-          <div className="flex gap-2">
-            <span className="rounded-2xl bg-white/10 px-4 py-2 text-xs font-black">أكلات 1: {data.teamTricks[0]}</span>
-            <span className="rounded-2xl bg-white/10 px-4 py-2 text-xs font-black">أكلات 2: {data.teamTricks[1]}</span>
-          </div>
-        </div>
+      <GameTableSurface trim="ivory" className="min-h-[600px] sm:min-h-[700px]">
+        <div className="relative z-10 grid min-h-[600px] grid-cols-[72px_minmax(112px,1fr)_72px] grid-rows-[118px_minmax(340px,1fr)_118px] gap-1.5 p-2 sm:min-h-[700px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[136px_minmax(380px,1fr)_136px] sm:gap-3 sm:p-5">
+          {seatedPlayers.slice(0, 4).map((player, index) => (
+            <BalootTableSeat
+              key={player.id}
+              player={player}
+              players={players}
+              data={data}
+              active={active?.id === player.id}
+              className={cn("relative z-20 max-w-[190px]", seatPositions[index])}
+            />
+          ))}
 
-        <div className="mt-6 grid min-h-56 grid-cols-2 place-items-center gap-3 rounded-3xl border border-white/10 bg-black/15 p-4 sm:grid-cols-4">
-          {data.trick.map((play: { playerId: string; card: BalootCard }) => {
-            const player = players.find((item) => item.id === play.playerId);
-            return (
-              <div key={play.playerId} className="space-y-2 text-center">
-                <BalootCardFace card={play.card} compact />
-                <p className="max-w-20 truncate text-[10px] font-black text-white/70">{player?.name}</p>
-              </div>
-            );
-          })}
-          {!data.trick.length && <p className="col-span-full text-sm font-bold text-white/45">الفائز بالأكلة السابقة يبدأ</p>}
+          <div className="relative z-10 col-span-3 col-start-1 row-start-2 flex flex-col items-center justify-center gap-2">
+            <div className="flex items-center gap-2 rounded-full border border-[#edcc7c]/35 bg-black/25 px-3 py-1.5 text-[10px] font-black backdrop-blur-sm sm:px-5 sm:py-2 sm:text-sm">
+              <span className="text-[#f0d184]">{contract?.mode === "sun" ? "صن" : `حكم ${contract?.trump ? BALOOT_SUIT_LABEL[contract.trump] : ""}`}</span>
+              <span className="text-white/25">•</span>
+              <span className="max-w-28 truncate text-white/75 sm:max-w-none">الدور عند {active?.name ?? "—"}</span>
+            </div>
+
+            <div className="relative h-[278px] w-[214px] sm:h-[310px] sm:w-[280px]">
+              <TableBrandSeal logoUrl={logoUrl} className="absolute left-1/2 top-1/2 size-24 -translate-x-1/2 -translate-y-1/2 sm:size-36" />
+              {data.trick.map((play: { playerId: string; card: BalootCard }, index: number) => {
+                const player = players.find((item) => item.id === play.playerId);
+                const trickPositions = [
+                  "left-1/2 top-0 -translate-x-1/2",
+                  "right-0 top-1/2 -translate-y-1/2",
+                  "bottom-0 left-1/2 -translate-x-1/2",
+                  "left-0 top-1/2 -translate-y-1/2",
+                ];
+                return (
+                  <div key={play.playerId} className={cn("absolute space-y-0.5 text-center", trickPositions[index])}>
+                    <BalootCardFace card={play.card} compact />
+                    <p className="max-w-16 truncate text-[9px] font-black text-white/70">{player?.name}</p>
+                  </div>
+                );
+              })}
+              {!data.trick.length && (
+                <p className="absolute inset-x-0 bottom-4 text-center text-[11px] font-bold text-white/45 sm:text-sm">الفائز بالأكلة السابقة يبدأ</p>
+              )}
+            </div>
+
+            <div className="flex gap-2 text-[10px] font-black text-white/70 sm:text-xs">
+              <span className="rounded-full bg-white/10 px-3 py-1">أكلات 1: {data.teamTricks[0]}</span>
+              <span className="rounded-full bg-white/10 px-3 py-1">أكلات 2: {data.teamTricks[1]}</span>
+            </div>
+          </div>
         </div>
-      </div>
+      </GameTableSurface>
 
       <div>
         <div className="mb-3 flex items-center justify-between">
           <div><p className="text-xs font-bold text-muted-foreground">أوراقك الخاصة</p><p className="font-black text-primary">{hand.length} أوراق</p></div>
           {myTurn && mustFollow && <span className="rounded-full bg-gold-primary/15 px-3 py-1 text-[11px] font-black text-gold-primary">الزم النوع {BALOOT_SUIT_LABEL[leadSuit!]}</span>}
         </div>
-        <div className="flex min-h-48 gap-2 overflow-x-auto rounded-3xl bg-muted/30 p-4 pb-5">
+        <CardHandTray>
           {hand.map((card) => {
             const legal = myTurn && (!mustFollow || card.suit === leadSuit);
             return <BalootCardFace key={card.id} card={card} active={legal} onClick={() => void dispatch("baloot-play", card.id)} />;
           })}
-        </div>
+        </CardHandTray>
       </div>
 
       {!myTurn && <p className="text-center text-sm font-bold text-muted-foreground">بانتظار رمية {active?.name}</p>}
