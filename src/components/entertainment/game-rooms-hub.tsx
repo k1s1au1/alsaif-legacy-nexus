@@ -3426,149 +3426,137 @@ function DealActionHelpSheet({ card, onClose }: { card: DealCard; onClose: () =>
   );
 }
 
-function PlayerDealSeat({
-  player,
-  data,
-  highlight,
-  className,
-  onInspect,
+function isProtectedDealProperty(properties: DealCard[], property: DealCard) {
+  const group = dealGroup(property);
+  return Boolean(group && properties.filter((item) => item.group === property.group).length >= group.size);
+}
+
+function DealPublicPropertyCard({
+  card,
+  protectedProperty,
+  targetable,
+  onTarget,
 }: {
-  player: Player;
-  data: any;
-  highlight: boolean;
-  className?: string;
-  onInspect?: () => void;
+  card: DealCard;
+  protectedProperty: boolean;
+  targetable: boolean;
+  onTarget?: () => void;
 }) {
-  const properties = (data.properties[player.id] ?? []) as DealCard[];
-  const bank = (data.banks[player.id] ?? []) as DealCard[];
-  const sets = completedDealSets(properties);
+  const group = dealGroup(card);
+  const PropertyIcon = dealGroupIcon(card.group);
   return (
-    <TablePlayerSeat
-      player={player}
-      active={highlight}
-      detail={`${data.hands[player.id]?.length ?? 0} ورق · ${sets}/3`}
-      className={cn("w-full", className)}
-    >
-      <div className="mt-1 flex h-5 items-end justify-center -space-x-1.5 space-x-reverse overflow-hidden sm:mt-2 sm:h-8 sm:-space-x-2">
-        {properties.slice(0, 7).map((property) => (
-          <span
-            key={property.id}
-            title={property.label}
-            className="h-5 w-4 shrink-0 rounded-t border border-white/70 shadow sm:h-7 sm:w-5"
-            style={{ backgroundColor: dealGroup(property)?.color ?? "#49645b" }}
-          />
-        ))}
-        {!properties.length && <span className="self-center text-[10px] font-bold text-white/40">لا توجد أملاك</span>}
-      </div>
-      <div className="mt-2 hidden items-center justify-between gap-1 border-t border-white/10 pt-1.5 text-[11px] font-black text-white/70 sm:flex">
-        <span>{sets}/3 مجموعات</span>
-        <span className="text-[#edcc7c]">{bank.reduce((sum, card) => sum + card.value, 0)}م</span>
-      </div>
-      {onInspect && (
-        <button type="button" onClick={onInspect} className="mt-1.5 flex min-h-8 w-full items-center justify-center gap-1 rounded-lg border border-[#e4c46e]/25 bg-white/8 text-[10px] font-black text-[#edcc7c]">
-          <Eye className="size-3.5" /> عرض أوراق الطاولة
-        </button>
+    <button
+      type="button"
+      disabled={!targetable}
+      onClick={onTarget}
+      aria-label={targetable ? `استحواذ على ${card.label}` : `${card.label}${protectedProperty ? "، مجموعة محمية" : ""}`}
+      className={cn(
+        "relative flex h-[78px] w-[54px] shrink-0 flex-col overflow-hidden rounded-[10px] border-2 border-[#fff9e8] bg-[#fbf4e5] text-[#123c32] shadow-[0_7px_15px_-7px_rgba(0,0,0,.9)] transition sm:h-24 sm:w-16",
+        targetable && "-translate-y-1 cursor-pointer ring-2 ring-[#ffd66e] shadow-[0_0_20px_rgba(255,209,92,.75)]",
+        protectedProperty && "opacity-80",
       )}
-    </TablePlayerSeat>
+      style={{ borderTopColor: group?.color ?? "#49645b", borderTopWidth: 7 }}
+    >
+      <PropertyIcon className="mx-auto mt-2 size-5 sm:size-6" style={{ color: group?.color ?? "#49645b" }} />
+      <span className="mt-1 line-clamp-2 px-1 text-center text-[9px] font-black leading-3 sm:text-[10px]">{card.label}</span>
+      <span className="mt-auto w-full border-t border-[#123c32]/10 py-1 text-center text-[8px] font-black" style={{ color: group?.color }}>{group?.label}</span>
+      {targetable && <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-[#f2c85f] text-[#093e34] shadow"><Target className="size-3.5" /></span>}
+      {protectedProperty && <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-[#0b5948] text-[#efd17d] shadow"><ShieldCheck className="size-3.5" /></span>}
+    </button>
   );
 }
 
-function DealImmersiveSeat({
+function DealSecretHand({ count }: { count: number }) {
+  return (
+    <div className="relative mx-auto h-9 w-[76px]" aria-label={`${count} أوراق سرية مقلوبة`}>
+      {Array.from({ length: Math.min(count, 5) }).map((_, index, cards) => {
+        const middle = (cards.length - 1) / 2;
+        return (
+          <span
+            key={index}
+            aria-hidden
+            className="absolute bottom-0 left-1/2 h-8 w-5 origin-bottom rounded border-2 border-[#f6e7bd] bg-[linear-gradient(145deg,#0d604d,#052d26_62%,#b7883c)] shadow"
+            style={{ transform: `translateX(calc(-50% + ${(index - middle) * 8}px)) rotate(${(index - middle) * 7}deg)` }}
+          />
+        );
+      })}
+      <span className="absolute -right-0.5 -top-1 z-10 flex size-5 items-center justify-center rounded-full bg-[#efd078] text-[9px] font-black text-[#07382e] shadow">{count}</span>
+    </div>
+  );
+}
+
+function DealPublicRack({
   player,
   data,
   active,
   position,
   onInspect,
+  pendingAction,
+  onRentTarget,
+  onPropertyTarget,
 }: {
   player: Player;
   data: any;
   active: boolean;
-  position: "top" | "right" | "bottom" | "left";
+  position: "top" | "right" | "left";
   onInspect: () => void;
+  pendingAction: DealCard | null;
+  onRentTarget: () => void;
+  onPropertyTarget: (property: DealCard) => void;
 }) {
   const cardCount = data.hands[player.id]?.length ?? 0;
   const properties = (data.properties[player.id] ?? []) as DealCard[];
   const bank = (data.banks[player.id] ?? []) as DealCard[];
   const bankTotal = bank.reduce((sum, card) => sum + card.value, 0);
   const positionClass = {
-    top: "left-1/2 top-3 -translate-x-1/2",
-    right: "right-0.5 top-1/2 -translate-y-1/2",
-    bottom: "bottom-3 left-1/2 -translate-x-1/2",
-    left: "left-0.5 top-1/2 -translate-y-1/2",
+    top: "left-1/2 top-2 w-[60%] max-w-[310px] -translate-x-1/2",
+    right: "right-1.5 top-[28%] w-[29%] max-w-[138px]",
+    left: "left-1.5 top-[28%] w-[29%] max-w-[138px]",
   }[position];
-
-  const identity = (
-    <div className="flex flex-col items-center">
-      <div className={cn("rounded-full border-2 bg-[#062d26] p-1 shadow-xl transition", active ? "border-[#f3cf72] shadow-[0_0_22px_rgba(240,196,91,.75)]" : "border-[#d3b768]/70")}>
-        <PlayerAvatar player={player} />
-      </div>
-      <div className={cn("-mt-1 flex min-w-[72px] max-w-[92px] items-center justify-center gap-1 rounded-full border px-2.5 py-1 text-center text-[11px] font-black shadow-lg", active ? "border-[#f3cf72] bg-[#0a4c3e] text-[#f5d47c]" : "border-[#d3b768]/70 bg-[#06352c] text-white")}>
-        <span className="truncate">{player.name.split(" ")[0]}</span>
-        {player.isBot && <Bot className="size-3 shrink-0 text-[#edcc7c]" />}
-      </div>
-    </div>
-  );
-
-  const hiddenHand = (
-    <div className="relative h-10 w-20" aria-label={`${cardCount} أوراق سرية مقلوبة`}>
-      {Array.from({ length: Math.min(cardCount, 5) }).map((_, index, visibleCards) => {
-        const middle = (visibleCards.length - 1) / 2;
-        const offset = (index - middle) * 8;
-        const angle = (index - middle) * 7;
-        return (
-          <span
-            key={index}
-            aria-hidden
-            className="absolute bottom-0 left-1/2 flex h-9 w-6 origin-bottom items-center justify-center rounded border-2 border-[#f5e5b9] bg-gradient-to-br from-[#0d5c4a] via-[#052d26] to-[#0a4c3e] text-[7px] font-black text-[#e7ca79] shadow-md"
-            style={{ transform: `translateX(calc(-50% + ${offset}px)) rotate(${angle}deg)` }}
-          >
-            س
-          </span>
-        );
-      })}
-      <span className="absolute -right-1 -top-1 z-10 flex size-5 items-center justify-center rounded-full bg-[#f1d078] text-[9px] font-black text-[#06372e]">{cardCount}</span>
-    </div>
-  );
-
-  const exposedTable = (
-    <button
-      type="button"
-      onClick={onInspect}
-      aria-label={`عرض أملاك وبنك ${player.name}`}
-      className={cn(
-        "group flex min-h-12 w-[94px] flex-col items-center justify-center rounded-xl border border-[#e6c872]/45 bg-[#03251f]/92 px-1.5 py-1 shadow-lg transition active:scale-95",
-        position === "left" && "translate-x-4",
-        position === "right" && "-translate-x-4",
-      )}
-    >
-      <div className="relative h-7 w-[74px]">
-        {properties.slice(0, 4).map((property, index, visibleCards) => {
-          const middle = (visibleCards.length - 1) / 2;
-          const offset = (index - middle) * 13;
-          return (
-            <span
-              key={property.id}
-              className="absolute bottom-0 left-1/2 flex h-7 w-5 items-center justify-center overflow-hidden rounded-sm border border-white/80 bg-[#f7f0df] text-[7px] font-black shadow"
-              style={{ borderTopColor: dealGroup(property)?.color ?? "#49645b", borderTopWidth: 6, transform: `translateX(calc(-50% + ${offset}px))` }}
-            >
-              {property.label.slice(0, 1)}
-            </span>
-          );
-        })}
-        {!!bank.length && (
-          <span className="absolute bottom-0 left-0 flex h-7 w-5 items-center justify-center rounded-sm border border-[#f4d989] bg-[#0b5a48] text-[7px] font-black text-[#f4d989] shadow">{bankTotal}</span>
-        )}
-        {!properties.length && !bank.length && <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white/35">الطاولة فارغة</span>}
-      </div>
-      <span className="mt-1 flex items-center gap-1 text-[8px] font-black text-[#f0d17a]">
-        <Eye className="size-3" /> {properties.length} أملاك · {bankTotal}م
-      </span>
-    </button>
-  );
+  const groupProgress = DEAL_GROUPS.map((group) => ({
+    group,
+    count: properties.filter((property) => property.group === group.id).length,
+  })).filter((entry) => entry.count > 0);
+  const targetingRent = pendingAction?.action === "rent";
+  const targetingProperty = pendingAction?.action === "steal";
 
   return (
-    <div className={cn("absolute z-30 flex w-24 flex-col items-center", positionClass)}>
-      {position === "bottom" ? <>{exposedTable}{hiddenHand}{identity}</> : <>{identity}{hiddenHand}{exposedTable}</>}
+    <div className={cn("absolute z-30 flex flex-col items-center", positionClass)}>
+      <button type="button" onClick={targetingRent ? onRentTarget : onInspect} className="flex flex-col items-center" aria-label={targetingRent ? `اختيار ${player.name} لدفع الإيجار` : `عرض طاولة ${player.name}`}>
+        <div className={cn("relative rounded-full border-2 bg-[#062d26] p-1 shadow-xl transition", active ? "border-[#f3cf72] shadow-[0_0_22px_rgba(240,196,91,.7)]" : "border-[#d3b768]/70", targetingRent && "animate-pulse border-[#ffd468] ring-4 ring-[#ffd468]/25")}>
+          <PlayerAvatar player={player} size="sm" />
+          {player.isBot && <Bot className="absolute -left-1 -top-1 size-4 rounded-full bg-[#0a493d] p-0.5 text-[#efd078]" />}
+        </div>
+        <span className={cn("-mt-1 max-w-[110px] truncate rounded-full border px-3 py-1 text-[10px] font-black shadow", active ? "border-[#f3cf72] bg-[#0a4c3e] text-[#f5d47c]" : "border-[#d3b768]/70 bg-[#06352c] text-white")}>{player.name.split(" ")[0]}</span>
+      </button>
+
+      <div className={cn("mt-1 w-full rounded-2xl border bg-[#052d26]/95 p-1.5 shadow-xl backdrop-blur-sm", targetingRent ? "border-[#ffd468] ring-2 ring-[#ffd468]/25" : "border-[#dabb6c]/55")}>
+        <div className={cn("scrollbar-none flex gap-1 overflow-auto pb-1", position !== "top" && "max-h-[172px] flex-col items-center overflow-y-auto overflow-x-hidden sm:max-h-[212px]")}>
+          {properties.length ? properties.map((property) => {
+            const protectedProperty = isProtectedDealProperty(properties, property);
+            const targetable = Boolean(targetingProperty && !protectedProperty);
+            return (
+              <DealPublicPropertyCard
+                key={property.id}
+                card={property}
+                protectedProperty={protectedProperty}
+                targetable={targetable}
+                onTarget={() => onPropertyTarget(property)}
+              />
+            );
+          }) : <span className="flex min-h-12 w-full items-center justify-center text-center text-[9px] font-bold text-white/35">لا توجد أراضٍ</span>}
+        </div>
+
+        <div className="mt-1 flex flex-wrap items-center justify-center gap-1 border-t border-white/10 pt-1">
+          {groupProgress.slice(0, 3).map(({ group, count }) => (
+            <span key={group.id} className="rounded-full px-1.5 py-0.5 text-[8px] font-black text-white" style={{ backgroundColor: group.color }}>{count}/{group.size}</span>
+          ))}
+          <span className="rounded-full bg-[#bd8c37] px-1.5 py-0.5 text-[8px] font-black text-[#082f27]">{bankTotal}م</span>
+          <button type="button" onClick={onInspect} aria-label={`تكبير طاولة ${player.name}`} className="flex size-5 items-center justify-center rounded-full bg-white/10 text-[#efd078]"><Eye className="size-3" /></button>
+        </div>
+      </div>
+
+      <div className="mt-1"><DealSecretHand count={cardCount} /></div>
     </div>
   );
 }
@@ -3600,6 +3588,15 @@ function SaudiDealRoom({
   const [actionHelpCard, setActionHelpCard] = useState<DealCard | null>(null);
   const selectedCard = hand.find((card) => card.id === selectedCardId) ?? null;
   const inspectedPlayer = players.find((player) => player.id === inspectedPlayerId) ?? null;
+  const opponents = seatedPlayers.slice(1, 4);
+  const opponentPositions: Array<"top" | "right" | "left"> = opponents.length === 1
+    ? ["top"]
+    : opponents.length === 2
+      ? ["left", "right"]
+      : ["left", "top", "right"];
+  const myProperties = (data.properties[me.id] ?? []) as DealCard[];
+  const myBank = (data.banks[me.id] ?? []) as DealCard[];
+  const myBankTotal = myBank.reduce((sum, card) => sum + card.value, 0);
 
   useEffect(() => setPendingAction(null), [data.turnIndex]);
   useEffect(() => {
@@ -3618,65 +3615,97 @@ function SaudiDealRoom({
     setPendingAction(card);
   };
 
-  const seatPositions = [
-    "col-start-2 row-start-3 self-end justify-self-center",
-    "col-start-1 row-start-2 self-center justify-self-start",
-    "col-start-2 row-start-1 self-start justify-self-center",
-    "col-start-3 row-start-2 self-center justify-self-end",
-  ];
+  const targetRentPlayer = (player: Player) => {
+    if (pendingAction?.action !== "rent") return;
+    void dispatch("deal-action", { cardId: pendingAction.id, targetId: player.id });
+    setPendingAction(null);
+  };
+
+  const targetProperty = (player: Player, property: DealCard) => {
+    if (pendingAction?.action !== "steal" || isProtectedDealProperty((data.properties[player.id] ?? []) as DealCard[], property)) return;
+    void dispatch("deal-action", { cardId: pendingAction.id, targetId: player.id, propertyId: property.id });
+    setPendingAction(null);
+  };
+
+  const stepLabel = data.needsDraw
+    ? "اسحب أوراقك"
+    : data.actionsLeft === 2
+      ? "حركتان متبقيتان"
+      : data.actionsLeft === 1
+        ? "حركة متبقية"
+        : "انتهت الحركات";
 
   return (
-    <div className={cn("space-y-5", immersive && "space-y-3")}>
-      <div className={cn("grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-3 py-2.5 text-[#173e34] shadow-sm sm:px-5 sm:py-3", immersive && "sticky top-0 z-40 rounded-[24px] px-4 shadow-[0_12px_28px_-20px_rgba(0,0,0,.9)]")}>
-        <div className="flex min-w-0 items-center gap-2.5">
-          {active && <PlayerAvatar player={active} size="sm" />}
-          <div className="min-w-0">
-            <p className="truncate text-sm font-black sm:text-base">الدور عند {active?.name?.split(" ")[0] ?? "—"}</p>
-            <p className="truncate text-xs font-bold text-[#173e34]/55">{data.lastAction}</p>
-          </div>
+    <div className={cn("space-y-3", immersive && "-mx-1")}> 
+      <div className="mx-auto flex w-full max-w-2xl items-center justify-center gap-3 rounded-full border border-[#dfbf6c]/35 bg-[#073d32] px-4 py-2.5 text-white shadow-[0_10px_28px_-20px_rgba(0,0,0,.9)]">
+        {active && <PlayerAvatar player={active} size="sm" />}
+        <div className="min-w-0 text-center">
+          <p className="truncate text-sm font-black sm:text-base">{amActive ? "دورك الآن" : `الدور عند ${active?.name?.split(" ")[0] ?? "—"}`}</p>
+          <p className="truncate text-[10px] font-bold text-white/55 sm:text-xs">{data.lastAction}</p>
         </div>
-        <div className="rounded-xl bg-[#0b5b47] px-3 py-2 text-center text-white">
-          <p className="text-[10px] font-bold text-white/60">{data.needsDraw ? "الخطوة التالية" : "المتبقي"}</p>
-          <p className="text-sm font-black text-[#efd07d]">
-            {data.needsDraw
-              ? "اسحب أوراقك"
-              : data.actionsLeft === 2
-                ? "حركتان متبقيتان"
-                : data.actionsLeft === 1
-                  ? "حركة متبقية"
-                  : "انتهت الحركات"}
-          </p>
+        <span className="h-8 w-px bg-white/15" />
+        <div className="shrink-0 text-center">
+          <p className="text-[9px] font-bold text-white/45">{data.needsDraw ? "الخطوة التالية" : "المتبقي"}</p>
+          <p className="text-xs font-black text-[#f2cf72] sm:text-sm">{stepLabel}</p>
         </div>
       </div>
 
-      {immersive ? (
-        <GameTableSurface className="h-[62dvh] min-h-[510px] max-h-[700px]">
-          <div className="relative z-10 h-full min-h-0 w-full">
-            {seatedPlayers.slice(0, 4).map((player, index) => (
-              <DealImmersiveSeat
+      <div
+        className="mx-auto w-full max-w-5xl rounded-[36px] border border-[#e6c472]/65 p-[7px] shadow-[0_28px_70px_-36px_rgba(0,0,0,.95)] sm:p-[10px]"
+        style={{ backgroundImage: "repeating-linear-gradient(112deg,#2a160b 0 10px,#6d3f20 10px 18px,#3b2110 18px 26px,#9a642f 26px 32px)" }}
+      >
+        <div className="overflow-hidden rounded-[29px] border border-[#f2d487]/30 bg-[#073d32]">
+          <div
+            className={cn("relative min-h-[530px] overflow-hidden sm:min-h-[650px] lg:min-h-[710px]", immersive && "min-h-[540px]")}
+            style={{
+              backgroundImage: "radial-gradient(circle at 50% 47%,rgba(27,121,91,.34),transparent 43%),linear-gradient(135deg,rgba(239,205,115,.04) 25%,transparent 25%,transparent 50%,rgba(239,205,115,.04) 50%,rgba(239,205,115,.04) 75%,transparent 75%,transparent)",
+              backgroundSize: "auto,28px 28px",
+            }}
+          >
+            <div aria-hidden className="pointer-events-none absolute inset-3 rounded-[23px] border border-[#e6c56e]/25" />
+            <div aria-hidden className="pointer-events-none absolute inset-6 rounded-[19px] border border-[#e6c56e]/10" />
+
+            {opponents.map((player, index) => (
+              <DealPublicRack
                 key={player.id}
                 player={player}
                 data={data}
                 active={active?.id === player.id}
-                position={(["bottom", "left", "top", "right"] as const)[index]}
+                position={opponentPositions[index]}
                 onInspect={() => setInspectedPlayerId(player.id)}
+                pendingAction={pendingAction}
+                onRentTarget={() => targetRentPlayer(player)}
+                onPropertyTarget={(property) => targetProperty(player, property)}
               />
             ))}
 
-            <div className="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3">
-              <div className="flex items-center justify-center gap-2">
+            {pendingAction && (
+              <div className="absolute inset-x-[15%] top-[160px] z-40 flex items-center justify-between gap-2 rounded-full border border-[#f3cf71] bg-[#052e27]/95 px-3 py-2 text-[#f7d77c] shadow-[0_0_24px_rgba(238,198,103,.28)] sm:top-[194px]">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Target className="size-4 shrink-0 animate-pulse" />
+                  <p className="truncate text-[10px] font-black sm:text-xs">
+                    {pendingAction.action === "rent" ? "اضغط اسم اللاعب لتحصيل الإيجار" : "اختر أرضًا متوهجة — المجموعة المكتملة محمية"}
+                  </p>
+                </div>
+                <button type="button" onClick={() => setPendingAction(null)} className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-black text-white">إلغاء</button>
+              </div>
+            )}
+
+            <div className="absolute left-1/2 top-[56%] z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 sm:top-[55%]">
+              <div className="flex items-center justify-center gap-2 sm:gap-4">
                 <button
                   type="button"
                   aria-label={`سحب ${hand.length ? 2 : 5} أوراق من رزمة سعودي ديل`}
                   disabled={!amActive || !data.needsDraw}
                   onClick={() => void dispatch("deal-draw")}
-                  className="transition enabled:hover:-translate-y-1 enabled:active:scale-95 disabled:opacity-65"
+                  className="relative transition enabled:hover:-translate-y-1 enabled:active:scale-95 disabled:opacity-65"
                 >
-                  <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "السيف"} count={data.drawPile.length} compact className="h-[72px] w-12 rounded-lg" />
+                  <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "السيف"} count={data.drawPile.length} compact className="h-[78px] w-[52px] rounded-[10px]" />
+                  {amActive && data.needsDraw && <span className="absolute -inset-2 -z-10 animate-pulse rounded-2xl bg-[#f0cb68]/20 blur" />}
                 </button>
 
-                <div className="rounded-full border border-[#f0d17a]/55 bg-[#06392f]/90 p-1.5 shadow-[0_0_28px_rgba(224,187,92,.2)]">
-                  <TableBrandSeal logoUrl={logoUrl} className="size-[74px] border-[3px] sm:size-24" />
+                <div className="rounded-full border border-[#f0d17a]/55 bg-[#06392f]/90 p-1.5 shadow-[0_0_30px_rgba(224,187,92,.25)]">
+                  <TableBrandSeal logoUrl={logoUrl} className="size-[78px] border-[3px] sm:size-[98px]" />
                 </div>
 
                 {lastDiscard ? (
@@ -3685,235 +3714,152 @@ function SaudiDealRoom({
                     disabled={lastDiscard.type !== "action"}
                     onClick={() => setActionHelpCard(lastDiscard)}
                     aria-label={lastDiscard.type === "action" ? `شرح بطاقة ${lastDiscard.label}` : "آخر بطاقة ملعوبة"}
-                    className="h-[72px] w-12 overflow-hidden rounded-lg text-right"
+                    className="h-[78px] w-[52px] overflow-hidden rounded-[10px] text-right shadow-xl"
                   >
-                    <div className="origin-top-left scale-[.65]"><DealCardFace card={lastDiscard} compact /></div>
+                    <div className="origin-top-left scale-[.7]"><DealCardFace card={lastDiscard} compact actionHint={false} /></div>
                   </button>
                 ) : (
-                  <div className="flex h-[72px] w-12 items-center justify-center rounded-lg border-2 border-dashed border-white/25 text-center text-[8px] font-black leading-3 text-white/40">
+                  <div className="flex h-[78px] w-[52px] items-center justify-center rounded-[10px] border-2 border-dashed border-white/25 text-center text-[8px] font-black leading-3 text-white/40">
                     الأوراق<br />الملعوبة
                   </div>
                 )}
               </div>
 
-              <p className="max-w-[270px] truncate rounded-full border border-white/5 bg-black/25 px-4 py-1.5 text-center text-[11px] font-bold text-white/65">{data.lastAction}</p>
+              <p className="max-w-[260px] truncate rounded-full border border-white/5 bg-black/25 px-4 py-1.5 text-center text-[10px] font-bold text-white/55 sm:max-w-[360px] sm:text-xs">{data.lastAction}</p>
             </div>
-          </div>
-        </GameTableSurface>
-      ) : (
-        <GameTableSurface className="min-h-[500px] sm:min-h-[680px]">
-          <div className="relative z-10 grid min-h-[500px] grid-cols-[66px_minmax(120px,1fr)_66px] grid-rows-[94px_minmax(270px,1fr)_94px] gap-1 p-2 sm:min-h-[680px] sm:grid-cols-[150px_minmax(220px,1fr)_150px] sm:grid-rows-[138px_minmax(360px,1fr)_138px] sm:gap-3 sm:p-5">
-            {seatedPlayers.slice(0, 4).map((player, index) => (
-              <PlayerDealSeat
-                key={player.id}
-                player={player}
-                data={data}
-                highlight={active?.id === player.id}
-                className={cn("relative z-20 max-w-[190px]", seatPositions[index])}
-                onInspect={() => setInspectedPlayerId(player.id)}
-              />
-            ))}
 
-            <div className="relative z-10 col-span-3 col-start-1 row-start-2 flex flex-col items-center justify-center gap-2">
-              <div className="relative h-[134px] w-[240px] sm:h-[190px] sm:w-[330px]">
-                <TableBrandSeal logoUrl={logoUrl} className="absolute left-1/2 top-1/2 size-[82px] -translate-x-1/2 -translate-y-1/2 sm:size-32" />
-                <button
-                  type="button"
-                  aria-label={`سحب ${hand.length ? 2 : 5} أوراق من رزمة سعودي ديل`}
-                  disabled={!amActive || !data.needsDraw}
-                  onClick={() => void dispatch("deal-draw")}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 transition enabled:hover:-translate-y-[54%] enabled:active:scale-95 disabled:opacity-55"
-                >
-                  <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "سعودي ديل"} count={data.drawPile.length} compact className="h-24 w-16 sm:h-28 sm:w-[72px]" />
-                </button>
-                {lastDiscard ? (
-                  <button
-                    type="button"
-                    disabled={lastDiscard.type !== "action"}
-                    onClick={() => setActionHelpCard(lastDiscard)}
-                    aria-label={lastDiscard.type === "action" ? `شرح بطاقة ${lastDiscard.label}` : "آخر بطاقة ملعوبة"}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 text-right"
-                  >
-                    <DealCardFace card={lastDiscard} compact />
-                  </button>
-                ) : (
-                  <div className="absolute left-0 top-1/2 flex h-24 w-16 -translate-y-1/2 items-center justify-center rounded-2xl border-2 border-dashed border-white/20 text-center text-[10px] font-black text-white/35 sm:h-28 sm:w-[72px]">
-                    الأوراق<br />الملعوبة
-                  </div>
-                )}
-              </div>
-
-              <p className="max-w-[220px] truncate rounded-full bg-black/25 px-3 py-1 text-center text-[10px] font-bold text-white/60 sm:max-w-[300px] sm:text-xs">{data.lastAction}</p>
-            </div>
-          </div>
-        </GameTableSurface>
-      )}
-
-      {pendingAction?.action === "rent" && (
-        <div className="rounded-3xl border-2 border-gold-primary bg-gold-primary/8 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="font-black text-primary">من سيدفع الإيجار؟</p>
-              <p className="text-xs font-bold text-muted-foreground">قيمة الإيجار تعتمد على أكبر مجموعة لديك</p>
-            </div>
-            <button type="button" onClick={() => setPendingAction(null)} className="text-xs font-black text-muted-foreground">إلغاء</button>
-          </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            {players.filter((player) => player.id !== me.id).map((player) => (
-              <button
-                key={player.id}
-                type="button"
-                onClick={() => {
-                  void dispatch("deal-action", { cardId: pendingAction.id, targetId: player.id });
-                  setPendingAction(null);
-                }}
-                className="flex items-center gap-2 rounded-2xl bg-card p-3 text-right font-black text-primary shadow"
-              >
-                <PlayerAvatar player={player} size="sm" /> {player.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {pendingAction?.action === "steal" && (
-        <div className="rounded-3xl border-2 border-gold-primary bg-gold-primary/8 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="font-black text-primary">اختر أرضًا للاستحواذ</p>
-              <p className="text-xs font-bold text-muted-foreground">لا يمكن أخذ أرض من مجموعة مكتملة</p>
-            </div>
-            <button type="button" onClick={() => setPendingAction(null)} className="text-xs font-black text-muted-foreground">إلغاء</button>
-          </div>
-          <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-            {players.filter((player) => player.id !== me.id).flatMap((player) =>
-              ((data.properties[player.id] ?? []) as DealCard[]).map((property) => (
-                <button
-                  key={property.id}
-                  type="button"
-                  onClick={() => {
-                    void dispatch("deal-action", { cardId: pendingAction.id, targetId: player.id, propertyId: property.id });
-                    setPendingAction(null);
-                  }}
-                  className="space-y-2"
-                >
-                  <DealCardFace card={property} compact />
-                  <span className="block max-w-20 truncate text-[10px] font-black text-primary">من {player.name}</span>
-                </button>
-              )),
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className={cn(immersive && "sticky bottom-0 z-30 -mx-2 rounded-t-[30px] border-t border-[#dfbd66]/20 bg-[#031d18]/96 p-2 pt-3 shadow-[0_-24px_48px_-26px_rgba(0,0,0,.95)] backdrop-blur-xl")}>
-        {hand.length > 7 && <p className="mb-3 rounded-xl bg-rose-500/10 p-3 text-center text-xs font-black text-rose-700">يجب التخلص من {hand.length - 7} أوراق قبل إنهاء الدور</p>}
-
-        {selectedCard && amActive && !data.needsDraw && (data.actionsLeft > 0 || hand.length > 7) && (
-          <div className={cn("mb-3 grid grid-cols-2 gap-2", immersive && "rounded-[24px] bg-[#0a372f]/70 p-1.5")}>
-            {selectedCard.type === "property" && data.actionsLeft > 0 && (
-              <button
-                type="button"
-                onClick={() => void dispatch("deal-property", { cardId: selectedCard.id })}
-                className={cn("col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gold-primary px-4 text-sm font-black text-[#10251e] shadow", immersive && "min-h-14 rounded-[20px] bg-gradient-to-b from-[#f5d982] to-[#cda44b] text-base shadow-[0_10px_28px_-14px_rgba(238,196,94,.85)]")}
-              >
-                <MapPin className="size-5" /> إضافة للمجموعة
-              </button>
-            )}
-            {selectedCard.type === "money" && data.actionsLeft > 0 && (
-              <button
-                type="button"
-                onClick={() => void dispatch("deal-bank", { cardId: selectedCard.id })}
-                className={cn("col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 text-sm font-black text-white shadow", immersive && "min-h-14 rounded-[20px] border border-[#e8c86e]/50 bg-[#0a4d40] text-base")}
-              >
-                <Banknote className="size-5" /> إيداع بالبنك
-              </button>
-            )}
-            {selectedCard.type === "action" && data.actionsLeft > 0 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => useAction(selectedCard)}
-                  className={cn("flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gold-primary px-3 text-sm font-black text-[#10251e] shadow", immersive && "min-h-14 rounded-[20px] bg-gradient-to-b from-[#f5d982] to-[#cda44b] text-base")}
-                >
-                  <Sparkles className="size-5" /> استخدام البطاقة
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void dispatch("deal-bank", { cardId: selectedCard.id })}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-600 px-3 text-sm font-black text-white"
-                >
-                  <Banknote className="size-5" /> إيداع بالبنك
-                </button>
-              </>
-            )}
-            {hand.length > 7 && (
-              <button
-                type="button"
-                onClick={() => void dispatch("deal-discard", selectedCard.id)}
-                className="col-span-2 min-h-11 rounded-2xl bg-rose-600 px-4 text-sm font-black text-white"
-              >
-                التخلص من البطاقة
-              </button>
-            )}
-          </div>
-        )}
-
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
-          <div>
-            <p className={cn("text-xs font-bold text-muted-foreground", immersive && "text-[#d6bd7b]/60")}>أوراقك الخاصة</p>
-            <p className={cn("font-black text-primary", immersive && "text-lg text-white")}>{hand.length} أوراق</p>
-          </div>
-          {amActive && !data.needsDraw && (
             <button
               type="button"
-              disabled={hand.length > 7}
-              onClick={() => void dispatch("deal-end")}
-              className={cn("rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground disabled:opacity-35", immersive && "border border-[#e1bd66]/30 bg-white/10 text-white")}
-            >
-              إنهاء دوري
-            </button>
-          )}
-        </div>
-
-        {amActive && !data.needsDraw && data.actionsLeft > 0 && !selectedCard && (
-          <p className={cn("mb-3 text-center text-xs font-bold text-muted-foreground", immersive && "text-white/55")}>اختر بطاقة من يدك لتظهر الحركة المناسبة</p>
-        )}
-
-        <CardHandTray className={cn("min-h-60 gap-3 pt-5", immersive && "min-h-[220px] max-h-[36dvh] gap-0 overflow-y-hidden px-3 pb-3 pt-8")}>
-          {hand.map((card) => (
-            <div
-              key={card.id}
+              onClick={() => setInspectedPlayerId(me.id)}
               className={cn(
-                "relative w-32 shrink-0 rounded-2xl transition sm:w-36",
-                immersive && "-ml-5 w-28 first:ml-0 sm:w-32",
-                selectedCardId === card.id ? "-translate-y-3 ring-4 ring-[#f0cd72] ring-offset-2 ring-offset-[#07382f]" : "opacity-90 hover:-translate-y-1 hover:opacity-100",
+                "absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-[#052d26]/95 px-3 py-1.5 text-[10px] font-black shadow-xl",
+                active?.id === me.id ? "border-[#f0cd72] text-[#f3d47b] ring-2 ring-[#f0cd72]/20" : "border-white/15 text-white",
               )}
             >
-              <button
-                type="button"
-                onClick={() => setSelectedCardId(card.id)}
-                aria-pressed={selectedCardId === card.id}
-                className="block w-full rounded-2xl text-right"
-              >
-                <DealCardFace card={card} actionHint={card.type !== "action"} />
+              <Eye className="size-3.5" /> طاولتي · {myProperties.length} أراضٍ · {myBankTotal}م
+            </button>
+          </div>
+
+          <div className="border-t-4 border-[#7d4a25] bg-[#042e27] px-2 pb-2 pt-3 sm:px-4">
+            {hand.length > 7 && <p className="mb-2 rounded-xl border border-rose-400/30 bg-rose-950/45 p-2 text-center text-[11px] font-black text-rose-100">يجب التخلص من {hand.length - 7} أوراق قبل إنهاء الدور</p>}
+
+            {pendingAction ? (
+              <div className="mb-2 rounded-2xl border border-[#edcb71]/45 bg-[#0a4a3d] px-4 py-3 text-center text-xs font-black text-[#f4d77f]">
+                حدّد الهدف المتوهج مباشرة من طاولة الخصم
+              </div>
+            ) : selectedCard && amActive && !data.needsDraw && (data.actionsLeft > 0 || hand.length > 7) ? (
+              <div className="mb-2 grid grid-cols-2 gap-2 rounded-[22px] bg-[#06261f]/65 p-1.5">
+                {selectedCard.type === "property" && data.actionsLeft > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => void dispatch("deal-property", { cardId: selectedCard.id })}
+                    className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-[17px] bg-gradient-to-b from-[#f5d982] to-[#cda44b] px-4 text-sm font-black text-[#10251e] shadow-[0_10px_28px_-14px_rgba(238,196,94,.85)]"
+                  >
+                    <MapPin className="size-5" /> إضافة للمجموعة
+                  </button>
+                )}
+                {selectedCard.type === "money" && data.actionsLeft > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => void dispatch("deal-bank", { cardId: selectedCard.id })}
+                    className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-[17px] border border-[#e8c86e]/45 bg-[#0b684f] px-4 text-sm font-black text-white"
+                  >
+                    <Banknote className="size-5" /> إيداع بالبنك
+                  </button>
+                )}
+                {selectedCard.type === "action" && data.actionsLeft > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => useAction(selectedCard)}
+                      className="flex min-h-12 items-center justify-center gap-2 rounded-[17px] bg-gradient-to-b from-[#f5d982] to-[#cda44b] px-3 text-sm font-black text-[#10251e] shadow"
+                    >
+                      <Sparkles className="size-5" /> استخدام البطاقة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void dispatch("deal-bank", { cardId: selectedCard.id })}
+                      className="flex min-h-12 items-center justify-center gap-2 rounded-[17px] border border-[#e8c86e]/35 bg-[#0b684f] px-3 text-sm font-black text-white"
+                    >
+                      <Banknote className="size-5" /> إيداع بالبنك
+                    </button>
+                  </>
+                )}
+                {hand.length > 7 && (
+                  <button
+                    type="button"
+                    onClick={() => void dispatch("deal-discard", selectedCard.id)}
+                    className="col-span-2 min-h-11 rounded-[17px] bg-rose-700 px-4 text-sm font-black text-white"
+                  >
+                    التخلص من البطاقة
+                  </button>
+                )}
+              </div>
+            ) : null}
+
+            <div className="flex items-center justify-between gap-3 px-2">
+              <button type="button" onClick={() => setInspectedPlayerId(me.id)} className="text-right">
+                <p className="text-[10px] font-bold text-[#d6bd7b]/60">أوراقك الخاصة</p>
+                <p className="font-black text-white">{hand.length} أوراق</p>
               </button>
-              {card.type === "action" && (
+              {amActive && !data.needsDraw && (
                 <button
                   type="button"
-                  onClick={() => setActionHelpCard(card)}
-                  aria-label={`شرح بطاقة ${card.label}`}
-                  className="absolute left-1.5 top-1.5 z-20 flex min-h-8 items-center gap-1 rounded-full border border-[#f5da8a] bg-[#fff8df] px-2.5 text-[10px] font-black text-[#744313] shadow-lg transition active:scale-95"
+                  disabled={hand.length > 7}
+                  onClick={() => void dispatch("deal-end")}
+                  className="min-h-11 rounded-2xl border border-[#e1bd66]/35 bg-white/10 px-5 text-sm font-black text-white shadow disabled:opacity-35"
                 >
-                  <HelpCircle className="size-4" /> شرح
+                  إنهاء دوري
                 </button>
               )}
             </div>
-          ))}
-        </CardHandTray>
+
+            {amActive && !data.needsDraw && data.actionsLeft > 0 && !selectedCard && (
+              <p className="mt-1 text-center text-[10px] font-bold text-white/50">اختر بطاقة من يدك لتظهر الحركة المناسبة</p>
+            )}
+
+            <div
+              className="mx-auto grid min-h-[154px] w-full max-w-2xl items-end justify-center overflow-x-auto overflow-y-hidden px-4 pb-2 pt-8"
+              style={{ direction: "ltr", gridTemplateColumns: `repeat(${Math.max(hand.length, 1)}, minmax(34px, 72px))` }}
+            >
+              {hand.map((card, index) => {
+                const middle = (hand.length - 1) / 2;
+                const angle = Math.max(-10, Math.min(10, (index - middle) * 3));
+                const drop = Math.abs(index - middle) * 2;
+                const selected = selectedCardId === card.id;
+                return (
+                  <div
+                    key={card.id}
+                    className={cn("relative w-[72px] origin-bottom rounded-2xl transition duration-200", selected ? "z-30" : "z-10 opacity-95 hover:z-20 hover:-translate-y-1")}
+                    style={{ transform: `translateY(${selected ? -15 : drop}px) rotate(${angle}deg)` }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCardId(card.id)}
+                      aria-pressed={selected}
+                      className={cn("block rounded-2xl text-right transition", selected && "ring-4 ring-[#f0cd72] ring-offset-2 ring-offset-[#07382f]")}
+                    >
+                      <DealCardFace card={card} compact actionHint={false} />
+                    </button>
+                    {card.type === "action" && (
+                      <button
+                        type="button"
+                        onClick={() => setActionHelpCard(card)}
+                        aria-label={`شرح بطاقة ${card.label}`}
+                        className={cn("absolute -left-1.5 top-2 z-40 flex items-center rounded-full border border-[#f5da8a] bg-[#fff8df] font-black text-[#744313] shadow-lg transition active:scale-95", selected ? "h-7 gap-1 px-2 text-[9px]" : "size-6 justify-center")}
+                      >
+                        <HelpCircle className="size-3.5" /> {selected && <span>شرح</span>}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {!amActive && <p className="text-center text-sm font-bold text-muted-foreground">بانتظار حركة {active?.name}</p>}
+      {!amActive && <p className="text-center text-xs font-bold text-muted-foreground">بانتظار حركة {active?.name}</p>}
       {inspectedPlayer && (
         <DealPlayerTableSheet
           player={inspectedPlayer}
