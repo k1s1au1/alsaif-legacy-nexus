@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
 import { useSiteLogo } from "@/hooks/use-site-logo";
-import { GamesHub } from "@/components/entertainment/games-hub";
+import { GameRoomsHub } from "@/components/entertainment/game-rooms-hub";
 import { sendPushNotification } from "@/lib/api/push.functions";
 import { consumeQuickCreate } from "@/lib/quick-create";
 import { isTripActive } from "@/lib/day-lifecycle";
@@ -186,7 +186,7 @@ function TripsPage() {
             )}
           >
             <Target size={20} />
-            <span>ميدان الألعاب (جديد)</span>
+            <span>غرف الألعاب</span>
           </button>
         </div>
 
@@ -299,10 +299,10 @@ function TripsPage() {
                         </span>
                       </div>
                       <h2 className="text-3xl md:text-6xl font-black tracking-tighter leading-tight drop-shadow-2xl text-gold-primary">
-                        ميدان ألعاب السيف
+                        غرف ألعاب السيف
                       </h2>
                       <p className="text-white/60 font-bold text-sm md:text-xl max-w-xl">
-                        أدوات ذكية وألعاب حماسية مصممة لتجمعاتكم العائلية الممتعة.
+                        أنشئ غرفة، شارك الرمز، وخلي كل فرد يدخل من جواله ويلعب معكم لحظيًا.
                       </p>
                     </div>
                     <div className="size-16 md:size-28 rounded-2xl md:rounded-[36px] bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl self-center md:self-auto shrink-0 group-hover:rotate-12 transition-transform duration-700">
@@ -312,7 +312,7 @@ function TripsPage() {
                 </div>
               </section>
 
-              <GamesHub />
+              <GameRoomsHub />
             </motion.div>
           )}
         </AnimatePresence>
