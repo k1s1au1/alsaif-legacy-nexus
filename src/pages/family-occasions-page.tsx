@@ -483,6 +483,7 @@ function FamilyOccasionsPage() {
   const [members, setMembers] = useState<Array<{ id: string; name: string }>>([]);
   const [visibility, setVisibility] = useState<OccasionVisibility>("public");
   const [invitees, setInvitees] = useState<string[]>([]);
+  const [inviteeQuery, setInviteeQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [viewingOccasion, setViewingOccasion] = useState<Occasion | null>(null);
@@ -548,6 +549,7 @@ function FamilyOccasionsPage() {
     setAudience("adult");
     setVisibility("public");
     setInvitees([]);
+    setInviteeQuery("");
     setX({ inviteMode: "public", showLogo: true, fontFamily: "ibm", fontScale: 1 });
   }
 
@@ -864,24 +866,106 @@ function FamilyOccasionsPage() {
                     />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black">بيانات الدعوة</h3>
-                    <div className="mt-4 grid grid-cols-2 gap-2">
+                    <h3 className="text-xl font-black">نوع المناسبة والخصوصية</h3>
+                    <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
                       <button
-                        onClick={() => set("inviteMode", "public")}
-                        className={`rounded-2xl border p-3 text-xs font-black ${x.inviteMode !== "private" ? "border-primary bg-primary/5" : "border-border"}`}
+                        type="button"
+                        onClick={() => {
+                          setVisibility("public");
+                          setInvitees([]);
+                          set("inviteMode", "public");
+                        }}
+                        className={`rounded-2xl border p-3 text-xs font-black ${visibility === "public" ? "border-primary bg-primary/5" : "border-border"}`}
                       >
-                        دعوة عامة
+                        مناسبة عامة
                       </button>
                       <button
-                        onClick={() => set("inviteMode", "private")}
-                        className={`rounded-2xl border p-3 text-xs font-black ${x.inviteMode === "private" ? "border-primary bg-primary/5" : "border-border"}`}
+                        type="button"
+                        onClick={() => {
+                          setVisibility("private");
+                          set("inviteMode", "private");
+                        }}
+                        className={`rounded-2xl border p-3 text-xs font-black ${visibility === "private" ? "border-primary bg-primary/5" : "border-border"}`}
                       >
-                        دعوة خاصة
+                        مناسبة خاصة
                       </button>
+                      {canCreateOfficialOccasion && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVisibility("official");
+                            setInvitees([]);
+                            set("inviteMode", "public");
+                          }}
+                          className={`rounded-2xl border p-3 text-xs font-black ${visibility === "official" ? "border-gold-primary bg-gold-primary/10" : "border-border"}`}
+                        >
+                          مناسبة عائلة السيف
+                        </button>
+                      )}
                     </div>
-                    {x.inviteMode === "private" && x.guestName && (
+                    <p className="mt-2 text-[11px] font-bold text-muted-foreground">
+                      {visibility === "official"
+                        ? "مناسبة رسمية باسم عائلة السيف تظهر لجميع الأعضاء."
+                        : visibility === "private"
+                          ? "تظهر للمدعوين فقط، ولا يتم إرسال إشعار عام."
+                          : "مناسبة عضو تظهر لجميع أعضاء السيف."}
+                    </p>
+
+                    {visibility === "private" && (
+                      <div className="mt-4 rounded-[22px] border border-border bg-background p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <strong className="text-sm font-black">المدعوون</strong>
+                          <span className="text-[11px] font-black text-primary">
+                            {invitees.length} محدد
+                          </span>
+                        </div>
+                        <input
+                          value={inviteeQuery}
+                          onChange={(e) => setInviteeQuery(e.target.value)}
+                          placeholder="ابحث بالاسم…"
+                          className="mt-3 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm font-bold outline-none focus:border-primary"
+                        />
+                        <div className="mt-3 max-h-56 space-y-1 overflow-y-auto">
+                          {members
+                            .filter((m) => m.id !== userId)
+                            .filter((m) =>
+                              inviteeQuery.trim()
+                                ? m.name.includes(inviteeQuery.trim())
+                                : true,
+                            )
+                            .map((m) => {
+                              const on = invitees.includes(m.id);
+                              return (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  onClick={() =>
+                                    setInvitees((prev) =>
+                                      on ? prev.filter((i) => i !== m.id) : [...prev, m.id],
+                                    )
+                                  }
+                                  className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-right text-xs font-bold ${on ? "border-primary bg-primary/5" : "border-border"}`}
+                                >
+                                  <span>{m.name}</span>
+                                  {on && <Check className="size-4 text-primary" />}
+                                </button>
+                              );
+                            })}
+                          {!members.filter((m) => m.id !== userId).length && (
+                            <p className="py-3 text-center text-[11px] font-bold text-muted-foreground">
+                              لا يوجد أعضاء متاحون
+                            </p>
+                          )}
+                        </div>
+                        <p className="mt-2 text-[11px] font-bold text-muted-foreground">
+                          تُضاف أنت تلقائيًا إلى قائمة الوصول.
+                        </p>
+                      </div>
+                    )}
+                    {visibility === "private" && x.guestName && (
                       <div className="mt-4">{field("اسم الضيف / المدعو", "guestName", true)}</div>
                     )}
+
                     {type !== "condolence" && (
                       <label className="mt-4 flex items-center justify-between rounded-2xl border border-border p-4">
                         <span className="text-sm font-black">إظهار شعار العائلة</span>

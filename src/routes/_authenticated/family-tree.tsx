@@ -544,7 +544,7 @@ function FamilyTreePage() {
       <g className="node-group">
         <foreignObject width={NODE_W} height={NODE_H} x={-NODE_W / 2} y={-NODE_H / 2}>
           <div
-            xmlns="http://www.w3.org/1999/xhtml"
+            {...{ xmlns: "http://www.w3.org/1999/xhtml" }}
             onClick={handleNodeClick}
             className={cn(
               "tree-node-content relative cursor-pointer group transition-transform duration-300",

@@ -21,7 +21,6 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
-import { FamilyOccasionsSync } from "@/components/family-occasions-sync";
 import { DesktopSidebarQuickAccess } from "@/components/desktop-sidebar-quick-access";
 import { DeviceOrientationGuard } from "@/components/device-orientation-guard";
 import { RouteScrollManager } from "@/components/route-scroll-manager";
@@ -55,5 +54,5 @@ function RootShell({children}:Readonly<{children:ReactNode}>){
     };
     syncTheme();
   },[]);
-  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><FamilyOccasionsSync/><AppOpenAlerts/><DesktopSidebarQuickAccess/><Toaster richColors position="top-center"/></QueryClientProvider><Scripts/></body></html>
+  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><AppOpenAlerts/><DesktopSidebarQuickAccess/><Toaster richColors position="top-center"/></QueryClientProvider><Scripts/></body></html>
 }
