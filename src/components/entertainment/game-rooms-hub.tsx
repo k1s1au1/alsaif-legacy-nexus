@@ -2575,6 +2575,17 @@ function GameBoard({
     ? state.data.bidTurnIndex
     : state.data.turnIndex ?? state.data.activeIndex ?? 0;
   const feedbackToken = `${state.game}:${state.round}:${state.data.stage ?? ""}:${activeIndex}:${state.data.lastAction ?? ""}:${state.data.trick?.length ?? 0}`;
+  const dealHeaderStep = state.data.needsDraw
+    ? "اسحب أوراقك"
+    : state.data.actionsLeft === 2
+      ? "حركتان متبقيتان"
+      : state.data.actionsLeft === 1
+        ? "حركة متبقية"
+        : "انتهت الحركات";
+  const dealActivePlayer = players[activeIndex % Math.max(players.length, 1)];
+  const compactHeaderStatus = state.game === "saudi-deal"
+    ? `${dealActivePlayer?.id === me.id ? "دورك الآن" : `الدور عند ${dealActivePlayer?.name?.split(" ")[0] ?? "—"}`} · ${dealHeaderStep}`
+    : `الجولة ${state.round + 1} · ${players.length} لاعبين`;
 
   useEffect(() => {
     if (!gameMode) {
@@ -2601,10 +2612,18 @@ function GameBoard({
     } catch {
       // iOS browsers may reject the native API; the fixed 100dvh game shell remains active.
     }
+    if (state.game === "saudi-deal") {
+      const orientation = window.screen.orientation as unknown as { lock?: (value: string) => Promise<void> };
+      try { await orientation?.lock?.("landscape"); } catch { /* iOS uses the rotate-device prompt below. */ }
+    }
   };
 
   const leaveGameMode = async () => {
     setGameMode(false);
+    if (state.game === "saudi-deal") {
+      const orientation = window.screen.orientation as unknown as { unlock?: () => void };
+      try { orientation?.unlock?.(); } catch { /* The operating system owns orientation state. */ }
+    }
     const webkitDocument = document as Document & {
       webkitExitFullscreen?: () => Promise<void> | void;
       webkitFullscreenElement?: Element | null;
@@ -2631,11 +2650,20 @@ function GameBoard({
         backgroundPosition: "center top",
       } : undefined}
     >
+      {gameMode && state.game === "saudi-deal" && (
+        <div className="fixed inset-0 z-[10050] hidden flex-col items-center justify-center bg-[#021f19]/98 px-8 text-center text-white portrait:flex xl:hidden">
+          <span className="flex size-20 items-center justify-center rounded-[26px] border border-[#e8c66f]/40 bg-[#0a5948] text-[#f0cf77] shadow-[0_0_40px_rgba(232,198,111,.2)]">
+            <RotateCw className="size-10 animate-pulse" />
+          </span>
+          <h4 className="mt-6 text-2xl font-black text-[#f0cf77]">لف الجهاز للوضع الأفقي</h4>
+          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">سعودي ديل مرتبة للشاشة العريضة. إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
+        </div>
+      )}
       <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && state.game === "saudi-deal" && "bg-transparent")}>
         <div
           className={cn(
             "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
-            gameMode && "relative mb-0 min-h-[82px] shrink-0 border-white/10 bg-[radial-gradient(circle_at_50%_0%,#0b5a48_0%,#052d26_58%,#031f1a_100%)] px-3 pb-2 text-white shadow-lg",
+            gameMode && "relative mb-0 min-h-[82px] shrink-0 border-white/10 bg-[radial-gradient(circle_at_50%_0%,#0b5a48_0%,#052d26_58%,#031f1a_100%)] px-3 pb-2 text-white shadow-lg landscape:min-h-[58px] landscape:pb-1",
             gameMode && state.game === "saudi-deal" && "bg-none bg-[#032b24]/85 backdrop-blur-md",
           )}
           style={gameMode ? { paddingTop: "max(.5rem, env(safe-area-inset-top))" } : undefined}
@@ -2655,7 +2683,7 @@ function GameBoard({
                 <GameIcon className="size-7 shrink-0 text-[#e8c66f] drop-shadow" />
                 <div className="min-w-0">
                   <h3 className="text-[1.35rem] font-black leading-none text-[#edcf7d]">{meta.label}</h3>
-                  <p className="mt-1 text-[10px] font-bold text-white/50">الجولة {state.round + 1} · {players.length} لاعبين</p>
+                  <p className="mt-1 text-[10px] font-bold text-white/50">{compactHeaderStatus}</p>
                 </div>
               </div>
 
@@ -2679,9 +2707,9 @@ function GameBoard({
                 <button
                   type="button"
                   onClick={() => void enterGameMode()}
-                  className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground shadow lg:hidden"
+                  className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground shadow 2xl:hidden"
                 >
-                  <Maximize2 className="size-4" /> وضع اللعبة
+                  <Maximize2 className="size-4" /> {state.game === "saudi-deal" ? "اللعب أفقيًا" : "وضع اللعبة"}
                 </button>
                 {isHost && (
                   <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
@@ -3460,15 +3488,15 @@ function DealPublicPropertyCard({
       onClick={onTarget}
       aria-label={targetable ? `استحواذ على ${card.label}` : `${card.label}${protectedProperty ? "، مجموعة محمية" : ""}`}
       className={cn(
-        "relative flex h-[70px] w-12 shrink-0 flex-col overflow-hidden rounded-[9px] border-2 border-[#fff9e8] bg-[#fbf4e5] text-[#123c32] shadow-[0_7px_15px_-7px_rgba(0,0,0,.9)] transition sm:h-24 sm:w-16",
+        "relative flex h-[70px] w-12 shrink-0 flex-col overflow-hidden rounded-[9px] border-2 border-[#fff9e8] bg-[#fbf4e5] text-[#123c32] shadow-[0_7px_15px_-7px_rgba(0,0,0,.9)] transition sm:h-24 sm:w-16 landscape:!h-[88px] landscape:!w-[60px]",
         targetable && "-translate-y-1 cursor-pointer ring-2 ring-[#ffd66e] shadow-[0_0_20px_rgba(255,209,92,.75)]",
         protectedProperty && "opacity-80",
       )}
       style={{ borderTopColor: group?.color ?? "#49645b", borderTopWidth: 7 }}
     >
-      <PropertyIcon className="mx-auto mt-1.5 size-4 sm:mt-2 sm:size-6" style={{ color: group?.color ?? "#49645b" }} />
-      <span className="mt-1 line-clamp-2 px-1 text-center text-[8px] font-black leading-[10px] sm:text-[10px] sm:leading-3">{card.label}</span>
-      <span className="mt-auto w-full border-t border-[#123c32]/10 py-1 text-center text-[8px] font-black" style={{ color: group?.color }}>{group?.label}</span>
+      <PropertyIcon className="mx-auto mt-1.5 size-4 sm:mt-2 sm:size-6 landscape:!size-5" style={{ color: group?.color ?? "#49645b" }} />
+      <span className="mt-1 line-clamp-2 px-1 text-center text-[8px] font-black leading-[10px] sm:text-[10px] sm:leading-3 landscape:text-[11px] landscape:leading-3">{card.label}</span>
+      <span className="mt-auto w-full border-t border-[#123c32]/10 py-1 text-center text-[8px] font-black landscape:text-[10px]" style={{ color: group?.color }}>{group?.label}</span>
       {targetable && <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-[#f2c85f] text-[#093e34] shadow"><Target className="size-3.5" /></span>}
       {protectedProperty && <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-[#0b5948] text-[#efd17d] shadow"><ShieldCheck className="size-3.5" /></span>}
     </button>
@@ -3515,12 +3543,17 @@ function DealPublicRack({
 }) {
   const cardCount = data.hands[player.id]?.length ?? 0;
   const properties = (data.properties[player.id] ?? []) as DealCard[];
+  const sortedProperties = properties.slice().sort((first, second) => {
+    const firstIndex = DEAL_GROUPS.findIndex((group) => group.id === first.group);
+    const secondIndex = DEAL_GROUPS.findIndex((group) => group.id === second.group);
+    return firstIndex - secondIndex;
+  });
   const bank = (data.banks[player.id] ?? []) as DealCard[];
   const bankTotal = bank.reduce((sum, card) => sum + card.value, 0);
   const positionClass = {
-    top: "left-1/2 top-2 w-[56%] max-w-[300px] -translate-x-1/2",
-    right: "right-1 top-[31%] w-[24%] max-w-[112px]",
-    left: "left-1 top-[31%] w-[24%] max-w-[112px]",
+    top: "left-1/2 top-2 w-[56%] max-w-[300px] -translate-x-1/2 landscape:top-2 landscape:w-[30%] landscape:max-w-none",
+    right: "right-1 top-[31%] w-[24%] max-w-[112px] landscape:right-[2%] landscape:top-2 landscape:w-[30%] landscape:max-w-none",
+    left: "left-1 top-[31%] w-[24%] max-w-[112px] landscape:left-[2%] landscape:top-2 landscape:w-[30%] landscape:max-w-none",
   }[position];
   const groupProgress = DEAL_GROUPS.map((group) => ({
     group,
@@ -3535,17 +3568,18 @@ function DealPublicRack({
         <div className={cn("relative rounded-full border-2 bg-[#062d26] p-1 shadow-xl transition", active ? "border-[#f3cf72] shadow-[0_0_22px_rgba(240,196,91,.7)]" : "border-[#d3b768]/70", targetingRent && "animate-pulse border-[#ffd468] ring-4 ring-[#ffd468]/25")}>
           <PlayerAvatar player={player} size="sm" />
           {player.isBot && <Bot className="absolute -left-1 -top-1 size-4 rounded-full bg-[#0a493d] p-0.5 text-[#efd078]" />}
+          <span className="absolute -bottom-1.5 -right-2 hidden min-w-5 items-center justify-center rounded-full bg-[#efd078] px-1.5 py-0.5 text-[9px] font-black text-[#07382e] shadow landscape:flex">{cardCount}</span>
         </div>
-        <span className={cn("-mt-1 max-w-[110px] truncate rounded-full border px-3 py-1 text-[10px] font-black shadow", active ? "border-[#f3cf72] bg-[#0a4c3e] text-[#f5d47c]" : "border-[#d3b768]/70 bg-[#06352c] text-white")}>{player.name.split(" ")[0]}</span>
+        <span className={cn("-mt-1 max-w-[110px] truncate rounded-full border px-3 py-1 text-[10px] font-black shadow landscape:text-xs", active ? "border-[#f3cf72] bg-[#0a4c3e] text-[#f5d47c]" : "border-[#d3b768]/70 bg-[#06352c] text-white")}>{player.name.split(" ")[0]}</span>
       </button>
 
       <div className={cn("mt-1 flex w-full flex-col items-center", targetingRent && "rounded-2xl ring-2 ring-[#ffd468]/40")}>
         {properties.length ? (
           <div className={cn(
             "scrollbar-none flex max-w-full justify-center gap-1 overflow-x-auto rounded-xl border border-[#dabb6c]/45 bg-[#052d26]/80 p-1 shadow-xl backdrop-blur-sm",
-            position !== "top" && "grid max-h-[160px] grid-cols-1 justify-items-center overflow-x-hidden overflow-y-auto",
+            position !== "top" && "grid max-h-[160px] grid-cols-1 justify-items-center overflow-x-hidden overflow-y-auto landscape:flex landscape:max-h-[88px] landscape:flex-row landscape:overflow-x-auto landscape:overflow-y-hidden",
           )}>
-            {properties.map((property) => {
+            {sortedProperties.map((property) => {
               const protectedProperty = isProtectedDealProperty(properties, property);
               const targetable = Boolean(targetingProperty && !protectedProperty);
               return (
@@ -3565,14 +3599,14 @@ function DealPublicRack({
 
         <div className="mt-1 flex max-w-full flex-wrap items-center justify-center gap-1 rounded-full border border-[#dabb6c]/35 bg-[#052d26]/90 px-2 py-1 shadow backdrop-blur-sm">
           {groupProgress.slice(0, 3).map(({ group, count }) => (
-            <span key={group.id} className="rounded-full px-1.5 py-0.5 text-[8px] font-black text-white" style={{ backgroundColor: group.color }}>{count}/{group.size}</span>
+            <span key={group.id} className="rounded-full px-1.5 py-0.5 text-[8px] font-black text-white landscape:text-[10px]" style={{ backgroundColor: group.color }}>{count}/{group.size}</span>
           ))}
-          <span className="rounded-full bg-[#bd8c37] px-1.5 py-0.5 text-[8px] font-black text-[#082f27]">{bankTotal}م</span>
+          <span className="rounded-full bg-[#bd8c37] px-1.5 py-0.5 text-[8px] font-black text-[#082f27] landscape:text-[10px]">{bankTotal}م</span>
           <button type="button" onClick={onInspect} aria-label={`تكبير طاولة ${player.name}`} className="flex size-5 items-center justify-center rounded-full bg-white/10 text-[#efd078]"><Eye className="size-3" /></button>
         </div>
       </div>
 
-      <div className="mt-1"><DealSecretHand count={cardCount} /></div>
+      <div className="mt-1 landscape:hidden"><DealSecretHand count={cardCount} /></div>
     </div>
   );
 }
@@ -3655,13 +3689,13 @@ function SaudiDealRoom({
     <div
       className={cn(
         "relative isolate space-y-3",
-        immersive ? "-mx-1 px-4 sm:px-8" : "overflow-hidden rounded-[34px] bg-cover bg-center p-3 sm:p-6",
+        immersive ? "-mx-1 px-4 sm:px-8 landscape:px-3" : "overflow-hidden rounded-[34px] bg-cover bg-center p-3 sm:p-6",
       )}
       style={!immersive ? {
         backgroundImage: "linear-gradient(rgba(1,31,25,.3),rgba(1,24,20,.56)),url('/assets/games/saudi-deal-majlis-bg.webp')",
       } : undefined}
     >
-      <div className="mx-auto flex w-full max-w-2xl items-center justify-center gap-3 rounded-full border border-[#dfbf6c]/35 bg-[#073d32] px-4 py-2.5 text-white shadow-[0_10px_28px_-20px_rgba(0,0,0,.9)]">
+      <div className={cn("mx-auto flex w-full max-w-2xl items-center justify-center gap-3 rounded-full border border-[#dfbf6c]/35 bg-[#073d32] px-4 py-2.5 text-white shadow-[0_10px_28px_-20px_rgba(0,0,0,.9)]", immersive && "landscape:hidden")}>
         {active && <PlayerAvatar player={active} size="sm" />}
         <div className="min-w-0 text-center">
           <p className="truncate text-sm font-black sm:text-base">{amActive ? "دورك الآن" : `الدور عند ${active?.name?.split(" ")[0] ?? "—"}`}</p>
@@ -3675,7 +3709,7 @@ function SaudiDealRoom({
       </div>
 
       <div
-        className="mx-auto w-full max-w-4xl rounded-[36px] border border-[#e6c472]/70 p-[7px] shadow-[0_28px_70px_-26px_rgba(0,0,0,.98)] sm:p-[10px]"
+        className="mx-auto w-full max-w-4xl rounded-[36px] border border-[#e6c472]/70 p-[7px] shadow-[0_28px_70px_-26px_rgba(0,0,0,.98)] sm:p-[10px] landscape:max-w-none landscape:rounded-[28px] landscape:p-[6px]"
         style={{
           backgroundColor: "#4a2915",
           backgroundImage: "radial-gradient(circle at 18% 8%,rgba(255,203,116,.22),transparent 23%),linear-gradient(90deg,rgba(20,8,3,.72),transparent 12%,transparent 88%,rgba(20,8,3,.72)),repeating-linear-gradient(104deg,#2a150a 0 7px,#72421f 7px 14px,#3a1e0e 14px 22px,#9b6530 22px 28px)",
@@ -3683,7 +3717,7 @@ function SaudiDealRoom({
       >
         <div className="overflow-hidden rounded-[29px] border border-[#f2d487]/30 bg-[#073d32]">
           <div
-            className={cn("relative min-h-[500px] overflow-hidden sm:min-h-[620px] lg:min-h-[690px]", immersive && "min-h-[470px]")}
+            className={cn("relative min-h-[500px] overflow-hidden sm:min-h-[620px] lg:min-h-[690px]", immersive && "min-h-[470px]", "landscape:!min-h-[260px]")}
             style={{
               backgroundImage: "radial-gradient(circle at 50% 47%,rgba(27,121,91,.34),transparent 43%),linear-gradient(135deg,rgba(239,205,115,.04) 25%,transparent 25%,transparent 50%,rgba(239,205,115,.04) 50%,rgba(239,205,115,.04) 75%,transparent 75%,transparent)",
               backgroundSize: "auto,28px 28px",
@@ -3707,7 +3741,7 @@ function SaudiDealRoom({
             ))}
 
             {pendingAction && (
-              <div className="absolute inset-x-[15%] top-[160px] z-40 flex items-center justify-between gap-2 rounded-full border border-[#f3cf71] bg-[#052e27]/95 px-3 py-2 text-[#f7d77c] shadow-[0_0_24px_rgba(238,198,103,.28)] sm:top-[194px]">
+              <div className="absolute inset-x-[15%] top-[160px] z-40 flex items-center justify-between gap-2 rounded-full border border-[#f3cf71] bg-[#052e27]/95 px-3 py-2 text-[#f7d77c] shadow-[0_0_24px_rgba(238,198,103,.28)] sm:top-[194px] landscape:inset-x-auto landscape:bottom-2 landscape:left-2 landscape:top-auto landscape:w-[220px]">
                 <div className="flex min-w-0 items-center gap-2">
                   <Target className="size-4 shrink-0 animate-pulse" />
                   <p className="truncate text-[10px] font-black sm:text-xs">
@@ -3718,9 +3752,9 @@ function SaudiDealRoom({
               </div>
             )}
 
-            <div className="absolute left-1/2 top-[57%] z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 sm:top-[56%]">
+            <div className="absolute left-1/2 top-[57%] z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 sm:top-[56%] landscape:!top-auto landscape:bottom-1 landscape:translate-y-0 landscape:flex-row">
               <div className="rounded-full border border-[#f0d17a]/55 bg-[#06392f]/90 p-1.5 shadow-[0_0_30px_rgba(224,187,92,.25)]">
-                <TableBrandSeal logoUrl={logoUrl} className="size-[76px] border-[3px] sm:size-[98px]" />
+                <TableBrandSeal logoUrl={logoUrl} className="size-[76px] border-[3px] sm:size-[98px] landscape:!size-14" />
               </div>
 
               <div className="flex items-center justify-center gap-3 sm:gap-4">
@@ -3752,14 +3786,14 @@ function SaudiDealRoom({
                 )}
               </div>
 
-              <p className="max-w-[220px] truncate rounded-full border border-white/5 bg-black/30 px-4 py-1.5 text-center text-[10px] font-bold text-white/55 sm:max-w-[360px] sm:text-xs">{data.lastAction}</p>
+              <p className="max-w-[220px] truncate rounded-full border border-white/5 bg-black/30 px-4 py-1.5 text-center text-[10px] font-bold text-white/55 sm:max-w-[360px] sm:text-xs landscape:hidden">{data.lastAction}</p>
             </div>
 
             <button
               type="button"
               onClick={() => setInspectedPlayerId(me.id)}
               className={cn(
-                "absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-[#052d26]/95 px-3 py-1.5 text-[10px] font-black shadow-xl",
+                "absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-[#052d26]/95 px-3 py-1.5 text-[10px] font-black shadow-xl landscape:bottom-2 landscape:left-auto landscape:right-2 landscape:translate-x-0",
                 active?.id === me.id ? "border-[#f0cd72] text-[#f3d47b] ring-2 ring-[#f0cd72]/20" : "border-white/15 text-white",
               )}
             >
@@ -3767,15 +3801,15 @@ function SaudiDealRoom({
             </button>
           </div>
 
-          <div className="border-t-4 border-[#7d4a25] bg-[#042e27] px-2 pb-2 pt-3 sm:px-4">
+          <div className="border-t-4 border-[#7d4a25] bg-[#042e27] px-2 pb-2 pt-3 sm:px-4 landscape:relative landscape:min-h-[132px] landscape:p-0">
             {hand.length > 7 && <p className="mb-2 rounded-xl border border-rose-400/30 bg-rose-950/45 p-2 text-center text-[11px] font-black text-rose-100">يجب التخلص من {hand.length - 7} أوراق قبل إنهاء الدور</p>}
 
             {pendingAction ? (
-              <div className="mb-2 rounded-2xl border border-[#edcb71]/45 bg-[#0a4a3d] px-4 py-3 text-center text-xs font-black text-[#f4d77f]">
+              <div className="mb-2 rounded-2xl border border-[#edcb71]/45 bg-[#0a4a3d] px-4 py-3 text-center text-xs font-black text-[#f4d77f] landscape:absolute landscape:bottom-2 landscape:left-2 landscape:z-50 landscape:mb-0 landscape:w-[230px]">
                 حدّد الهدف المتوهج مباشرة من طاولة الخصم
               </div>
             ) : selectedCard && amActive && !data.needsDraw && (data.actionsLeft > 0 || hand.length > 7) ? (
-              <div className="mb-2 grid grid-cols-2 gap-2 rounded-[22px] bg-[#06261f]/65 p-1.5">
+              <div className="mb-2 grid grid-cols-2 gap-2 rounded-[22px] bg-[#06261f]/65 p-1.5 landscape:absolute landscape:bottom-2 landscape:left-2 landscape:z-50 landscape:mb-0 landscape:w-[230px]">
                 {selectedCard.type === "property" && data.actionsLeft > 0 && (
                   <button
                     type="button"
@@ -3824,8 +3858,8 @@ function SaudiDealRoom({
               </div>
             ) : null}
 
-            <div className="flex items-center justify-between gap-3 px-2">
-              <button type="button" onClick={() => setInspectedPlayerId(me.id)} className="text-right">
+            <div className="flex items-center justify-between gap-3 px-2 landscape:absolute landscape:right-2 landscape:top-1 landscape:z-50 landscape:p-0">
+              <button type="button" onClick={() => setInspectedPlayerId(me.id)} className="text-right landscape:hidden">
                 <p className="text-[10px] font-bold text-[#d6bd7b]/60">أوراقك الخاصة</p>
                 <p className="font-black text-white">{hand.length} أوراق</p>
               </button>
@@ -3842,11 +3876,11 @@ function SaudiDealRoom({
             </div>
 
             {amActive && !data.needsDraw && data.actionsLeft > 0 && !selectedCard && (
-              <p className="mt-1 text-center text-[10px] font-bold text-white/50">اختر بطاقة من يدك لتظهر الحركة المناسبة</p>
+              <p className="mt-1 text-center text-[10px] font-bold text-white/50 landscape:hidden">اختر بطاقة من يدك لتظهر الحركة المناسبة</p>
             )}
 
             <div
-              className="mx-auto grid min-h-[154px] w-full max-w-2xl items-end justify-center overflow-x-auto overflow-y-hidden px-4 pb-2 pt-8"
+              className="mx-auto grid min-h-[154px] w-full max-w-2xl items-end justify-center overflow-x-auto overflow-y-hidden px-4 pb-2 pt-8 landscape:min-h-[132px] landscape:max-w-none landscape:pl-[245px] landscape:pr-[112px] landscape:pb-0 landscape:pt-5"
               style={{ direction: "ltr", gridTemplateColumns: `repeat(${Math.max(hand.length, 1)}, minmax(34px, 72px))` }}
             >
               {hand.map((card, index) => {
