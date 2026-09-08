@@ -49,7 +49,7 @@ const primaryOf = (roles: string[]): AppRole => {
   return "member";
 };
 
-export function CouncilGovernance() {
+export function CouncilGovernance({ focusName = "" }: { focusName?: string } = {}) {
   const { userId: meId, isChairman, isViceChairman } = useUserRole();
   const canManageRoles = isChairman;
   const canManageHeads = isChairman || isViceChairman;
@@ -57,7 +57,7 @@ export function CouncilGovernance() {
   const [rows, setRows] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(focusName);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,6 +97,10 @@ export function CouncilGovernance() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (focusName) setSearch(focusName);
+  }, [focusName]);
 
   const chairman = rows.find((r) => r.role === "chairman") || null;
   const vice = rows.find((r) => r.role === "vice_chairman") || null;
