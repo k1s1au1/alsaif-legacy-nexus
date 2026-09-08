@@ -221,7 +221,7 @@ export function CouncilGovernance({ focusName = "" }: { focusName?: string } = {
               >
                 <div className="flex items-center justify-between gap-2">
                   <b className="text-sm font-black text-primary">
-                    {s === "heritage" ? "الإرث وشجرة العائلة" : sectionLabel(s)}
+                    {s === "heritage" ? "نسب وأثر" : sectionLabel(s)}
                   </b>
                   <em
                     className={cn(
@@ -295,7 +295,7 @@ export function CouncilGovernance({ focusName = "" }: { focusName?: string } = {
                       <>
                         {" · "}
                         {m.sections
-                          .map((s) => (s === "heritage" ? "الإرث وشجرة العائلة" : sectionLabel(s)))
+                          .map((s) => (s === "heritage" ? "نسب وأثر" : sectionLabel(s)))
                           .join("، ")}
                       </>
                     )}
@@ -356,7 +356,7 @@ export function CouncilGovernance({ focusName = "" }: { focusName?: string } = {
                           !canManageHeads && "opacity-40 cursor-not-allowed",
                         )}
                       >
-                        {s === "heritage" ? "الإرث وشجرة العائلة" : sectionLabel(s)}
+                        {s === "heritage" ? "نسب وأثر" : sectionLabel(s)}
                       </button>
                     );
                   })}
