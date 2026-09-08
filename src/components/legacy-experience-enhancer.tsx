@@ -583,7 +583,7 @@ export function LegacyExperienceEnhancer() {
 
           {isFullscreen && (
             <div className="legacy-fullscreen-toolbar">
-              <div className="legacy-fullscreen-title"><Trees size={18} /><span>شجرة عائلة السيف</span></div>
+              <div className="legacy-fullscreen-title"><LineageLegacyIcon size={18} /><span>نسب وأثر</span></div>
               <SearchBox value={treeSearch} onChange={handleTreeSearch} placeholder="ابحث عن فرد..." />
               <div className="legacy-fullscreen-actions">
                 <button className="legacy-canvas-tool" type="button" onClick={() => clickTreeControl("تكبير الشجرة")}><Plus size={17} /></button>
