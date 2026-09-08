@@ -9,7 +9,6 @@ import {
   Sparkles,
   Newspaper,
   Archive,
-  TreePine,
   Star,
   ArrowLeft,
   Ticket,
@@ -17,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 import { useSeenMap, writeBadge } from "@/hooks/use-shortcut-badges";
 
 export type Shortcut = {
@@ -164,11 +164,11 @@ export function ShortcutsGrid({
       {
         key: "family-tree",
         to: "/family-tree",
-        title: "شجرة العائلة",
-        description: "نسب العائلة وفروعها",
-        icon: TreePine,
+        title: "نسب وأثر",
+        description: "أنساب العائلة وإرثها",
+        icon: LineageLegacyIcon,
         accent: "from-gold-primary/10 to-transparent",
-        cta: "عرض الشجرة",
+        cta: "فتح القسم",
         badge: badges["family-tree"] ?? null,
         stat: stats["family-tree"] ?? null,
       },
