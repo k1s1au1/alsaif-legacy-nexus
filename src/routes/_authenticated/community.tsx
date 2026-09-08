@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { UserAvatar } from "@/components/user-avatar";
-import { QuickActionsBanner } from "@/components/quick-actions-banner";
 import { toast } from "sonner";
 import { MessageSquare, Pin, Plus, Send, Trash2, Loader2, X, Handshake, ChevronLeft, Image as ImageIcon, Vote, BookOpen, HelpCircle, Camera, BarChart3, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -247,11 +246,10 @@ function CommunityPage(){
    return filter==="all"?visible:visible.filter(post=>post.kind===filter);
  },[posts,filter,isChairman,meId]);
 
- return <AppShell title="ركن الأعضاء" user={shellProfile}><div className="member-corner-page max-w-6xl mx-auto space-y-12 pb-24" dir="rtl">
+ return <AppShell title="ركن الأعضاء" user={shellProfile}><div className="member-corner-page max-w-6xl mx-auto flex flex-col gap-6 md:gap-10 pb-36 md:pb-24" dir="rtl">
    <section className="member-corner-hero animate-fade-up px-4 md:px-0"><div className="relative overflow-hidden rounded-[32px] md:rounded-[48px] bg-gradient-to-br from-emerald-800 via-[#0d2620] to-black p-6 md:p-12 text-white shadow-2xl border border-white/5"><div className="absolute top-0 right-0 size-64 bg-gold-primary/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"/><div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6"><div className="space-y-3 md:space-y-5 text-center md:text-right"><div className="flex items-center justify-center md:justify-start gap-3"><div className="h-0.5 w-8 md:w-12 bg-gold-primary"/><span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">مساحة العائلة</span></div><h2 className="text-3xl md:text-6xl font-black tracking-tighter leading-tight">ركن الأعضاء</h2><p className="text-white/60 font-bold text-sm md:text-xl max-w-xl">شارك يومياتك، صورك، أو اطرح سؤالاً تأخذ فيه رأي العائلة بالتعليق أو التصويت.</p></div><div className="size-16 md:size-28 rounded-2xl md:rounded-[36px] bg-white/5 border border-white/10 flex items-center justify-center self-center md:self-auto shrink-0"><Handshake className="size-8 md:size-14 text-gold-primary" strokeWidth={1.5}/></div></div></div></section>
-   <div className="member-corner-services"><QuickActionsBanner/></div>
-   <PrivateRequestsSection/>
    <div className="member-corner-filters px-4 md:px-0 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2"><FilterChip active={filter==="all"} onClick={()=>setFilter("all")} label="الكل"/>{Object.entries(KIND_META).map(([k,m])=><FilterChip key={k} active={filter===k} onClick={()=>setFilter(k)} label={m.label} Icon={m.icon}/>)}</div><button onClick={()=>setShowAdd(true)} className="btn-gold px-6 py-3 rounded-2xl flex items-center gap-2 shadow-xl text-sm font-black"><Plus size={18}/><span>مشاركة جديدة</span></button></div>
+   <PrivateRequestsSection/>
    <div className="member-corner-content grid grid-cols-1 gap-8 px-4 md:px-0">
     {loading?(
       <div className="py-20 text-center">
