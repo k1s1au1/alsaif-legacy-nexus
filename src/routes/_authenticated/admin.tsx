@@ -1761,23 +1761,17 @@ function MemberAdminRow({
   meId,
   currentRole,
   sectionHeads = [],
-  onAssignRole,
-  onToggleSectionHead,
   onDelete,
+  onManagePermissions,
+  onToggleActive,
   fullName,
-  canManageSections = false,
-  canManageRoles = false,
+  canManageAccounts = false,
 }: any) {
   const isMe = member.id === meId;
-  const handleRole = (uid: string, role: string) => {
-    if (!canManageRoles) {
-      toast.error("هذه الصلاحية متاحة لرئيس المجلس والمسؤول التقني فقط");
-      return;
-    }
-    onAssignRole(uid, role);
-  };
+  const isActive = member.is_active !== false;
 
-  const handleToggleSection = async (section: string) => {
+  const handleToggleGuestSection = async (section: string) => {
+    if (!canManageAccounts) return;
     const current = member.allowed_sections || [];
     const next = current.includes(section)
       ? current.filter((s: string) => s !== section)
@@ -1789,8 +1783,7 @@ function MemberAdminRow({
         .update({ allowed_sections: next })
         .eq("id", member.id);
       if (error) throw error;
-      toast.success("تم تحديث صلاحيات الضيف");
-      // Note: In a real app, you'd want to refresh the local state or parent data
+      toast.success("تم تحديث تصاريح الضيف");
       member.allowed_sections = next;
     } catch (err: any) {
       toast.error("فشل التحديث: " + err.message);
@@ -1821,58 +1814,44 @@ function MemberAdminRow({
             </h4>
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
               {roleLabel(currentRole)}
+              {sectionHeads.length > 0 && (
+                <span className="mr-2 normal-case opacity-80">
+                  · {sectionHeads.map((s: string) => sectionLabel(s)).join("، ")}
+                </span>
+              )}
             </p>
           </div>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
-          <div
-            className={cn("flex items-center gap-1.5 flex-wrap", !canManageRoles && "opacity-60")}
-            title={
-              !canManageRoles ? "تعديل الصلاحيات متاح لرئيس المجلس والمسؤول التقني فقط" : undefined
-            }
+          <span
+            className={cn(
+              "px-3 py-1.5 rounded-full text-[11px] font-black border-2",
+              isActive
+                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/40"
+                : "bg-muted text-muted-foreground border-border",
+            )}
           >
-            <RoleToggleBtn
-              disabled={!canManageRoles}
-              active={currentRole === "chairman"}
-              onClick={() => handleRole(member.id, "chairman")}
-              icon={<ShieldCheck className="size-3.5" />}
-              label="رئيس المجلس"
-              activeClass="bg-emerald-950 text-white shadow-xl ring-2 ring-gold-primary"
-            />
-            <RoleToggleBtn
-              disabled={!canManageRoles}
-              active={currentRole === "admin"}
-              onClick={() => handleRole(member.id, "admin")}
-              icon={<Crown className="size-3.5" />}
-              label="مسؤول تقني"
-              activeClass="bg-gold-primary text-white shadow-gold-primary/30"
-            />
-            <RoleToggleBtn
-              disabled={!canManageRoles}
-              active={currentRole === "manager"}
-              onClick={() => handleRole(member.id, "manager")}
-              icon={<Star className="size-3.5" />}
-              label="مسؤول قسم"
-              activeClass="bg-emerald-600 text-white shadow-emerald-600/30"
-            />
-            <RoleToggleBtn
-              disabled={!canManageRoles}
-              active={currentRole === "member"}
-              onClick={() => handleRole(member.id, "member")}
-              icon={<UserIcon className="size-3.5" />}
-              label="عضو"
-              activeClass="bg-primary text-white shadow-primary/30"
-            />
-            <RoleToggleBtn
-              disabled={!canManageRoles}
-              active={currentRole === "guest"}
-              onClick={() => handleRole(member.id, "guest")}
-              icon={<UserCircle2 className="size-3.5" />}
-              label="ضيف المجلس"
-              activeClass="bg-slate-600 text-white shadow-slate-600/30"
-            />
-          </div>
-          {!isMe && currentRole !== "admin" && canManageRoles && (
+            {isActive ? "حساب مفعّل" : "حساب معطّل"}
+          </span>
+
+          {canManageAccounts && !isMe && (
+            <button
+              onClick={() => onToggleActive?.(member.id, !isActive)}
+              className="px-4 py-2 rounded-full text-[11px] font-black border-2 border-border bg-card hover:border-primary transition-all"
+            >
+              {isActive ? "تعطيل الحساب" : "تفعيل الحساب"}
+            </button>
+          )}
+
+          <button
+            onClick={() => onManagePermissions?.(member.id, fullName)}
+            className="px-4 py-2 rounded-full text-[11px] font-black border-2 border-gold-primary/40 bg-gold-primary/10 text-primary hover:bg-gold-primary hover:text-white transition-all flex items-center gap-2"
+          >
+            <ShieldCheck className="size-3.5" /> إدارة الصلاحيات
+          </button>
+
+          {!isMe && canManageAccounts && (
             <button
               onClick={() => onDelete(member.id, fullName)}
               className="size-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm"
@@ -1894,18 +1873,22 @@ function MemberAdminRow({
               return (
                 <button
                   key={s.key}
-                  onClick={() => handleToggleSection(s.key)}
+                  disabled={!canManageAccounts}
+                  onClick={() => handleToggleGuestSection(s.key)}
                   className={cn(
                     "px-4 py-2 rounded-xl text-[11px] font-black border transition-all flex items-center gap-2",
                     allowed
                       ? "bg-slate-800 text-white border-slate-800 shadow-md"
-                      : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                      : "bg-white text-slate-400 border-slate-200 hover:border-slate-300",
+                    !canManageAccounts && "opacity-50 cursor-not-allowed",
                   )}
                 >
-                  <div className={cn(
-                    "size-2 rounded-full",
-                    allowed ? "bg-emerald-400 animate-pulse" : "bg-slate-200"
-                  )} />
+                  <div
+                    className={cn(
+                      "size-2 rounded-full",
+                      allowed ? "bg-emerald-400 animate-pulse" : "bg-slate-200",
+                    )}
+                  />
                   {s.label}
                 </button>
               );
@@ -1913,39 +1896,10 @@ function MemberAdminRow({
           </div>
         </div>
       )}
-
-      <div className="mt-4 pt-4 border-t border-border/40">
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mb-2">
-          مسؤوليات الأقسام
-          {!canManageSections && <span className="mr-2 opacity-70 normal-case">(للرئيس فقط)</span>}
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {SECTION_OPTIONS.map((s) => {
-            const active = sectionHeads.includes(s.key);
-            return (
-              <button
-                key={s.key}
-                disabled={!canManageSections}
-                onClick={() => canManageSections && onToggleSectionHead(member.id, s.key, active)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-[11px] font-black border transition-all",
-                  active
-                    ? "bg-gold-primary text-white border-gold-primary shadow-md"
-                    : "bg-card text-muted-foreground border-border hover:border-gold-primary/40 hover:text-primary",
-                  !canManageSections &&
-                    "opacity-50 cursor-not-allowed hover:border-border hover:text-muted-foreground",
-                )}
-              >
-                {active && <Check className="size-3 inline ml-1" strokeWidth={3} />}
-                {s.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
+
 
 function PollsManager({ list, meId, onRefresh }: any) {
   const [showForm, setShowForm] = useState(false);
