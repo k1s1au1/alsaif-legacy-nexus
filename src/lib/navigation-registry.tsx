@@ -14,9 +14,9 @@ import {
   Settings,
   ShieldCheck,
   Ticket,
-  Trees,
   PartyPopper,
 } from "lucide-react";
+import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 
 export type NavItemKey =
   | "dashboard"
@@ -61,7 +61,7 @@ export const NAV_REGISTRY: NavItemDef[] = [
   { id: "settings", to: "/settings", label: "إعدادات", icon: Settings },
   { id: "admin", to: "/admin", label: "الإدارة", icon: ShieldCheck, adminOnly: true },
   { id: "trips", to: "/trips", label: "ترفيه", icon: Ticket },
-  { id: "family-tree", to: "/family-tree", label: "إرث العائلة", icon: Trees },
+  { id: "family-tree", to: "/family-tree", label: "نسب وأثر", icon: LineageLegacyIcon },
 ];
 
 export const DEFAULT_NAV_KEYS: NavItemKey[] = ["dashboard", "news", "chat"];
