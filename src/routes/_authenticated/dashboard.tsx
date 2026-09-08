@@ -25,7 +25,6 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import { ResponsiveDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
 import { AnimatedCounter } from "@/components/dashboard/animated-counter";
-import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { QuickActionsBanner } from "@/components/quick-actions-banner";
 import {
@@ -406,7 +405,7 @@ function Dashboard() {
     label: string;
     value: number;
     suffix: string;
-    color: string;
+    tone: "finance" | "members" | "trips" | "tasks";
     icon: React.ElementType<{ className?: string }>;
     link: "/finance" | "/members" | "/trips" | "/tasks";
   }> = [
@@ -414,7 +413,7 @@ function Dashboard() {
       label: "رصيد الصندوق",
       value: fundBalance || 0,
       suffix: "ر.س",
-      color: "bg-gradient-to-br from-emerald-600 to-teal-900",
+      tone: "finance",
       icon: Wallet,
       link: "/finance",
     },
@@ -422,7 +421,7 @@ function Dashboard() {
       label: "أفراد العائلة",
       value: countsData?.members || 0,
       suffix: "عضو",
-      color: "bg-gradient-to-br from-primary to-emerald-950",
+      tone: "members",
       icon: Users,
       link: "/members",
     },
@@ -430,7 +429,7 @@ function Dashboard() {
       label: "ترفيه عائلي",
       value: eventsData?.trips.length || 0,
       suffix: "وجهة",
-      color: "bg-gradient-to-br from-[#8E7745] to-[#453a22]",
+      tone: "trips",
       icon: Plane,
       link: "/trips",
     },
@@ -438,7 +437,7 @@ function Dashboard() {
       label: "مهام قيد التنفيذ",
       value: countsData?.tasks || 0,
       suffix: "مهمة",
-      color: "bg-gradient-to-br from-rose-700 to-rose-950",
+      tone: "tasks",
       icon: ListChecks,
       link: "/tasks",
     },
@@ -640,30 +639,33 @@ function Dashboard() {
         )}
 
         {/* 7. STATS GRID */}
-        <section className="dashboard-stats-grid grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 px-2 md:px-0">
-          {stats.map((s, i) => (
-            <Link key={i} to={s.link} className="block group">
-              <div
-                className={cn(
-                  "relative overflow-hidden rounded-[24px] md:rounded-[32px] p-5 md:p-8 text-white shadow-lg transition-all duration-500 hover:scale-[1.02]",
-                  s.color,
-                )}
-              >
-                <div className="absolute top-0 right-0 p-3 md:p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                  {React.createElement(s.icon, { className: "size-10 md:size-16" })}
-                </div>
-                <div className="relative z-10 space-y-2 md:space-y-4">
-                  <p className="text-[10px] md:text-sm font-black uppercase tracking-widest opacity-80">
-                    {s.label}
-                  </p>
-                  <div className="flex items-baseline gap-1 md:gap-2">
-                    <span className="text-xl md:text-4xl font-black tracking-tighter">
-                      <AnimatedCounter value={s.value} />
-                    </span>
-                    <span className="text-[10px] md:text-sm font-bold opacity-60">{s.suffix}</span>
-                  </div>
-                </div>
-              </div>
+        <section
+          className="dashboard-stats-grid dashboard-ledger-stats"
+          aria-label="ملخص العائلة"
+        >
+          {stats.map((stat) => (
+            <Link
+              key={stat.link}
+              to={stat.link}
+              className="dashboard-ledger-stat"
+              data-stat-tone={stat.tone}
+              aria-label={`${stat.label}: ${Number(stat.value || 0).toLocaleString("ar-SA")} ${stat.suffix}`}
+            >
+              <span className="dashboard-ledger-stat__rail" aria-hidden="true" />
+              <span className="dashboard-ledger-stat__pattern" aria-hidden="true" />
+              <span className="dashboard-ledger-stat__icon" aria-hidden="true">
+                {React.createElement(stat.icon)}
+              </span>
+              <span className="dashboard-ledger-stat__content">
+                <span className="dashboard-ledger-stat__label">{stat.label}</span>
+                <span className="dashboard-ledger-stat__measure">
+                  <strong>
+                    <AnimatedCounter value={stat.value} />
+                  </strong>
+                  <small>{stat.suffix}</small>
+                </span>
+              </span>
+              <ChevronLeft className="dashboard-ledger-stat__arrow" aria-hidden="true" />
             </Link>
           ))}
         </section>
