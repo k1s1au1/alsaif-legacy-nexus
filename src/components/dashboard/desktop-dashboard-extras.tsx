@@ -74,7 +74,7 @@ const services = [
     desc: "أفراح ومناسبات وذكريات العائلة",
     icon: PartyPopper,
   },
-  { to: "/majlis", label: "المستندات", desc: "أخبار ووثائق العائلة", icon: Newspaper },
+  { to: "/majlis", label: "الأخبار", desc: "آخر أخبار العائلة", icon: Newspaper },
   { to: "/archive", label: "الألبومات", desc: "ذكرياتنا في صور جميلة", icon: Archive },
   { to: "/calendar", label: "تقويم العائلة", desc: "المواعيد والمناسبات", icon: CalendarDays },
   { to: "/chat", label: "المحادثات", desc: "تواصل خاص بالعائلة", icon: MessageCircle },
