@@ -477,62 +477,6 @@ function AdminPage() {
     loadData();
   };
 
-  const assignRole = async (uid: string, role: string) => {
-    // Constraint: Max 2 Technical Admins (admin role)
-    if (role === "admin") {
-      const currentAdmins = members.filter((m) => {
-        const r = Array.isArray(m.user_roles)
-          ? m.user_roles[0]?.role
-          : m.user_roles?.role || "member";
-        return r === "admin";
-      });
-      if (currentAdmins.length >= 2 && !currentAdmins.find((a) => a.id === uid)) {
-        toast.error("عذراً، لا يمكن تعيين أكثر من 2 مسؤولين تقنيين في النظام.");
-        return;
-      }
-    }
-
-    // Constraint: Max 2 Chairmen (chairman role)
-    if (role === "chairman") {
-      const currentChairmen = members.filter((m) => {
-        const r = Array.isArray(m.user_roles)
-          ? m.user_roles[0]?.role
-          : m.user_roles?.role || "member";
-        return r === "chairman";
-      });
-      if (currentChairmen.length >= 2 && !currentChairmen.find((c) => c.id === uid)) {
-        toast.error("عذراً، لا يمكن تعيين أكثر من 2 رؤساء مجلس في النظام.");
-        return;
-      }
-    }
-
-    setUpdatingRole(uid);
-    try {
-      const { error } = await (supabase.rpc as any)("assign_user_role", {
-        _user_id: uid,
-        _role: role,
-      });
-      if (error) throw error;
-      toast.success("تم تحديث الصلاحية بنجاح");
-
-      // Update local state immediately for better UX
-      setMembers((prev) =>
-        prev.map((m) => {
-          if (m.id === uid) {
-            return { ...m, user_roles: [{ role }] };
-          }
-          return m;
-        }),
-      );
-
-      await loadData();
-    } catch (err: any) {
-      toast.error("فشل تعيين الصلاحية", { description: err.message });
-    } finally {
-      setUpdatingRole(null);
-    }
-  };
-
   const deleteMember = async (uid: string, name: string) => {
     if (!confirm(`هل أنت متأكد من حذف حساب ${name} نهائياً؟`)) return;
     try {
@@ -544,36 +488,23 @@ function AdminPage() {
     }
   };
 
-  const toggleSectionHead = async (uid: string, section: string, currentlyHead: boolean) => {
-    try {
-      if (currentlyHead) {
-        const { error } = await supabase
-          .from("section_heads" as any)
-          .delete()
-          .eq("user_id", uid)
-          .eq("section", section);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("section_heads" as any)
-          .insert({ user_id: uid, section } as any);
-        if (error) throw error;
-      }
-      setMembers((prev) =>
-        prev.map((m) => {
-          if (m.id !== uid) return m;
-          const cur: string[] = m.section_heads || [];
-          return {
-            ...m,
-            section_heads: currentlyHead ? cur.filter((s) => s !== section) : [...cur, section],
-          };
-        }),
-      );
-      toast.success("تم تحديث مسؤولية القسم");
-    } catch (err: any) {
-      toast.error("فشل التحديث: " + (err.message || ""));
+  /** Account activation only — roles/sections are managed in the governance tab. */
+  const toggleMemberActive = async (uid: string, next: boolean) => {
+    const { error } = await supabase.from("profiles").update({ is_active: next }).eq("id", uid);
+    if (error) {
+      toast.error("تعذر تحديث حالة الحساب", { description: error.message });
+      return;
     }
+    setMembers((prev) => prev.map((m) => (m.id === uid ? { ...m, is_active: next } : m)));
+    toast.success(next ? "تم تفعيل الحساب" : "تم تعطيل الحساب");
   };
+
+  /** Single source of truth for permissions: jump to the governance tab. */
+  const goManagePermissions = (_uid: string, name: string) => {
+    setGovernanceFocus(name);
+    setTab("governance");
+  };
+
 
   // Announcement Handlers
   const onPickImage = async (file: File) => {
@@ -736,7 +667,7 @@ function AdminPage() {
       key: "members",
       label: "سجل الأعضاء",
       shortLabel: "الأعضاء",
-      description: "إدارة السجل الرسمي للأعضاء والأدوار والصلاحيات.",
+      description: "إدارة السجل الرسمي للأعضاء والحسابات والبيانات.",
       icon: Users,
       count: members.length,
       visible: isCouncilLeadership,
@@ -1051,13 +982,13 @@ function AdminPage() {
                           : m.user_roles?.role || "member"
                       }
                       sectionHeads={m.section_heads || []}
-                      onAssignRole={assignRole}
-                      onToggleSectionHead={toggleSectionHead}
                       onDelete={deleteMember}
+                      onToggleActive={toggleMemberActive}
+                      onManagePermissions={goManagePermissions}
                       fullName={m.arabic_name || m.full_name || "عضو"}
-                      canManageSections={isCouncilLeadership}
-                      canManageRoles={isSiteChairman}
+                      canManageAccounts={isCouncilLeadership}
                     />
+
                   ))}
                   {filteredMembers.length === 0 && (
                     <div className="p-20 text-center bg-muted/10 rounded-[40px] border-2 border-dashed text-muted-foreground italic">
