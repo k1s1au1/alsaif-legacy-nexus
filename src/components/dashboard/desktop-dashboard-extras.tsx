@@ -19,8 +19,6 @@ import {
   MapPin,
   PartyPopper,
   MessageCircle,
-  History,
-  Trees,
   Lock,
 } from "lucide-react";
 import {
@@ -35,6 +33,7 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { useUserRole } from "@/hooks/use-user-role";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import { SpiritualQuotesWidget } from "@/components/dashboard/spiritual-quotes-widget";
+import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -80,8 +79,7 @@ const services = [
   { to: "/calendar", label: "تقويم العائلة", desc: "المواعيد والمناسبات", icon: CalendarDays },
   { to: "/chat", label: "المحادثات", desc: "تواصل خاص بالعائلة", icon: MessageCircle },
   { to: "/community", label: "ركن الأعضاء", desc: "مجتمع أفراد العائلة", icon: Handshake },
-  { to: "/heritage", label: "الإرث", desc: "تاريخ وإرث العائلة", icon: History },
-  { to: "/family-tree", label: "شجرة العائلة", desc: "أجيال العائلة وروابطها", icon: Trees },
+  { to: "/family-tree", label: "نسب وأثر", desc: "أنساب العائلة وإرثها", icon: LineageLegacyIcon },
   { to: "/vault", label: "الخزنة", desc: "المحتوى العائلي الخاص", icon: Lock },
 ];
 

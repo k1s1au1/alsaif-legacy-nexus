@@ -23,9 +23,7 @@ import {
   Ticket,
   CalendarDays,
   ListChecks,
-  Trees,
   Wallet,
-  History,
   Archive,
   ChevronLeft,
   Lock,
@@ -37,6 +35,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { UserAvatar } from "@/components/user-avatar";
 import { NotificationsBell } from "@/components/notifications-bell";
@@ -77,8 +76,7 @@ const desktopServiceItems: { id: NavItemKey; label: string; description: string 
   { id: "news", label: "الأخبار", description: "آخر أخبار العائلة" },
   { id: "archive", label: "الألبومات", description: "الصور والذكريات" },
   { id: "members", label: "ركن الأعضاء", description: "مجتمع أفراد العائلة" },
-  { id: "heritage", label: "الإرث", description: "تاريخ العائلة وإرثها" },
-  { id: "family-tree", label: "شجرة العائلة", description: "الأجيال وروابط القرابة" },
+  { id: "family-tree", label: "نسب وأثر", description: "أنساب العائلة وإرثها" },
   { id: "vault", label: "الخزنة", description: "المحتوى العائلي الخاص" },
 ];
 
@@ -1191,22 +1189,9 @@ function AppShellChrome({
                     }}
                   />
                   <QuickActionItem
-                    to="/heritage"
-                    label="الإرث"
-                    icon={<History size={28} />}
-                    color={cn("bg-[#8E7745]", isGuest && !allowedSections.includes("heritage") && "opacity-20 grayscale cursor-not-allowed")}
-                    onClick={(e: any) => {
-                      if (isGuest && !allowedSections.includes("heritage")) {
-                        e.preventDefault(); toast.error("خاص بالعائلة");
-                      } else {
-                        setShowQuickActions(false);
-                      }
-                    }}
-                  />
-                  <QuickActionItem
                     to="/family-tree"
-                    label="شجرة العائلة"
-                    icon={<Trees size={28} />}
+                    label="نسب وأثر"
+                    icon={<LineageLegacyIcon size={28} />}
                     color={cn("bg-[#153221]", isGuest && !allowedSections.includes("tree") && "opacity-20 grayscale cursor-not-allowed")}
                     onClick={(e: any) => {
                       if (isGuest && !allowedSections.includes("tree")) {
@@ -1304,8 +1289,8 @@ const SHELL_TITLE_MAP: [RegExp, string][] = [
   [/^\/finance/, "صندوق العائلة"],
   [/^\/archive/, "الألبوم العائلي"],
   [/^\/calendar/, "تقويم العائلة"],
-  [/^\/heritage/, "إرث السيف"],
-  [/^\/family-tree/, "شجرة عائلة السيف"],
+  [/^\/heritage/, "نسب وأثر"],
+  [/^\/family-tree/, "نسب وأثر"],
   [/^\/family-occasions/, "مناسبات العائلة"],
   [/^\/vault/, "الخزنة"],
   [/^\/suggestions/, "صندوق المقترحات"],

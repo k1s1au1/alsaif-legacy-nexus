@@ -1,8 +1,9 @@
 import {
-  MessageCircle, Ticket, CalendarDays, ListChecks, Newspaper, Trees, Wallet,
-  History, Archive, Users, Handshake, Lock, ChevronDown, ChevronUp, PartyPopper,
+  MessageCircle, Ticket, CalendarDays, ListChecks, Newspaper, Wallet,
+  Archive, Users, Handshake, Lock, ChevronDown, ChevronUp, PartyPopper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 import React, { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 
@@ -33,8 +34,7 @@ const services = [
   { to: "/calendar", label: "تقويم العائلة", description: "المواعيد والمناسبات", icon: <CalendarDays /> },
   { to: "/chat", label: "المحادثات", description: "تواصل خاص بالعائلة", icon: <MessageCircle /> },
   { to: "/community", label: "ركن الأعضاء", description: "مجتمع أفراد العائلة", icon: <Handshake /> },
-  { to: "/heritage", label: "الإرث", description: "تاريخ وإرث العائلة", icon: <History /> },
-  { to: "/family-tree", label: "شجرة العائلة", description: "أجيال العائلة وروابطها", icon: <Trees /> },
+  { to: "/family-tree", label: "نسب وأثر", description: "أنساب العائلة وإرثها", icon: <LineageLegacyIcon /> },
   { to: "/vault", label: "الخزنة", description: "المحتوى العائلي الخاص", icon: <Lock /> },
 ];
 

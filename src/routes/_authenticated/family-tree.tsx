@@ -5,6 +5,7 @@ import Tree from "react-d3-tree";
 import type { RawNodeDatum, CustomNodeElementProps } from "react-d3-tree";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
+import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 import { UserAvatar } from "@/components/user-avatar";
 import {
   setMemberParent,
@@ -38,10 +39,10 @@ export const Route = createFileRoute("/_authenticated/family-tree")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "شجرة عائلة السيف" },
+      { title: "نسب وأثر" },
       {
         name: "description",
-        content: "عرض هرمي لشجرة عائلة السيف مع روابط واضحة بين الآباء والأبناء.",
+        content: "أنساب عائلة السيف وإرثها المحفوظ عبر الأجيال.",
       },
     ],
   }),
@@ -630,20 +631,20 @@ function FamilyTreePage() {
   const editingMember = editing ? members.find((m) => m.id === editing) : null;
 
   return (
-    <AppShell title="شجرة عائلة السيف" user={me}>
+    <AppShell title="نسب وأثر" user={me}>
       <div className="family-tree-page space-y-4 px-1 md:px-0">
         <header className="rounded-[24px] border border-[#E7E0CF] bg-white p-4 shadow-[0_12px_34px_rgba(30,59,47,0.08)] md:rounded-[30px] md:p-5">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#0F5139] shadow-lg shadow-[#0F5139]/15 md:size-14">
-                <Trees className="size-6 text-[#F5CF73] md:size-7" />
+                <LineageLegacyIcon className="size-6 text-[#F5CF73] md:size-7" />
               </div>
               <div className="min-w-0">
                 <h1 className="truncate text-xl font-black text-[#153D2F] md:text-2xl">
-                  شجرة عائلة السيف
+                  نسب وأثر
                 </h1>
                 <p className="mt-0.5 text-sm font-bold text-[#7B7B76]">
-                  تصفّح صلات القرابة بين أفراد العائلة
+                  أنساب العائلة وإرثها
                 </p>
               </div>
             </div>

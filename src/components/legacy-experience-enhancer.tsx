@@ -20,6 +20,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 import "./legacy-reference.css";
 
 type LegacyPage = "family-tree" | "heritage";
@@ -57,7 +58,7 @@ function setNativeInputValue(input: HTMLInputElement, value: string) {
 
 function LegacyTabs({ active }: { active: LegacyPage }) {
   return (
-    <div className="legacy-reference-tabs" role="tablist" aria-label="إرث العائلة">
+    <div className="legacy-reference-tabs" role="tablist" aria-label="نسب وأثر">
       <Link
         to="/family-tree"
         className="legacy-reference-tab"
@@ -454,8 +455,11 @@ export function LegacyExperienceEnhancer() {
               placeholder="ابحث عن اسم أو رقم فرد..."
             />
             <div className="legacy-tree-title">
-              <h1>شجرة عائلة السيف</h1>
-              <p>إرث العائلة</p>
+              <div className="legacy-section-title">
+                <span className="legacy-section-icon"><LineageLegacyIcon size={25} /></span>
+                <h1>نسب وأثر</h1>
+              </div>
+              <p>أنساب العائلة وإرثها</p>
             </div>
             <div aria-hidden="true" />
           </div>
@@ -470,7 +474,10 @@ export function LegacyExperienceEnhancer() {
         <section className="legacy-reference-shell" dir="rtl">
           <div className="legacy-heritage-hero">
             <div className="legacy-heritage-copy">
-              <h1>إرث العائلة</h1>
+              <div className="legacy-heritage-title">
+                <span className="legacy-section-icon"><LineageLegacyIcon size={25} /></span>
+                <h1>نسب وأثر</h1>
+              </div>
               <h2>قصص الأجداد ... جذور ممتدة ... وهوية خالدة</h2>
               <p>
                 نحفظ تاريخنا لنصنع مستقبلًا يليق بعائلتنا، وفي كل ذكرى حكاية وفي كل فرع امتداد.
@@ -576,7 +583,7 @@ export function LegacyExperienceEnhancer() {
 
           {isFullscreen && (
             <div className="legacy-fullscreen-toolbar">
-              <div className="legacy-fullscreen-title"><Trees size={18} /><span>شجرة عائلة السيف</span></div>
+              <div className="legacy-fullscreen-title"><LineageLegacyIcon size={18} /><span>نسب وأثر</span></div>
               <SearchBox value={treeSearch} onChange={handleTreeSearch} placeholder="ابحث عن فرد..." />
               <div className="legacy-fullscreen-actions">
                 <button className="legacy-canvas-tool" type="button" onClick={() => clickTreeControl("تكبير الشجرة")}><Plus size={17} /></button>

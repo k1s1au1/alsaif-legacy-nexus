@@ -60,7 +60,7 @@ export function sectionLabel(section: Section | string): string {
     case "faith":
       return "نفحات إيمانية";
     case "heritage":
-      return "إرث السيف وشجرة العائلة";
+      return "نسب وأثر";
     case "finance":
       return "المالية";
     default:
@@ -70,7 +70,7 @@ export function sectionLabel(section: Section | string): string {
 
 export function sectionHeadLabel(section: Section | string): string {
   const s = normalizeSection(String(section));
-  if (s === "heritage") return "مسؤول الإرث وشجرة العائلة";
+  if (s === "heritage") return "مسؤول قسم نسب وأثر";
   return `مسؤول ${sectionLabel(s)}`;
 }
 
