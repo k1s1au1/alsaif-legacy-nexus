@@ -53,7 +53,7 @@ import { approveAccountRequest } from "@/lib/api/account-requests.functions";
 import { deleteMemberAccount } from "@/lib/api/members-admin.functions";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUserRole, roleLabel } from "@/hooks/use-user-role";
+import { useUserRole, roleLabel, sectionLabel } from "@/hooks/use-user-role";
 import { CouncilGovernance } from "@/components/admin/council-governance";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
@@ -207,7 +207,7 @@ function AdminPage() {
   });
   const [fcmTokenCount, setFcmTokenCount] = useState(0);
   const [memberSearch, setMemberSearch] = useState("");
-  const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+  const [governanceFocus, setGovernanceFocus] = useState<string>("");
   const [systemHealth, setSystemHealth] = useState<SystemHealthResponse | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthError, setHealthError] = useState<string | null>(null);
@@ -899,7 +899,9 @@ function AdminPage() {
                 </header>
                 <div className="admin-content-body">
 
-            {tab === "governance" && isCouncilLeadership && <CouncilGovernance />}
+            {tab === "governance" && isCouncilLeadership && (
+              <CouncilGovernance focusName={governanceFocus} />
+            )}
 
             {tab === "membership_alerts" && isCouncilLeadership && (
               <MembershipAlerts canManage={isPowerUser} />
