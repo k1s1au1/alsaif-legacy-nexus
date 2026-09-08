@@ -1289,7 +1289,7 @@ const SHELL_TITLE_MAP: [RegExp, string][] = [
   [/^\/finance/, "صندوق العائلة"],
   [/^\/archive/, "الألبوم العائلي"],
   [/^\/calendar/, "تقويم العائلة"],
-  [/^\/heritage/, "إرث السيف"],
+  [/^\/heritage/, "نسب وأثر"],
   [/^\/family-tree/, "نسب وأثر"],
   [/^\/family-occasions/, "مناسبات العائلة"],
   [/^\/vault/, "الخزنة"],
