@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/heritage")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "إرث السيف — السيف" },
+      { title: "نسب وأثر — السيف" },
       { name: "description", content: "قصائد، قصص، وموروثات عائلة السيف." },
     ],
   }),
@@ -141,7 +141,7 @@ function HeritagePage() {
   const filteredItems = items.filter((it) => (filter === "all" || it.kind === filter) && (!search || it.title.includes(search) || it.content.includes(search)));
 
   return (
-    <AppShell title="إرث السيف" user={profile}>
+    <AppShell title="نسب وأثر" user={profile}>
       <div className="max-w-6xl mx-auto space-y-12 pb-24 px-4 md:px-0 heritage-page-content" dir="rtl">
         <section className="animate-fade-up heritage-hero-section">
           <div className="relative overflow-hidden rounded-[32px] md:rounded-[48px] bg-gradient-to-br from-[#1a2b3c] via-[#0f172a] to-black p-6 md:p-12 text-white shadow-2xl border border-white/5 group">
