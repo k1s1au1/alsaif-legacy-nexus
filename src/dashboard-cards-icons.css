@@ -117,3 +117,525 @@
     border-radius: 18px !important;
   }
 }
+
+
+/* ==========================================================================
+   Identity-aware heritage ledger statistics
+   Option 1: one featured fund ledger followed by three compact family rows.
+   All colour is derived from Settings identity tokens. The ornament is purely
+   geometric; no governmental or palm-and-crossed-swords emblem is used.
+   ========================================================================== */
+
+.dashboard-ledger-stats {
+  --ledger-gap: clamp(12px, 2.8vw, 18px);
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: var(--ledger-gap) !important;
+  width: 100%;
+  padding: 0 clamp(8px, 2.5vw, 18px) !important;
+}
+
+.dashboard-ledger-stats > .dashboard-ledger-stat {
+  --stat-accent: var(--identity-panel, var(--primary));
+  --stat-accent-deep: var(--identity-header, var(--nav-bg, var(--primary)));
+  --stat-surface: color-mix(
+    in srgb,
+    var(--identity-soft, var(--card)) 88%,
+    var(--card) 12%
+  );
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid
+    color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 34%, var(--border)) !important;
+  border-radius: clamp(22px, 5vw, 30px) !important;
+  color: var(--foreground) !important;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--stat-surface) 96%, white 4%),
+      color-mix(in srgb, var(--identity-space, var(--background)) 44%, var(--stat-surface) 56%)
+    ) !important;
+  box-shadow:
+    0 18px 40px -30px color-mix(in srgb, var(--identity-header, #062d25) 62%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 64%, transparent) !important;
+  text-decoration: none;
+  transform: translateZ(0);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease !important;
+}
+
+.dashboard-ledger-stats > .dashboard-ledger-stat::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 5px;
+  pointer-events: none;
+  border: 1px solid
+    color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 13%, transparent);
+  border-radius: calc(clamp(22px, 5vw, 30px) - 5px);
+}
+
+.dashboard-ledger-stats > .dashboard-ledger-stat::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  pointer-events: none;
+  border: 1px solid var(--identity-accent, var(--gold-primary));
+  background: var(--stat-surface);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"] {
+  --stat-accent: var(--identity-panel, var(--primary));
+  --stat-accent-deep: var(--identity-header, var(--nav-bg, var(--primary)));
+}
+
+.dashboard-ledger-stat[data-stat-tone="members"] {
+  --stat-accent: var(--primary);
+  --stat-accent-deep: var(--identity-header, var(--nav-bg, var(--primary)));
+}
+
+.dashboard-ledger-stat[data-stat-tone="trips"] {
+  --stat-accent: color-mix(
+    in srgb,
+    var(--identity-accent, var(--gold-primary)) 52%,
+    var(--identity-panel, var(--primary)) 48%
+  );
+  --stat-accent-deep: color-mix(
+    in srgb,
+    var(--identity-header, var(--nav-bg, var(--primary))) 82%,
+    var(--identity-accent, var(--gold-primary)) 18%
+  );
+}
+
+.dashboard-ledger-stat[data-stat-tone="tasks"] {
+  --stat-accent: color-mix(
+    in srgb,
+    var(--identity-panel, var(--primary)) 72%,
+    var(--identity-accent, var(--gold-primary)) 28%
+  );
+  --stat-accent-deep: var(--identity-header, var(--nav-bg, var(--primary)));
+}
+
+.dashboard-ledger-stat__rail,
+.dashboard-ledger-stat__pattern {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.dashboard-ledger-stat__rail {
+  inset-block: 12px;
+  width: 10px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 4px,
+      color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 78%, transparent) 4px 6px,
+      transparent 6px 10px
+    ),
+    color-mix(in srgb, var(--stat-accent) 13%, var(--stat-surface));
+  border: 1px solid
+    color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 24%, transparent);
+}
+
+.dashboard-ledger-stat__pattern {
+  opacity: 0.42;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 12px,
+      color-mix(in srgb, var(--stat-accent) 12%, transparent) 12px 13px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 17px,
+      color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 10%, transparent) 17px 18px
+    );
+}
+
+.dashboard-ledger-stat__icon,
+.dashboard-ledger-stat__content,
+.dashboard-ledger-stat__label,
+.dashboard-ledger-stat__measure,
+.dashboard-ledger-stat__arrow {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+
+.dashboard-ledger-stat__icon {
+  grid-area: icon;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--primary-foreground) !important;
+  background:
+    linear-gradient(145deg, var(--stat-accent), var(--stat-accent-deep)) !important;
+  border: 1px solid
+    color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 74%, transparent) !important;
+  box-shadow:
+    0 12px 24px -17px color-mix(in srgb, var(--stat-accent-deep) 90%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 42%, transparent) !important;
+}
+
+.dashboard-ledger-stat__icon svg {
+  width: 48% !important;
+  height: 48% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: currentColor !important;
+  background: transparent !important;
+  stroke-width: 1.8;
+}
+
+.dashboard-ledger-stat__content {
+  grid-area: content;
+}
+
+.dashboard-ledger-stat__label {
+  grid-area: label;
+  display: block;
+  color: color-mix(
+    in srgb,
+    var(--foreground) 60%,
+    var(--identity-header, var(--primary)) 40%
+  ) !important;
+  font-size: clamp(0.82rem, 3.5vw, 1.05rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.dashboard-ledger-stat__measure {
+  grid-area: measure;
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 7px;
+  direction: rtl;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-ledger-stat__measure strong {
+  min-width: 0;
+  overflow: hidden;
+  color: color-mix(
+    in srgb,
+    var(--foreground) 55%,
+    var(--identity-header, var(--primary)) 45%
+  ) !important;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-ledger-stat__measure small {
+  flex: 0 0 auto;
+  color: var(--identity-accent, var(--gold-primary)) !important;
+  font-size: clamp(0.68rem, 2.7vw, 0.9rem) !important;
+  font-weight: 900 !important;
+  white-space: nowrap;
+}
+
+.dashboard-ledger-stat__arrow {
+  display: none !important;
+}
+
+/* Featured balance ledger */
+.dashboard-ledger-stat[data-stat-tone="finance"] {
+  display: grid !important;
+  grid-template-columns: clamp(82px, 26vw, 126px) minmax(0, 1fr) !important;
+  grid-template-areas: "icon content" !important;
+  align-items: center !important;
+  gap: clamp(16px, 5vw, 28px) !important;
+  min-height: clamp(168px, 45vw, 220px) !important;
+  padding: clamp(22px, 5.5vw, 34px) clamp(22px, 6vw, 38px) !important;
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"]::after {
+  left: calc(clamp(82px, 26vw, 126px) + clamp(8px, 2.5vw, 18px));
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__rail {
+  left: 10px;
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__pattern {
+  inset-block: 0;
+  left: 0;
+  width: min(46%, 210px);
+  border-inline-end: 1px solid
+    color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 26%, transparent);
+  border-radius: 0 999px 999px 0;
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__icon {
+  width: clamp(82px, 26vw, 126px) !important;
+  height: clamp(82px, 26vw, 126px) !important;
+  border-radius: clamp(24px, 7vw, 38px) !important;
+  transform: rotate(-3deg);
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(13px, 3.4vw, 22px);
+  direction: rtl;
+  text-align: right;
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__label {
+  width: 100%;
+  font-size: clamp(1.05rem, 4.5vw, 1.45rem) !important;
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__measure {
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__measure strong {
+  max-width: 100%;
+  font-size: clamp(1.75rem, 8.2vw, 3.4rem) !important;
+}
+
+.dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__measure small {
+  font-size: clamp(0.86rem, 3.2vw, 1.08rem) !important;
+}
+
+/* Compact family ledger rows */
+.dashboard-ledger-stat:not([data-stat-tone="finance"]) {
+  display: grid !important;
+  grid-template-columns: clamp(64px, 18vw, 82px) minmax(0, 1fr) clamp(64px, 18vw, 82px) !important;
+  grid-template-areas: "measure label icon" !important;
+  align-items: center !important;
+  gap: clamp(10px, 3.2vw, 20px) !important;
+  min-height: clamp(94px, 25vw, 116px) !important;
+  padding: clamp(13px, 3.6vw, 19px) clamp(18px, 5vw, 28px) !important;
+}
+
+.dashboard-ledger-stat:not([data-stat-tone="finance"])::after {
+  left: calc(clamp(64px, 18vw, 82px) + clamp(4px, 1.4vw, 10px));
+}
+
+.dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__rail {
+  right: 10px;
+}
+
+.dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__pattern {
+  inset-block: 0;
+  right: 0;
+  width: min(34%, 170px);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 18% 100%, 0 50%);
+}
+
+.dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__icon {
+  width: clamp(58px, 16vw, 76px) !important;
+  height: clamp(58px, 16vw, 76px) !important;
+  border-radius: 24px 24px 10px 10px !important;
+}
+
+.dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__content {
+  display: contents;
+}
+
+.dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__label {
+  padding-inline: 4px;
+  text-align: center;
+}
+
+.dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__measure {
+  width: clamp(58px, 16vw, 76px);
+  height: clamp(58px, 16vw, 76px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid
+    color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 76%, transparent);
+  border-radius: 999px;
+  color: var(--primary-foreground);
+  background: linear-gradient(145deg, var(--stat-accent), var(--stat-accent-deep));
+  box-shadow:
+    0 11px 22px -17px color-mix(in srgb, var(--stat-accent-deep) 90%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 38%, transparent);
+}
+
+.dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__measure strong {
+  max-width: 90%;
+  color: var(--primary-foreground) !important;
+  font-size: clamp(1.25rem, 6vw, 2rem) !important;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__measure small {
+  max-width: 90%;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 72%, white 28%) !important;
+  font-size: clamp(0.61rem, 2.5vw, 0.8rem) !important;
+  text-overflow: ellipsis;
+}
+
+.dashboard-ledger-stats > .dashboard-ledger-stat:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--identity-accent, var(--gold-primary)) 64%,
+    var(--border)
+  ) !important;
+  box-shadow:
+    0 24px 46px -28px color-mix(in srgb, var(--identity-header, #062d25) 72%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent) !important;
+  transform: translateY(-3px);
+}
+
+.dashboard-ledger-stats > .dashboard-ledger-stat:active {
+  transform: translateY(-1px) scale(0.994);
+}
+
+.dashboard-ledger-stats > .dashboard-ledger-stat:focus-visible {
+  outline: 3px solid
+    color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 58%, transparent);
+  outline-offset: 3px;
+}
+
+.dark .dashboard-ledger-stats > .dashboard-ledger-stat {
+  --stat-surface: color-mix(
+    in srgb,
+    var(--identity-soft, var(--card)) 84%,
+    var(--card) 16%
+  );
+  box-shadow:
+    0 22px 48px -30px rgba(0, 0, 0, 0.88),
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent) !important;
+}
+
+.dark .dashboard-ledger-stat__label,
+.dark .dashboard-ledger-stat__measure strong {
+  color: var(--foreground) !important;
+}
+
+.dark .dashboard-ledger-stat__icon {
+  color: var(--foreground) !important;
+}
+
+@media (max-width: 359.98px) {
+  .dashboard-ledger-stats {
+    padding-inline: 4px !important;
+  }
+
+  .dashboard-ledger-stat[data-stat-tone="finance"] {
+    grid-template-columns: 70px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding-inline: 18px !important;
+  }
+
+  .dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__icon {
+    width: 70px !important;
+    height: 70px !important;
+  }
+
+  .dashboard-ledger-stat[data-stat-tone="finance"] .dashboard-ledger-stat__measure strong {
+    font-size: clamp(1.48rem, 8.2vw, 1.85rem) !important;
+  }
+
+  .dashboard-ledger-stat:not([data-stat-tone="finance"]) {
+    grid-template-columns: 55px minmax(0, 1fr) 55px !important;
+    gap: 8px !important;
+    padding-inline: 14px !important;
+  }
+
+  .dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__icon,
+  .dashboard-ledger-stat:not([data-stat-tone="finance"]) .dashboard-ledger-stat__measure {
+    width: 52px !important;
+    height: 52px !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1199.98px) {
+  .dashboard-ledger-stats {
+    max-width: 880px;
+    margin-inline: auto;
+  }
+}
+
+/* Desktop and landscape-iPad use the same ledger hierarchy in a wider composition:
+   the fund is the feature panel and the remaining metrics form three rows. */
+@media (min-width: 970px) {
+  .desktop-stats-row.dashboard-ledger-stats--desktop {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.15fr) minmax(330px, 0.85fr) !important;
+    grid-template-rows: repeat(3, minmax(86px, auto)) !important;
+    gap: 14px 18px !important;
+    margin-top: 24px !important;
+    padding: 0 !important;
+  }
+
+  .desktop-stats-row.dashboard-ledger-stats--desktop
+    > .dashboard-ledger-stat[data-stat-tone="finance"] {
+    grid-column: 1 !important;
+    grid-row: 1 / 4 !important;
+    min-height: 286px !important;
+  }
+
+  .desktop-stats-row.dashboard-ledger-stats--desktop
+    > .dashboard-ledger-stat:not([data-stat-tone="finance"]) {
+    grid-column: 2 !important;
+    min-height: 86px !important;
+    grid-template-columns: 62px minmax(0, 1fr) 62px !important;
+    padding: 12px 20px !important;
+  }
+
+  .desktop-stats-row.dashboard-ledger-stats--desktop
+    .dashboard-ledger-stat:not([data-stat-tone="finance"])
+    .dashboard-ledger-stat__icon,
+  .desktop-stats-row.dashboard-ledger-stats--desktop
+    .dashboard-ledger-stat:not([data-stat-tone="finance"])
+    .dashboard-ledger-stat__measure {
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .desktop-stats-row.dashboard-ledger-stats--desktop
+    .dashboard-ledger-stat[data-stat-tone="finance"] {
+    grid-template-columns: clamp(118px, 12vw, 156px) minmax(0, 1fr) !important;
+    padding: 34px 40px !important;
+  }
+
+  .desktop-stats-row.dashboard-ledger-stats--desktop
+    .dashboard-ledger-stat[data-stat-tone="finance"]
+    .dashboard-ledger-stat__icon {
+    width: clamp(118px, 12vw, 156px) !important;
+    height: clamp(118px, 12vw, 156px) !important;
+  }
+
+  .desktop-stats-row.dashboard-ledger-stats--desktop
+    .dashboard-ledger-stat[data-stat-tone="finance"]
+    .dashboard-ledger-stat__measure strong {
+    font-size: clamp(2.4rem, 3.8vw, 4.2rem) !important;
+  }
+
+  .desktop-stats-row.dashboard-ledger-stats--desktop
+    .dashboard-ledger-stat__icon svg {
+    grid-row: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-ledger-stats > .dashboard-ledger-stat {
+    transition: none !important;
+  }
+}
