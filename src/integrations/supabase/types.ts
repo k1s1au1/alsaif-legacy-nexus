@@ -1598,6 +1598,15 @@ export type Database = {
         Args: { _body: string; _exclude: string; _title: string; _url: string }
         Returns: undefined
       }
+      call_send_push_users: {
+        Args: {
+          _body: string
+          _title: string
+          _url: string
+          _user_ids: string[]
+        }
+        Returns: undefined
+      }
       can_create_official_occasion: { Args: { _u: string }; Returns: boolean }
       can_manage_roles: { Args: { _u: string }; Returns: boolean }
       can_manage_section: {
