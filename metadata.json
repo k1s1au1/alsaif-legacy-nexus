@@ -1,0 +1,6 @@
+{
+  "name": "Alsaif Family Hub",
+  "description": "منصة عائلة السيف الخاصة للتواصل وتنظيم اللقاءات والرحلات والمناسبات وإدارة المهام والمالية",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
