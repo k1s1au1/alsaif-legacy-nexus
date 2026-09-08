@@ -1683,7 +1683,7 @@ const SECTION_OPTIONS: { key: string; label: string }[] = [
   { key: "events", label: "المهام" },
   { key: "trips", label: "الترفيه" },
   { key: "finance", label: "المالية" },
-  { key: "heritage", label: "إرث السيف" },
+  { key: "heritage", label: "نسب وأثر" },
   { key: "majlis", label: "الأخبار" },
   { key: "community", label: "ركن الأعضاء" },
   { key: "faith", label: "نفحات إيمانية" },
