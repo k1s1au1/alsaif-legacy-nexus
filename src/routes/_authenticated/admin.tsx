@@ -915,21 +915,21 @@ function AdminPage() {
 
 
             {tab === "requests" && (
-              <section className="space-y-8 animate-fade-up">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-4">
+              <section className="admin-requests-timeline space-y-8 animate-fade-up">
+                <div className="admin-request-filterbar flex items-center justify-between gap-4 flex-wrap">
+                  <div className="admin-request-filter-title flex items-center gap-4">
                     <h3 className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em]">
                       تصنيف الطلبات
                     </h3>
                     <div className="h-px w-24 bg-border/60" />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="admin-request-filters flex items-center gap-2">
                     {REQ_TABS.map((t) => (
                       <button
                         key={t.key}
                         onClick={() => setReqTab(t.key)}
                         className={cn(
-                          "px-5 py-2 rounded-full text-xs font-black transition-all border",
+                          "admin-request-filter px-5 py-2 rounded-full text-xs font-black transition-all border",
                           reqTab === t.key
                             ? "bg-primary text-white border-primary shadow-lg"
                             : "bg-card text-muted-foreground border-border hover:bg-muted",
@@ -940,7 +940,7 @@ function AdminPage() {
                     ))}
                   </div>
                 </div>
-                <div className="grid gap-6">
+                <div className="admin-request-list grid gap-6">
                   {pendingReqs
                     .filter((r) => r.status === reqTab)
                     .map((r) => (
@@ -953,7 +953,7 @@ function AdminPage() {
                       />
                     ))}
                   {pendingReqs.filter((r) => r.status === reqTab).length === 0 && (
-                    <div className="p-20 text-center text-muted-foreground italic bg-muted/20 rounded-[40px] border-2 border-dashed">
+                    <div className="admin-request-empty p-20 text-center text-muted-foreground italic bg-muted/20 rounded-[40px] border-2 border-dashed">
                       لا توجد طلبات في هذا القسم حالياً.
                     </div>
                   )}
@@ -1615,20 +1615,21 @@ function RoleToggleBtn({ active, onClick, icon, label, activeClass, disabled }: 
 
 function RequestCard({ req, onStatus, onDelete, canManage }: { req: ReqRow; onStatus: any; onDelete: any; canManage: boolean }) {
   const name = [req.first_name, req.father_name, req.grandfather_name].filter(Boolean).join(" ");
+  const [expanded, setExpanded] = useState(false);
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card-surface p-8 group"
+      className={cn("admin-request-card card-surface p-8 group", expanded && "is-expanded")}
     >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-start gap-5">
-          <div className="size-16 rounded-[22px] bg-primary/5 border-2 border-gold-primary/10 flex items-center justify-center text-2xl font-black text-primary shadow-inner shrink-0">
+      <div className="admin-request-card-layout flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="admin-request-identity flex items-start gap-5">
+          <div className="admin-request-avatar size-16 rounded-[22px] bg-primary/5 border-2 border-gold-primary/10 flex items-center justify-center text-2xl font-black text-primary shadow-inner shrink-0">
             {req.first_name[0]}
           </div>
-          <div className="space-y-2">
+          <div className="admin-request-copy space-y-2">
             <h4 className="text-xl font-black text-primary tracking-tight">{name}</h4>
-            <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-muted-foreground opacity-70">
+            <div className="admin-request-meta flex flex-wrap items-center gap-4 text-xs font-bold text-muted-foreground opacity-70">
               <span className="flex items-center gap-1.5" dir="ltr">
                 <Phone className="size-3.5" /> {req.phone}
               </span>
@@ -1641,33 +1642,45 @@ function RequestCard({ req, onStatus, onDelete, canManage }: { req: ReqRow; onSt
               </span>
             </div>
             {req.note && (
-              <p className="text-sm font-bold text-muted-foreground/80 bg-muted/30 p-4 rounded-2xl border border-border/40 mt-3 italic">
+              <p className="admin-request-note text-sm font-bold text-muted-foreground/80 bg-muted/30 p-4 rounded-2xl border border-border/40 mt-3 italic">
                 "{req.note}"
               </p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3 self-end md:self-center">
+        <div className="admin-request-actions flex items-center gap-3 self-end md:self-center">
           {req.status === "pending" && canManage && (
             <>
               <button
                 onClick={() => onStatus(req.id, "approved")}
-                className="px-8 py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                className="admin-request-approve px-8 py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
               >
                 <Check className="size-4" strokeWidth={3} /> قبول
               </button>
               <button
                 onClick={() => onStatus(req.id, "rejected")}
-                className="size-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                aria-label="رفض الطلب"
+                className="admin-request-reject size-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
               >
                 <X size={16} />
+                <span>رفض</span>
               </button>
             </>
           )}
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            aria-expanded={expanded}
+            className="admin-request-details px-4 py-3 rounded-2xl bg-muted/50 text-muted-foreground font-black text-xs items-center gap-2 hover:bg-primary hover:text-white transition-all"
+          >
+            <ChevronDown className={cn("size-4 transition-transform", expanded && "rotate-180")} />
+            <span>{expanded ? "إخفاء التفاصيل" : "التفاصيل"}</span>
+          </button>
           {canManage && (
             <button
               onClick={() => onDelete(req.id)}
-              className="size-12 rounded-2xl bg-muted/50 text-muted-foreground flex items-center justify-center hover:bg-primary hover:text-white transition-all"
+              aria-label="حذف الطلب"
+              className="admin-request-delete size-12 rounded-2xl bg-muted/50 text-muted-foreground flex items-center justify-center hover:bg-primary hover:text-white transition-all"
             >
               <Trash2 size={16} />
             </button>
