@@ -389,19 +389,44 @@ function PostCard({
     <motion.article
       layout
       className={cn(
-        "card-surface p-8 md:p-12 relative overflow-hidden group transition-all duration-500 hover:shadow-2xl",
-        post.pinned && "border-gold-primary/30 bg-gold-primary/[0.02]",
+        "group relative overflow-hidden rounded-[28px] border border-border/60 bg-card shadow-[0_22px_60px_-44px_rgba(5,20,16,0.72)] transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_28px_72px_-46px_rgba(5,20,16,0.82)] md:rounded-[38px]",
+        post.pinned && "border-gold-primary/40 ring-1 ring-gold-primary/10",
       )}
     >
       {post.pinned && (
-        <div className="absolute top-0 left-0 bg-gold-primary text-white px-6 py-1.5 rounded-br-3xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-lg z-10">
-          <Pin size={12} /> مثبت
+        <div className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-gold-primary px-4 py-2 text-xs font-black text-white shadow-xl backdrop-blur-md">
+          <Pin size={13} /> مثبت
         </div>
       )}
-      <div className="flex flex-col md:flex-row justify-between items-start gap-8">
-        <div className="flex-1 space-y-6 w-full">
-          <div className="flex items-center gap-4">
-            <div className="size-14 rounded-[22px] border-2 border-primary/10 overflow-hidden shadow-lg">
+
+      {post.imageUrl ? (
+        <a
+          href={post.imageUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="relative block overflow-hidden border-b border-border/40 bg-muted/30"
+        >
+          <img
+            src={post.imageUrl}
+            alt={post.title || "صورة الإعلان"}
+            className="block max-h-[560px] w-full object-contain transition-transform duration-700 group-hover:scale-[1.008]"
+            loading="lazy"
+          />
+        </a>
+      ) : (
+        <div className="relative flex h-36 items-center justify-center overflow-hidden border-b border-white/10 bg-gradient-to-l from-primary via-[#0d332a] to-[#071c17] text-gold-primary sm:h-44">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(212,175,55,0.18),transparent_34%)]" />
+          <Newspaper className="relative size-12 opacity-80 sm:size-16" strokeWidth={1.35} />
+          <span className="relative mr-4 text-sm font-black tracking-wide sm:text-base">
+            أخبار السيف
+          </span>
+        </div>
+      )}
+
+      <div className="p-5 sm:p-7 md:p-9">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3.5">
+            <div className="size-12 shrink-0 overflow-hidden rounded-2xl border-2 border-primary/10 shadow-md sm:size-14">
               <UserAvatar
                 path={post.author?.avatar_url}
                 name={authorName}
@@ -410,92 +435,84 @@ function PostCard({
                 showBadges
               />
             </div>
-            <div>
-              <h4 className="text-lg font-black text-primary">{authorName}</h4>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            <div className="min-w-0">
+              <h4 className="truncate text-base font-black text-primary sm:text-lg">{authorName}</h4>
+              <p className="mt-0.5 text-xs font-bold text-muted-foreground">
                 {new Date(post.created_at).toLocaleDateString("ar-SA", {
                   weekday: "long",
                   day: "numeric",
                   month: "long",
+                  year: "numeric",
                 })}
               </p>
             </div>
           </div>
-          <div className="space-y-4">
+
+          <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
             {post.kind === "announcement" && (
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-primary/15 text-gold-primary text-[10px] font-black uppercase tracking-widest">
-                <Pin size={10} /> إعلان المجلس
+              <span className="inline-flex items-center gap-2 rounded-full border border-gold-primary/20 bg-gold-primary/10 px-3.5 py-2 text-xs font-black text-gold-primary">
+                <Pin size={12} /> إعلان المجلس
               </span>
             )}
-            <h3 className="text-2xl md:text-3xl font-black text-primary leading-tight">
-              {post.title}
-            </h3>
-            {post.cleanBody && (
-              <p className="text-base md:text-lg font-bold text-muted-foreground/80 dark:text-white/80 leading-relaxed whitespace-pre-wrap">
-                {post.cleanBody}
-              </p>
-            )}
-            {post.imageUrl && (
-              <a
-                href={post.imageUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="block rounded-3xl overflow-hidden border border-border/50 bg-muted shadow-lg max-h-[520px]"
-              >
-                <img
-                  src={post.imageUrl}
-                  alt={post.title}
-                  className="w-full h-auto object-cover"
-                  loading="lazy"
-                />
-              </a>
-            )}
-          </div>
-        </div>
-        {(canDelete || canEdit) && (
-          <div className="flex flex-row md:flex-col gap-2 md:opacity-0 md:group-hover:opacity-100 transition-all duration-500 self-end md:self-start shrink-0">
-            {isChairman && (
-              <button
-                onClick={togglePin}
-                className={cn(
-                  "size-12 rounded-2xl flex items-center justify-center transition-all shadow-lg",
-                  post.pinned
-                    ? "bg-gold-primary text-white"
-                    : "bg-gold-primary/10 text-gold-primary hover:bg-gold-primary hover:text-white",
+
+            {(isChairman || canEdit || canDelete) && (
+              <div className="flex items-center gap-2">
+                {isChairman && (
+                  <button
+                    onClick={togglePin}
+                    className={cn(
+                      "flex size-10 items-center justify-center rounded-xl transition-all shadow-sm",
+                      post.pinned
+                        ? "bg-gold-primary text-white"
+                        : "bg-gold-primary/10 text-gold-primary hover:bg-gold-primary hover:text-white",
+                    )}
+                    title="تثبيت"
+                  >
+                    <Pin size={17} />
+                  </button>
                 )}
-                title="تثبيت"
-              >
-                <Pin size={20} />
-              </button>
-            )}
-            {canEdit && (
-              <button
-                onClick={onEdit}
-                className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-lg"
-                title="تعديل"
-              >
-                <Pencil size={20} />
-              </button>
-            )}
-            {canDelete && (
-              <button
-                onClick={deletePost}
-                className="size-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-lg"
-                title="حذف"
-              >
-                <Trash2 size={20} />
-              </button>
+                {canEdit && (
+                  <button
+                    onClick={onEdit}
+                    className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm transition-all hover:bg-primary hover:text-white"
+                    title="تعديل"
+                  >
+                    <Pencil size={17} />
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={deletePost}
+                    className="flex size-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 shadow-sm transition-all hover:bg-rose-500 hover:text-white"
+                    title="حذف"
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </header>
+
+        <div className="mt-6 space-y-3 border-t border-border/40 pt-6">
+          <h3 className="text-2xl font-black leading-tight text-primary sm:text-3xl md:text-4xl">
+            {post.title}
+          </h3>
+          {post.cleanBody && (
+            <p className="max-w-5xl whitespace-pre-wrap text-base font-bold leading-8 text-muted-foreground/90 dark:text-white/80 md:text-lg">
+              {post.cleanBody}
+            </p>
+          )}
+        </div>
+
+        <CommentsSection
+          post={post}
+          meId={meId}
+          isChairman={isChairman}
+          comments={postComments}
+          onRefresh={onRefresh}
+        />
       </div>
-      <CommentsSection
-        post={post}
-        meId={meId}
-        isChairman={isChairman}
-        comments={postComments}
-        onRefresh={onRefresh}
-      />
     </motion.article>
   );
 }
