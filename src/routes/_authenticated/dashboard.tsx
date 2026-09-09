@@ -557,7 +557,15 @@ function Dashboard() {
               <CarouselContent className="dashboard-news-track">
                 {announcementsData.map((a, i) => (
                   <CarouselItem key={a.id || i} className="dashboard-news-slide">
-                    <Link to="/majlis" className="dashboard-news-card">
+                    <Link
+                      to="/majlis"
+                      className="dashboard-news-card"
+                      aria-label={`فتح الخبر: ${a.title}`}
+                    >
+                      <span className="dashboard-news-index" aria-hidden="true">
+                        <small>خبر</small>
+                        <b>{String(i + 1).padStart(2, "0")}</b>
+                      </span>
                       <div className="dashboard-news-media">
                         {a.imageUrl ? (
                           <img src={a.imageUrl} alt="" />
@@ -592,16 +600,19 @@ function Dashboard() {
               </CarouselContent>
 
               {announcementsData.length > 1 && (
-                <div className="dashboard-news-dots" aria-label="اختيار الخبر">
+                <div className="dashboard-news-nav" aria-label="التنقل بين الأخبار">
                   {announcementsData.map((a, i) => (
                     <button
                       key={a.id || i}
                       type="button"
                       className={i === annIndex ? "active" : ""}
                       onClick={() => announcementsApi?.scrollTo(i)}
-                      aria-label={`الخبر ${i + 1}`}
+                      aria-label={`عرض الخبر ${i + 1}: ${a.title}`}
                       aria-current={i === annIndex ? "true" : undefined}
-                    />
+                    >
+                      <span>{String(i + 1).padStart(2, "0")}</span>
+                      <b>{a.title}</b>
+                    </button>
                   ))}
                 </div>
               )}
