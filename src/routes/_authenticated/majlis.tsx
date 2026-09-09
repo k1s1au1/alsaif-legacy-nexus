@@ -364,6 +364,7 @@ function PostCard({
   comments,
 }: any) {
   const authorName = post.author?.arabic_name || post.author?.full_name || "عضو";
+  const isAnnouncement = post.kind === "announcement" || post.uiKind === "announcement";
 
   const deletePost = async () => {
     if (!confirm("حذف المنشور؟")) return;
@@ -373,6 +374,7 @@ function PostCard({
       onRefresh();
     }
   };
+
   const togglePin = async () => {
     const { error } = await supabase
       .from("majlis_posts")
@@ -389,113 +391,118 @@ function PostCard({
     <motion.article
       layout
       className={cn(
-        "card-surface p-8 md:p-12 relative overflow-hidden group transition-all duration-500 hover:shadow-2xl",
-        post.pinned && "border-gold-primary/30 bg-gold-primary/[0.02]",
+        "majlis-editorial-card group",
+        post.pinned && "is-pinned",
       )}
     >
       {post.pinned && (
-        <div className="absolute top-0 left-0 bg-gold-primary text-white px-6 py-1.5 rounded-br-3xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-lg z-10">
-          <Pin size={12} /> مثبت
-        </div>
+        <span className="majlis-editorial-pinned">
+          <Pin size={12} />
+          مثبت
+        </span>
       )}
-      <div className="flex flex-col md:flex-row justify-between items-start gap-8">
-        <div className="flex-1 space-y-6 w-full">
-          <div className="flex items-center gap-4">
-            <div className="size-14 rounded-[22px] border-2 border-primary/10 overflow-hidden shadow-lg">
-              <UserAvatar
-                path={post.author?.avatar_url}
-                name={authorName}
-                className="size-full"
-                userId={post.author_id}
-                showBadges
-              />
-            </div>
-            <div>
-              <h4 className="text-lg font-black text-primary">{authorName}</h4>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {new Date(post.created_at).toLocaleDateString("ar-SA", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
-              </p>
-            </div>
+
+      <header className="majlis-editorial-meta">
+        <div className="majlis-editorial-author">
+          <div className="majlis-editorial-avatar">
+            <UserAvatar
+              path={post.author?.avatar_url}
+              name={authorName}
+              className="size-full"
+              userId={post.author_id}
+              showBadges
+            />
           </div>
-          <div className="space-y-4">
-            {post.kind === "announcement" && (
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-primary/15 text-gold-primary text-[10px] font-black uppercase tracking-widest">
-                <Pin size={10} /> إعلان المجلس
-              </span>
-            )}
-            <h3 className="text-2xl md:text-3xl font-black text-primary leading-tight">
-              {post.title}
-            </h3>
-            {post.cleanBody && (
-              <p className="text-base md:text-lg font-bold text-muted-foreground/80 dark:text-white/80 leading-relaxed whitespace-pre-wrap">
-                {post.cleanBody}
-              </p>
-            )}
-            {post.imageUrl && (
-              <a
-                href={post.imageUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="block rounded-3xl overflow-hidden border border-border/50 bg-muted shadow-lg max-h-[520px]"
-              >
-                <img
-                  src={post.imageUrl}
-                  alt={post.title}
-                  className="w-full h-auto object-cover"
-                  loading="lazy"
-                />
-              </a>
-            )}
+          <div>
+            <h4>{authorName}</h4>
+            <time dateTime={post.created_at}>
+              {new Date(post.created_at).toLocaleDateString("ar-SA", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </time>
           </div>
         </div>
-        {(canDelete || canEdit) && (
-          <div className="flex flex-row md:flex-col gap-2 md:opacity-0 md:group-hover:opacity-100 transition-all duration-500 self-end md:self-start shrink-0">
-            {isChairman && (
-              <button
-                onClick={togglePin}
-                className={cn(
-                  "size-12 rounded-2xl flex items-center justify-center transition-all shadow-lg",
-                  post.pinned
-                    ? "bg-gold-primary text-white"
-                    : "bg-gold-primary/10 text-gold-primary hover:bg-gold-primary hover:text-white",
-                )}
-                title="تثبيت"
-              >
-                <Pin size={20} />
-              </button>
-            )}
-            {canEdit && (
-              <button
-                onClick={onEdit}
-                className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-lg"
-                title="تعديل"
-              >
-                <Pencil size={20} />
-              </button>
-            )}
-            {canDelete && (
-              <button
-                onClick={deletePost}
-                className="size-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-lg"
-                title="حذف"
-              >
-                <Trash2 size={20} />
-              </button>
-            )}
-          </div>
-        )}
+
+        <div className="majlis-editorial-tools">
+          {isAnnouncement && (
+            <span className="majlis-editorial-kind">
+              <Newspaper size={14} />
+              إعلان المجلس
+            </span>
+          )}
+
+          {(canDelete || canEdit) && (
+            <div className="majlis-editorial-actions">
+              {isChairman && (
+                <button
+                  type="button"
+                  onClick={togglePin}
+                  className={cn("is-pin", post.pinned && "is-active")}
+                  title={post.pinned ? "إلغاء التثبيت" : "تثبيت"}
+                  aria-label={post.pinned ? "إلغاء تثبيت الخبر" : "تثبيت الخبر"}
+                >
+                  <Pin size={18} />
+                </button>
+              )}
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="is-edit"
+                  title="تعديل"
+                  aria-label="تعديل الخبر"
+                >
+                  <Pencil size={18} />
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={deletePost}
+                  className="is-delete"
+                  title="حذف"
+                  aria-label="حذف الخبر"
+                >
+                  <Trash2 size={18} />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </header>
+
+      {post.imageUrl && (
+        <a
+          href={post.imageUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="majlis-editorial-media"
+          aria-label={`عرض صورة ${post.title} بالحجم الكامل`}
+        >
+          <img src={post.imageUrl} alt={post.title} loading="lazy" />
+        </a>
+      )}
+
+      <div className="majlis-editorial-body">
+        <span className="majlis-editorial-kicker">
+          {isAnnouncement ? "من أخبار مجلس السيف" : "منشور عائلي"}
+        </span>
+        <h3>{post.title}</h3>
+        {post.cleanBody && <p>{post.cleanBody}</p>}
       </div>
-      <CommentsSection
-        post={post}
-        meId={meId}
-        isChairman={isChairman}
-        comments={postComments}
-        onRefresh={onRefresh}
-      />
+
+      <div className="majlis-editorial-comments">
+        <CommentsSection
+          post={post}
+          meId={meId}
+          isChairman={isChairman}
+          comments={postComments}
+          onRefresh={onRefresh}
+        />
+      </div>
     </motion.article>
   );
 }
