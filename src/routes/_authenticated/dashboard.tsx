@@ -25,6 +25,7 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import { ResponsiveDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
 import { AnimatedCounter } from "@/components/dashboard/animated-counter";
+import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { QuickActionsBanner } from "@/components/quick-actions-banner";
 import {
@@ -36,7 +37,6 @@ import {
 import Autoplay from "embla-carousel-autoplay";
 import { TripImage } from "@/components/trip-image";
 import { IntegratedHub } from "@/components/dashboard/integrated-hub";
-import { SpiritualQuotesWidget } from "@/components/dashboard/spiritual-quotes-widget";
 import { PollsPopup } from "@/components/dashboard/polls-popup";
 import { showIsland } from "@/components/dynamic-island";
 import { useWidgetUpdater } from "@/hooks/use-widget-updater";
@@ -405,7 +405,7 @@ function Dashboard() {
     label: string;
     value: number;
     suffix: string;
-    tone: "finance" | "members" | "trips" | "tasks";
+    color: string;
     icon: React.ElementType<{ className?: string }>;
     link: "/finance" | "/members" | "/trips" | "/tasks";
   }> = [
@@ -413,7 +413,7 @@ function Dashboard() {
       label: "رصيد الصندوق",
       value: fundBalance || 0,
       suffix: "ر.س",
-      tone: "finance",
+      color: "bg-gradient-to-br from-emerald-600 to-teal-900",
       icon: Wallet,
       link: "/finance",
     },
@@ -421,7 +421,7 @@ function Dashboard() {
       label: "أفراد العائلة",
       value: countsData?.members || 0,
       suffix: "عضو",
-      tone: "members",
+      color: "bg-gradient-to-br from-primary to-emerald-950",
       icon: Users,
       link: "/members",
     },
@@ -429,7 +429,7 @@ function Dashboard() {
       label: "ترفيه عائلي",
       value: eventsData?.trips.length || 0,
       suffix: "وجهة",
-      tone: "trips",
+      color: "bg-gradient-to-br from-[#8E7745] to-[#453a22]",
       icon: Plane,
       link: "/trips",
     },
@@ -437,7 +437,7 @@ function Dashboard() {
       label: "مهام قيد التنفيذ",
       value: countsData?.tasks || 0,
       suffix: "مهمة",
-      tone: "tasks",
+      color: "bg-gradient-to-br from-rose-700 to-rose-950",
       icon: ListChecks,
       link: "/tasks",
     },
@@ -497,7 +497,18 @@ function Dashboard() {
     <AppShell title="لوحة العائلة" user={{ name: "", role: "", initial: "س" }}>
       <div className="dashboard-page max-w-6xl mx-auto space-y-12 pb-20 px-4 md:px-0">
         {/* 1. SPIRITUAL REMINDER */}
-        <SpiritualQuotesWidget />
+        <section className="dashboard-spiritual dashboard-faith-strip animate-fade-up">
+          <div className="dashboard-faith-meta">
+            <div className="dashboard-faith-label">
+              <Scroll size={16} aria-hidden="true" />
+              <span>نفحات إيمانية</span>
+            </div>
+            <span className="dashboard-faith-source">{spiritualQuote.source}</span>
+          </div>
+          <p style={{ fontFamily: "'Amiri', serif" }}>
+            "{spiritualQuote.text}"
+          </p>
+        </section>
 
         {/* 2. INTERACTIVE NAJDI WELCOME PAVILION */}
         <section
@@ -639,69 +650,111 @@ function Dashboard() {
         )}
 
         {/* 7. STATS GRID */}
-        <section
-          className="dashboard-stats-grid dashboard-ledger-stats"
-          aria-label="ملخص العائلة"
-        >
-          {stats.map((stat) => (
-            <Link
-              key={stat.link}
-              to={stat.link}
-              className="dashboard-ledger-stat"
-              data-stat-tone={stat.tone}
-              aria-label={`${stat.label}: ${Number(stat.value || 0).toLocaleString("ar-SA")} ${stat.suffix}`}
-            >
-              <span className="dashboard-ledger-stat__rail" aria-hidden="true" />
-              <span className="dashboard-ledger-stat__pattern" aria-hidden="true" />
-              <span className="dashboard-ledger-stat__icon" aria-hidden="true">
-                {React.createElement(stat.icon)}
-              </span>
-              <span className="dashboard-ledger-stat__content">
-                <span className="dashboard-ledger-stat__label">{stat.label}</span>
-                <span className="dashboard-ledger-stat__measure">
-                  <strong>
-                    <AnimatedCounter value={stat.value} />
-                  </strong>
-                  <small>{stat.suffix}</small>
-                </span>
-              </span>
-              <ChevronLeft className="dashboard-ledger-stat__arrow" aria-hidden="true" />
+        <section className="dashboard-stats-grid grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 px-2 md:px-0">
+          {stats.map((s, i) => (
+            <Link key={i} to={s.link} className="block group">
+              <div
+                className={cn(
+                  "relative overflow-hidden rounded-[24px] md:rounded-[32px] p-5 md:p-8 text-white shadow-lg transition-all duration-500 hover:scale-[1.02]",
+                  s.color,
+                )}
+              >
+                <div className="absolute top-0 right-0 p-3 md:p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                  {React.createElement(s.icon, { className: "size-10 md:size-16" })}
+                </div>
+                <div className="relative z-10 space-y-2 md:space-y-4">
+                  <p className="text-[10px] md:text-sm font-black uppercase tracking-widest opacity-80">
+                    {s.label}
+                  </p>
+                  <div className="flex items-baseline gap-1 md:gap-2">
+                    <span className="text-xl md:text-4xl font-black tracking-tighter">
+                      <AnimatedCounter value={s.value} />
+                    </span>
+                    <span className="text-[10px] md:text-sm font-bold opacity-60">{s.suffix}</span>
+                  </div>
+                </div>
+              </div>
             </Link>
           ))}
         </section>
 
-        {/* 8. SUPPORT SECTION */}
-        <section className="dashboard-support pb-20 px-4 md:px-0 animate-fade-up">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            {/* Bug Report Card */}
+        {/* 8. SUPPORT SECTION — compact two-level action dock */}
+        <section
+          className="dashboard-support px-4 pb-24 md:px-0"
+          aria-label="الدعم والمقترحات"
+        >
+          <div className="relative mx-auto max-w-5xl animate-fade-up">
             <div
-              onClick={() => setShowBugReport(true)}
-              className="glass-surface p-8 md:p-10 border border-rose-500/20 rounded-[32px] md:rounded-[40px] flex items-center gap-6 cursor-pointer hover:bg-rose-500/5 transition-all group overflow-hidden relative shadow-xl"
-            >
-              <div className="size-16 md:size-20 rounded-[20px] md:rounded-[24px] bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-inner">
-                <ShieldAlert className="size-8 md:size-10" />
-              </div>
-              <div className="text-right flex-1 min-w-0">
-                <h3 className="text-xl md:text-2xl font-black text-primary tracking-tight">أبلغ عن عطل</h3>
-                <p className="text-xs md:text-sm font-bold text-muted-foreground opacity-60 leading-relaxed mt-1">فريقنا التقني جاهز لمساعدتك وحل أي عائق برمجي في النظام.</p>
-              </div>
-              <div className="absolute -bottom-6 -left-6 size-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-colors" />
-            </div>
+              className="pointer-events-none absolute -inset-3 bg-primary/10 blur-2xl"
+              aria-hidden="true"
+            />
 
-            {/* Anonymous Suggestion Card */}
-            <Link
-              to="/suggestions"
-              className="glass-surface p-8 md:p-10 border border-indigo-500/20 rounded-[32px] md:rounded-[40px] flex items-center gap-6 cursor-pointer hover:bg-indigo-500/5 transition-all group overflow-hidden relative shadow-xl"
+            <div
+              className="relative overflow-hidden border border-gold-primary/50 bg-gold-primary/35 p-px shadow-[0_24px_60px_-34px_hsl(var(--primary)/0.75)]"
+              style={{
+                clipPath:
+                  "polygon(18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px)",
+              }}
             >
-              <div className="size-16 md:size-20 rounded-[20px] md:rounded-[24px] bg-indigo-500/10 flex items-center justify-center text-indigo-500 shrink-0 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500 shadow-inner">
-                <Inbox className="size-8 md:size-10" />
+              <div className="grid grid-cols-2 gap-px bg-gold-primary/45">
+                {/* Bug Report Action */}
+                <button
+                  type="button"
+                  onClick={() => setShowBugReport(true)}
+                  aria-label="أبلغ عن عطل"
+                  className="group min-w-0 appearance-none bg-card text-right outline-none transition-transform duration-300 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-gold-primary focus-visible:ring-inset active:scale-[0.99]"
+                >
+                  <span className="flex min-h-[104px] items-center gap-2 border-b border-gold-primary/30 px-3 py-4 sm:gap-4 sm:px-5 md:min-h-[118px] md:px-8">
+                    <span className="flex size-11 shrink-0 items-center justify-center border border-gold-primary/40 bg-primary/10 text-primary shadow-inner transition-transform duration-300 group-hover:-translate-y-1 sm:size-14 md:size-16">
+                      <ShieldAlert className="size-6 sm:size-7 md:size-8" />
+                    </span>
+                    <span className="text-base font-black leading-snug text-primary sm:text-xl md:text-2xl">
+                      أبلغ عن عطل
+                    </span>
+                  </span>
+
+                  <span className="flex min-h-[154px] flex-col bg-primary px-3 py-4 text-primary-foreground transition-[filter] duration-300 group-hover:brightness-110 sm:px-5 sm:py-5 md:min-h-[172px] md:px-8 md:py-6">
+                    <span className="text-[0.82rem] font-bold leading-6 opacity-90 sm:text-base sm:leading-7 md:text-lg md:leading-8">
+                      فريقنا التقني جاهز لمساعدتك وحل أي عائق برمجي في النظام.
+                    </span>
+                    <span className="mt-auto flex items-center gap-3 pt-4" aria-hidden="true">
+                      <span className="flex size-9 shrink-0 items-center justify-center bg-gold-primary text-primary shadow-md transition-transform duration-300 group-hover:-translate-x-1 sm:size-10">
+                        <ChevronLeft className="size-5" />
+                      </span>
+                      <span className="h-px flex-1 bg-gold-primary/65" />
+                    </span>
+                  </span>
+                </button>
+
+                {/* Suggestion Action */}
+                <Link
+                  to="/suggestions"
+                  aria-label="صندوق المقترحات"
+                  className="group min-w-0 bg-card text-right outline-none transition-transform duration-300 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-gold-primary focus-visible:ring-inset active:scale-[0.99]"
+                >
+                  <span className="flex min-h-[104px] items-center gap-2 border-b border-gold-primary/30 px-3 py-4 sm:gap-4 sm:px-5 md:min-h-[118px] md:px-8">
+                    <span className="flex size-11 shrink-0 items-center justify-center border border-gold-primary/40 bg-primary/10 text-primary shadow-inner transition-transform duration-300 group-hover:-translate-y-1 sm:size-14 md:size-16">
+                      <Inbox className="size-6 sm:size-7 md:size-8" />
+                    </span>
+                    <span className="text-base font-black leading-snug text-primary sm:text-xl md:text-2xl">
+                      صندوق المقترحات
+                    </span>
+                  </span>
+
+                  <span className="flex min-h-[154px] flex-col bg-primary px-3 py-4 text-primary-foreground transition-[filter] duration-300 group-hover:brightness-110 sm:px-5 sm:py-5 md:min-h-[172px] md:px-8 md:py-6">
+                    <span className="text-[0.82rem] font-bold leading-6 opacity-90 sm:text-base sm:leading-7 md:text-lg md:leading-8">
+                      شاركنا أفكارك لتطوير المجلس.
+                    </span>
+                    <span className="mt-auto flex items-center gap-3 pt-4" aria-hidden="true">
+                      <span className="flex size-9 shrink-0 items-center justify-center bg-gold-primary text-primary shadow-md transition-transform duration-300 group-hover:-translate-x-1 sm:size-10">
+                        <ChevronLeft className="size-5" />
+                      </span>
+                      <span className="h-px flex-1 bg-gold-primary/65" />
+                    </span>
+                  </span>
+                </Link>
               </div>
-              <div className="text-right flex-1 min-w-0">
-                <h3 className="text-xl md:text-2xl font-black text-primary tracking-tight">صندوق المقترحات</h3>
-                <p className="text-xs md:text-sm font-bold text-muted-foreground opacity-60 leading-relaxed mt-1">شاركنا أفكارك لتطوير المجلس بسرية تامة وهويتك لن تظهر لأحد.</p>
-              </div>
-              <div className="absolute -bottom-6 -left-6 size-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-colors" />
-            </Link>
+            </div>
           </div>
         </section>
       </div>
