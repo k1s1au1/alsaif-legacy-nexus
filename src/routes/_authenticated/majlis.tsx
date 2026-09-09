@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/majlis")({
   head: () => ({
     meta: [
       { title: "الأخبار العائلية — السيف" },
-      { name: "description", content: "منشورات وأخبار عائلة السيف." },
+      { name: "description", content: "تابع أخبار العائلة وإعلانات المجلس ومستجداتها أولًا بأول." },
     ],
   }),
   component: MajlisPage,
@@ -236,10 +236,10 @@ function MajlisPage() {
 
   return (
     <AppShell title="الأخبار" user={{ name: "", role: "", initial: "ص" }}>
-      <div className="max-w-6xl mx-auto space-y-12 pb-24" dir="rtl">
+      <div className="majlis-page mx-auto w-full max-w-[72rem] space-y-8 pb-24 sm:space-y-10 md:space-y-12" dir="rtl">
         <QuickActionsBanner />
 
-        <section className="animate-fade-up px-4 md:px-0">
+        <section className="majlis-hero-section animate-fade-up px-4 md:px-0">
           <div className="relative overflow-hidden rounded-[32px] md:rounded-[48px] bg-gradient-to-br from-primary via-[#0d2620] to-black p-6 md:p-12 text-white shadow-2xl border border-white/5 group">
             <div className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none z-1 transition-transform duration-1000 group-hover:scale-110 group-hover:opacity-40">
               <div
@@ -260,7 +260,7 @@ function MajlisPage() {
                   الأخبار العائلية
                 </h2>
                 <p className="text-white/60 font-bold text-sm md:text-xl max-w-xl">
-                  منشورات وأخبار العائلة. للنقاشات والتصويت، توجّه إلى صفحة الاجتماعات.
+                  تابع أخبار العائلة وإعلانات المجلس ومستجداتها أولًا بأول.
                 </p>
               </div>
               <div className="size-16 md:size-28 rounded-2xl md:rounded-[36px] bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl self-center md:self-auto shrink-0 group-hover:rotate-12 transition-transform duration-700">
