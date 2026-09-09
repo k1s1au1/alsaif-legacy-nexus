@@ -48,6 +48,7 @@ import { DynamicIsland } from "@/components/dynamic-island";
 import { LiveClock } from "@/components/dashboard/live-clock";
 import { BiometricGate } from "@/components/biometric-gate";
 import { useProfile } from "@/hooks/use-dashboard-data";
+import { useUserRole } from "@/hooks/use-user-role";
 import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
 import {
   DropdownMenu,

@@ -103,8 +103,11 @@ export function useUserRole() {
   const [sectionHeads, setSectionHeads] = useState<Section[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [reloadKey, setReloadKey] = useState(0);
+
   useEffect(() => {
     let active = true;
+    let uid: string | null = null;
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!active) return;
@@ -112,6 +115,7 @@ export function useUserRole() {
         setIsLoading(false);
         return;
       }
+      uid = u.user.id;
       setUserId(u.user.id);
 
       const [{ data: r }, { data: sh }] = await Promise.all([
@@ -129,10 +133,33 @@ export function useUserRole() {
       );
       setIsLoading(false);
     })();
+
+    // Live permission updates: no sign-out needed after a rank change.
+    const channel = supabase
+      .channel(`role-sync-${reloadKey}-${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_roles" },
+        (payload: any) => {
+          const row = (payload.new ?? payload.old) as { user_id?: string } | null;
+          if (uid && row?.user_id === uid) setReloadKey((k) => k + 1);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "section_heads" },
+        (payload: any) => {
+          const row = (payload.new ?? payload.old) as { user_id?: string } | null;
+          if (uid && row?.user_id === uid) setReloadKey((k) => k + 1);
+        },
+      )
+      .subscribe();
+
     return () => {
       active = false;
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [reloadKey]);
 
   const isChairman = roles.includes("chairman");
   const isViceChairman = roles.includes("vice_chairman");
