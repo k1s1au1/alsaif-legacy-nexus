@@ -919,11 +919,6 @@ export function DesktopDashboardExtras({
           </Link>
         </section>
 
-        <DashboardSupportPanel
-          onReportBug={onReportBug}
-          className="desktop-dashboard-support mt-6 px-0 pb-0"
-        />
-
         <section className="desktop-editorial-grid">
           <div className="desktop-side-stack">
             <Link to="/heritage" className="desktop-mini-card">
@@ -945,6 +940,11 @@ export function DesktopDashboardExtras({
             </Link>
           </div>
         </section>
+
+        <DashboardSupportPanel
+          onReportBug={onReportBug}
+          className="desktop-dashboard-support mt-6 px-0 pb-0"
+        />
       </div>
     </div>
   );
