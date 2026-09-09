@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
+  Inbox,
   ListChecks,
   Newspaper,
   Plane,
@@ -16,6 +17,7 @@ import {
   Handshake,
   Wallet,
   Scroll,
+  ShieldAlert,
   MapPin,
   PartyPopper,
   MessageCircle,
@@ -128,7 +130,117 @@ const occasionTemplatePath = (item: LocalOccasion) => {
 
 type DashboardExtrasMode = "hidden" | "desktop" | "tablet-landscape";
 
-export function ResponsiveDashboardExtras() {
+type DashboardSupportPanelProps = {
+  onReportBug: () => void;
+  className?: string;
+};
+
+export function DashboardSupportPanel({
+  onReportBug,
+  className = "px-4 pb-24 md:px-0",
+}: DashboardSupportPanelProps) {
+  return (
+    <section
+      className={`dashboard-support ${className}`}
+      aria-label="الدعم والمقترحات"
+    >
+      <div className="relative mx-auto max-w-5xl animate-fade-up">
+        <div
+          className="pointer-events-none absolute -inset-3 bg-primary/10 blur-2xl"
+          aria-hidden="true"
+        />
+
+        <div
+          className="relative min-h-[232px] overflow-hidden bg-gold-primary p-[2px] shadow-[0_20px_48px_-34px_hsl(var(--primary)/0.7)] sm:min-h-[270px] md:min-h-[300px]"
+          style={{
+            clipPath:
+              "polygon(18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px)",
+          }}
+        >
+          <div
+            className="absolute inset-[2px] overflow-hidden bg-card"
+            style={{
+              clipPath:
+                "polygon(17px 0, calc(100% - 17px) 0, 100% 17px, 100% calc(100% - 17px), calc(100% - 17px) 100%, 17px 100%, 0 calc(100% - 17px), 0 17px)",
+            }}
+            aria-hidden="true"
+          >
+            <span
+              className="absolute inset-0 bg-primary"
+              style={{ clipPath: "polygon(0 0, 57.2% 0, 45.2% 100%, 0 100%)" }}
+            />
+            <span
+              className="absolute inset-0 bg-card"
+              style={{ clipPath: "polygon(57.8% 0, 100% 0, 100% 100%, 45.8% 100%)" }}
+            />
+          </div>
+
+          <div
+            className="relative z-10 grid min-h-[228px] grid-cols-2 sm:min-h-[266px] md:min-h-[296px]"
+            dir="ltr"
+          >
+            <Link
+              to="/suggestions"
+              dir="rtl"
+              aria-label="صندوق المقترحات"
+              className="group flex min-w-0 flex-col items-center px-3 pb-3 pt-3 text-center text-primary-foreground outline-none transition-transform duration-300 focus-visible:ring-2 focus-visible:ring-gold-primary focus-visible:ring-inset active:scale-[0.99] sm:px-5 sm:pb-5 sm:pt-5 md:px-8 md:pb-6 md:pt-6"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-[14px] border border-gold-primary/55 bg-card text-primary shadow-lg transition-transform duration-300 group-hover:-translate-y-1 sm:size-13 md:size-14">
+                <Inbox className="size-6 sm:size-7 md:size-8" />
+              </span>
+              <span className="mt-2.5 text-base font-black leading-snug text-gold-primary sm:mt-3 sm:text-xl md:text-2xl">
+                صندوق المقترحات
+              </span>
+              <span className="mt-2 text-sm font-bold leading-5 opacity-90 sm:mt-3 sm:text-base sm:leading-6 md:text-lg md:leading-7">
+                شاركنا أفكارك لتطوير المجلس.
+              </span>
+              <span
+                className="mt-auto flex w-full items-center justify-center pt-2"
+                aria-hidden="true"
+              >
+                <span className="flex size-8 items-center justify-center rounded-full bg-gold-primary text-primary shadow-md transition-transform duration-300 group-hover:-translate-x-1 sm:size-9 md:size-10">
+                  <ChevronLeft className="size-4 md:size-5" />
+                </span>
+              </span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={onReportBug}
+              dir="rtl"
+              aria-label="أبلغ عن عطل"
+              className="group flex min-w-0 appearance-none flex-col items-center px-3 pb-3 pt-3 text-center text-primary outline-none transition-transform duration-300 focus-visible:ring-2 focus-visible:ring-gold-primary focus-visible:ring-inset active:scale-[0.99] sm:px-5 sm:pb-5 sm:pt-5 md:px-8 md:pb-6 md:pt-6"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-[14px] border border-gold-primary/55 bg-primary text-primary-foreground shadow-lg transition-transform duration-300 group-hover:-translate-y-1 sm:size-13 md:size-14">
+                <ShieldAlert className="size-6 sm:size-7 md:size-8" />
+              </span>
+              <span className="mt-2.5 text-base font-black leading-snug sm:mt-3 sm:text-xl md:text-2xl">
+                أبلغ عن عطل
+              </span>
+              <span className="mt-2 text-sm font-bold leading-5 text-muted-foreground sm:mt-3 sm:text-base sm:leading-6 md:text-lg md:leading-7">
+                فريقنا التقني جاهز لمساعدتك وحل أي عائق برمجي في النظام.
+              </span>
+              <span
+                className="mt-auto flex w-full items-center justify-center pt-2"
+                aria-hidden="true"
+              >
+                <span className="flex size-8 items-center justify-center rounded-full bg-gold-primary text-primary shadow-md transition-transform duration-300 group-hover:-translate-x-1 sm:size-9 md:size-10">
+                  <ChevronLeft className="size-4 md:size-5" />
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function ResponsiveDashboardExtras({
+  onReportBug,
+}: {
+  onReportBug: () => void;
+}) {
   const [mode, setMode] = useState<DashboardExtrasMode>("hidden");
 
   useEffect(() => {
@@ -176,14 +288,19 @@ export function ResponsiveDashboardExtras() {
   if (mode === "hidden") return null;
 
   return (
-    <DesktopDashboardExtras contentOnly={mode === "tablet-landscape"} />
+    <DesktopDashboardExtras
+      contentOnly={mode === "tablet-landscape"}
+      onReportBug={onReportBug}
+    />
   );
 }
 
 export function DesktopDashboardExtras({
   contentOnly = false,
+  onReportBug,
 }: {
   contentOnly?: boolean;
+  onReportBug: () => void;
 }) {
   const { data: eventsData } = useUpcomingEvents();
   const { data: announcementsData } = useDashboardAnnouncements();
@@ -801,6 +918,11 @@ export function DesktopDashboardExtras({
             <ChevronLeft className="dashboard-ledger-stat__arrow" aria-hidden="true" />
           </Link>
         </section>
+
+        <DashboardSupportPanel
+          onReportBug={onReportBug}
+          className="desktop-dashboard-support mt-6 px-0 pb-0"
+        />
 
         <section className="desktop-editorial-grid">
           <div className="desktop-side-stack">
