@@ -352,6 +352,7 @@ export function DesktopDashboardExtras({
   const [servicesExpanded, setServicesExpanded] = useState(false);
   const [followExpanded, setFollowExpanded] = useState(false);
   const [followIndex, setFollowIndex] = useState(0);
+  const [newsIndex, setNewsIndex] = useState(0);
   const [occasions, setOccasions] = useState<LocalOccasion[]>([]);
 
   useEffect(() => {
@@ -468,7 +469,13 @@ export function DesktopDashboardExtras({
   }, [upcoming, followIndex]);
 
   const tasks = (eventsData?.tasks || []).slice(0, 4);
-  const latest = announcementsData?.[0];
+  useEffect(() => {
+    if (!announcementsData?.length || newsIndex >= announcementsData.length) {
+      setNewsIndex(0);
+    }
+  }, [announcementsData?.length, newsIndex]);
+
+  const latest = announcementsData?.[newsIndex] || announcementsData?.[0];
   const name = profile?.realName || "عضو العائلة";
   const visibleServices = servicesExpanded ? services : services.slice(0, 4);
   const hour = new Date().getHours();
@@ -555,10 +562,18 @@ export function DesktopDashboardExtras({
             </Link>
           </div>
 
-          <Link to="/majlis" className="desktop-news-feature-card">
+          <Link
+            to="/majlis"
+            className="desktop-news-feature-card"
+            aria-label={`فتح الخبر: ${latest?.title || "مركز أخبار العائلة"}`}
+          >
+            <span className="desktop-news-feature-index" aria-hidden="true">
+              <small>خبر</small>
+              <b>{String(newsIndex + 1).padStart(2, "0")}</b>
+            </span>
             <div className="desktop-news-feature-media">
               {latest?.imageUrl ? (
-                <img src={latest.imageUrl} alt="" />
+                <img src={latest.imageUrl} alt={latest?.title || "خبر العائلة"} />
               ) : (
                 <Newspaper size={44} aria-hidden="true" />
               )}
@@ -566,7 +581,7 @@ export function DesktopDashboardExtras({
             <div className="desktop-news-feature-copy">
               <div className="desktop-news-feature-meta">
                 <span>{latest?._label || "إعلان المجلس"}</span>
-                <time>{fmtDate(latest?.created_at)}</time>
+                <time dateTime={latest?.created_at}>{fmtDate(latest?.created_at)}</time>
               </div>
               <h3>{latest?.title || "مركز أخبار العائلة"}</h3>
               <p>{latest?.cleanBody || "تابع أخبار وإعلانات مجلس العائلة من مكان واحد."}</p>
@@ -576,6 +591,23 @@ export function DesktopDashboardExtras({
               </b>
             </div>
           </Link>
+
+          {(announcementsData?.length || 0) > 1 && (
+            <div className="desktop-news-feature-nav" aria-label="التنقل بين الأخبار">
+              {announcementsData?.slice(0, 4).map((item: any, index: number) => (
+                <button
+                  key={item.id || index}
+                  type="button"
+                  className={index === newsIndex ? "active" : ""}
+                  onClick={() => setNewsIndex(index)}
+                  aria-current={index === newsIndex ? "true" : undefined}
+                >
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <b>{item.title}</b>
+                </button>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="desktop-follow-panel">
