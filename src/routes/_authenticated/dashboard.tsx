@@ -13,17 +13,18 @@ import {
   ListChecks,
   Plane,
   X,
-  Inbox,
   Image as ImageIcon,
   Loader2,
   Newspaper,
   Scroll,
-  ShieldAlert,
   Send,
 } from "lucide-react";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
-import { ResponsiveDashboardExtras } from "@/components/dashboard/desktop-dashboard-extras";
+import {
+  DashboardSupportPanel,
+  ResponsiveDashboardExtras,
+} from "@/components/dashboard/desktop-dashboard-extras";
 import { AnimatedCounter } from "@/components/dashboard/animated-counter";
 import { motion, AnimatePresence } from "framer-motion";
 import { QuickActionsBanner } from "@/components/quick-actions-banner";
@@ -680,96 +681,11 @@ function Dashboard() {
           ))}
         </section>
 
-        {/* 8. SUPPORT SECTION — diagonal split panel */}
-        <section
-          className="dashboard-support px-4 pb-24 md:px-0"
-          aria-label="الدعم والمقترحات"
-        >
-          <div className="relative mx-auto max-w-5xl animate-fade-up">
-            <div
-              className="pointer-events-none absolute -inset-3 bg-primary/10 blur-2xl"
-              aria-hidden="true"
-            />
-
-            <div
-              className="relative min-h-[232px] overflow-hidden bg-gold-primary p-[2px] shadow-[0_20px_48px_-34px_hsl(var(--primary)/0.7)] sm:min-h-[270px] md:min-h-[300px]"
-              style={{
-                clipPath:
-                  "polygon(18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px)",
-              }}
-            >
-              <div
-                className="absolute inset-[2px] overflow-hidden bg-card"
-                style={{
-                  clipPath:
-                    "polygon(17px 0, calc(100% - 17px) 0, 100% 17px, 100% calc(100% - 17px), calc(100% - 17px) 100%, 17px 100%, 0 calc(100% - 17px), 0 17px)",
-                }}
-                aria-hidden="true"
-              >
-                <span
-                  className="absolute inset-0 bg-primary"
-                  style={{ clipPath: "polygon(0 0, 57.2% 0, 45.2% 100%, 0 100%)" }}
-                />
-                <span
-                  className="absolute inset-0 bg-card"
-                  style={{ clipPath: "polygon(57.8% 0, 100% 0, 100% 100%, 45.8% 100%)" }}
-                />
-              </div>
-
-              <div className="relative z-10 grid min-h-[228px] grid-cols-2 sm:min-h-[266px] md:min-h-[296px]" dir="ltr">
-                {/* Suggestions — physical left side */}
-                <Link
-                  to="/suggestions"
-                  dir="rtl"
-                  aria-label="صندوق المقترحات"
-                  className="group flex min-w-0 flex-col items-center px-3 pb-3 pt-3 text-center text-primary-foreground outline-none transition-transform duration-300 focus-visible:ring-2 focus-visible:ring-gold-primary focus-visible:ring-inset active:scale-[0.99] sm:px-5 sm:pb-5 sm:pt-5 md:px-8 md:pb-6 md:pt-6"
-                >
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-[14px] border border-gold-primary/55 bg-card text-primary shadow-lg transition-transform duration-300 group-hover:-translate-y-1 sm:size-13 md:size-14">
-                    <Inbox className="size-6 sm:size-7 md:size-8" />
-                  </span>
-                  <span className="mt-2.5 text-base font-black leading-snug text-gold-primary sm:mt-3 sm:text-xl md:text-2xl">
-                    صندوق المقترحات
-                  </span>
-                  <span className="mt-2 text-sm font-bold leading-5 opacity-90 sm:mt-3 sm:text-base sm:leading-6 md:text-lg md:leading-7">
-                    شاركنا أفكارك لتطوير المجلس.
-                  </span>
-                  <span className="mt-auto flex w-full items-center justify-center pt-2" aria-hidden="true">
-                    <span className="flex size-8 items-center justify-center rounded-full bg-gold-primary text-primary shadow-md transition-transform duration-300 group-hover:-translate-x-1 sm:size-9 md:size-10">
-                      <ChevronLeft className="size-4 md:size-5" />
-                    </span>
-                  </span>
-                </Link>
-
-                {/* Bug report — physical right side */}
-                <button
-                  type="button"
-                  onClick={() => setShowBugReport(true)}
-                  dir="rtl"
-                  aria-label="أبلغ عن عطل"
-                  className="group flex min-w-0 appearance-none flex-col items-center px-3 pb-3 pt-3 text-center text-primary outline-none transition-transform duration-300 focus-visible:ring-2 focus-visible:ring-gold-primary focus-visible:ring-inset active:scale-[0.99] sm:px-5 sm:pb-5 sm:pt-5 md:px-8 md:pb-6 md:pt-6"
-                >
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-[14px] border border-gold-primary/55 bg-primary text-primary-foreground shadow-lg transition-transform duration-300 group-hover:-translate-y-1 sm:size-13 md:size-14">
-                    <ShieldAlert className="size-6 sm:size-7 md:size-8" />
-                  </span>
-                  <span className="mt-2.5 text-base font-black leading-snug sm:mt-3 sm:text-xl md:text-2xl">
-                    أبلغ عن عطل
-                  </span>
-                  <span className="mt-2 text-sm font-bold leading-5 text-muted-foreground sm:mt-3 sm:text-base sm:leading-6 md:text-lg md:leading-7">
-                    فريقنا التقني جاهز لمساعدتك وحل أي عائق برمجي في النظام.
-                  </span>
-                  <span className="mt-auto flex w-full items-center justify-center pt-2" aria-hidden="true">
-                    <span className="flex size-8 items-center justify-center rounded-full bg-gold-primary text-primary shadow-md transition-transform duration-300 group-hover:-translate-x-1 sm:size-9 md:size-10">
-                      <ChevronLeft className="size-4 md:size-5" />
-                    </span>
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* 8. SUPPORT SECTION */}
+        <DashboardSupportPanel onReportBug={() => setShowBugReport(true)} />
       </div>
 
-      <ResponsiveDashboardExtras />
+      <ResponsiveDashboardExtras onReportBug={() => setShowBugReport(true)} />
 
       <AnimatePresence>
         {immersiveItem && (
