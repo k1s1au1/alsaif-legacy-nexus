@@ -14,7 +14,7 @@ export const approveAccountRequest = createServerFn({ method: "POST" })
     }
 
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
-    const isPriv = (roles ?? []).some((r: any) => ["admin", "chairman"].includes(r.role));
+    const isPriv = (roles ?? []).some((r: any) => ["admin", "chairman", "vice_chairman"].includes(r.role));
     if (!isPriv) throw new Error("Unauthorized");
 
     const { data: req } = await admin
