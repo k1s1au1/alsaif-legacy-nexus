@@ -590,3 +590,140 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
     height: 0;
   }
 }
+
+/* compact-council-portal-all-devices-2026-09-09 */
+/* Keep the approved composition, but reduce its footprint as one unit. */
+.heritage-pavilion-reference,
+html body
+  .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero
+  .dashboard-portal-model.heritage-pavilion-reference,
+html body
+  .desktop-portal-stage
+  > .desktop-portal-model.heritage-pavilion-reference {
+  height: clamp(340px, 28vw, 460px) !important;
+}
+
+.council-portal-copy {
+  left: 6%;
+  width: 50%;
+}
+
+.council-portal-greeting {
+  margin-bottom: clamp(6px, 0.75vw, 12px);
+  font-size: clamp(14px, 1.1vw, 20px);
+}
+
+.council-portal-identity span {
+  font-size: clamp(14px, 1.12vw, 20px);
+}
+
+.council-portal-identity strong {
+  font-size: clamp(34px, 4vw, 64px);
+}
+
+.council-portal-message {
+  margin-top: clamp(12px, 1.35vw, 22px);
+  font-size: clamp(13px, 1vw, 17px);
+}
+
+.council-portal-plaque {
+  min-width: clamp(150px, 14vw, 210px);
+  min-height: clamp(36px, 3vw, 44px);
+  margin-top: clamp(13px, 1.45vw, 22px);
+  font-size: clamp(13px, 0.95vw, 16px);
+}
+
+.council-portal-model {
+  right: 5%;
+  bottom: -24%;
+  width: min(30%, 420px);
+}
+
+@media (min-width: 700px) and (max-width: 1100px) {
+  .heritage-pavilion-reference,
+  html body
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference,
+  html body
+    .desktop-portal-stage
+    > .desktop-portal-model.heritage-pavilion-reference {
+    height: clamp(340px, 36vw, 390px) !important;
+  }
+
+  .council-portal-copy {
+    left: 3.5%;
+    width: 54%;
+  }
+
+  .council-portal-identity strong {
+    font-size: clamp(36px, 4.8vw, 50px);
+  }
+
+  .council-portal-model {
+    right: 1%;
+    bottom: -22%;
+    width: min(37%, 350px);
+  }
+}
+
+@media (max-width: 699px) {
+  html body
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    > .dashboard-portal-card {
+    min-height: 0 !important;
+  }
+
+  .heritage-pavilion-reference,
+  html body
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference,
+  html body
+    .desktop-portal-stage
+    > .desktop-portal-model.heritage-pavilion-reference {
+    height: clamp(400px, 115vw, 470px) !important;
+  }
+
+  .council-portal-copy {
+    top: 4.5%;
+    left: 6.5%;
+    width: 87%;
+  }
+
+  .council-portal-greeting {
+    margin-bottom: 5px;
+    font-size: clamp(13px, 3.7vw, 16px);
+  }
+
+  .council-portal-identity span {
+    font-size: clamp(13px, 3.8vw, 16px);
+  }
+
+  .council-portal-identity strong {
+    font-size: clamp(28px, 8.2vw, 38px);
+  }
+
+  .council-portal-message {
+    margin-top: 9px;
+    font-size: clamp(12px, 3.15vw, 14px);
+  }
+
+  .council-portal-plaque {
+    min-width: 138px;
+    min-height: 34px;
+    margin-top: 10px;
+    padding: 5px 18px;
+    font-size: 12px;
+  }
+
+  .council-portal-model {
+    right: 50%;
+    bottom: -11%;
+    width: min(68%, 300px);
+    transform: translateX(50%);
+  }
+}
+
