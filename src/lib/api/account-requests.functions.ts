@@ -47,7 +47,11 @@ export const approveAccountRequest = createServerFn({ method: "POST" })
         birth_date_hijri: (req as any).birth_date_hijri ?? null,
       } as any);
     await admin.from("user_roles").insert({ user_id: authUser.user.id, role: "member" });
-    await admin.from("account_requests").update({ status: "approved" }).eq("id", data.id);
+    // Clear the temporary password once the account exists — never keep it stored.
+    await admin
+      .from("account_requests")
+      .update({ status: "approved", desired_password: null })
+      .eq("id", data.id);
 
     return { ok: true };
   });
