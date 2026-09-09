@@ -14,7 +14,7 @@ export const approveAccountRequest = createServerFn({ method: "POST" })
     }
 
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
-    const isPriv = (roles ?? []).some((r: any) => ["admin", "chairman"].includes(r.role));
+    const isPriv = (roles ?? []).some((r: any) => ["admin", "chairman", "vice_chairman"].includes(r.role));
     if (!isPriv) throw new Error("Unauthorized");
 
     const { data: req } = await admin
@@ -47,7 +47,11 @@ export const approveAccountRequest = createServerFn({ method: "POST" })
         birth_date_hijri: (req as any).birth_date_hijri ?? null,
       } as any);
     await admin.from("user_roles").insert({ user_id: authUser.user.id, role: "member" });
-    await admin.from("account_requests").update({ status: "approved" }).eq("id", data.id);
+    // Clear the temporary password once the account exists — never keep it stored.
+    await admin
+      .from("account_requests")
+      .update({ status: "approved", desired_password: null })
+      .eq("id", data.id);
 
     return { ok: true };
   });

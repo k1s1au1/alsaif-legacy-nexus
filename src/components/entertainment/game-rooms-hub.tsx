@@ -1403,8 +1403,8 @@ export function GameRoomsHub() {
   const readyRef = useRef(ready);
   const receivedSnapshotRef = useRef(false);
   const reconnectAttemptedRef = useRef(false);
-  const electionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const joinTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const electionTimerRef = useRef<number | null>(null);
+  const joinTimersRef = useRef<number[]>([]);
   const packetHandlerRef = useRef<(packet: RoomPacket) => void>(() => undefined);
 
   useEffect(() => {

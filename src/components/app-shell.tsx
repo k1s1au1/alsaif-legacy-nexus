@@ -48,6 +48,7 @@ import { DynamicIsland } from "@/components/dynamic-island";
 import { LiveClock } from "@/components/dashboard/live-clock";
 import { BiometricGate } from "@/components/biometric-gate";
 import { useProfile } from "@/hooks/use-dashboard-data";
+import { useUserRole } from "@/hooks/use-user-role";
 import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
 import {
   DropdownMenu,
@@ -289,6 +290,8 @@ function AppShellChrome({
 
   // 1. Centralized Identity Source (Zero Redundancy)
   const { data: globalProfile, isLoading: profileLoading } = useProfile();
+  // Authoritative role source (chairman, vice chairman, technical admin, section heads)
+  const roleAccess = useUserRole();
 
   // Header Visibility Control
   const { scrollY } = useScroll();
@@ -381,7 +384,10 @@ function AppShellChrome({
 
   const allowedSections = globalProfile?.allowedSections || [];
   const bottomNavKeys = globalProfile?.bottomNavPrefs || DEFAULT_NAV_KEYS;
-  const isAdmin = globalProfile?.role === "رئيس المجلس" || globalProfile?.role === "مسؤول تقني";
+  const isAdmin =
+    roleAccess.isCouncilLeadership ||
+    roleAccess.isTechnicalAdmin ||
+    roleAccess.sectionHeads.length > 0;
   const isGuest = globalProfile?.role === "ضيف المجلس";
 
   return (

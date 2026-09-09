@@ -163,9 +163,31 @@ export function CouncilGovernance({ focusName = "" }: { focusName?: string } = {
           .insert({ user_id: uid, section } as any);
     setBusy(null);
     if (error) {
-      toast.error(error.message || "تعذر تحديث مسؤولية القسم");
+      const raw = error.message || "";
+      const friendly = raw.includes("section_heads_section_check")
+        ? "هذا القسم غير معتمد في النظام، حدّث الصفحة ثم أعد المحاولة"
+        : raw.includes("duplicate key")
+          ? "هذا العضو مسؤول عن القسم بالفعل"
+          : raw.includes("row-level security") || raw.includes("permission")
+            ? "لا تملك صلاحية تعديل مسؤولي الأقسام"
+            : "تعذر تحديث مسؤولية القسم، حاول مرة أخرى";
+      toast.error(friendly);
+      await load();
       return;
     }
+    // Only reflect the change locally after Supabase confirms it.
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === uid
+          ? {
+              ...r,
+              sections: currently
+                ? r.sections.filter((s) => s !== section)
+                : [...r.sections.filter((s) => s !== section), section],
+            }
+          : r,
+      ),
+    );
     toast.success(currently ? "تم إزالة مسؤولية القسم" : "تم تعيين مسؤول القسم");
     await load();
   };
