@@ -57,6 +57,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { TRIVIA_QUESTIONS } from "@/data/trivia-questions";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { cn } from "@/lib/utils";
+import { playGameSfx, type GameSfx } from "@/lib/game-sfx";
+import "./games-arena.css";
 
 type GameKey =
   | "uno"
