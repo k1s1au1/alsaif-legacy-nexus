@@ -38,6 +38,8 @@ import Autoplay from "embla-carousel-autoplay";
 import { TripImage } from "@/components/trip-image";
 import { IntegratedHub } from "@/components/dashboard/integrated-hub";
 import { FamilyAgenda } from "@/components/dashboard/family-agenda";
+import { SimpleDashboard } from "@/components/dashboard/simple-dashboard";
+import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { PollsPopup } from "@/components/dashboard/polls-popup";
 import { showIsland } from "@/components/dynamic-island";
 import { useWidgetUpdater } from "@/hooks/use-widget-updater";
@@ -291,6 +293,7 @@ const SPIRITUAL_QUOTES = [
 ];
 
 function Dashboard() {
+  const { simpleMode, disableSimpleMode } = useSimpleMode();
   const { data: profileData, isLoading: profileLoading } = useProfile();
   const { data: countsData } = useDashboardCounts();
   const { data: eventsData } = useUpcomingEvents();
@@ -491,6 +494,20 @@ function Dashboard() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="size-12 text-gold-primary animate-spin" />
       </div>
+    );
+  }
+
+  if (simpleMode) {
+    return (
+      <AppShell title="لوحة العائلة" user={{ name: "", role: "", initial: "س" }}>
+        <SimpleDashboard
+          name={safeProfile.name}
+          meetings={eventsData?.meetings || []}
+          trips={eventsData?.trips || []}
+          announcements={announcementsData || []}
+          onExit={disableSimpleMode}
+        />
+      </AppShell>
     );
   }
 
@@ -783,3 +800,4 @@ function Dashboard() {
     </AppShell>
   );
 }
+
