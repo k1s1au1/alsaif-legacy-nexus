@@ -19,6 +19,7 @@ import {
   ImagePlus,
   Star,
   Fingerprint,
+  Accessibility,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ import { BiometricAuth } from "@/lib/native-bridge";
 import { setupPushNotifications } from "@/lib/pushNotifications";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
 import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
+import { useSimpleMode } from "@/hooks/use-simple-mode";
 import "@/settings-responsive.css";
 
 const FONTS = [
@@ -56,7 +58,13 @@ const FONTS = [
   },
 ];
 
-type SettingsSectionId = "appearance" | "typography" | "notifications" | "security" | "brand";
+type SettingsSectionId =
+  | "appearance"
+  | "accessibility"
+  | "typography"
+  | "notifications"
+  | "security"
+  | "brand";
 
 const SETTINGS_SECTIONS: {
   id: SettingsSectionId;
@@ -66,6 +74,7 @@ const SETTINGS_SECTIONS: {
   adminOnly?: boolean;
 }[] = [
   { id: "appearance", label: "المظهر والهوية", icon: Palette },
+  { id: "accessibility", label: "سهولة الاستخدام", icon: Accessibility },
   { id: "typography", label: "الخطوط والتنقل", icon: Type },
   { id: "notifications", label: "الإشعارات", icon: Bell },
   { id: "security", label: "حماية التطبيق", icon: Fingerprint, nativeOnly: true },
@@ -79,6 +88,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   const queryClient = useQueryClient();
+  const { simpleMode, setSimpleMode } = useSimpleMode();
   const [darkMode, setDarkMode] = useState<"light" | "dark" | "system" | null>(null);
   const [font, setFont] = useState("Tajawal");
   const [fontStyle, setFontStyle] = useState<"modern" | "royal">("modern");
@@ -587,6 +597,84 @@ function SettingsPage() {
             </div>
             <span className="btn-gold px-5 py-3 rounded-xl font-black text-xs shrink-0">تغيير</span>
           </button>
+        </section>
+        )}
+
+        {activeSection === "accessibility" && (
+        <section
+          id="accessibility"
+          role="tabpanel"
+          aria-labelledby="settings-tab-accessibility"
+          tabIndex={0}
+          className="settings-panel space-y-6 animate-fade-up"
+        >
+          <div className="flex items-center gap-4">
+            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
+              سهولة الاستخدام
+            </h3>
+            <div className="h-px flex-1 bg-border/60" />
+          </div>
+
+          <div className="settings-switch-card card-surface p-6 md:p-8 space-y-7">
+            <div className="flex items-center justify-between gap-5">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="size-14 shrink-0 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
+                  <Accessibility className="size-7" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-lg md:text-xl font-black text-primary">الوضع المبسّط</h4>
+                  <p className="mt-1 text-xs md:text-sm leading-relaxed font-bold text-muted-foreground">
+                    واجهة رئيسية أوضح بخط أكبر وأزرار أسهل وأهم الخدمات فقط.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={simpleMode}
+                aria-label={simpleMode ? "إيقاف الوضع المبسّط" : "تفعيل الوضع المبسّط"}
+                onClick={() => {
+                  const enabled = !simpleMode;
+                  setSimpleMode(enabled);
+                  toast.success(enabled ? "تم تفعيل الوضع المبسّط" : "تم الرجوع إلى الوضع العادي");
+                }}
+                className={cn(
+                  "relative h-9 w-16 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-primary/15",
+                  simpleMode ? "bg-primary" : "bg-muted",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-1 right-1 size-7 rounded-full bg-white shadow-md transition-transform duration-300",
+                    simpleMode ? "-translate-x-7" : "translate-x-0",
+                  )}
+                />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-border/50 pt-6">
+              {[
+                "خطوط أكبر وأكثر وضوحًا",
+                "أزرار واسعة وسهلة اللمس",
+                "أربع خدمات أساسية فقط",
+              ].map((feature) => (
+                <div
+                  key={feature}
+                  className="min-h-20 flex items-center gap-3 rounded-2xl bg-primary/5 border border-primary/10 p-4"
+                >
+                  <span className="size-8 shrink-0 rounded-full bg-primary text-white flex items-center justify-center">
+                    <Check className="size-4" strokeWidth={3} />
+                  </span>
+                  <b className="text-sm leading-relaxed text-primary">{feature}</b>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs font-bold leading-relaxed text-muted-foreground">
+              يتغير ترتيب الصفحة الرئيسية فقط، وتبقى بقية الصفحات والهيدر وشريط التنقل كما هي.
+            </p>
+          </div>
         </section>
         )}
 
@@ -1218,3 +1306,4 @@ function NotificationPreferencesSection() {
     </section>
   );
 }
+
