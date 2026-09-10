@@ -114,7 +114,11 @@ function isCacheableRead(request: Request, supabaseOrigin: string): boolean {
   if (url.origin !== supabaseOrigin) return false;
 
   if (request.method === "GET") {
-    return url.pathname.includes("/rest/v1/") || url.pathname.includes("/storage/v1/object/");
+    return (
+      url.pathname.includes("/rest/v1/") ||
+      url.pathname.includes("/auth/v1/user") ||
+      url.pathname.includes("/storage/v1/object/")
+    );
   }
 
   return request.method === "POST" && url.pathname.includes("/storage/v1/object/sign/");
