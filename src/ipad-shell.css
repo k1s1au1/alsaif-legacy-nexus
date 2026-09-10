@@ -498,3 +498,72 @@
     padding-bottom:calc(11rem + env(safe-area-inset-bottom,0px))!important;
   }
 }
+
+/* ---------- Mobile + tablet portrait: family services matches normal dock items ---------- */
+@media (max-width:767.98px), (min-width:768px) and (max-width:1600px) and (orientation:portrait){
+  html body main>.app-shell-bottom-dock>nav>div.relative.flex.items-center.justify-center>div.absolute{
+    display:none!important;
+  }
+
+  html body main>.app-shell-bottom-dock>nav>div.relative.flex.items-center.justify-center>button{
+    width:auto!important;
+    height:auto!important;
+    min-width:64px!important;
+    min-height:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:4px!important;
+    color:rgba(255,255,255,.4)!important;
+    font-family:inherit!important;
+    transform:none!important;
+  }
+
+  html body main>.app-shell-bottom-dock>nav>div.relative.flex.items-center.justify-center>button:active{
+    transform:none!important;
+  }
+
+  html body main>.app-shell-bottom-dock>nav>div.relative.flex.items-center.justify-center>button>svg{
+    width:20px!important;
+    height:20px!important;
+    color:inherit!important;
+    stroke-width:2!important;
+  }
+
+  html body main>.app-shell-bottom-dock>nav>div.relative.flex.items-center.justify-center>button::after{
+    content:"خدمات العائلة";
+    display:block;
+    color:inherit;
+    font:inherit;
+    font-size:11px;
+    font-weight:900;
+    line-height:1;
+    letter-spacing:.1em;
+    white-space:nowrap;
+    text-transform:uppercase;
+  }
+}
+
+@media (min-width:768px) and (max-width:1600px) and (orientation:portrait){
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav>div.relative.flex.items-center.justify-center>button{
+    min-width:92px!important;
+    min-height:60px!important;
+    gap:5px!important;
+  }
+
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav>div.relative.flex.items-center.justify-center>button>svg{
+    width:27px!important;
+    height:27px!important;
+  }
+
+  html body main[data-tablet-portrait="true"]>.app-shell-bottom-dock>nav>div.relative.flex.items-center.justify-center>button::after{
+    font-size:12px!important;
+    letter-spacing:.04em!important;
+  }
+}
