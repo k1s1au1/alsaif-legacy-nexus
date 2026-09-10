@@ -84,7 +84,6 @@ async function clearOfflineCaches() {
     names
       .filter(
         (name) =>
-          name === APP_CACHE ||
           name === MEDIA_CACHE ||
           name === SESSION_META_CACHE ||
           name.startsWith(USER_ROUTE_CACHE_PREFIX),
@@ -210,7 +209,6 @@ async function warmUserRoutes(userId, values) {
         const request = new Request(url.toString(), {
           method: "GET",
           credentials: "same-origin",
-          headers: { "x-alsaif-offline-warmup": "1" },
         });
         const response = await fetch(request);
         if (response.ok) await putIfCacheable(cacheName, request, response);
