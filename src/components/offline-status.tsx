@@ -1,7 +1,9 @@
 import { CloudCheck, WifiOff } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const WORKER_PATH = "/firebase-messaging-sw.js";
+const PROBE_INTERVAL_MS = 30_000;
+const PROBE_TIMEOUT_MS = 4_000;
 
 function formatLastSync(value: string | null) {
   if (!value) return null;
@@ -14,6 +16,31 @@ function formatLastSync(value: string | null) {
   }).format(date);
 }
 
+/**
+ * Android's navigator.onLine can report false even when the device is online.
+ * A unique, uncached request to our own origin is the reliable source of truth.
+ */
+async function canReachAppServer() {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(
+      `/manifest.json?__alsaif_network_probe=${Date.now()}`,
+      {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: controller.signal,
+      },
+    );
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 async function warmCurrentApp(registration: ServiceWorkerRegistration) {
   const resourceUrls = performance
     .getEntriesByType("resource")
@@ -24,7 +51,8 @@ async function warmCurrentApp(registration: ServiceWorkerRegistration) {
         return (
           (url.protocol === "https:" || url.protocol === "http:") &&
           !url.pathname.includes("/rest/v1/") &&
-          !url.pathname.includes("/auth/v1/")
+          !url.pathname.includes("/auth/v1/") &&
+          !url.searchParams.has("__alsaif_network_probe")
         );
       } catch {
         return false;
@@ -46,42 +74,85 @@ async function warmCurrentApp(registration: ServiceWorkerRegistration) {
 }
 
 export function OfflineStatus() {
-  const [online, setOnline] = useState(
-    typeof navigator === "undefined" ? true : navigator.onLine,
-  );
+  // Start silently and confirm the real connection before showing anything.
+  const [online, setOnline] = useState(true);
   const [connectionRestored, setConnectionRestored] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(() =>
     typeof window === "undefined" ? null : localStorage.getItem("alsaif:last-online-sync"),
   );
 
-  useEffect(() => {
-    let restoredTimer: ReturnType<typeof setTimeout> | undefined;
+  const onlineRef = useRef(true);
+  const restoredTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const probeSequenceRef = useRef(0);
 
-    const handleOffline = () => {
-      setOnline(false);
+  const applyConnectionState = useCallback((reachable: boolean, announceRecovery = true) => {
+    const wasOnline = onlineRef.current;
+    onlineRef.current = reachable;
+    setOnline(reachable);
+
+    if (!reachable) {
       setConnectionRestored(false);
-    };
-    const handleOnline = () => {
-      setOnline(true);
+      if (restoredTimerRef.current) clearTimeout(restoredTimerRef.current);
+      restoredTimerRef.current = null;
+      return;
+    }
+
+    if (!wasOnline && announceRecovery) {
       setConnectionRestored(true);
-      restoredTimer = setTimeout(() => setConnectionRestored(false), 3500);
+      if (restoredTimerRef.current) clearTimeout(restoredTimerRef.current);
+      restoredTimerRef.current = setTimeout(() => {
+        setConnectionRestored(false);
+        restoredTimerRef.current = null;
+      }, 3500);
+    }
+  }, []);
+
+  const verifyConnection = useCallback(
+    async (announceRecovery = true) => {
+      const sequence = ++probeSequenceRef.current;
+      const reachable = await canReachAppServer();
+      if (sequence !== probeSequenceRef.current) return;
+      applyConnectionState(reachable, announceRecovery);
+    },
+    [applyConnectionState],
+  );
+
+  useEffect(() => {
+    const handleNetworkChange = () => {
+      void verifyConnection(true);
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void verifyConnection(true);
     };
     const handleSync = (event: Event) => {
       const timestamp = (event as CustomEvent<string>).detail;
       setLastSync(timestamp);
+      // A successful API response is stronger evidence than navigator.onLine.
+      applyConnectionState(true, true);
     };
 
-    window.addEventListener("offline", handleOffline);
-    window.addEventListener("online", handleOnline);
+    void verifyConnection(false);
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") void verifyConnection(true);
+    }, PROBE_INTERVAL_MS);
+
+    window.addEventListener("offline", handleNetworkChange);
+    window.addEventListener("online", handleNetworkChange);
+    window.addEventListener("focus", handleNetworkChange);
+    document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("alsaif:online-sync", handleSync);
 
     return () => {
-      window.removeEventListener("offline", handleOffline);
-      window.removeEventListener("online", handleOnline);
+      window.clearInterval(interval);
+      window.removeEventListener("offline", handleNetworkChange);
+      window.removeEventListener("online", handleNetworkChange);
+      window.removeEventListener("focus", handleNetworkChange);
+      document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("alsaif:online-sync", handleSync);
-      if (restoredTimer) clearTimeout(restoredTimer);
+      if (restoredTimerRef.current) clearTimeout(restoredTimerRef.current);
     };
-  }, []);
+  }, [applyConnectionState, verifyConnection]);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;

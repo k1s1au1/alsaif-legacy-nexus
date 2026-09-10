@@ -122,9 +122,7 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
-  if (!["http:", "https:"].includes(url.protocol)) return;
-
-  if (request.mode === "navigate") {
+  if (!["http:", "https:"].includes(url.protocol)) return;\n\n  // Connectivity probes must always reach the network and must never be cached.\n  if (url.searchParams.has("__alsaif_network_probe")) return;\n\n  if (request.mode === "navigate") {
     event.respondWith(navigationResponse(request));
     return;
   }
