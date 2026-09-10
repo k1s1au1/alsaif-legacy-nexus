@@ -2362,28 +2362,21 @@ function useGameExperiencePreferences() {
   return { preferences, toggle };
 }
 
-function playGameTone(kind: "turn" | "move") {
-  if (typeof window === "undefined") return;
+/** يقرأ تفضيل الصوت المحفوظ حتى تعمل المؤثرات داخل البطاقات دون تمرير props. */
+function soundEnabled() {
+  if (typeof window === "undefined") return false;
   try {
-    const AudioCtor = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtor) return;
-    gameAudioContext ??= new AudioCtor();
-    const oscillator = gameAudioContext.createOscillator();
-    const gain = gameAudioContext.createGain();
-    const now = gameAudioContext.currentTime;
-    oscillator.type = kind === "turn" ? "sine" : "triangle";
-    oscillator.frequency.setValueAtTime(kind === "turn" ? 520 : 360, now);
-    oscillator.frequency.exponentialRampToValueAtTime(kind === "turn" ? 760 : 480, now + 0.11);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.075, now + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
-    oscillator.connect(gain);
-    gain.connect(gameAudioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + 0.17);
+    const saved = window.localStorage.getItem(GAME_PREFERENCES_KEY);
+    if (!saved) return true;
+    return JSON.parse(saved).sound !== false;
   } catch {
-    // Audio feedback is optional and must never interrupt the game.
+    return true;
   }
+}
+
+function playGameTone(kind: GameSfx) {
+  if (!soundEnabled()) return;
+  playGameSfx(kind);
 }
 
 const GAME_GUIDES: Partial<Record<GameKey, {
