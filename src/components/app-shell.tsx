@@ -872,20 +872,19 @@ function AppShellChrome({
               );
             })}
 
-            {/* PULSING CENTRAL LOGO */}
-            <div className="relative flex items-center justify-center">
-              <motion.div
-                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute inset-0 rounded-full bg-gold-primary/50 blur-md"
-              />
-              <button
-                onClick={() => setShowQuickActions(true)}
-                className="size-12 rounded-full bg-white dark:bg-gold-primary shadow-lg flex items-center justify-center border-2 border-[var(--nav-bg)]/20 dark:border-black/20 p-2 relative z-10 active:scale-90 transition-transform"
-              >
-                <LayoutGrid className="text-primary dark:text-black size-6" strokeWidth={2.5} />
-              </button>
-            </div>
+            {/* Use a regular dock action so global surface colors cannot mask it. */}
+            <button
+              type="button"
+              aria-expanded={showQuickActions}
+              onClick={() => setShowQuickActions(true)}
+              className={cn(
+                "app-shell-dock-services relative flex flex-col items-center justify-center gap-1 bg-transparent transition-all duration-300",
+                showQuickActions ? "text-gold-primary" : "text-white/40",
+              )}
+            >
+              <LayoutGrid size={20} strokeWidth={2} aria-hidden="true" />
+              <span className="text-[11px] font-black whitespace-nowrap">خدمات العائلة</span>
+            </button>
 
             {bottomNavKeys.slice(2, 3).map((key) => {
               const def = NAV_REGISTRY.find((n) => n.id === key);
