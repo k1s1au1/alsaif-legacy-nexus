@@ -2,6 +2,7 @@ const DB_NAME = "alsaif-offline-data";
 const DB_VERSION = 1;
 const RESPONSE_STORE = "responses";
 const MAX_RESPONSE_SIZE = 4 * 1024 * 1024;
+const ACTIVE_OFFLINE_USER_KEY = "alsaif:offline:active-user";
 
 type CachedHttpResponse = {
   key: string;
@@ -206,6 +207,7 @@ export function createOfflineFetch(
 export async function clearOfflineData(): Promise<void> {
   await clearCachedResponses();
   localStorage.removeItem("alsaif:last-online-sync");
+  localStorage.removeItem(ACTIVE_OFFLINE_USER_KEY);
 
   const worker =
     navigator.serviceWorker?.controller ??
