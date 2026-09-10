@@ -32,10 +32,10 @@ import {
   useProfile,
 } from "@/hooks/use-dashboard-data";
 import { useSiteLogo } from "@/hooks/use-site-logo";
-import { useUserRole } from "@/hooks/use-user-role";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import { SpiritualQuotesWidget } from "@/components/dashboard/spiritual-quotes-widget";
 import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
+import { FamilyAgenda } from "@/components/dashboard/family-agenda";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -309,46 +309,6 @@ export function DesktopDashboardExtras({
   const { data: heritage } = useHeritageSnippet();
   const { data: profile } = useProfile();
   const logo = useSiteLogo();
-  const {
-    canManage: canManageSection,
-    isAdmin,
-    isManager,
-    isChairman,
-    sectionHeads,
-    isLoading: rolesLoading,
-  } = useUserRole();
-  const canCreateTask =
-    !rolesLoading && (isAdmin || isManager || isChairman || sectionHeads.length > 0);
-  const managementQuickActions = [
-    {
-      to: "/meetings",
-      create: "meeting",
-      label: "اجتماع",
-      icon: Users,
-      allowed: !rolesLoading && canManageSection("meetings"),
-    },
-    {
-      to: "/trips",
-      create: "trip",
-      label: "رحلة",
-      icon: Plane,
-      allowed: !rolesLoading && canManageSection("trips"),
-    },
-    {
-      to: "/tasks",
-      create: "task",
-      label: "مهمة",
-      icon: ListChecks,
-      allowed: canCreateTask,
-    },
-  ].filter((item) => item.allowed);
-  const quickCreateActions = [
-    { to: "/family-occasions", create: "occasion", label: "مناسبة", icon: Sparkles },
-    ...managementQuickActions,
-    ...(managementQuickActions.length < 3
-      ? [{ to: "/community", create: "community", label: "مشاركة", icon: MessageCircle }]
-      : []),
-  ];
   const [servicesExpanded, setServicesExpanded] = useState(false);
   const [followExpanded, setFollowExpanded] = useState(false);
   const [followIndex, setFollowIndex] = useState(0);
@@ -772,98 +732,12 @@ export function DesktopDashboardExtras({
           )}
         </section>
 
-        <section className="desktop-command-grid">
-          <div className="desktop-widget-card">
-            <div className="desktop-widget-head">
-              <div>
-                <CalendarDays />
-                <span>
-                  <b>تقويم العائلة</b>
-                  <small>أقرب المواعيد القادمة</small>
-                </span>
-              </div>
-              <Link to="/calendar">عرض الكل</Link>
-            </div>
-            <div className="desktop-list">
-              {upcoming.length ? (
-                upcoming.slice(0, 4).map((item: any, index: number) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link key={index} to={item.to}>
-                      <Icon />
-                      <span>
-                        <b>{item.title}</b>
-                        <small>
-                          {item.kind} · {fmtDate(item.date)}
-                        </small>
-                      </span>
-                      <ChevronLeft />
-                    </Link>
-                  );
-                })
-              ) : (
-                <p className="desktop-empty">لا توجد مواعيد قريبة حاليًا</p>
-              )}
-            </div>
-          </div>
-
-          <div className="desktop-widget-card">
-            <div className="desktop-widget-head">
-              <div>
-                <Plus />
-                <span>
-                  <b>إضافة سريعة</b>
-                  <small>ابدأ أهم أعمال العائلة</small>
-                </span>
-              </div>
-            </div>
-            <div className="desktop-quick-add">
-              {quickCreateActions.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.create}
-                    to={item.to}
-                    search={{ create: item.create } as any}
-                    aria-label={`إضافة ${item.label}`}
-                  >
-                    <Icon />
-                    <span>إضافة {item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="desktop-widget-card">
-            <div className="desktop-widget-head">
-              <div>
-                <ListChecks />
-                <span>
-                  <b>مهامي القادمة</b>
-                  <small>ما يحتاج انتباهك الآن</small>
-                </span>
-              </div>
-              <Link to="/tasks">المهام</Link>
-            </div>
-            <div className="desktop-list">
-              {tasks.length ? (
-                tasks.map((task: any) => (
-                  <Link key={task.id} to="/tasks">
-                    <ListChecks />
-                    <span>
-                      <b>{task.title}</b>
-                      <small>{task.due_date ? fmtDate(task.due_date) : "بدون موعد"}</small>
-                    </span>
-                    <ChevronLeft />
-                  </Link>
-                ))
-              ) : (
-                <p className="desktop-empty">لا توجد مهام قادمة</p>
-              )}
-            </div>
-          </div>
-        </section>
+        <FamilyAgenda
+          meetings={eventsData?.meetings || []}
+          trips={eventsData?.trips || []}
+          tasks={eventsData?.tasks || []}
+          occasions={occasions}
+        />
 
         <section
           className="desktop-stats-row dashboard-ledger-stats dashboard-ledger-stats--desktop"

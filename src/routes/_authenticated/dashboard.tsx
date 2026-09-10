@@ -37,6 +37,7 @@ import {
 import Autoplay from "embla-carousel-autoplay";
 import { TripImage } from "@/components/trip-image";
 import { IntegratedHub } from "@/components/dashboard/integrated-hub";
+import { FamilyAgenda } from "@/components/dashboard/family-agenda";
 import { PollsPopup } from "@/components/dashboard/polls-popup";
 import { showIsland } from "@/components/dynamic-island";
 import { useWidgetUpdater } from "@/hooks/use-widget-updater";
@@ -623,6 +624,13 @@ function Dashboard() {
 
         {/* 5. CONTENT HUB & POLLS */}
         <PollsPopup userId={safeProfile.id ?? null} />
+        <FamilyAgenda
+          meetings={eventsData?.meetings || []}
+          trips={eventsData?.trips || []}
+          tasks={eventsData?.tasks || []}
+          className="family-agenda--mobile-only"
+        />
+
         <IntegratedHub
           upcomingMeetings={eventsData?.meetings || []}
           upcomingTrips={eventsData?.trips || []}
