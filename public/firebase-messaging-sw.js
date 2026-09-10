@@ -84,7 +84,6 @@ async function clearOfflineCaches() {
     names
       .filter(
         (name) =>
-          name === APP_CACHE ||
           name === MEDIA_CACHE ||
           name === SESSION_META_CACHE ||
           name.startsWith(USER_ROUTE_CACHE_PREFIX),
@@ -193,35 +192,51 @@ async function warmUserRoutes(userId, values) {
   await setActiveOfflineUserId(normalized);
 
   const cacheName = userRouteCacheName(normalized);
-  // Replace this user's route cache on every permissions warm-up. This purges
-  // routes that may have become unauthorized after a role/section change.
-  await caches.delete(cacheName);
-  const queue = values.slice(0, 100);
-  let cursor = 0;
+  const cache = await caches.open(cacheName);
+  const allowedUrls = new Set();
+  const queue = [];
 
+  for (const value of values.slice(0, 100)) {
+    try {
+      const url = new URL(value, self.location.origin);
+      if (url.origin !== self.location.origin) continue;
+      if (url.pathname.startsWith("/api/") || url.pathname.includes("/_server/")) continue;
+      allowedUrls.add(url.toString());
+      queue.push(url.toString());
+    } catch {
+      // Ignore malformed route values.
+    }
+  }
+
+  let cursor = 0;
   const worker = async () => {
     while (cursor < queue.length) {
       const value = queue[cursor++];
       try {
-        const url = new URL(value, self.location.origin);
-        if (url.origin !== self.location.origin) continue;
-        if (url.pathname.startsWith("/api/") || url.pathname.includes("/_server/")) continue;
-
-        const request = new Request(url.toString(), {
+        const request = new Request(value, {
           method: "GET",
           credentials: "same-origin",
-          headers: { "x-alsaif-offline-warmup": "1" },
         });
         const response = await fetch(request);
         if (response.ok) await putIfCacheable(cacheName, request, response);
       } catch {
-        // One unavailable route must not cancel the rest of the warm-up.
+        // Keep any previously cached copy of this still-authorized route.
       }
     }
   };
 
   await Promise.all(
     Array.from({ length: Math.min(WARM_CONCURRENCY, queue.length) }, () => worker()),
+  );
+
+  // Permission changes must remove routes that are no longer authorized, but an
+  // offline start must never erase still-authorized cached pages just because the
+  // refresh request could not reach the network.
+  const cachedRequests = await cache.keys();
+  await Promise.all(
+    cachedRequests
+      .filter((request) => !allowedUrls.has(request.url))
+      .map((request) => cache.delete(request)),
   );
 }
 

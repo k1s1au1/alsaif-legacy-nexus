@@ -5,6 +5,7 @@ import { AlertCircle, Home, RefreshCcw } from "lucide-react";
 import { AppShellLayout } from "@/components/app-shell";
 import { LegacyExperienceEnhancer } from "@/components/legacy-experience-enhancer";
 import { LegacyMiniMapRepair } from "@/components/legacy-minimap-repair";
+import { OfflineRouteWarmup } from "@/components/offline-route-warmup";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -84,6 +85,7 @@ export const Route = createFileRoute("/_authenticated")({
   component: () => (
     <TermsGate>
       <AppShellLayout>
+        <OfflineRouteWarmup />
         <LegacyExperienceEnhancer />
         <LegacyMiniMapRepair />
         <Outlet />
