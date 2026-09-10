@@ -307,7 +307,7 @@ export function FamilyAgenda({
           </span>
           <span>
             <small>تنظيم ومتابعة العائلة</small>
-            <h2>أجندة العائلة</h2>
+            <h2>لوحة المتابعة</h2>
             <time dateTime={todayKey}>
               {today.toLocaleDateString("ar-SA", {
                 weekday: "long",
