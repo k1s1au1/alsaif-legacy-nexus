@@ -1,0 +1,31 @@
+name: Verify Web App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm install --package-lock=false
+      - name: Check TypeScript
+        run: npx tsc --noEmit
+      - name: Check service worker syntax
+        run: node --check public/firebase-messaging-sw.js
+      - name: Build web app
+        run: npm run build
