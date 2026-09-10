@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { useUserRole } from "@/hooks/use-user-role";
 import "./family-agenda.css";
 
@@ -84,7 +85,8 @@ export function FamilyAgenda({
   occasions: suppliedOccasions,
   className = "",
 }: FamilyAgendaProps) {
-  const today = useMemo(() => new Date(), []);
+  const activeDayKey = useDayBoundaryKey();
+  const today = useMemo(() => new Date(), [activeDayKey]);
   const [monthCursor, setMonthCursor] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
