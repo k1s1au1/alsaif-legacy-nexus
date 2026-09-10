@@ -1,5 +1,12 @@
+import { useRouter } from "@tanstack/react-router";
 import { CloudCheck, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useUserRole } from "@/hooks/use-user-role";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  getAuthorizedOfflineRoutes,
+  scheduleAuthorizedOfflineWarmup,
+} from "@/lib/offline-route-warmup";
 
 const WORKER_PATH = "/firebase-messaging-sw.js";
 const PROBE_INTERVAL_MS = 30_000;
@@ -80,7 +87,11 @@ export function OfflineStatus() {
   const [lastSync, setLastSync] = useState<string | null>(() =>
     typeof window === "undefined" ? null : localStorage.getItem("alsaif:last-online-sync"),
   );
+  const [guestAllowedSections, setGuestAllowedSections] = useState<string[]>([]);
+  const [guestPermissionsUserId, setGuestPermissionsUserId] = useState<string | null>(null);
 
+  const router = useRouter();
+  const roleAccess = useUserRole();
   const onlineRef = useRef(true);
   const restoredTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const probeSequenceRef = useRef(0);
@@ -175,6 +186,72 @@ export function OfflineStatus() {
     window.addEventListener("load", register, { once: true });
     return () => window.removeEventListener("load", register);
   }, []);
+
+  // Guest visibility is stored on the profile, while all role/section-head access
+  // comes from the same authoritative hook used by the authenticated app shell.
+  useEffect(() => {
+    const userId = roleAccess.userId;
+    if (!userId || !roleAccess.isGuest) {
+      setGuestAllowedSections([]);
+      setGuestPermissionsUserId(userId ?? null);
+      return;
+    }
+
+    let active = true;
+    setGuestPermissionsUserId(null);
+
+    void supabase
+      .from("profiles")
+      .select("allowed_sections")
+      .eq("id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active) return;
+        setGuestAllowedSections((data?.allowed_sections as string[] | null) ?? []);
+        setGuestPermissionsUserId(userId);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [roleAccess.isGuest, roleAccess.userId]);
+
+  // Once authentication/permissions settle, preload every route this user can
+  // actually reach. preloadRoute loads route chunks/loaders without changing URL.
+  useEffect(() => {
+    const userId = roleAccess.userId;
+    if (!userId || roleAccess.isLoading) return;
+    if (roleAccess.isGuest && guestPermissionsUserId !== userId) return;
+
+    const canAccessAdmin =
+      roleAccess.isCouncilLeadership ||
+      roleAccess.isTechnicalAdmin ||
+      roleAccess.sectionHeads.length > 0;
+
+    const routes = getAuthorizedOfflineRoutes({
+      isGuest: roleAccess.isGuest,
+      allowedSections: guestAllowedSections,
+      canAccessAdmin,
+    });
+
+    return scheduleAuthorizedOfflineWarmup({
+      userId,
+      routes,
+      preloadRoute: async (route) => {
+        await (router.preloadRoute as (options: { to: string }) => Promise<unknown>)({ to: route });
+      },
+    });
+  }, [
+    guestAllowedSections,
+    guestPermissionsUserId,
+    roleAccess.isCouncilLeadership,
+    roleAccess.isGuest,
+    roleAccess.isLoading,
+    roleAccess.isTechnicalAdmin,
+    roleAccess.sectionHeads,
+    roleAccess.userId,
+    router,
+  ]);
 
   if (online && !connectionRestored) return null;
 
