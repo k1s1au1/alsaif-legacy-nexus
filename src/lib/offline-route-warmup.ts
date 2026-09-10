@@ -60,7 +60,7 @@ export async function warmAuthorizedOfflineRoutes({
   routes,
   preloadRoute,
 }: WarmOfflineRoutesOptions): Promise<void> {
-  if (typeof window === "undefined" || !userId || !navigator.onLine) return;
+  if (typeof window === "undefined" || !userId) return;
 
   const safeRoutes = uniqueRoutes(routes);
   if (!safeRoutes.length) return;
