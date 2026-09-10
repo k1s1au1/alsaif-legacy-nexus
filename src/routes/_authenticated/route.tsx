@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser, supabase } from "@/integrations/supabase/client";
 import { TermsGate } from "@/components/terms-gate";
 import { AlertCircle, Home, RefreshCcw } from "lucide-react";
 import { AppShellLayout } from "@/components/app-shell";
@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_authenticated")({
   },
   beforeLoad: async ({ location }) => {
     try {
-      const { data, error } = await supabase.auth.getUser();
+      const { data, error } = await getCurrentUser();
       if (error || !data.user) throw redirect({ to: "/auth" });
 
       // Force onboarding if the three-part name, gender or birth date is missing
@@ -76,7 +76,7 @@ export const Route = createFileRoute("/_authenticated")({
       }
       console.error("Auth guard error:", e);
       // Fallback: allow access if we have a user at least
-      const { data } = await supabase.auth.getUser();
+      const { data } = await getCurrentUser();
       if (data?.user) return { user: data.user };
       throw redirect({ to: "/auth" });
     }

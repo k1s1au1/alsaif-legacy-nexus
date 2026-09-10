@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser, supabase } from "@/integrations/supabase/client";
 
 export type AppRole =
   | "chairman"
@@ -109,7 +109,7 @@ export function useUserRole() {
     let active = true;
     let uid: string | null = null;
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
+      const { data: u } = await getCurrentUser();
       if (!active) return;
       if (!u.user) {
         setIsLoading(false);

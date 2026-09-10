@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getSupabase } from "@/integrations/supabase/client";
+import { getCurrentUser, getSupabase } from "@/integrations/supabase/client";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import {
   isMeetingActive,
@@ -13,7 +13,7 @@ export function useProfile() {
     queryKey: ["profile"],
     queryFn: async () => {
       const supabase = getSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) throw new Error("Not authenticated");
 
       const { data: p, error: pErr } = await supabase
@@ -68,7 +68,7 @@ export function useDashboardCounts() {
     queryKey: ["dashboard-counts", activeDayKey],
     queryFn: async () => {
       const supabase = getSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) return null;
 
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

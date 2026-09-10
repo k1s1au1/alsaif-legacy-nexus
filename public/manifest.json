@@ -1,11 +1,16 @@
 {
+  "id": "/",
   "name": "مجلس السيف",
   "short_name": "السيف",
+  "description": "منصة مجلس عائلة السيف الرقمية",
+  "lang": "ar",
+  "dir": "rtl",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#064e3b",
   "theme_color": "#064e3b",
-  "description": "منصة مجلس عائلة السيف الرقمية",
   "icons": [
     {
       "src": "/logo-home.png",

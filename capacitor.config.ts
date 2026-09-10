@@ -4,10 +4,6 @@ const config: CapacitorConfig = {
   appId: "com.alsaif.familyhub",
   appName: "المجلس",
   webDir: ".output/public",
-  server: {
-    url: "https://alsaif-legacy-nexus.lovable.app",
-    cleartext: true,
-  },
   plugins: {
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],

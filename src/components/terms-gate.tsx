@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser, supabase } from "@/integrations/supabase/client";
 import { TermsContent, TERMS_SHORT } from "./terms-content";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ export function TermsGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
+      const { data: u } = await getCurrentUser();
       if (!u.user) {
         setChecked(true);
         return;
@@ -24,7 +24,7 @@ export function TermsGate({ children }: { children: React.ReactNode }) {
         .select("terms_accepted_at")
         .eq("id", u.user.id)
         .maybeSingle();
-      setNeedsAccept(!(p as any)?.terms_accepted_at);
+      setNeedsAccept(!navigator.onLine && !p ? false : !(p as any)?.terms_accepted_at);
       setChecked(true);
     })();
   }, []);

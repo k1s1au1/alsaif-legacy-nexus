@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { clearOfflineData } from "@/lib/offline-data";
 import {
   LayoutDashboard,
   Shield,
@@ -366,6 +367,7 @@ function AppShellChrome({
     try {
       await queryClient.cancelQueries();
       queryClient.clear();
+      await clearOfflineData();
       await supabase.auth.signOut();
       toast.success("تم تسجيل الخروج");
       navigate({ to: "/auth", replace: true });

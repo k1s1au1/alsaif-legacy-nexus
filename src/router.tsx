@@ -4,7 +4,11 @@ import { routeTree } from "./routeTree.gen";
 import { RoutePendingScreen } from "./components/route-pending-screen";
 
 export const getRouter = () => {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { networkMode: "offlineFirst", refetchOnReconnect: true, retry: 1 },
+    },
+  });
 
   const router = createRouter({
     routeTree,
