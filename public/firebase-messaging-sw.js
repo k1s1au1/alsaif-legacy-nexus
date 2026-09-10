@@ -12,10 +12,14 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-const APP_CACHE = "alsaif-app-v2";
-const MEDIA_CACHE = "alsaif-media-v2";
+const APP_CACHE = "alsaif-app-v3";
+const MEDIA_CACHE = "alsaif-media-v3";
+const USER_ROUTE_CACHE_PREFIX = "alsaif-user-routes-v1:";
+const SESSION_META_CACHE = "alsaif-offline-session-v1";
+const ACTIVE_USER_KEY = "/__alsaif_active_offline_user__";
 const CORE_URLS = ["/", "/manifest.json", "/logo-home.png"];
 const OFFLINE_FALLBACK = "/__alsaif_offline_fallback__";
+const WARM_CONCURRENCY = 3;
 
 const offlineHtml = `<!doctype html>
 <html lang="ar" dir="rtl">
@@ -33,6 +37,61 @@ const offlineHtml = `<!doctype html>
 </head>
 <body><main><div class="mark">⌁</div><h1>لا يوجد اتصال بالإنترنت</h1><p>افتح الموقع مرة واحدة أثناء الاتصال حتى نحفظ صفحاته على هذا الجهاز، ثم يمكنك تصفح ما تم حفظه دون إنترنت.</p><button onclick="location.reload()">إعادة المحاولة</button></main></body>
 </html>`;
+
+function normalizeUserId(value) {
+  return typeof value === "string" && /^[a-zA-Z0-9_-]{6,128}$/.test(value) ? value : null;
+}
+
+function userRouteCacheName(userId) {
+  return `${USER_ROUTE_CACHE_PREFIX}${userId}`;
+}
+
+async function getActiveOfflineUserId() {
+  try {
+    const cache = await caches.open(SESSION_META_CACHE);
+    const response = await cache.match(ACTIVE_USER_KEY);
+    if (!response) return null;
+    return normalizeUserId(await response.text());
+  } catch {
+    return null;
+  }
+}
+
+async function setActiveOfflineUserId(userId) {
+  const normalized = normalizeUserId(userId);
+  if (!normalized) return;
+
+  const cache = await caches.open(SESSION_META_CACHE);
+  await cache.put(
+    ACTIVE_USER_KEY,
+    new Response(normalized, { headers: { "content-type": "text/plain; charset=utf-8" } }),
+  );
+
+  const names = await caches.keys();
+  await Promise.all(
+    names
+      .filter(
+        (name) =>
+          name.startsWith(USER_ROUTE_CACHE_PREFIX) && name !== userRouteCacheName(normalized),
+      )
+      .map((name) => caches.delete(name)),
+  );
+}
+
+async function clearOfflineCaches() {
+  const names = await caches.keys();
+  await Promise.all(
+    names
+      .filter(
+        (name) =>
+          name === APP_CACHE ||
+          name === MEDIA_CACHE ||
+          name === SESSION_META_CACHE ||
+          name.startsWith(USER_ROUTE_CACHE_PREFIX),
+      )
+      .map((name) => caches.delete(name)),
+  );
+}
 
 async function trimCache(cacheName, limit) {
   const cache = await caches.open(cacheName);
@@ -78,7 +137,14 @@ self.addEventListener("activate", (event) => {
       caches.keys().then((names) =>
         Promise.all(
           names
-            .filter((name) => name.startsWith("alsaif-") && ![APP_CACHE, MEDIA_CACHE].includes(name))
+            .filter(
+              (name) =>
+                name.startsWith("alsaif-") &&
+                name !== APP_CACHE &&
+                name !== MEDIA_CACHE &&
+                name !== SESSION_META_CACHE &&
+                !name.startsWith(USER_ROUTE_CACHE_PREFIX),
+            )
             .map((name) => caches.delete(name)),
         ),
       ),
@@ -88,21 +154,24 @@ self.addEventListener("activate", (event) => {
 });
 
 async function navigationResponse(request) {
+  const activeUserId = await getActiveOfflineUserId();
+  const userCacheName = activeUserId ? userRouteCacheName(activeUserId) : null;
+
   try {
     const response = await fetch(request);
-    if (response.ok) {
-      await putIfCacheable(APP_CACHE, request, response);
-      const rootRequest = new Request("/", { credentials: "same-origin" });
-      await putIfCacheable(APP_CACHE, rootRequest, response.clone());
+    if (response.ok && userCacheName) {
+      await putIfCacheable(userCacheName, request, response);
     }
     return response;
   } catch {
-    const cache = await caches.open(APP_CACHE);
-    return (
-      (await cache.match(request)) ||
-      (await cache.match("/")) ||
-      (await cache.match(OFFLINE_FALLBACK))
-    );
+    if (userCacheName) {
+      const userCache = await caches.open(userCacheName);
+      const cachedRoute = await userCache.match(request, { ignoreSearch: false });
+      if (cachedRoute) return cachedRoute;
+    }
+
+    const appCache = await caches.open(APP_CACHE);
+    return (await appCache.match("/")) || (await appCache.match(OFFLINE_FALLBACK));
   }
 }
 
@@ -117,12 +186,56 @@ async function cachedResource(request, cacheName) {
   return cached || (await network) || Response.error();
 }
 
+async function warmUserRoutes(userId, values) {
+  const normalized = normalizeUserId(userId);
+  if (!normalized || !Array.isArray(values)) return;
+
+  await setActiveOfflineUserId(normalized);
+
+  const cacheName = userRouteCacheName(normalized);
+  // Replace this user's route cache on every permissions warm-up. This purges
+  // routes that may have become unauthorized after a role/section change.
+  await caches.delete(cacheName);
+  const queue = values.slice(0, 100);
+  let cursor = 0;
+
+  const worker = async () => {
+    while (cursor < queue.length) {
+      const value = queue[cursor++];
+      try {
+        const url = new URL(value, self.location.origin);
+        if (url.origin !== self.location.origin) continue;
+        if (url.pathname.startsWith("/api/") || url.pathname.includes("/_server/")) continue;
+
+        const request = new Request(url.toString(), {
+          method: "GET",
+          credentials: "same-origin",
+          headers: { "x-alsaif-offline-warmup": "1" },
+        });
+        const response = await fetch(request);
+        if (response.ok) await putIfCacheable(cacheName, request, response);
+      } catch {
+        // One unavailable route must not cancel the rest of the warm-up.
+      }
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(WARM_CONCURRENCY, queue.length) }, () => worker()),
+  );
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
-  if (!["http:", "https:"].includes(url.protocol)) return;\n\n  // Connectivity probes must always reach the network and must never be cached.\n  if (url.searchParams.has("__alsaif_network_probe")) return;\n\n  if (request.mode === "navigate") {
+  if (!["http:", "https:"].includes(url.protocol)) return;
+
+  // Connectivity probes must always reach the network and must never be cached.
+  if (url.searchParams.has("__alsaif_network_probe")) return;
+
+  if (request.mode === "navigate") {
     event.respondWith(navigationResponse(request));
     return;
   }
@@ -141,29 +254,41 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("message", (event) => {
   const message = event.data || {};
 
+  if (message.type === "SET_OFFLINE_USER") {
+    event.waitUntil(setActiveOfflineUserId(message.userId));
+    return;
+  }
+
+  if (message.type === "WARM_OFFLINE_ROUTES") {
+    event.waitUntil(warmUserRoutes(message.userId, message.urls));
+    return;
+  }
+
+  // Backward-compatible warm-up for static resources only. Route documents are
+  // deliberately excluded because authenticated HTML belongs in per-user caches.
   if (message.type === "WARM_OFFLINE_CACHE" && Array.isArray(message.urls)) {
     event.waitUntil(
       Promise.all(
         message.urls.slice(0, 100).map(async (value) => {
           try {
             const url = new URL(value, self.location.origin);
-            const request = new Request(url.toString(), {
-              credentials: url.origin === self.location.origin ? "same-origin" : "omit",
-            });
+            if (url.origin !== self.location.origin) return;
+            if (url.pathname === "/" || !/\.[a-zA-Z0-9]{2,8}$/.test(url.pathname)) return;
+
+            const request = new Request(url.toString(), { credentials: "same-origin" });
             const response = await fetch(request);
-            const cacheName =
-              url.origin === self.location.origin ? APP_CACHE : MEDIA_CACHE;
-            await putIfCacheable(cacheName, request, response);
+            await putIfCacheable(APP_CACHE, request, response);
           } catch {
-            // Individual resources may be private or transient.
+            // Individual static resources may be transient.
           }
         }),
       ),
     );
+    return;
   }
 
   if (message.type === "CLEAR_OFFLINE_CACHES") {
-    event.waitUntil(Promise.all([caches.delete(APP_CACHE), caches.delete(MEDIA_CACHE)]));
+    event.waitUntil(clearOfflineCaches());
   }
 });
 
