@@ -2869,9 +2869,11 @@ function GameTableSurface({
           {children}
         </div>
       </div>
+      </div>
     </div>
   );
 }
+
 
 function TableBrandSeal({
   logoUrl,
