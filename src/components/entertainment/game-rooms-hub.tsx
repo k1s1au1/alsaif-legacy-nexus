@@ -2300,12 +2300,32 @@ function Results({
   onLobby: () => void;
 }) {
   const ranked = players.slice().sort((a, b) => scoreFor(scores, b.id) - scoreFor(scores, a.id));
+
+  // احتفال الفوز: نغمة انتصار مع مطر ذهبي.
+  useEffect(() => {
+    playGameTone("win");
+  }, []);
+
   return (
-    <Surface className="mx-auto max-w-2xl overflow-hidden p-6 text-center sm:p-10">
-      <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-gold-primary/15">
+    <Surface className="relative mx-auto max-w-2xl overflow-hidden p-6 text-center sm:p-10">
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        {Array.from({ length: 26 }).map((_, index) => (
+          <span
+            key={index}
+            className="arena-confetti"
+            style={{
+              left: `${(index * 3.9) % 100}%`,
+              background: ["#efd078", "#0b5b47", "#d99a3f", "#f6efdf"][index % 4],
+              animationDelay: `${(index % 9) * 0.12}s`,
+              ["--arena-drift" as string]: `${(index % 2 === 0 ? 1 : -1) * (12 + (index % 5) * 9)}px`,
+            }}
+          />
+        ))}
+      </div>
+      <div className="arena-trophy-pop relative mx-auto flex size-20 items-center justify-center rounded-full bg-gold-primary/15 shadow-[0_0_36px_rgba(240,205,120,.45)]">
         <Trophy className="size-10 text-gold-primary" />
       </div>
-      <h3 className="mt-4 text-3xl font-black text-primary">النتيجة النهائية</h3>
+      <h3 className="relative mt-4 text-3xl font-black text-primary">النتيجة النهائية</h3>
       <div className="mt-7 space-y-3 text-right">
         {ranked.map((player, index) => (
           <div key={player.id} className={cn("flex items-center gap-3 rounded-3xl p-4", index === 0 ? "bg-gold-primary/15" : "bg-muted/35")}>
