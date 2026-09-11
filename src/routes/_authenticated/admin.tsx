@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { createFileRoute, Link, useRouterState } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BackgroundUploader } from "@/components/background-uploader";
 import { AppShell } from "@/components/app-shell";
@@ -70,7 +70,6 @@ import { sendFcmNotification } from "@/lib/fcm.functions";
 import { finalizePoll } from "@/lib/api/shura.functions";
 import { SuggestionsManager } from "@/components/admin/suggestions-manager";
 import { ProfileChangeRequests } from "@/components/admin/profile-change-requests";
-import { MembershipAlerts } from "@/components/admin/membership-alerts";
 import "@/admin-executive.css";
 
 
@@ -100,7 +99,6 @@ type ReqRow = {
 type AdminTab =
   | "governance"
   | "requests"
-  | "membership_alerts"
   | "members"
   | "member_requests"
   | "profile_changes"
@@ -161,8 +159,16 @@ const REQ_TABS = [
   { key: "rejected", label: "طلبات مرفوضة" },
 ];
 
+function fetchMembershipRequests() {
+  return supabase
+    .from("account_requests")
+    .select("id,first_name,father_name,grandfather_name,phone,email,status,note,created_at")
+    .order("created_at", { ascending: false });
+}
+
 // Main Admin Page Component for Alsaif Family Hub
 function AdminPage() {
+  const location = useRouterState({ select: (state) => state.location });
   const {
     userId: meId,
     isChairman: isSiteChairman,
@@ -188,6 +194,9 @@ function AdminPage() {
   });
   const [reqTab, setReqTab] = useState("pending");
   const [pendingReqs, setPendingReqs] = useState<ReqRow[]>([]);
+  const [requestsRefreshing, setRequestsRefreshing] = useState(false);
+  const [requestBusyId, setRequestBusyId] = useState<string | null>(null);
+  const requestMutationInFlight = useRef(false);
   const [members, setMembers] = useState<any[]>([]);
   const [memberRequests, setMemberRequests] = useState<any[]>([]);
   const [bugReports, setBugReports] = useState<any[]>([]);
@@ -200,11 +209,10 @@ function AdminPage() {
   });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<AdminTab>("requests");
-  const [reqCounts, setReqCounts] = useState<Record<string, number>>({
-    pending: 0,
-    approved: 0,
-    rejected: 0,
-  });
+  const reqCounts = pendingReqs.reduce<Record<string, number>>((counts, request) => {
+    if (request.status in counts) counts[request.status]++;
+    return counts;
+  }, { pending: 0, approved: 0, rejected: 0 });
   const [fcmTokenCount, setFcmTokenCount] = useState(0);
   const [memberSearch, setMemberSearch] = useState("");
   const [governanceFocus, setGovernanceFocus] = useState<string>("");
@@ -225,6 +233,39 @@ function AdminPage() {
   const approveFn = useServerFn(approveAccountRequest);
   const deleteMemberFn = useServerFn(deleteMemberAccount);
   const sendFcm = useServerFn(sendFcmNotification);
+
+  const refreshMembershipRequests = useCallback(async () => {
+    if (!meId || !isCouncilLeadership) return;
+    setRequestsRefreshing(true);
+    try {
+      const { data, error } = await fetchMembershipRequests();
+      if (error) throw error;
+      setPendingReqs(data ?? []);
+    } catch (error) {
+      console.error("Membership requests refresh failed:", error);
+      toast.error("تعذر تحديث طلبات العضوية");
+    } finally {
+      setRequestsRefreshing(false);
+    }
+  }, [meId, isCouncilLeadership]);
+
+  useEffect(() => {
+    if (!meId || !isCouncilLeadership) return;
+    const channel = supabase
+      .channel(`admin-membership-${meId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "account_requests" }, () => {
+        void refreshMembershipRequests();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [meId, isCouncilLeadership, refreshMembershipRequests]);
+
+  useEffect(() => {
+    if (isCouncilLeadership && location.hash.replace(/^#/, "") === "membership") {
+      setTab("requests");
+      setReqTab("pending");
+    }
+  }, [location, isCouncilLeadership]);
 
   const fetchSystemHealth = useCallback(async () => {
     setHealthLoading(true);
@@ -273,7 +314,9 @@ function AdminPage() {
       if (isA) {
         try {
           const results = await Promise.all([
-            supabase.from("account_requests").select("*").order("created_at", { ascending: false }),
+            isCouncilLeadership
+              ? fetchMembershipRequests()
+              : Promise.resolve({ data: [], error: null }),
             supabase
               .from("profiles")
               .select(
@@ -338,7 +381,12 @@ function AdminPage() {
             );
           }
 
-          setPendingReqs(reqs || []);
+          if (reqsErr) {
+            console.error("Membership requests fetch failed:", reqsErr);
+            toast.error("تعذر تحميل طلبات العضوية");
+          } else {
+            setPendingReqs(reqs || []);
+          }
           setPolls(pollList || []);
           // Enrich member requests with author profile
           const mreqList = (mreqs as any[]) || [];
@@ -418,13 +466,6 @@ function AdminPage() {
               .filter((occasion) => isFamilyOccasionArchived(occasion, archiveNow)),
           });
 
-          const counts = { pending: 0, approved: 0, rejected: 0 };
-          (reqs || []).forEach((r) => {
-            if (counts[r.status as keyof typeof counts] !== undefined) {
-              counts[r.status as keyof typeof counts]++;
-            }
-          });
-          setReqCounts(counts);
         } catch (err) {
           console.error("Admin data load error:", err);
           toast.error("فشل تحميل بعض البيانات الإدارية");
@@ -433,7 +474,7 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [meId, isA, canSeeTechTools, isSiteChairman, primaryRole, activeDayKey]);
+  }, [meId, isA, isCouncilLeadership, canSeeTechTools, isSiteChairman, primaryRole, activeDayKey]);
 
   useEffect(() => {
     loadData();
@@ -453,20 +494,26 @@ function AdminPage() {
   }, [isSiteChairman, tab]);
 
   const updateReqStatus = async (id: string, status: "approved" | "pending" | "rejected") => {
+    if (!isPowerUser || requestMutationInFlight.current) return;
+    requestMutationInFlight.current = true;
+    setRequestBusyId(id);
     try {
       if (status === "approved") {
         const res = await approveFn({ data: { id } });
-        if (res.ok) {
-          toast.success("تم قبول العضو وإنشاء الحساب بنجاح");
-        }
+        if (!res.ok) throw new Error("لم تكتمل الموافقة على طلب العضوية");
+        toast.success("تم قبول العضو وإنشاء الحساب بنجاح");
       } else {
-        await supabase.from("account_requests").update({ status }).eq("id", id);
+        const { error } = await supabase.from("account_requests").update({ status }).eq("id", id);
+        if (error) throw error;
         toast.success("تم تحديث حالة الطلب");
       }
-      loadData();
+      await loadData();
     } catch (err: any) {
       console.error("Approve error:", err);
       toast.error("فشل تحديث الطلب: " + (err.message || "خطأ غير معروف"));
+    } finally {
+      requestMutationInFlight.current = false;
+      setRequestBusyId(null);
     }
   };
 
@@ -592,7 +639,6 @@ function AdminPage() {
       allowedTabs.push(
         "governance",
         "requests",
-        "membership_alerts",
         "members",
         "polls",
         "profile_changes",
@@ -647,19 +693,10 @@ function AdminPage() {
     },
     {
       key: "requests",
-      label: "طلبات العضوية",
+      label: "إدارة العضوية",
       shortLabel: "العضوية",
-      description: "مراجعة طلبات الانضمام واعتماد الأعضاء الجدد.",
+      description: "مراجعة طلبات الانضمام واعتماد الأعضاء ومتابعة الطلبات المقبولة والمرفوضة.",
       icon: UserPlus,
-      count: reqCounts.pending,
-      visible: isCouncilLeadership,
-    },
-    {
-      key: "membership_alerts",
-      label: "إشعارات العضوية",
-      shortLabel: "الإشعارات",
-      description: "سجل مباشر لطلبات العضوية الجديدة وحالات الموافقة والرفض.",
-      icon: BellRing,
       count: reqCounts.pending,
       visible: isCouncilLeadership,
     },
@@ -903,10 +940,6 @@ function AdminPage() {
               <CouncilGovernance focusName={governanceFocus} />
             )}
 
-            {tab === "membership_alerts" && isCouncilLeadership && (
-              <MembershipAlerts canManage={isPowerUser} />
-            )}
-
             {tab === "suggestions" && isCouncilLeadership && <SuggestionsManager />}
 
             {tab === "profile_changes" && isCouncilLeadership && (
@@ -914,7 +947,7 @@ function AdminPage() {
             )}
 
 
-            {tab === "requests" && (
+            {tab === "requests" && isCouncilLeadership && (
               <section className="admin-requests-timeline space-y-8 animate-fade-up">
                 <div className="admin-request-filterbar flex items-center justify-between gap-4 flex-wrap">
                   <div className="admin-request-filter-title flex items-center gap-4">
@@ -939,6 +972,15 @@ function AdminPage() {
                       </button>
                     ))}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => void refreshMembershipRequests()}
+                    disabled={requestsRefreshing || requestBusyId !== null}
+                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-bold text-muted-foreground disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={cn(requestsRefreshing && "animate-spin")} />
+                    تحديث
+                  </button>
                 </div>
                 <div className="admin-request-list grid gap-6">
                   {pendingReqs
@@ -950,6 +992,7 @@ function AdminPage() {
                         onStatus={updateReqStatus}
                         onDelete={deleteReq}
                         canManage={isPowerUser}
+                        disabled={requestBusyId !== null}
                       />
                     ))}
                   {pendingReqs.filter((r) => r.status === reqTab).length === 0 && (
@@ -1613,7 +1656,7 @@ function RoleToggleBtn({ active, onClick, icon, label, activeClass, disabled }: 
   );
 }
 
-function RequestCard({ req, onStatus, onDelete, canManage }: { req: ReqRow; onStatus: any; onDelete: any; canManage: boolean }) {
+function RequestCard({ req, onStatus, onDelete, canManage, disabled = false }: { req: ReqRow; onStatus: any; onDelete: any; canManage: boolean; disabled?: boolean }) {
   const name = [req.first_name, req.father_name, req.grandfather_name].filter(Boolean).join(" ");
   const [expanded, setExpanded] = useState(false);
   return (
@@ -1653,12 +1696,14 @@ function RequestCard({ req, onStatus, onDelete, canManage }: { req: ReqRow; onSt
             <>
               <button
                 onClick={() => onStatus(req.id, "approved")}
+                disabled={disabled}
                 className="admin-request-approve px-8 py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
               >
                 <Check className="size-4" strokeWidth={3} /> قبول
               </button>
               <button
                 onClick={() => onStatus(req.id, "rejected")}
+                disabled={disabled}
                 aria-label="رفض الطلب"
                 className="admin-request-reject size-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
               >
@@ -1679,6 +1724,7 @@ function RequestCard({ req, onStatus, onDelete, canManage }: { req: ReqRow; onSt
           {canManage && (
             <button
               onClick={() => onDelete(req.id)}
+              disabled={disabled}
               aria-label="حذف الطلب"
               className="admin-request-delete size-12 rounded-2xl bg-muted/50 text-muted-foreground flex items-center justify-center hover:bg-primary hover:text-white transition-all"
             >

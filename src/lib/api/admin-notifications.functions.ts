@@ -11,11 +11,11 @@ export const notifyAdminsOfNewRequest = createServerFn({ method: "POST" })
       const admin = await getSupabaseAdmin();
       if (!admin) throw new Error("Admin client not ready");
 
-      // 1. Get all Technical Admins and Chairmen
+      // 1. Notify the council leadership that manages membership requests.
       const { data: privUsers } = await admin
         .from("user_roles")
         .select("user_id")
-        .in("role", ["admin", "chairman"]);
+        .in("role", ["chairman", "vice_chairman"]);
 
       const adminIds = Array.from(new Set((privUsers || []).map(u => u.user_id)));
       if (adminIds.length === 0) return { success: true, count: 0 };
