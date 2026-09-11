@@ -3093,9 +3093,19 @@ function UnoCardFace({
   const style = card.color === "wild" ? {
     backgroundImage: "conic-gradient(from 28deg,#e11d48 0 25%,#f5c430 25% 50%,#16a36c 50% 75%,#1677d2 75%)",
   } : undefined;
-  if (!onClick) return <div className={cardClassName} style={style}>{content}</div>;
+  if (!onClick) return <div className={cn(cardClassName, "arena-card-drop")} style={style}>{content}</div>;
   return (
-    <button type="button" disabled={!active} onClick={onClick} aria-label={`لعب ${label}`} className={cn(cardClassName, active && "transition hover:-translate-y-2 active:scale-95")} style={style}>
+    <button
+      type="button"
+      disabled={!active}
+      onClick={() => {
+        playGameTone("play");
+        onClick();
+      }}
+      aria-label={`لعب ${label}`}
+      className={cn(cardClassName, active && "arena-card-hover active:scale-95")}
+      style={style}
+    >
       {content}
     </button>
   );
