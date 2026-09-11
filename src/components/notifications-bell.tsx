@@ -152,14 +152,15 @@ export function NotificationsBell() {
         }
       });
 
-      // 3) Admin Requests
+      // 3) Membership requests for the same council leadership that can review them.
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-      const isPriv = (roles ?? []).some((r) => r.role === "admin" || r.role === "manager" || r.role === "chairman");
-      if (isPriv) {
+      const canReviewMembership = (roles ?? []).some((r) => r.role === "chairman" || r.role === "vice_chairman");
+      if (canReviewMembership) {
         const { data: reqs } = await supabase
           .from("account_requests")
           .select("id,first_name,created_at")
           .eq("status", "pending")
+          .order("created_at", { ascending: false })
           .limit(5);
         (reqs ?? []).forEach((req) => {
           const notifId = `req-${req.id}`;
@@ -169,7 +170,7 @@ export function NotificationsBell() {
               kind: "account_request",
               title: "طلب انضمام جديد",
               description: `المتقدم: ${req.first_name}`,
-              href: "/admin",
+              href: "/admin#membership",
               at: req.created_at,
               refId: req.id,
             });
@@ -282,24 +283,8 @@ export function NotificationsBell() {
       }
     }
 
-    // Auto-dismiss admin requests if user is on admin page
-    if (pathname === "/admin") {
-      const reqs = items.filter(i => i.kind === "account_request");
-      if (reqs.length > 0) {
-        reqs.forEach(r => {
-          let dismissed: string[] = [];
-          try {
-            const raw = localStorage.getItem("dismissed_notifs");
-            dismissed = raw ? JSON.parse(raw) : [];
-          } catch {}
-          if (!dismissed.includes(r.id)) {
-            dismissed.push(r.id);
-            localStorage.setItem("dismissed_notifs", JSON.stringify(dismissed.slice(-50)));
-          }
-        });
-        setItems(prev => prev.filter(i => i.kind !== "account_request"));
-      }
-    }
+    // Membership alerts remain until opened/dismissed or the request is reviewed.
+    // Visiting another administration section must not mark them as read.
   }, [pathname, items.length]);
 
   useEffect(() => {
