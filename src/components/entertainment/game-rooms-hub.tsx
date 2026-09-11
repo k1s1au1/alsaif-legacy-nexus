@@ -3532,7 +3532,7 @@ function DealPublicPropertyCard({
       onClick={onTarget}
       aria-label={targetable ? `استحواذ على ${card.label}` : `${card.label}${protectedProperty ? "، مجموعة محمية" : ""}`}
       className={cn(
-        "relative flex h-[70px] w-12 shrink-0 flex-col overflow-hidden rounded-[9px] border-2 border-[#fff9e8] bg-[#fbf4e5] text-[#123c32] shadow-[0_7px_15px_-7px_rgba(0,0,0,.9)] transition sm:h-24 sm:w-16 landscape:!h-[88px] landscape:!w-[60px]",
+        "arena-card-gloss arena-card-hover relative flex h-[62px] w-[42px] shrink-0 flex-col overflow-hidden rounded-[9px] border-2 border-[#fff9e8] bg-[#fbf4e5] text-[#123c32] shadow-[0_7px_15px_-7px_rgba(0,0,0,.9)] transition sm:h-[76px] sm:w-[52px] lg:h-[92px] lg:w-[62px] landscape:!h-[80px] landscape:!w-[54px]",
         targetable && "-translate-y-1 cursor-pointer ring-2 ring-[#ffd66e] shadow-[0_0_20px_rgba(255,209,92,.75)]",
         protectedProperty && "opacity-80",
       )}
