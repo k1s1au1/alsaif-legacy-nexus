@@ -2826,16 +2826,33 @@ function GameTableSurface({
       : "from-[#d9b568] via-[#68401f] to-[#bd8b3e]";
   const heritageTable = trim === "gold";
   return (
-    <div
-      className={cn(
-        "rounded-[48%] bg-gradient-to-br p-[6px] shadow-[0_34px_70px_-30px_rgba(0,0,0,.95)] sm:rounded-[38px] sm:p-[7px]",
-        heritageTable && "p-[9px] sm:p-[10px]",
-        trimClass,
-      )}
-      style={heritageTable ? {
-        backgroundImage: "repeating-linear-gradient(112deg,#2d170b 0 9px,#7a4b25 9px 17px,#3b2110 17px 24px,#a46d35 24px 30px)",
-      } : undefined}
-    >
+    <div className="arena-majlis">
+      {/* ضوء المجلس المعلّق فوق الطاولة */}
+      <div aria-hidden className="arena-lamp" />
+      {/* وسائد المجلس حول الطاولة */}
+      <div aria-hidden className="arena-cushion left-1/2 top-0 h-3 w-32 -translate-x-1/2" />
+      <div aria-hidden className="arena-cushion bottom-0 left-1/2 h-3 w-32 -translate-x-1/2" />
+      <div aria-hidden className="arena-cushion left-0 top-1/2 h-28 w-3 -translate-y-1/2" />
+      <div aria-hidden className="arena-cushion right-0 top-1/2 h-28 w-3 -translate-y-1/2" />
+      {/* غبار ضوئي خفيف */}
+      {[12, 34, 58, 76, 90].map((left, index) => (
+        <span
+          key={left}
+          aria-hidden
+          className="arena-dust"
+          style={{ left: `${left}%`, bottom: "18%", animationDelay: `${index * 1.3}s` }}
+        />
+      ))}
+      <div
+        className={cn(
+          "relative rounded-[48%] bg-gradient-to-br p-[6px] shadow-[0_34px_70px_-30px_rgba(0,0,0,.95)] sm:rounded-[38px] sm:p-[7px]",
+          heritageTable && "p-[9px] sm:p-[10px]",
+          trimClass,
+        )}
+        style={heritageTable ? {
+          backgroundImage: "repeating-linear-gradient(112deg,#2d170b 0 9px,#7a4b25 9px 17px,#3b2110 17px 24px,#a46d35 24px 30px)",
+        } : undefined}
+      >
       <div className="rounded-[47%] bg-gradient-to-br from-[#f2d58b] via-[#8f602f] to-[#e6c06a] p-[2px] sm:rounded-[32px]">
         <div
           className={cn("relative isolate overflow-hidden rounded-[46%] border border-[#f2d999]/45 bg-[#073d32] text-white shadow-[inset_0_18px_35px_rgba(255,255,255,.025),inset_0_-28px_50px_rgba(0,0,0,.28)] sm:rounded-[29px]", className)}
