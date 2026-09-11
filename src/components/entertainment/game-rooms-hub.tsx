@@ -2334,7 +2334,7 @@ type GameExperiencePreferences = {
 };
 
 const GAME_PREFERENCES_KEY = "alsaif-game-experience-v2";
-let gameAudioContext: AudioContext | null = null;
+
 
 function useGameExperiencePreferences() {
   const [preferences, setPreferences] = useState<GameExperiencePreferences>(() => {
