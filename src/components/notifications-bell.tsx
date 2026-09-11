@@ -30,6 +30,7 @@ type Notif = {
   title: string;
   description: string;
   href: string;
+  hash?: string;
   at: string;
   refId?: string; // Original ID from DB
 };
@@ -170,7 +171,8 @@ export function NotificationsBell() {
               kind: "account_request",
               title: "طلب انضمام جديد",
               description: `المتقدم: ${req.first_name}`,
-              href: "/admin#membership",
+              href: "/admin",
+              hash: "membership",
               at: req.created_at,
               refId: req.id,
             });
@@ -357,6 +359,7 @@ export function NotificationsBell() {
               <Link
                 key={n.id}
                 to={n.href}
+                hash={n.hash}
                 onClick={() => handleNotifClick(n)}
                 className="flex items-start gap-4 px-6 py-5 hover:bg-primary/5 transition-all border-b border-border/40 last:border-b-0 group"
               >
