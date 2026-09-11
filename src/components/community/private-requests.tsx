@@ -3,13 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/use-user-role";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { MemberDialog } from "@/components/community/member-dialog";
 import {
   Lock,
   Plus,
   Send,
   Loader2,
-  X,
   ShieldCheck,
   Inbox,
   ChevronLeft,
@@ -190,29 +189,27 @@ export function PrivateRequestsSection() {
         )}
       </div>
 
-      <AnimatePresence>
-        {showAdd && (
-          <AddRequestDialog
-            meId={meId}
-            onClose={() => setShowAdd(false)}
-            onSaved={() => {
-              setShowAdd(false);
-              void load();
-            }}
-          />
-        )}
-        {openRequest && (
-          <RequestThreadDialog
-            request={openRequest}
-            meId={meId}
-            canManageStatus={
-              openRequest.visibility === "chairman_only" ? isChairman : isCouncilLeadership
-            }
-            onClose={() => setOpenId(null)}
-            onChanged={load}
-          />
-        )}
-      </AnimatePresence>
+      {showAdd && (
+        <AddRequestDialog
+          meId={meId}
+          onClose={() => setShowAdd(false)}
+          onSaved={() => {
+            setShowAdd(false);
+            void load();
+          }}
+        />
+      )}
+      {openRequest && (
+        <RequestThreadDialog
+          request={openRequest}
+          meId={meId}
+          canManageStatus={
+            openRequest.visibility === "chairman_only" ? isChairman : isCouncilLeadership
+          }
+          onClose={() => setOpenId(null)}
+          onChanged={load}
+        />
+      )}
     </section>
   );
 }
@@ -256,27 +253,14 @@ function AddRequestDialog({ meId, onClose, onSaved }: any) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl"
-      dir="rtl"
+    <MemberDialog
+      title="طلب خاص جديد"
+      description="أرسل طلبك الخاص إلى رئيس المجلس أو القيادة وحدد من يستطيع الاطلاع عليه."
+      icon={<Lock size={20} />}
+      onClose={onClose}
     >
-      <motion.div
-        initial={{ scale: 0.92, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-card w-full max-w-xl rounded-[36px] overflow-hidden shadow-2xl border border-border flex flex-col max-h-[90vh]"
-      >
-        <header className="p-6 border-b border-border/40 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-2xl bg-primary flex items-center justify-center text-white">
-              <Lock size={20} />
-            </div>
-            <h3 className="text-lg font-black text-primary">طلب خاص جديد</h3>
-          </div>
-          <button onClick={onClose} className="size-10 rounded-full bg-muted flex items-center justify-center">
-            <X size={18} />
-          </button>
-        </header>
-        <form onSubmit={submit} className="p-6 space-y-5 overflow-y-auto no-scrollbar text-foreground">
+      <form onSubmit={submit} className="member-dialog-form text-foreground">
+        <div className="member-dialog-scroll space-y-5">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -319,21 +303,21 @@ function AddRequestDialog({ meId, onClose, onSaved }: any) {
               ))}
             </div>
           </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 py-4 rounded-2xl font-black text-muted-foreground">
-              تراجع
-            </button>
-            <button
-              disabled={saving}
-              type="submit"
-              className="flex-[2] btn-gold py-4 rounded-2xl font-black flex items-center justify-center gap-2"
-            >
-              {saving ? <Loader2 className="animate-spin size-5" /> : <><Send size={17} /><span>إرسال</span></>}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
+        </div>
+        <div className="member-dialog-actions">
+          <button type="button" onClick={onClose} className="flex-1 py-4 rounded-2xl font-black text-muted-foreground">
+            تراجع
+          </button>
+          <button
+            disabled={saving}
+            type="submit"
+            className="flex-[2] btn-gold py-4 rounded-2xl font-black flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 className="animate-spin size-5" /> : <><Send size={17} /><span>إرسال</span></>}
+          </button>
+        </div>
+      </form>
+    </MemberDialog>
   );
 }
 
@@ -408,27 +392,17 @@ function RequestThreadDialog({ request, meId, canManageStatus, onClose, onChange
     people[request.author_id]?.arabic_name || people[request.author_id]?.full_name || "عضو";
 
   return (
-    <div
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl"
-      dir="rtl"
+    <MemberDialog
+      title={request.title}
+      description={`محادثة الطلب الخاص — ${VISIBILITY_META[request.visibility as Visibility]}`}
+      onClose={onClose}
+      wide
     >
-      <motion.div
-        initial={{ scale: 0.92, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-card w-full max-w-2xl rounded-[36px] overflow-hidden shadow-2xl border border-border flex flex-col max-h-[90vh]"
-      >
-        <header className="p-5 md:p-6 border-b border-border/40 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <h3 className="text-lg font-black text-primary truncate">{request.title}</h3>
-              <p className="text-[11px] font-bold text-muted-foreground">
-                من: {authorName} · {VISIBILITY_META[request.visibility as Visibility]}
-              </p>
-            </div>
-            <button onClick={onClose} className="size-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-              <X size={18} />
-            </button>
-          </div>
+      <div className="member-dialog-scroll space-y-4">
+        <div className="space-y-3">
+          <p className="text-[11px] font-bold text-muted-foreground">
+            من: {authorName} · {VISIBILITY_META[request.visibility as Visibility]}
+          </p>
           <div className="flex flex-wrap gap-2">
             {canManageStatus ? (
               STATUS_ORDER.map((s) => (
@@ -456,66 +430,65 @@ function RequestThreadDialog({ request, meId, canManageStatus, onClose, onChange
               </span>
             )}
           </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto no-scrollbar p-5 md:p-6 space-y-4">
-          <div className="p-4 rounded-3xl bg-muted/40 border border-border/50">
-            <p className="text-sm font-bold text-foreground whitespace-pre-wrap">{request.body}</p>
-          </div>
-          {loading ? (
-            <div className="py-10 text-center">
-              <Loader2 className="animate-spin size-7 mx-auto text-primary opacity-30" />
-            </div>
-          ) : (
-            msgs.map((m) => {
-              const mine = m.sender_id === meId;
-              const name = people[m.sender_id]?.arabic_name || people[m.sender_id]?.full_name || "عضو";
-              return (
-                <div key={m.id} className={cn("flex gap-3 items-start", mine && "flex-row-reverse")}>
-                  <div className="size-9 rounded-2xl overflow-hidden shrink-0">
-                    <UserAvatar
-                      path={people[m.sender_id]?.avatar_url}
-                      name={name}
-                      className="size-full"
-                      userId={m.sender_id}
-                    />
-                  </div>
-                  <div
-                    className={cn(
-                      "flex-1 rounded-3xl p-4 max-w-[80%]",
-                      mine ? "bg-primary/10 border border-primary/20" : "bg-muted/40 border border-border/50",
-                    )}
-                  >
-                    <p className="text-[11px] font-black text-primary mb-1">{name}</p>
-                    <p className="text-sm font-bold text-foreground whitespace-pre-wrap">{m.body}</p>
-                  </div>
-                </div>
-              );
-            })
-          )}
-          {!loading && msgs.length === 0 && (
-            <p className="text-center text-xs font-bold text-muted-foreground py-4">
-              لا توجد ردود بعد.
-            </p>
-          )}
         </div>
+        <div className="p-4 rounded-3xl bg-muted/40 border border-border/50">
+          <p className="text-sm font-bold text-foreground whitespace-pre-wrap">{request.body}</p>
+        </div>
+        {loading ? (
+          <div className="py-10 text-center">
+            <Loader2 className="animate-spin size-7 mx-auto text-primary opacity-30" />
+          </div>
+        ) : (
+          msgs.map((m) => {
+            const mine = m.sender_id === meId;
+            const name = people[m.sender_id]?.arabic_name || people[m.sender_id]?.full_name || "عضو";
+            return (
+              <div key={m.id} className={cn("flex gap-3 items-start", mine && "flex-row-reverse")}>
+                <div className="size-9 rounded-2xl overflow-hidden shrink-0">
+                  <UserAvatar
+                    path={people[m.sender_id]?.avatar_url}
+                    name={name}
+                    className="size-full"
+                    userId={m.sender_id}
+                  />
+                </div>
+                <div
+                  className={cn(
+                    "flex-1 rounded-3xl p-4 max-w-[80%]",
+                    mine ? "bg-primary/10 border border-primary/20" : "bg-muted/40 border border-border/50",
+                  )}
+                >
+                  <p className="text-[11px] font-black text-primary mb-1">{name}</p>
+                  <p className="text-sm font-bold text-foreground whitespace-pre-wrap">{m.body}</p>
+                </div>
+              </div>
+            );
+          })
+        )}
+        {!loading && msgs.length === 0 && (
+          <p className="text-center text-xs font-bold text-muted-foreground py-4">
+            لا توجد ردود بعد.
+          </p>
+        )}
+      </div>
 
-        <form onSubmit={send} className="p-4 border-t border-border/40 flex gap-2">
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="اكتب رداً خاصاً..."
-            className="flex-1 h-12 px-5 rounded-2xl bg-muted/40 border border-border/60 font-bold text-sm outline-none"
-          />
-          <button
-            disabled={sending || !text.trim()}
-            type="submit"
-            className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center disabled:opacity-40"
-          >
-            {sending ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
-          </button>
-        </form>
-      </motion.div>
-    </div>
+      <form onSubmit={send} className="member-dialog-actions">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="اكتب رداً خاصاً..."
+          aria-label="الرد الخاص"
+          className="min-w-0 flex-1 h-12 px-5 rounded-2xl bg-muted/40 border border-border/60 font-bold text-sm outline-none"
+        />
+        <button
+          disabled={sending || !text.trim()}
+          type="submit"
+          aria-label="إرسال الرد"
+          className="size-12 shrink-0 rounded-2xl bg-primary text-white flex items-center justify-center disabled:opacity-40"
+        >
+          {sending ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
+        </button>
+      </form>
+    </MemberDialog>
   );
 }
