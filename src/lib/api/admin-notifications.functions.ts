@@ -26,7 +26,7 @@ export const notifyAdminsOfNewRequest = createServerFn({ method: "POST" })
           title: "👤 طلب عضوية جديد",
           body: `قدم ${data.name} طلباً للانضمام لعائلة السيف. يرجى المراجعة والقبول.`,
           user_ids: adminIds,
-          url: "/admin#membership"
+          url: "/admin"
         }
       });
 
