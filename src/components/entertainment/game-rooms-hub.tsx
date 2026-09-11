@@ -2300,12 +2300,32 @@ function Results({
   onLobby: () => void;
 }) {
   const ranked = players.slice().sort((a, b) => scoreFor(scores, b.id) - scoreFor(scores, a.id));
+
+  // احتفال الفوز: نغمة انتصار مع مطر ذهبي.
+  useEffect(() => {
+    playGameTone("win");
+  }, []);
+
   return (
-    <Surface className="mx-auto max-w-2xl overflow-hidden p-6 text-center sm:p-10">
-      <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-gold-primary/15">
+    <Surface className="relative mx-auto max-w-2xl overflow-hidden p-6 text-center sm:p-10">
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        {Array.from({ length: 26 }).map((_, index) => (
+          <span
+            key={index}
+            className="arena-confetti"
+            style={{
+              left: `${(index * 3.9) % 100}%`,
+              background: ["#efd078", "#0b5b47", "#d99a3f", "#f6efdf"][index % 4],
+              animationDelay: `${(index % 9) * 0.12}s`,
+              ["--arena-drift" as string]: `${(index % 2 === 0 ? 1 : -1) * (12 + (index % 5) * 9)}px`,
+            }}
+          />
+        ))}
+      </div>
+      <div className="arena-trophy-pop relative mx-auto flex size-20 items-center justify-center rounded-full bg-gold-primary/15 shadow-[0_0_36px_rgba(240,205,120,.45)]">
         <Trophy className="size-10 text-gold-primary" />
       </div>
-      <h3 className="mt-4 text-3xl font-black text-primary">النتيجة النهائية</h3>
+      <h3 className="relative mt-4 text-3xl font-black text-primary">النتيجة النهائية</h3>
       <div className="mt-7 space-y-3 text-right">
         {ranked.map((player, index) => (
           <div key={player.id} className={cn("flex items-center gap-3 rounded-3xl p-4", index === 0 ? "bg-gold-primary/15" : "bg-muted/35")}>
@@ -2334,7 +2354,7 @@ type GameExperiencePreferences = {
 };
 
 const GAME_PREFERENCES_KEY = "alsaif-game-experience-v2";
-let gameAudioContext: AudioContext | null = null;
+
 
 function useGameExperiencePreferences() {
   const [preferences, setPreferences] = useState<GameExperiencePreferences>(() => {
@@ -2826,16 +2846,33 @@ function GameTableSurface({
       : "from-[#d9b568] via-[#68401f] to-[#bd8b3e]";
   const heritageTable = trim === "gold";
   return (
-    <div
-      className={cn(
-        "rounded-[48%] bg-gradient-to-br p-[6px] shadow-[0_34px_70px_-30px_rgba(0,0,0,.95)] sm:rounded-[38px] sm:p-[7px]",
-        heritageTable && "p-[9px] sm:p-[10px]",
-        trimClass,
-      )}
-      style={heritageTable ? {
-        backgroundImage: "repeating-linear-gradient(112deg,#2d170b 0 9px,#7a4b25 9px 17px,#3b2110 17px 24px,#a46d35 24px 30px)",
-      } : undefined}
-    >
+    <div className="arena-majlis">
+      {/* ضوء المجلس المعلّق فوق الطاولة */}
+      <div aria-hidden className="arena-lamp" />
+      {/* وسائد المجلس حول الطاولة */}
+      <div aria-hidden className="arena-cushion left-1/2 top-0 h-3 w-32 -translate-x-1/2" />
+      <div aria-hidden className="arena-cushion bottom-0 left-1/2 h-3 w-32 -translate-x-1/2" />
+      <div aria-hidden className="arena-cushion left-0 top-1/2 h-28 w-3 -translate-y-1/2" />
+      <div aria-hidden className="arena-cushion right-0 top-1/2 h-28 w-3 -translate-y-1/2" />
+      {/* غبار ضوئي خفيف */}
+      {[12, 34, 58, 76, 90].map((left, index) => (
+        <span
+          key={left}
+          aria-hidden
+          className="arena-dust"
+          style={{ left: `${left}%`, bottom: "18%", animationDelay: `${index * 1.3}s` }}
+        />
+      ))}
+      <div
+        className={cn(
+          "relative rounded-[48%] bg-gradient-to-br p-[6px] shadow-[0_34px_70px_-30px_rgba(0,0,0,.95)] sm:rounded-[38px] sm:p-[7px]",
+          heritageTable && "p-[9px] sm:p-[10px]",
+          trimClass,
+        )}
+        style={heritageTable ? {
+          backgroundImage: "repeating-linear-gradient(112deg,#2d170b 0 9px,#7a4b25 9px 17px,#3b2110 17px 24px,#a46d35 24px 30px)",
+        } : undefined}
+      >
       <div className="rounded-[47%] bg-gradient-to-br from-[#f2d58b] via-[#8f602f] to-[#e6c06a] p-[2px] sm:rounded-[32px]">
         <div
           className={cn("relative isolate overflow-hidden rounded-[46%] border border-[#f2d999]/45 bg-[#073d32] text-white shadow-[inset_0_18px_35px_rgba(255,255,255,.025),inset_0_-28px_50px_rgba(0,0,0,.28)] sm:rounded-[29px]", className)}
@@ -2852,9 +2889,11 @@ function GameTableSurface({
           {children}
         </div>
       </div>
+      </div>
     </div>
   );
 }
+
 
 function TableBrandSeal({
   logoUrl,
@@ -2958,7 +2997,7 @@ function CardinalPlayerSeat({
         <span className="absolute -right-0.5 -top-1 z-10 flex size-5 items-center justify-center rounded-full bg-[#efd078] text-[9px] font-black text-[#07382e] shadow">{cardCount}</span>
       </div>
 
-      <div className={cn("relative rounded-full border-2 bg-[#062d26] p-1 shadow-xl transition", ringClass, active && "scale-105 shadow-[0_0_24px_rgba(238,198,103,.75)] ring-4 ring-[#efd078]/20")}>
+      <div className={cn("relative rounded-full border-2 bg-[#062d26] p-1 shadow-xl transition", ringClass, active && "arena-turn-glow scale-105 ring-4 ring-[#efd078]/20")}>
         <PlayerAvatar player={player} size="sm" />
         {active && <span className="absolute -right-1 -top-1 size-3 animate-pulse rounded-full border-2 border-[#052d26] bg-emerald-400" />}
       </div>
@@ -3009,7 +3048,7 @@ function CardHandTray({
 }) {
   return (
     <div className={cn("rounded-[32px] bg-gradient-to-br from-[#b58a43] via-[#5d381d] to-[#9d6d30] p-1.5 shadow-[0_18px_40px_-28px_rgba(0,0,0,.85)]", immersive && "sticky bottom-0 z-30 rounded-b-none")}>
-      <div className={cn("flex min-h-48 gap-2 overflow-x-auto rounded-[26px] border border-[#e7cb8e]/30 bg-[#07382f] p-4 pb-5", className)}>
+      <div className={cn("arena-tray flex min-h-48 gap-2 overflow-x-auto rounded-[26px] border border-[#e7cb8e]/30 bg-[#07382f] p-4 pb-5", className)}>
         {children}
       </div>
     </div>
@@ -3074,9 +3113,19 @@ function UnoCardFace({
   const style = card.color === "wild" ? {
     backgroundImage: "conic-gradient(from 28deg,#e11d48 0 25%,#f5c430 25% 50%,#16a36c 50% 75%,#1677d2 75%)",
   } : undefined;
-  if (!onClick) return <div className={cardClassName} style={style}>{content}</div>;
+  if (!onClick) return <div className={cn(cardClassName, "arena-card-drop")} style={style}>{content}</div>;
   return (
-    <button type="button" disabled={!active} onClick={onClick} aria-label={`لعب ${label}`} className={cn(cardClassName, active && "transition hover:-translate-y-2 active:scale-95")} style={style}>
+    <button
+      type="button"
+      disabled={!active}
+      onClick={() => {
+        playGameTone("play");
+        onClick();
+      }}
+      aria-label={`لعب ${label}`}
+      className={cn(cardClassName, active && "arena-card-hover active:scale-95")}
+      style={style}
+    >
       {content}
     </button>
   );
@@ -3159,7 +3208,7 @@ function UnoRoom({
           <div className="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
             <div className="relative flex h-[230px] w-[190px] items-center justify-center sm:h-[285px] sm:w-[245px]">
               <TableBrandSeal logoUrl={logoUrl} className="absolute left-1/2 top-1/2 size-20 -translate-x-1/2 -translate-y-1/2 opacity-90 sm:size-28" />
-              <button type="button" aria-label="سحب ورقة من رزمة أونو" disabled={!amActive || Boolean(data.drawnCardId)} onClick={() => void dispatch("uno-draw")} className="absolute right-0 top-1/2 -translate-y-1/2 transition enabled:hover:-translate-y-[54%] enabled:active:scale-95 disabled:opacity-55">
+              <button type="button" aria-label="سحب ورقة من رزمة أونو" disabled={!amActive || Boolean(data.drawnCardId)} onClick={() => { playGameTone("draw"); void dispatch("uno-draw"); }} className="absolute right-0 top-1/2 -translate-y-1/2 transition enabled:hover:-translate-y-[54%] enabled:active:scale-95 disabled:opacity-55">
                 <BrandedCardBack label={amActive ? "اسحب" : "أونو"} count={data.drawPile.length} compact className="h-[102px] w-[68px] sm:h-28 sm:w-[76px]" />
               </button>
               <div className="absolute left-0 top-1/2 -translate-y-1/2 -rotate-3"><UnoCardFace card={top} small /></div>
@@ -4385,9 +4434,18 @@ function BalootCardFace({
     mini ? "h-[70px] w-12 rounded-[11px] border-2" : compact ? "h-[106px] w-[72px]" : "h-[154px] w-[104px] sm:h-[184px] sm:w-[122px]",
     active ? "ring-2 ring-[#f0ce76]/35" : "opacity-35 saturate-50",
   );
-  if (!onClick) return <div className={className}>{content}</div>;
+  if (!onClick) return <div className={cn(className, "arena-card-drop")}>{content}</div>;
   return (
-    <button type="button" disabled={!active} onClick={onClick} aria-label={`لعب ${card.rank} ${BALOOT_SUIT_LABEL[card.suit]}`} className={cn(className, active && "transition hover:-translate-y-2 active:scale-95")}>
+    <button
+      type="button"
+      disabled={!active}
+      onClick={() => {
+        playGameTone("play");
+        onClick();
+      }}
+      aria-label={`لعب ${card.rank} ${BALOOT_SUIT_LABEL[card.suit]}`}
+      className={cn(className, active && "arena-card-hover active:scale-95")}
+    >
       {content}
     </button>
   );
