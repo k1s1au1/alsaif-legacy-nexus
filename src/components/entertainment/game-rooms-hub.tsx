@@ -2997,7 +2997,7 @@ function CardinalPlayerSeat({
         <span className="absolute -right-0.5 -top-1 z-10 flex size-5 items-center justify-center rounded-full bg-[#efd078] text-[9px] font-black text-[#07382e] shadow">{cardCount}</span>
       </div>
 
-      <div className={cn("relative rounded-full border-2 bg-[#062d26] p-1 shadow-xl transition", ringClass, active && "scale-105 shadow-[0_0_24px_rgba(238,198,103,.75)] ring-4 ring-[#efd078]/20")}>
+      <div className={cn("relative rounded-full border-2 bg-[#062d26] p-1 shadow-xl transition", ringClass, active && "arena-turn-glow scale-105 ring-4 ring-[#efd078]/20")}>
         <PlayerAvatar player={player} size="sm" />
         {active && <span className="absolute -right-1 -top-1 size-3 animate-pulse rounded-full border-2 border-[#052d26] bg-emerald-400" />}
       </div>
