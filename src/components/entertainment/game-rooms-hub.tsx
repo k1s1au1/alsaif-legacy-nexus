@@ -4414,9 +4414,18 @@ function BalootCardFace({
     mini ? "h-[70px] w-12 rounded-[11px] border-2" : compact ? "h-[106px] w-[72px]" : "h-[154px] w-[104px] sm:h-[184px] sm:w-[122px]",
     active ? "ring-2 ring-[#f0ce76]/35" : "opacity-35 saturate-50",
   );
-  if (!onClick) return <div className={className}>{content}</div>;
+  if (!onClick) return <div className={cn(className, "arena-card-drop")}>{content}</div>;
   return (
-    <button type="button" disabled={!active} onClick={onClick} aria-label={`لعب ${card.rank} ${BALOOT_SUIT_LABEL[card.suit]}`} className={cn(className, active && "transition hover:-translate-y-2 active:scale-95")}>
+    <button
+      type="button"
+      disabled={!active}
+      onClick={() => {
+        playGameTone("play");
+        onClick();
+      }}
+      aria-label={`لعب ${card.rank} ${BALOOT_SUIT_LABEL[card.suit]}`}
+      className={cn(className, active && "arena-card-hover active:scale-95")}
+    >
       {content}
     </button>
   );
