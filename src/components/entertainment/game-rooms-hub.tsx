@@ -3208,7 +3208,7 @@ function UnoRoom({
           <div className="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
             <div className="relative flex h-[230px] w-[190px] items-center justify-center sm:h-[285px] sm:w-[245px]">
               <TableBrandSeal logoUrl={logoUrl} className="absolute left-1/2 top-1/2 size-20 -translate-x-1/2 -translate-y-1/2 opacity-90 sm:size-28" />
-              <button type="button" aria-label="سحب ورقة من رزمة أونو" disabled={!amActive || Boolean(data.drawnCardId)} onClick={() => void dispatch("uno-draw")} className="absolute right-0 top-1/2 -translate-y-1/2 transition enabled:hover:-translate-y-[54%] enabled:active:scale-95 disabled:opacity-55">
+              <button type="button" aria-label="سحب ورقة من رزمة أونو" disabled={!amActive || Boolean(data.drawnCardId)} onClick={() => { playGameTone("draw"); void dispatch("uno-draw"); }} className="absolute right-0 top-1/2 -translate-y-1/2 transition enabled:hover:-translate-y-[54%] enabled:active:scale-95 disabled:opacity-55">
                 <BrandedCardBack label={amActive ? "اسحب" : "أونو"} count={data.drawPile.length} compact className="h-[102px] w-[68px] sm:h-28 sm:w-[76px]" />
               </button>
               <div className="absolute left-0 top-1/2 -translate-y-1/2 -rotate-3"><UnoCardFace card={top} small /></div>
