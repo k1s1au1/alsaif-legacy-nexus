@@ -570,10 +570,14 @@ export function DesktopDashboardExtras({
           )}
         </section>
 
-        <section className="desktop-follow-panel">
+        <section
+          className="desktop-follow-panel"
+          data-dashboard-quick-followup="true"
+          aria-labelledby="desktop-quick-followup-title"
+        >
           <div className="desktop-section-head">
             <div>
-              <h2>المتابعة السريعة</h2>
+              <h2 id="desktop-quick-followup-title">المتابعة السريعة</h2>
               <p>الاجتماعات والرحلات والمهام ومناسبات العائلة القادمة</p>
             </div>
             <button

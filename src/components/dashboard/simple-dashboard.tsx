@@ -1,6 +1,7 @@
 import { listOccasions } from "@/lib/api/occasions";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
-import { Link } from "@tanstack/react-router";
+import { IntegratedHub } from "@/components/dashboard/integrated-hub";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Accessibility,
   CalendarDays,
@@ -8,29 +9,19 @@ import {
   MessageCircle,
   Newspaper,
   PartyPopper,
-  Plane,
   RotateCcw,
-  Users,
-  type LucideIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import "./simple-dashboard.css";
 
 type SimpleDashboardProps = {
   name: string;
   meetings?: any[];
   trips?: any[];
+  tasks?: any[];
+  tasksCount?: number;
   announcements?: any[];
   onExit: () => void;
-};
-
-type UpcomingItem = {
-  id: string;
-  title: string;
-  kind: string;
-  date: Date;
-  to: string;
-  icon: LucideIcon;
 };
 
 const parseDate = (value?: string | null) => {
@@ -44,22 +35,17 @@ const occasionDate = (occasion: any) => {
   return parseDate(`${occasion.date}T${occasion.time || "12:00"}:00`);
 };
 
-const formatEventDate = (date: Date) =>
-  date.toLocaleDateString("ar-SA", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-
 export function SimpleDashboard({
   name,
   meetings = [],
   trips = [],
+  tasks = [],
+  tasksCount = 0,
   announcements = [],
   onExit,
 }: SimpleDashboardProps) {
+  const navigate = useNavigate();
   const activeDayKey = useDayBoundaryKey();
-  const today = useMemo(() => new Date(), [activeDayKey]);
   const [occasions, setOccasions] = useState<any[]>([]);
 
   useEffect(() => {
@@ -92,55 +78,7 @@ export function SimpleDashboard({
     };
   }, [activeDayKey]);
 
-  const nextItem = useMemo<UpcomingItem | null>(() => {
-    const startOfToday = new Date(today);
-    startOfToday.setHours(0, 0, 0, 0);
-    const rows: UpcomingItem[] = [];
-
-    meetings.forEach((meeting: any) => {
-      const date = parseDate(meeting?.scheduled_at);
-      if (!meeting?.id || !date || date < startOfToday) return;
-      rows.push({
-        id: `meeting-${meeting.id}`,
-        title: meeting.title || "اجتماع العائلة",
-        kind: "اجتماع",
-        date,
-        to: "/meetings",
-        icon: Users,
-      });
-    });
-
-    trips.forEach((trip: any) => {
-      const date = parseDate(trip?.start_date);
-      if (!trip?.id || !date || date < startOfToday) return;
-      rows.push({
-        id: `trip-${trip.id}`,
-        title: trip.title || "ترفيه عائلي",
-        kind: "رحلة",
-        date,
-        to: "/trips",
-        icon: Plane,
-      });
-    });
-
-    occasions.forEach((occasion: any) => {
-      const date = occasionDate(occasion);
-      if (!occasion?.id || !date || date < startOfToday) return;
-      rows.push({
-        id: `occasion-${occasion.id}`,
-        title: occasion.title || "مناسبة عائلية",
-        kind: "مناسبة",
-        date,
-        to: "/family-occasions",
-        icon: PartyPopper,
-      });
-    });
-
-    return rows.sort((a, b) => a.date.getTime() - b.date.getTime())[0] || null;
-  }, [meetings, occasions, today, trips]);
-
   const firstName = name.trim().split(/\s+/)[0] || "عضو العائلة";
-  const EventIcon = nextItem?.icon || CalendarDays;
   const services = [
     {
       to: "/majlis",
@@ -196,26 +134,14 @@ export function SimpleDashboard({
         <span>كل ما تحتاجه أمامك بوضوح</span>
       </header>
 
-      <Link
-        to={(nextItem?.to || "/calendar") as any}
-        className="simple-home__next-event"
-        aria-label={nextItem ? `عرض تفاصيل ${nextItem.title}` : "فتح تقويم العائلة"}
-      >
-        <span className="simple-home__event-icon" aria-hidden="true">
-          <EventIcon />
-        </span>
-        <span className="simple-home__event-copy">
-          <small>{nextItem ? `الموعد القادم · ${nextItem.kind}` : "المواعيد القادمة"}</small>
-          <h2>{nextItem?.title || "لا توجد مواعيد قريبة"}</h2>
-          <time dateTime={nextItem?.date.toISOString()}>
-            {nextItem ? formatEventDate(nextItem.date) : "يمكنك الاطلاع على تقويم العائلة"}
-          </time>
-        </span>
-        <span className="simple-home__event-action">
-          {nextItem ? "عرض التفاصيل" : "فتح التقويم"}
-          <ChevronLeft aria-hidden="true" />
-        </span>
-      </Link>
+      <IntegratedHub
+        upcomingMeetings={meetings}
+        upcomingTrips={trips}
+        upcomingTasks={tasks}
+        tasksCount={tasksCount}
+        onViewTrip={() => void navigate({ to: "/trips" })}
+        onViewMeeting={() => void navigate({ to: "/meetings" })}
+      />
 
       <section className="simple-home__services" aria-labelledby="simple-home-services-title">
         <div className="simple-home__section-title">
