@@ -3775,7 +3775,7 @@ function SaudiDealRoom({
       </div>
 
       <div
-        className="mx-auto w-full max-w-4xl rounded-[36px] border border-[#e6c472]/70 p-[7px] shadow-[0_28px_70px_-26px_rgba(0,0,0,.98)] sm:p-[10px] landscape:max-w-none landscape:rounded-[28px] landscape:p-[6px]"
+        className="mx-auto w-full max-w-4xl lg:max-w-6xl xl:max-w-[1400px] rounded-[36px] border border-[#e6c472]/70 p-[7px] shadow-[0_28px_70px_-26px_rgba(0,0,0,.98)] sm:p-[10px] landscape:max-w-none landscape:rounded-[28px] landscape:p-[6px]"
         style={{
           backgroundColor: "#4a2915",
           backgroundImage: "radial-gradient(circle at 18% 8%,rgba(255,203,116,.22),transparent 23%),linear-gradient(90deg,rgba(20,8,3,.72),transparent 12%,transparent 88%,rgba(20,8,3,.72)),repeating-linear-gradient(104deg,#2a150a 0 7px,#72421f 7px 14px,#3a1e0e 14px 22px,#9b6530 22px 28px)",
@@ -3783,7 +3783,7 @@ function SaudiDealRoom({
       >
         <div className="overflow-hidden rounded-[29px] border border-[#f2d487]/30 bg-[#073d32]">
           <div
-            className={cn("relative min-h-[500px] overflow-hidden sm:min-h-[620px] lg:min-h-[690px]", immersive && "min-h-[470px]", "landscape:!min-h-[260px]")}
+            className={cn("relative min-h-[500px] overflow-hidden sm:min-h-[620px] lg:min-h-[780px] xl:min-h-[840px]", immersive && "min-h-[470px]", "landscape:!min-h-[260px]")}
             style={{
               backgroundImage: "radial-gradient(circle at 50% 47%,rgba(27,121,91,.34),transparent 43%),linear-gradient(135deg,rgba(239,205,115,.04) 25%,transparent 25%,transparent 50%,rgba(239,205,115,.04) 50%,rgba(239,205,115,.04) 75%,transparent 75%,transparent)",
               backgroundSize: "auto,28px 28px",
@@ -3975,7 +3975,7 @@ function SaudiDealRoom({
             )}
 
             <div
-              className="mx-auto grid min-h-[154px] w-full max-w-2xl items-end justify-center overflow-x-auto overflow-y-hidden px-4 pb-2 pt-8 landscape:min-h-[132px] landscape:max-w-none landscape:pl-[245px] landscape:pr-[112px] landscape:pb-0 landscape:pt-5"
+              className="mx-auto grid min-h-[154px] w-full max-w-2xl lg:max-w-5xl items-end justify-center overflow-x-auto overflow-y-hidden px-4 pb-2 pt-8 landscape:min-h-[132px] landscape:max-w-none landscape:pl-[245px] landscape:pr-[112px] landscape:pb-0 landscape:pt-5"
               style={{ direction: "ltr", gridTemplateColumns: `repeat(${Math.max(hand.length, 1)}, minmax(34px, 72px))` }}
             >
               {hand.map((card, index) => {
