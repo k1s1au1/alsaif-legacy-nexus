@@ -24,6 +24,7 @@ export type FamilyInvitationShareLayout = {
   fontFamily?: string;
   fontScale?: number;
   textColor?: string;
+  textOffsetY?: number;
   inviteMode?: "public" | "private";
   guestName?: string;
   groomFamily?: string;
@@ -89,6 +90,10 @@ function invitationFontFamily(font?: string) {
 function invitationTextColor(layout: FamilyInvitationShareLayout) {
   if (/^#[0-9a-f]{6}$/i.test(layout.textColor ?? "")) return layout.textColor!;
   return layout.occasionType === "condolence" ? "#FFFFFF" : "#183f36";
+}
+
+function invitationTextOffset(value?: number) {
+  return Math.min(18, Math.max(-18, Number.isFinite(value) ? Number(value) : 0));
 }
 
 function setInvitationFont(
@@ -358,7 +363,13 @@ function drawInvitationLayout(
     totalHeight = measureInvitationBlocks(ctx, blocks, scale, fontFamily);
   }
 
-  let y = contentTop + Math.max(0, (contentHeight - totalHeight) / 2);
+  const centeredY = contentTop + Math.max(0, (contentHeight - totalHeight) / 2);
+  const availableMovement = Math.max(0, contentHeight - totalHeight);
+  const requestedOffset = invitationTextOffset(layout.textOffsetY) * 10;
+  let y = Math.min(
+    contentTop + availableMovement,
+    Math.max(contentTop, centeredY + requestedOffset),
+  );
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.direction = "rtl";

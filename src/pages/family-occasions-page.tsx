@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import {
+  ArrowDown,
+  ArrowUp,
   Baby,
   Cake,
   CalendarDays,
@@ -56,6 +58,7 @@ type OccasionType =
 type BirthdayAudience = "adult" | "child";
 type InviteMode = "public" | "private";
 type OccasionFont = "ibm" | "tajawal" | "amiri" | "reem-kufi";
+type OccasionTextMode = "ready" | "custom";
 
 type Extra = {
   inviteMode?: InviteMode;
@@ -64,6 +67,10 @@ type Extra = {
   fontFamily?: OccasionFont;
   fontScale?: number;
   textColor?: string;
+  textMode?: OccasionTextMode;
+  customHeading?: string;
+  customBody?: string;
+  textOffsetY?: number;
   groomFamily?: string;
   brideFamily?: string;
   groomName?: string;
@@ -212,6 +219,26 @@ function occasionTextColor(type: OccasionType, value?: string) {
       : "#183F36";
 }
 
+function occasionTextMode(value?: OccasionTextMode): OccasionTextMode {
+  return value === "custom" ? "custom" : "ready";
+}
+
+function occasionHeading(type: OccasionType, value: Extra) {
+  return occasionTextMode(value.textMode) === "custom"
+    ? (value.customHeading ?? "")
+    : COPY[type].heading;
+}
+
+function occasionBody(type: OccasionType, value: Extra) {
+  return occasionTextMode(value.textMode) === "custom"
+    ? (value.customBody ?? "")
+    : COPY[type].body;
+}
+
+function occasionTextOffset(value?: number) {
+  return Math.min(18, Math.max(-18, Number.isFinite(value) ? Number(value) : 0));
+}
+
 function extra(s?: string): Extra {
   try {
     return s ? JSON.parse(s) : {};
@@ -243,16 +270,18 @@ function path(t: OccasionType, n: number, a: BirthdayAudience = "adult") {
 
 async function shareOccasion(o: Occasion) {
   const x = extra(o.details);
+  const heading = occasionHeading(o.type, x);
+  const body = occasionBody(o.type, x);
 
   await FamilySharing.shareInvitation({
-    title: o.title || COPY[o.type].heading,
+    title: o.title || heading || COPY[o.type].heading,
     date: o.date || "قريباً",
     location: x.venue || o.location || "مجلس العائلة",
     templatePath: path(o.type, o.design, o.birthdayAudience),
     layout: {
       occasionType: o.type,
-      heading: COPY[o.type].heading,
-      body: COPY[o.type].body,
+      heading,
+      body,
       name: o.title,
       eventDate: o.date,
       time: o.time,
@@ -289,13 +318,14 @@ function Preview({
   selected?: boolean;
   x?: Extra;
 }) {
-  const c = COPY[type];
   const a = age(birthDate, eventDate);
   const cond = type === "condolence";
   const logo = !cond && (x.showLogo ?? true);
-  const parts = c.body.split("\n");
+  const heading = occasionHeading(type, x);
+  const parts = occasionBody(type, x).split("\n");
   const selectedFontScale = occasionFontScale(x.fontScale);
   const selectedTextColor = occasionTextColor(type, x.textColor);
+  const textOffsetY = occasionTextOffset(x.textOffsetY);
   const fontGrowth = Math.max(0, selectedFontScale - 1);
   const scaledText = (minimum: number, viewport: number, maximum: number) =>
     `clamp(${(minimum * selectedFontScale).toFixed(2)}px, ${(viewport * selectedFontScale).toFixed(2)}vw, ${(maximum * selectedFontScale).toFixed(2)}px)`;
@@ -324,15 +354,18 @@ function Preview({
             bottom: `${12 - fontGrowth * 7.5}%`,
             color: selectedTextColor,
             fontFamily: occasionFontFamily(x.fontFamily),
+            transform: `translateY(${textOffsetY}%)`,
           }}
         >
           <div className="w-full max-w-[92%] space-y-[clamp(6px,1.5vw,14px)]">
-            <h3
-              className="font-black leading-tight tracking-wide drop-shadow-sm"
-              style={{ fontSize: scaledText(14, 3.8, 24) }}
-            >
-              {c.heading}
-            </h3>
+            {heading.trim() && (
+              <h3
+                className="font-black leading-tight tracking-wide drop-shadow-sm"
+                style={{ fontSize: scaledText(14, 3.8, 24) }}
+              >
+                {heading}
+              </h3>
+            )}
             {parts[0] && (
               <p
                 className="font-black leading-relaxed opacity-90"
@@ -501,6 +534,8 @@ function FamilyOccasionsPage() {
     showLogo: true,
     fontFamily: "ibm",
     fontScale: 1,
+    textMode: "ready",
+    textOffsetY: 0,
   });
 
   const refresh = useCallback(async () => {
@@ -550,7 +585,14 @@ function FamilyOccasionsPage() {
     setVisibility("public");
     setInvitees([]);
     setInviteeQuery("");
-    setX({ inviteMode: "public", showLogo: true, fontFamily: "ibm", fontScale: 1 });
+    setX({
+      inviteMode: "public",
+      showLogo: true,
+      fontFamily: "ibm",
+      fontScale: 1,
+      textMode: "ready",
+      textOffsetY: 0,
+    });
   }
 
   function start() {
@@ -579,7 +621,15 @@ function FamilyOccasionsPage() {
         .then((ids) => setInvitees(ids.filter((id) => id !== o.createdBy)))
         .catch(() => setInvitees([]));
     }
-    setX({ inviteMode: "public", showLogo: true, ...extra(o.details) });
+    setX({
+      inviteMode: "public",
+      showLogo: true,
+      fontFamily: "ibm",
+      fontScale: 1,
+      textMode: "ready",
+      textOffsetY: 0,
+      ...extra(o.details),
+    });
     setStep(3);
     setOpen(true);
   }
@@ -591,6 +641,14 @@ function FamilyOccasionsPage() {
     }
     if (visibility === "private" && invitees.length === 0) {
       toast.error("اختر المدعوين للمناسبة الخاصة");
+      return;
+    }
+    if (
+      occasionTextMode(x.textMode) === "custom" &&
+      !occasionHeading(type, x).trim() &&
+      !occasionBody(type, x).trim()
+    ) {
+      toast.error("اكتب عنوان البطاقة أو نص المناسبة");
       return;
     }
     setSaving(true);
@@ -978,6 +1036,57 @@ function FamilyOccasionsPage() {
                       </label>
                     )}
                     <div className="mt-4 rounded-[22px] border border-border bg-background p-4">
+                      <div>
+                        <strong className="text-sm font-black">نص البطاقة</strong>
+                        <p className="mt-1 text-[11px] font-bold text-muted-foreground">
+                          استخدم النص الجاهز للمناسبة أو اكتب نصك الخاص.
+                        </p>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => set("textMode", "ready")}
+                          aria-pressed={occasionTextMode(x.textMode) === "ready"}
+                          className={`min-h-12 rounded-2xl border px-3 py-2 text-xs font-black ${occasionTextMode(x.textMode) === "ready" ? "border-primary bg-primary text-white" : "border-border bg-card"}`}
+                        >
+                          النص الجاهز
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => set("textMode", "custom")}
+                          aria-pressed={occasionTextMode(x.textMode) === "custom"}
+                          className={`min-h-12 rounded-2xl border px-3 py-2 text-xs font-black ${occasionTextMode(x.textMode) === "custom" ? "border-primary bg-primary text-white" : "border-border bg-card"}`}
+                        >
+                          أكتب النص بنفسي
+                        </button>
+                      </div>
+
+                      {occasionTextMode(x.textMode) === "custom" && (
+                        <div className="mt-4 space-y-4">
+                          <label className="block">
+                            <span className="mb-1.5 block text-xs font-black">عنوان البطاقة</span>
+                            <input
+                              value={x.customHeading ?? ""}
+                              onChange={(e) => set("customHeading", e.target.value)}
+                              placeholder="مثال: كل عام وأنت بخير"
+                              className="min-h-12 w-full rounded-2xl border border-border bg-card px-4 text-sm font-bold outline-none focus:border-primary"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1.5 block text-xs font-black">نص المناسبة</span>
+                            <textarea
+                              value={x.customBody ?? ""}
+                              onChange={(e) => set("customBody", e.target.value)}
+                              placeholder="اكتب النص الذي تريد ظهوره داخل البطاقة…"
+                              rows={6}
+                              className="w-full resize-y rounded-2xl border border-border bg-card px-4 py-3 text-sm font-bold leading-7 outline-none focus:border-primary"
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 rounded-[22px] border border-border bg-background p-4">
                       <div className="flex items-center justify-between gap-3">
                         <strong className="text-sm font-black">تنسيق خط البطاقة</strong>
                         <button
@@ -988,6 +1097,7 @@ function FamilyOccasionsPage() {
                               fontFamily: "ibm",
                               fontScale: 1,
                               textColor: undefined,
+                              textOffsetY: 0,
                             }))
                           }
                           className="rounded-xl bg-muted px-3 py-2 text-xs font-black"
@@ -1084,11 +1194,73 @@ function FamilyOccasionsPage() {
                           </button>
                         </div>
                       </div>
+
+                      <div className="mt-5 border-t border-border pt-4">
+                        <div className="mb-2 flex items-center justify-between gap-3 text-xs font-black">
+                          <span>موضع النص داخل البطاقة</span>
+                          <output>
+                            {occasionTextOffset(x.textOffsetY) === 0
+                              ? "الوسط"
+                              : occasionTextOffset(x.textOffsetY) < 0
+                                ? `أعلى ${Math.abs(occasionTextOffset(x.textOffsetY))}`
+                                : `أسفل ${occasionTextOffset(x.textOffsetY)}`}
+                          </output>
+                        </div>
+                        <div className="flex items-center gap-3" dir="ltr">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              set(
+                                "textOffsetY",
+                                Math.max(-18, occasionTextOffset(x.textOffsetY) - 2),
+                              )
+                            }
+                            aria-label="رفع النص"
+                            title="رفع النص"
+                            className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-primary"
+                          >
+                            <ArrowUp className="size-5" />
+                          </button>
+                          <input
+                            type="range"
+                            min="-18"
+                            max="18"
+                            step="1"
+                            value={occasionTextOffset(x.textOffsetY)}
+                            onChange={(e) => set("textOffsetY", Number(e.target.value))}
+                            aria-label="موضع النص الرأسي"
+                            className="h-2 min-w-0 flex-1 cursor-pointer accent-[#0F5A3A]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              set(
+                                "textOffsetY",
+                                Math.min(18, occasionTextOffset(x.textOffsetY) + 2),
+                              )
+                            }
+                            aria-label="تنزيل النص"
+                            title="تنزيل النص"
+                            className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-primary"
+                          >
+                            <ArrowDown className="size-5" />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => set("textOffsetY", 0)}
+                          className="mt-3 min-h-10 w-full rounded-xl bg-muted px-3 text-xs font-black"
+                        >
+                          إعادة النص إلى الوسط
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-4 rounded-2xl bg-primary/5 p-4">
-                      <strong className="text-sm font-black">{COPY[type].heading}</strong>
+                      <strong className="text-sm font-black">
+                        {occasionHeading(type, x) || "بدون عنوان"}
+                      </strong>
                       <p className="mt-2 whitespace-pre-line text-xs leading-6 text-muted-foreground">
-                        {COPY[type].body}
+                        {occasionBody(type, x) || "اكتب النص الخاص ليظهر هنا وفي البطاقة."}
                       </p>
                     </div>
                     <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -1200,12 +1372,14 @@ function FamilyOccasionsPage() {
                     <span className="text-xs font-black text-gold-primary">
                       {selected.title} • {x.inviteMode === "private" ? "دعوة خاصة" : "دعوة عامة"}
                     </span>
-                    <h3 className="mt-2 text-2xl font-black">{COPY[type].heading}</h3>
+                    <h3 className="mt-2 text-2xl font-black">
+                      {occasionHeading(type, x) || "بدون عنوان"}
+                    </h3>
                     {x.inviteMode === "private" && x.guestName && (
                       <p className="mt-3 font-black">المكرم/ {x.guestName}</p>
                     )}
                     <p className="mt-3 whitespace-pre-line text-sm leading-7 text-muted-foreground">
-                      {COPY[type].body}
+                      {occasionBody(type, x) || "لا يوجد نص إضافي"}
                     </p>
                     {type === "birthday" && birthDate && (
                       <p className="mt-3 font-black">العمر: {age(birthDate, date) ?? "—"}</p>
