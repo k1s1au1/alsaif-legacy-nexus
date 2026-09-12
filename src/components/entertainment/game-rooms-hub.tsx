@@ -3830,16 +3830,45 @@ function SaudiDealRoom({
               <p className="max-w-[220px] truncate rounded-full border border-white/5 bg-black/30 px-4 py-1.5 text-center text-[10px] font-bold text-white/55 sm:max-w-[360px] sm:text-xs landscape:hidden">{data.lastAction}</p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setInspectedPlayerId(me.id)}
+            <div
               className={cn(
-                "absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-[#052d26]/95 px-3 py-1.5 text-[10px] font-black shadow-xl landscape:bottom-2 landscape:left-auto landscape:right-2 landscape:translate-x-0",
-                active?.id === me.id ? "border-[#f0cd72] text-[#f3d47b] ring-2 ring-[#f0cd72]/20" : "border-white/15 text-white",
+                "absolute bottom-2 left-1/2 z-30 w-[92%] max-w-[760px] -translate-x-1/2 rounded-2xl border bg-[#052d26]/92 p-1.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,.95)] backdrop-blur-sm lg:max-w-[1000px] landscape:bottom-1 landscape:w-[46%] landscape:max-w-none",
+                active?.id === me.id ? "border-[#f0cd72] ring-2 ring-[#f0cd72]/20" : "border-white/15",
               )}
             >
-              <Eye className="size-3.5" /> طاولتي · {myProperties.length} أراضٍ · {myBankTotal}م
-            </button>
+              <div className="mb-1 flex items-center justify-between gap-2 px-1">
+                <p className="text-[10px] font-black text-[#f3d47b]">طاولتي · {myProperties.length} أراضٍ · {myBankTotal}م</p>
+                <button
+                  type="button"
+                  onClick={() => setInspectedPlayerId(me.id)}
+                  aria-label="تكبير طاولتي"
+                  className="flex size-6 items-center justify-center rounded-full bg-white/10 text-[#efd078]"
+                >
+                  <Eye className="size-3.5" />
+                </button>
+              </div>
+              {myProperties.length ? (
+                <div className="flex flex-wrap items-start justify-center gap-1">
+                  {myProperties
+                    .slice()
+                    .sort(
+                      (first, second) =>
+                        DEAL_GROUPS.findIndex((group) => group.id === first.group) -
+                        DEAL_GROUPS.findIndex((group) => group.id === second.group),
+                    )
+                    .map((property) => (
+                      <DealPublicPropertyCard
+                        key={property.id}
+                        card={property}
+                        protectedProperty={isProtectedDealProperty(myProperties, property)}
+                        targetable={false}
+                      />
+                    ))}
+                </div>
+              ) : (
+                <p className="py-2 text-center text-[10px] font-bold text-white/45">لا أراضٍ بعد — أضف أرضًا من أوراقك لتظهر هنا</p>
+              )}
+            </div>
           </div>
 
           <div className="border-t-4 border-[#7d4a25] bg-[#042e27] px-2 pb-2 pt-3 sm:px-4 landscape:relative landscape:min-h-[132px] landscape:p-0">
