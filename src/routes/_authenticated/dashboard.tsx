@@ -504,8 +504,6 @@ function Dashboard() {
           name={safeProfile.name}
           meetings={eventsData?.meetings || []}
           trips={eventsData?.trips || []}
-          tasks={eventsData?.tasks || []}
-          tasksCount={countsData?.tasks || 0}
           announcements={announcementsData || []}
           onExit={disableSimpleMode}
         />
@@ -802,4 +800,3 @@ function Dashboard() {
     </AppShell>
   );
 }
-
