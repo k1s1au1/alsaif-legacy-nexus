@@ -486,10 +486,6 @@
     box-shadow: 0 14px 34px color-mix(in srgb, var(--agenda-green) 8%, transparent);
   }
 
-  .family-agenda--mobile-only + .integrated-hub {
-    display: none !important;
-  }
-
   .family-agenda__header {
     min-height: 88px;
     padding: 15px 16px;
