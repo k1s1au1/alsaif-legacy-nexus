@@ -1,5 +1,6 @@
 /* Approved mobile/tablet quick-followup cards. Desktop untouched. */
 .hub-mobile-slider{display:none}.hub-desktop-legacy{display:block}
+.hub-desktop-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:0 4px 18px}.hub-desktop-heading div{min-width:0}.hub-desktop-heading h2{margin:2px 0 0;color:var(--primary);font-size:clamp(24px,2.5vw,34px);line-height:1.2;font-weight:900}.hub-desktop-heading span{display:block;color:var(--muted-foreground);font-size:12px;font-weight:700}.hub-desktop-heading>a{display:inline-flex;min-height:42px;align-items:center;gap:5px;padding:0 15px;border:1px solid var(--border);border-radius:14px;color:var(--primary);background:var(--card);font-size:12px;font-weight:900;white-space:nowrap}
 @media(max-width:969.98px){
  .hub-desktop-legacy{display:none!important}.hub-mobile-slider{display:block!important}
  .integrated-hub{padding:10px 0 16px!important;margin:0!important;background:var(--nav-bg,var(--primary))!important;overflow:hidden!important}
