@@ -3170,6 +3170,19 @@ function UnoRoom({
     void dispatch("uno-play", { cardId: card.id });
   };
 
+  // السحب التلقائي في أونو: إذا لم توجد ورقة صالحة تسحب اللعبة نيابة عن اللاعب.
+  const hasPlayableCard = hand.some((card) => unoPlayable(card, data, hand));
+  useEffect(() => {
+    if (!amActive || data.drawnCardId || hasPlayableCard) return;
+    const timer = window.setTimeout(() => {
+      playGameTone("draw");
+      void dispatch("uno-draw");
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [amActive, data.drawnCardId, hasPlayableCard, data.turnIndex, dispatch]);
+
+
+
   return (
     <div className={cn("space-y-5", immersive && "space-y-3")}>
       <div className={cn("grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-3 py-2.5 text-[#173e34] shadow-sm sm:px-5 sm:py-3", immersive && "sticky top-0 z-40 rounded-[24px] shadow-[0_12px_28px_-20px_rgba(0,0,0,.9)]")}>
@@ -3595,9 +3608,9 @@ function DealPublicRack({
   const bank = (data.banks[player.id] ?? []) as DealCard[];
   const bankTotal = bank.reduce((sum, card) => sum + card.value, 0);
   const positionClass = {
-    top: "left-1/2 top-2 w-[56%] max-w-[300px] -translate-x-1/2 landscape:top-2 landscape:w-[30%] landscape:max-w-none",
-    right: "right-1 top-[31%] w-[24%] max-w-[112px] landscape:right-[2%] landscape:top-2 landscape:w-[30%] landscape:max-w-none",
-    left: "left-1 top-[31%] w-[24%] max-w-[112px] landscape:left-[2%] landscape:top-2 landscape:w-[30%] landscape:max-w-none",
+    top: "left-1/2 top-2 w-[64%] max-w-[420px] -translate-x-1/2 lg:max-w-[560px] landscape:top-2 landscape:w-[32%] landscape:max-w-none",
+    right: "right-1 top-[26%] w-[27%] max-w-[168px] lg:max-w-[230px] landscape:right-[2%] landscape:top-2 landscape:w-[32%] landscape:max-w-none",
+    left: "left-1 top-[26%] w-[27%] max-w-[168px] lg:max-w-[230px] landscape:left-[2%] landscape:top-2 landscape:w-[32%] landscape:max-w-none",
   }[position];
   const groupProgress = DEAL_GROUPS.map((group) => ({
     group,
@@ -3619,10 +3632,7 @@ function DealPublicRack({
 
       <div className={cn("mt-1 flex w-full flex-col items-center", targetingRent && "rounded-2xl ring-2 ring-[#ffd468]/40")}>
         {properties.length ? (
-          <div className={cn(
-            "scrollbar-none flex max-w-full justify-center gap-1 overflow-x-auto rounded-xl border border-[#dabb6c]/45 bg-[#052d26]/80 p-1 shadow-xl backdrop-blur-sm",
-            position !== "top" && "grid max-h-[160px] grid-cols-1 justify-items-center overflow-x-hidden overflow-y-auto landscape:flex landscape:max-h-[88px] landscape:flex-row landscape:overflow-x-auto landscape:overflow-y-hidden",
-          )}>
+          <div className="flex w-full flex-wrap items-start justify-center gap-1 rounded-xl border border-[#dabb6c]/45 bg-[#052d26]/80 p-1 shadow-xl backdrop-blur-sm">
             {sortedProperties.map((property) => {
               const protectedProperty = isProtectedDealProperty(properties, property);
               const targetable = Boolean(targetingProperty && !protectedProperty);
@@ -3701,6 +3711,18 @@ function SaudiDealRoom({
     if (!selectedCardId && hand.length && amActive && !data.needsDraw) setSelectedCardId(hand[0].id);
   }, [hand, selectedCardId, amActive, data.needsDraw]);
 
+  // السحب التلقائي: اللعبة تسحب أوراق الدور نيابة عن اللاعب بدون ضغط زر.
+  useEffect(() => {
+    if (!amActive || !data.needsDraw) return;
+    const timer = window.setTimeout(() => {
+      playGameTone("deal");
+      void dispatch("deal-draw");
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [amActive, data.needsDraw, data.turnIndex, dispatch]);
+
+
+
   const useAction = (card: DealCard) => {
     if (card.action === "draw2") {
       void dispatch("deal-action", { cardId: card.id });
@@ -3753,7 +3775,7 @@ function SaudiDealRoom({
       </div>
 
       <div
-        className="mx-auto w-full max-w-4xl rounded-[36px] border border-[#e6c472]/70 p-[7px] shadow-[0_28px_70px_-26px_rgba(0,0,0,.98)] sm:p-[10px] landscape:max-w-none landscape:rounded-[28px] landscape:p-[6px]"
+        className="mx-auto w-full max-w-4xl lg:max-w-6xl xl:max-w-[1400px] rounded-[36px] border border-[#e6c472]/70 p-[7px] shadow-[0_28px_70px_-26px_rgba(0,0,0,.98)] sm:p-[10px] landscape:max-w-none landscape:rounded-[28px] landscape:p-[6px]"
         style={{
           backgroundColor: "#4a2915",
           backgroundImage: "radial-gradient(circle at 18% 8%,rgba(255,203,116,.22),transparent 23%),linear-gradient(90deg,rgba(20,8,3,.72),transparent 12%,transparent 88%,rgba(20,8,3,.72)),repeating-linear-gradient(104deg,#2a150a 0 7px,#72421f 7px 14px,#3a1e0e 14px 22px,#9b6530 22px 28px)",
@@ -3761,7 +3783,7 @@ function SaudiDealRoom({
       >
         <div className="overflow-hidden rounded-[29px] border border-[#f2d487]/30 bg-[#073d32]">
           <div
-            className={cn("relative min-h-[500px] overflow-hidden sm:min-h-[620px] lg:min-h-[690px]", immersive && "min-h-[470px]", "landscape:!min-h-[260px]")}
+            className={cn("relative min-h-[500px] overflow-hidden sm:min-h-[620px] lg:min-h-[780px] xl:min-h-[840px]", immersive && "min-h-[470px]", "landscape:!min-h-[260px]")}
             style={{
               backgroundImage: "radial-gradient(circle at 50% 47%,rgba(27,121,91,.34),transparent 43%),linear-gradient(135deg,rgba(239,205,115,.04) 25%,transparent 25%,transparent 50%,rgba(239,205,115,.04) 50%,rgba(239,205,115,.04) 75%,transparent 75%,transparent)",
               backgroundSize: "auto,28px 28px",
@@ -3833,16 +3855,45 @@ function SaudiDealRoom({
               <p className="max-w-[220px] truncate rounded-full border border-white/5 bg-black/30 px-4 py-1.5 text-center text-[10px] font-bold text-white/55 sm:max-w-[360px] sm:text-xs landscape:hidden">{data.lastAction}</p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setInspectedPlayerId(me.id)}
+            <div
               className={cn(
-                "absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-[#052d26]/95 px-3 py-1.5 text-[10px] font-black shadow-xl landscape:bottom-2 landscape:left-auto landscape:right-2 landscape:translate-x-0",
-                active?.id === me.id ? "border-[#f0cd72] text-[#f3d47b] ring-2 ring-[#f0cd72]/20" : "border-white/15 text-white",
+                "absolute bottom-2 left-1/2 z-30 w-[92%] max-w-[760px] -translate-x-1/2 rounded-2xl border bg-[#052d26]/92 p-1.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,.95)] backdrop-blur-sm lg:max-w-[1000px] landscape:bottom-1 landscape:w-[46%] landscape:max-w-none",
+                active?.id === me.id ? "border-[#f0cd72] ring-2 ring-[#f0cd72]/20" : "border-white/15",
               )}
             >
-              <Eye className="size-3.5" /> طاولتي · {myProperties.length} أراضٍ · {myBankTotal}م
-            </button>
+              <div className="mb-1 flex items-center justify-between gap-2 px-1">
+                <p className="text-[10px] font-black text-[#f3d47b]">طاولتي · {myProperties.length} أراضٍ · {myBankTotal}م</p>
+                <button
+                  type="button"
+                  onClick={() => setInspectedPlayerId(me.id)}
+                  aria-label="تكبير طاولتي"
+                  className="flex size-6 items-center justify-center rounded-full bg-white/10 text-[#efd078]"
+                >
+                  <Eye className="size-3.5" />
+                </button>
+              </div>
+              {myProperties.length ? (
+                <div className="flex flex-wrap items-start justify-center gap-1">
+                  {myProperties
+                    .slice()
+                    .sort(
+                      (first, second) =>
+                        DEAL_GROUPS.findIndex((group) => group.id === first.group) -
+                        DEAL_GROUPS.findIndex((group) => group.id === second.group),
+                    )
+                    .map((property) => (
+                      <DealPublicPropertyCard
+                        key={property.id}
+                        card={property}
+                        protectedProperty={isProtectedDealProperty(myProperties, property)}
+                        targetable={false}
+                      />
+                    ))}
+                </div>
+              ) : (
+                <p className="py-2 text-center text-[10px] font-bold text-white/45">لا أراضٍ بعد — أضف أرضًا من أوراقك لتظهر هنا</p>
+              )}
+            </div>
           </div>
 
           <div className="border-t-4 border-[#7d4a25] bg-[#042e27] px-2 pb-2 pt-3 sm:px-4 landscape:relative landscape:min-h-[132px] landscape:p-0">
@@ -3924,7 +3975,7 @@ function SaudiDealRoom({
             )}
 
             <div
-              className="mx-auto grid min-h-[154px] w-full max-w-2xl items-end justify-center overflow-x-auto overflow-y-hidden px-4 pb-2 pt-8 landscape:min-h-[132px] landscape:max-w-none landscape:pl-[245px] landscape:pr-[112px] landscape:pb-0 landscape:pt-5"
+              className="mx-auto grid min-h-[154px] w-full max-w-2xl lg:max-w-5xl items-end justify-center overflow-x-auto overflow-y-hidden px-4 pb-2 pt-8 landscape:min-h-[132px] landscape:max-w-none landscape:pl-[245px] landscape:pr-[112px] landscape:pb-0 landscape:pt-5"
               style={{ direction: "ltr", gridTemplateColumns: `repeat(${Math.max(hand.length, 1)}, minmax(34px, 72px))` }}
             >
               {hand.map((card, index) => {
