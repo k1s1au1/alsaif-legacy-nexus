@@ -3170,6 +3170,19 @@ function UnoRoom({
     void dispatch("uno-play", { cardId: card.id });
   };
 
+  // السحب التلقائي في أونو: إذا لم توجد ورقة صالحة تسحب اللعبة نيابة عن اللاعب.
+  const hasPlayableCard = hand.some((card) => unoPlayable(card, data, hand));
+  useEffect(() => {
+    if (!amActive || data.drawnCardId || hasPlayableCard) return;
+    const timer = window.setTimeout(() => {
+      playGameTone("draw");
+      void dispatch("uno-draw");
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [amActive, data.drawnCardId, hasPlayableCard, data.turnIndex, dispatch]);
+
+
+
   return (
     <div className={cn("space-y-5", immersive && "space-y-3")}>
       <div className={cn("grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-3 py-2.5 text-[#173e34] shadow-sm sm:px-5 sm:py-3", immersive && "sticky top-0 z-40 rounded-[24px] shadow-[0_12px_28px_-20px_rgba(0,0,0,.9)]")}>
