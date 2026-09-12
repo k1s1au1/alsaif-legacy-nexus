@@ -3595,9 +3595,9 @@ function DealPublicRack({
   const bank = (data.banks[player.id] ?? []) as DealCard[];
   const bankTotal = bank.reduce((sum, card) => sum + card.value, 0);
   const positionClass = {
-    top: "left-1/2 top-2 w-[56%] max-w-[300px] -translate-x-1/2 landscape:top-2 landscape:w-[30%] landscape:max-w-none",
-    right: "right-1 top-[31%] w-[24%] max-w-[112px] landscape:right-[2%] landscape:top-2 landscape:w-[30%] landscape:max-w-none",
-    left: "left-1 top-[31%] w-[24%] max-w-[112px] landscape:left-[2%] landscape:top-2 landscape:w-[30%] landscape:max-w-none",
+    top: "left-1/2 top-2 w-[64%] max-w-[420px] -translate-x-1/2 lg:max-w-[560px] landscape:top-2 landscape:w-[32%] landscape:max-w-none",
+    right: "right-1 top-[26%] w-[27%] max-w-[168px] lg:max-w-[230px] landscape:right-[2%] landscape:top-2 landscape:w-[32%] landscape:max-w-none",
+    left: "left-1 top-[26%] w-[27%] max-w-[168px] lg:max-w-[230px] landscape:left-[2%] landscape:top-2 landscape:w-[32%] landscape:max-w-none",
   }[position];
   const groupProgress = DEAL_GROUPS.map((group) => ({
     group,
@@ -3619,10 +3619,7 @@ function DealPublicRack({
 
       <div className={cn("mt-1 flex w-full flex-col items-center", targetingRent && "rounded-2xl ring-2 ring-[#ffd468]/40")}>
         {properties.length ? (
-          <div className={cn(
-            "scrollbar-none flex max-w-full justify-center gap-1 overflow-x-auto rounded-xl border border-[#dabb6c]/45 bg-[#052d26]/80 p-1 shadow-xl backdrop-blur-sm",
-            position !== "top" && "grid max-h-[160px] grid-cols-1 justify-items-center overflow-x-hidden overflow-y-auto landscape:flex landscape:max-h-[88px] landscape:flex-row landscape:overflow-x-auto landscape:overflow-y-hidden",
-          )}>
+          <div className="flex w-full flex-wrap items-start justify-center gap-1 rounded-xl border border-[#dabb6c]/45 bg-[#052d26]/80 p-1 shadow-xl backdrop-blur-sm">
             {sortedProperties.map((property) => {
               const protectedProperty = isProtectedDealProperty(properties, property);
               const targetable = Boolean(targetingProperty && !protectedProperty);
