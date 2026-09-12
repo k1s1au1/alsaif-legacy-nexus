@@ -3698,6 +3698,18 @@ function SaudiDealRoom({
     if (!selectedCardId && hand.length && amActive && !data.needsDraw) setSelectedCardId(hand[0].id);
   }, [hand, selectedCardId, amActive, data.needsDraw]);
 
+  // السحب التلقائي: اللعبة تسحب أوراق الدور نيابة عن اللاعب بدون ضغط زر.
+  useEffect(() => {
+    if (!amActive || !data.needsDraw) return;
+    const timer = window.setTimeout(() => {
+      playGameTone("deal");
+      void dispatch("deal-draw");
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [amActive, data.needsDraw, data.turnIndex, dispatch]);
+
+
+
   const useAction = (card: DealCard) => {
     if (card.action === "draw2") {
       void dispatch("deal-action", { cardId: card.id });
