@@ -15,6 +15,7 @@ import {
 import { useEffect, useId, useMemo, useState } from "react";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { useUserRole } from "@/hooks/use-user-role";
+import { MemberPostsPreview } from "./member-posts-preview";
 import "./family-agenda.css";
 
 type FamilyAgendaProps = {
@@ -63,16 +64,6 @@ const itemDateKey = (value?: string | null) => {
   return parsed ? dateKey(parsed) : "";
 };
 
-const formatShortDate = (value?: string | null) => {
-  const parsed = toDate(value);
-  if (!parsed) return "بدون موعد";
-  return parsed.toLocaleDateString("ar-SA", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-};
-
 const occasionDate = (item: any) => {
   if (!item?.date) return null;
   return `${item.date}T${item.time || "23:59"}:00`;
@@ -94,6 +85,7 @@ export function FamilyAgenda({
   const actionsId = `family-agenda-actions-${useId().replace(/:/g, "")}`;
 
   const {
+    userId,
     canManage: canManageSection,
     isAdmin,
     isManager,
@@ -197,19 +189,6 @@ export function FamilyAgenda({
         (toDate(b.date)?.getTime() || Number.MAX_SAFE_INTEGER),
     );
   }, [meetings, trips, tasks, occasions]);
-
-  const taskRows = useMemo(
-    () =>
-      [...tasks]
-        .filter((task: any) => task?.id)
-        .sort(
-          (a: any, b: any) =>
-            (toDate(a.due_date)?.getTime() || Number.MAX_SAFE_INTEGER) -
-            (toDate(b.due_date)?.getTime() || Number.MAX_SAFE_INTEGER),
-        )
-        .slice(0, 4),
-    [tasks],
-  );
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, AgendaItem[]>();
@@ -419,45 +398,7 @@ export function FamilyAgenda({
           </div>
         </section>
 
-        <section className="family-agenda__tasks" aria-labelledby={`${actionsId}-tasks`}>
-          <div className="family-agenda__section-head">
-            <span>
-              <ListChecks aria-hidden="true" />
-              <b id={`${actionsId}-tasks`}>مهامي القادمة</b>
-            </span>
-            <Link to="/tasks">
-              عرض الكل
-              <ChevronLeft aria-hidden="true" />
-            </Link>
-          </div>
-
-          <div className="family-agenda__task-list">
-            {taskRows.length ? (
-              taskRows.map((task: any) => (
-                <Link key={task.id} to="/tasks" className="family-agenda__task-row">
-                  <span className="family-agenda__task-check" aria-hidden="true" />
-                  <span className="family-agenda__task-copy">
-                    <b>{task.title}</b>
-                    <small>{formatShortDate(task.due_date)}</small>
-                  </span>
-                  <span
-                    className="family-agenda__task-priority"
-                    data-priority={task.priority || "normal"}
-                  >
-                    {task.priority === "high" ? "عاجلة" : "مهمة"}
-                  </span>
-                  <ChevronLeft aria-hidden="true" />
-                </Link>
-              ))
-            ) : (
-              <div className="family-agenda__empty">
-                <ListChecks aria-hidden="true" />
-                <b>لا توجد مهام قادمة</b>
-                <span>ستظهر هنا المهام التي تحتاج متابعتك.</span>
-              </div>
-            )}
-          </div>
-        </section>
+        <MemberPostsPreview userId={userId} authLoading={rolesLoading} headingId={`${actionsId}-posts`} />
       </div>
 
       <nav id={actionsId} className="family-agenda__actions" aria-label="الإضافة السريعة">

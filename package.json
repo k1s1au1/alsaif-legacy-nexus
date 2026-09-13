@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
+    "test:member-posts": "node --test scripts/test-member-post-rotation.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {

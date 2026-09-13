@@ -25,6 +25,8 @@ jobs:
         run: npm install --package-lock=false
       - name: Check TypeScript
         run: npx tsc --noEmit
+      - name: Check member post rotation
+        run: npm run test:member-posts
       - name: Check service worker syntax
         run: node --check public/firebase-messaging-sw.js
       - name: Build web app

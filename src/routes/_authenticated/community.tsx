@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,8 +14,17 @@ import { OfflineCache } from "@/lib/offline-cache";
 import { consumeQuickCreate } from "@/lib/quick-create";
 import { PrivateRequestsSection } from "@/components/community/private-requests";
 import { MemberDialog } from "@/components/community/member-dialog";
+import { PUBLIC_MEMBER_POST_KINDS } from "@/lib/member-post-rotation";
 
-export const Route = createFileRoute("/_authenticated/community")({ ssr:false, head:()=>({meta:[{title:"ركن الأعضاء — السيف"},{name:"description",content:"مساحة الأعضاء لمشاركة اليوميات والأسئلة مع تصويت العائلة."}]}), component:CommunityPage });
+export const Route = createFileRoute("/_authenticated/community")({
+  ssr:false,
+  validateSearch:(search:Record<string,unknown>):{post?:string;create?:string}=>({
+    post:typeof search.post==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(search.post)?search.post:undefined,
+    create:typeof search.create==="string"?search.create:undefined,
+  }),
+  head:()=>({meta:[{title:"ركن الأعضاء — السيف"},{name:"description",content:"مساحة الأعضاء لمشاركة اليوميات والأسئلة مع تصويت العائلة."}]}),
+  component:CommunityPage,
+});
 type Post={id:string;author_id:string;kind:"diary"|"question"|"request"|string;title:string;body:string|null;image_urls:string[];poll_options:{label:string}[]|null;pinned:boolean;created_at:string;author?:{arabic_name:string|null;full_name:string|null;avatar_url:string|null}};
 const KIND_META:Record<string,{label:string;icon:any;color:string}>={diary:{label:"يوميات",icon:BookOpen,color:"bg-emerald-600"},question:{label:"سؤال للعائلة",icon:HelpCircle,color:"bg-sky-600"}};
 
@@ -23,6 +32,7 @@ const COMMUNITY_PAGE_SIZE = 20;
 const COMMUNITY_CACHE_PREFIX = "member_corner_posts";
 
 function CommunityPage(){
+ const selectedPostId=Route.useSearch().post;
  const {
    userId:meId,
    canManageSection,
@@ -45,6 +55,61 @@ function CommunityPage(){
  const [filter,setFilter]=useState<string>("all");
  const postsRef=useRef<Post[]>([]);
  const postIdsRef=useRef<string[]>([]);
+ const [selectedPost,setSelectedPost]=useState<{post:Post;comments:any[];votes:any[]}|null>(null);
+ const [selectedLoading,setSelectedLoading]=useState(false);
+ const selectedRequestRef=useRef(0);
+
+ // Resolve the chosen post separately: old posts must open without loading the entire feed.
+ const loadSelectedPost=useCallback(async()=>{
+   const request=++selectedRequestRef.current;
+   if(!meId||!selectedPostId){setSelectedPost(null);setSelectedLoading(false);return;}
+   setSelectedPost(current=>current?.post.id===selectedPostId?current:null);
+   setSelectedLoading(true);
+   try{
+     const{data:post,error}=await supabase.from("member_posts").select("*")
+       .eq("id",selectedPostId).in("kind",PUBLIC_MEMBER_POST_KINDS).maybeSingle();
+     if(error)throw error;
+     if(!post){if(request===selectedRequestRef.current)setSelectedPost(null);return;}
+     const[{data:coms,error:commentError},{data:vs,error:voteError}]=await Promise.all([
+       supabase.from("member_post_comments").select("*").eq("post_id",post.id).order("created_at",{ascending:true}),
+       supabase.from("member_post_votes").select("*").eq("post_id",post.id),
+     ]);
+     if(commentError||voteError)throw commentError||voteError;
+     const authorIds=[...new Set([post.author_id,...(coms??[]).map(comment=>comment.author_id)])];
+     const{data:profiles}=await supabase.from("profiles").select("id, arabic_name, full_name, avatar_url").in("id",authorIds);
+     if(request!==selectedRequestRef.current)return;
+     const authors=new Map((profiles??[]).map(profile=>[profile.id,profile]));
+     setSelectedPost({
+       post:{...post,poll_options:post.poll_options as Post["poll_options"],author:authors.get(post.author_id)},
+       comments:(coms??[]).map(comment=>({...comment,author:authors.get(comment.author_id)})),
+       votes:vs??[],
+     });
+   }catch{
+     if(request===selectedRequestRef.current)setSelectedPost(null);
+   }finally{
+     if(request===selectedRequestRef.current)setSelectedLoading(false);
+   }
+ },[meId,selectedPostId]);
+
+ useEffect(()=>{
+   void loadSelectedPost();
+   return()=>{selectedRequestRef.current+=1;};
+ },[loadSelectedPost]);
+
+ useEffect(()=>{
+   if(!meId||!selectedPostId)return;
+   const refresh=()=>{void loadSelectedPost();};
+   const channel=supabase.channel(`community-selected-${selectedPostId}`)
+     .on("postgres_changes",{event:"*",schema:"public",table:"member_posts",filter:`id=eq.${selectedPostId}`},refresh)
+     .on("postgres_changes",{event:"*",schema:"public",table:"member_post_comments",filter:`post_id=eq.${selectedPostId}`},refresh)
+     .on("postgres_changes",{event:"*",schema:"public",table:"member_post_votes",filter:`post_id=eq.${selectedPostId}`},refresh)
+     .subscribe();
+   return()=>{void supabase.removeChannel(channel);};
+ },[meId,selectedPostId,loadSelectedPost]);
+
+ useEffect(()=>{
+   if(selectedPost?.post.id)document.getElementById("member-corner-selected")?.scrollIntoView({block:"start"});
+ },[selectedPost?.post.id]);
 
  useEffect(()=>{
    if(roleLoading||!meId)return;
@@ -250,6 +315,10 @@ function CommunityPage(){
  return <AppShell title="ركن الأعضاء" user={shellProfile}><div className="member-corner-page max-w-6xl mx-auto flex flex-col gap-6 md:gap-10 pb-36 md:pb-24" dir="rtl">
    <section className="member-corner-hero animate-fade-up px-4 md:px-0"><div className="relative overflow-hidden rounded-[32px] md:rounded-[48px] bg-gradient-to-br from-emerald-800 via-[#0d2620] to-black p-6 md:p-12 text-white shadow-2xl border border-white/5"><div className="absolute top-0 right-0 size-64 bg-gold-primary/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"/><div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6"><div className="space-y-3 md:space-y-5 text-center md:text-right"><div className="flex items-center justify-center md:justify-start gap-3"><div className="h-0.5 w-8 md:w-12 bg-gold-primary"/><span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">مساحة العائلة</span></div><h2 className="text-3xl md:text-6xl font-black tracking-tighter leading-tight">ركن الأعضاء</h2><p className="text-white/60 font-bold text-sm md:text-xl max-w-xl">شارك يومياتك أو اطرح سؤالاً تأخذ فيه رأي العائلة بالتعليق أو التصويت.</p></div><div className="size-16 md:size-28 rounded-2xl md:rounded-[36px] bg-white/5 border border-white/10 flex items-center justify-center self-center md:self-auto shrink-0"><Handshake className="size-8 md:size-14 text-gold-primary" strokeWidth={1.5}/></div></div></div></section>
    <div className="member-corner-filters px-4 md:px-0 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2"><FilterChip active={filter==="all"} onClick={()=>setFilter("all")} label="الكل"/>{Object.entries(KIND_META).map(([k,m])=><FilterChip key={k} active={filter===k} onClick={()=>setFilter(k)} label={m.label} Icon={m.icon}/>)}</div><button onClick={()=>setShowAdd(true)} className="btn-gold px-6 py-3 rounded-2xl flex items-center gap-2 shadow-xl text-sm font-black"><Plus size={18}/><span>مشاركة جديدة</span></button></div>
+   {selectedPostId&&<section id="member-corner-selected" className="scroll-mt-32 px-4 md:px-0 space-y-4" aria-label="المشاركة المختارة">
+     <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-black text-primary">المشاركة المختارة</h3><Link to="/community" search={{}} className="min-h-11 inline-flex items-center gap-2 text-xs font-bold text-muted-foreground"><X size={15}/>العودة لجميع المشاركات</Link></div>
+     {selectedLoading&&!selectedPost?<div className="py-10 text-center" role="status"><Loader2 className="animate-spin size-8 mx-auto text-primary"/><span className="text-xs text-muted-foreground">جاري فتح المشاركة…</span></div>:selectedPost?<PostCard key={selectedPost.post.id} post={selectedPost.post} meId={meId} isHead={isHead} canDelete={isHead||selectedPost.post.author_id===meId} comments={selectedPost.comments} votes={selectedPost.votes} onRefresh={()=>{void loadData();void loadSelectedPost();}}/>:<p className="p-6 rounded-2xl bg-muted/30 text-sm text-muted-foreground" role="status">هذه المشاركة غير موجودة أو غير متاحة.</p>}
+   </section>}
    <PrivateRequestsSection/>
    <div className="member-corner-content grid grid-cols-1 gap-8 px-4 md:px-0">
     {loading?(
@@ -261,7 +330,7 @@ function CommunityPage(){
         لا توجد مشاركات بعد — كن أول من يبدأ
       </div>
     ):(
-      filtered.map(post=>(
+      filtered.filter(post=>post.id!==selectedPost?.post.id).map(post=>(
         <PostCard
           key={post.id}
           post={post}
@@ -335,4 +404,3 @@ function AddPostDialog({meId,onClose,onSaved}:any){
  const submit=async(e:any)=>{e.preventDefault();if(!title.trim())return toast.error("أدخل عنواناً");const opts=withPoll?pollOptions.map(o=>o.trim()).filter(Boolean).map(label=>({label})):null;if(withPoll&&(!opts||opts.length<2))return toast.error("التصويت يحتاج خيارَين على الأقل");setSaving(true);const{error}=await supabase.from("member_posts" as any).insert({author_id:meId,kind,title:title.trim(),body:body.trim()||null,image_urls:images,poll_options:opts} as any);setSaving(false);if(error)toast.error("تعذر النشر: "+error.message);else{toast.success("تم النشر");onSaved();onClose()}};
  return <MemberDialog title="مشاركة جديدة" description="شارك يومياتك أو اطرح سؤالاً للعائلة مع الصور والتصويت." icon={<Plus size={22}/>} onClose={onClose} wide><form onSubmit={submit} className="member-dialog-form text-foreground"><div className="member-dialog-scroll space-y-5"><div className="grid grid-cols-2 gap-3">{Object.entries(KIND_META).map(([k,m])=>{const I=m.icon,active=kind===k;return <button type="button" key={k} onClick={()=>setKind(k as any)} className={cn("p-4 rounded-2xl border-2 flex flex-col items-center gap-2",active?`${m.color} text-white border-transparent`:"bg-card text-muted-foreground border-border")}><I size={22}/><span className="text-xs font-black">{m.label}</span></button>})}</div><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="عنوان المشاركة..." className="w-full h-14 px-6 rounded-2xl bg-muted/40 border border-border/60 font-black" required/><textarea value={body} onChange={e=>setBody(e.target.value)} placeholder="اكتب تفاصيل المشاركة..." rows={5} className="w-full p-5 rounded-2xl bg-muted/40 border border-border/60 font-bold resize-none"/><div className="flex flex-wrap gap-2">{images.map((u,i)=><div key={i} className="size-20 rounded-2xl overflow-hidden relative"><img src={u} className="size-full object-cover" alt=""/><button type="button" onClick={()=>setImages(images.filter((_,j)=>j!==i))} className="absolute top-1 left-1 size-6 rounded-full bg-black/60 text-white"><X size={12}/></button></div>)}<label className="size-20 rounded-2xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer">{uploading?<Loader2 className="animate-spin" size={20}/>:<ImageIcon size={20}/>}<input type="file" accept="image/*" multiple className="hidden" onChange={e=>upload(e.target.files)}/></label></div><div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/60"><label className="flex items-center gap-3"><input type="checkbox" checked={withPoll} onChange={e=>setWithPoll(e.target.checked)}/><span className="text-sm font-black flex items-center gap-2"><Vote size={16}/> إضافة تصويت</span></label>{withPoll&&<div className="space-y-2">{pollOptions.map((opt,i)=><input key={i} value={opt} onChange={e=>{const copy=[...pollOptions];copy[i]=e.target.value;setPollOptions(copy)}} placeholder={`الخيار ${i+1}`} className="w-full h-11 px-4 rounded-xl bg-card border border-border/60"/>)}{pollOptions.length<6&&<button type="button" onClick={()=>setPollOptions([...pollOptions,""])} className="w-full h-10 rounded-xl border-2 border-dashed border-border">+ إضافة خيار</button>}</div>}</div></div><div className="member-dialog-actions"><button type="button" onClick={onClose} className="flex-1 py-4 rounded-2xl font-black text-muted-foreground">تراجع</button><button disabled={saving} type="submit" className="flex-[2] btn-gold py-4 rounded-2xl font-black flex items-center justify-center gap-2">{saving?<Loader2 className="animate-spin size-5"/>:<><Send size={18}/><span>نشر</span></>}</button></div></form></MemberDialog>
 }
-
