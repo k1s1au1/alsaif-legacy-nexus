@@ -86,7 +86,9 @@
   }
   .heritage-page-content.max-w-6xl.mx-auto.space-y-12>section.family-services-section:nth-child(2)>div::before,
   .heritage-page-content.max-w-6xl.mx-auto.space-y-12>section.family-services-section:nth-child(2)>div::after{content:none!important;display:none!important}
-  .heritage-page-content>.heritage-filters{order:3!important;padding:0!important;margin:0!important;gap:12px!important}
+  .heritage-page-content>.heritage-toolbar{order:3!important}
+  .heritage-page-content>.heritage-filters,
+  .heritage-page-content>.heritage-toolbar>.heritage-filters{order:3!important;padding:0!important;margin:0!important;gap:12px!important}
   .heritage-filters>div:first-child{width:100%!important;overflow-x:auto!important}
   .heritage-filters input{background:color-mix(in srgb,var(--nav-bg,var(--primary)) 88%,black)!important;border-color:color-mix(in srgb,var(--gold-primary) 18%,transparent)!important;color:#fff!important}
   .heritage-filters input::placeholder{color:rgba(255,255,255,.42)!important}
