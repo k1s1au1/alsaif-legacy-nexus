@@ -15,12 +15,12 @@
   background:
     radial-gradient(
       circle at var(--portal-light-x) 72%,
-      rgba(207, 155, 62, 0.12),
+      color-mix(in srgb, var(--council-portal-accent) 12%, transparent),
       transparent 31%
     ),
-    #032b26;
+    var(--council-portal-background);
   box-shadow: none;
-  color: #fff8e4;
+  color: var(--council-portal-highlight);
   contain: layout paint;
   -webkit-tap-highlight-color: transparent;
   animation: council-portal-enter 0.82s cubic-bezier(0.2, 0.82, 0.24, 1)
@@ -37,8 +37,8 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(239, 181, 76, 0.13),
-    rgba(48, 126, 102, 0.04) 42%,
+    color-mix(in srgb, var(--council-portal-accent) 13%, transparent),
+    color-mix(in srgb, var(--council-portal-material) 4%, transparent) 42%,
     transparent 71%
   );
   filter: blur(18px);
@@ -57,9 +57,9 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 236, 183, 0.05) 30%,
-    rgba(255, 227, 154, 0.2) 50%,
-    rgba(255, 236, 183, 0.05) 70%,
+    color-mix(in srgb, var(--council-portal-highlight) 5%, transparent) 30%,
+    color-mix(in srgb, var(--council-portal-highlight) 20%, transparent) 50%,
+    color-mix(in srgb, var(--council-portal-highlight) 5%, transparent) 70%,
     transparent
   );
   filter: blur(8px);
@@ -86,7 +86,7 @@
 
 .council-portal-greeting {
   margin: 0 0 clamp(8px, 1.1vw, 18px);
-  color: #e8b95d;
+  color: var(--council-portal-accent);
   font-size: clamp(15px, 1.45vw, 24px);
   font-weight: 800;
   line-height: 1.35;
@@ -102,7 +102,7 @@
 
 .council-portal-identity span {
   margin-bottom: clamp(3px, 0.35vw, 7px);
-  color: #efc76d;
+  color: var(--council-portal-accent);
   font-size: clamp(15px, 1.5vw, 25px);
   font-weight: 800;
   line-height: 1.25;
@@ -113,14 +113,14 @@
   display: -webkit-box;
   max-width: 100%;
   overflow: hidden;
-  color: #fff3d0;
+  color: var(--council-portal-highlight);
   background: linear-gradient(
     98deg,
-    #c18a37 0%,
-    #fff8df 22%,
-    #e3b660 49%,
-    #fff3ca 69%,
-    #ad7528 100%
+    var(--council-portal-accent) 0%,
+    var(--council-portal-highlight) 22%,
+    var(--council-portal-accent) 49%,
+    var(--council-portal-highlight) 69%,
+    var(--council-portal-accent) 100%
   );
   background-size: 220% 100%;
   -webkit-background-clip: text;
@@ -134,7 +134,7 @@
   text-wrap: balance;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  filter: drop-shadow(0 5px 0 rgba(61, 40, 10, 0.74))
+  filter: drop-shadow(0 5px 0 color-mix(in srgb, var(--council-portal-shadow) 74%, transparent))
     drop-shadow(0 13px 14px rgba(0, 0, 0, 0.54));
   animation: council-portal-name-shine 7s ease-in-out 1.4s infinite;
 }
@@ -144,7 +144,7 @@
   max-width: 94%;
   margin: clamp(18px, 2.2vw, 34px) 0 0;
   overflow: hidden;
-  color: #dcb45f;
+  color: var(--council-portal-accent);
   font-size: clamp(14px, 1.25vw, 20px);
   font-weight: 800;
   line-height: 1.45;
@@ -160,7 +160,7 @@
 .council-portal-message::after {
   content: "✦";
   margin-inline: 0.7em;
-  color: #ecc873;
+  color: var(--council-portal-accent);
   font-size: 0.72em;
 }
 
@@ -173,17 +173,17 @@
   margin-top: clamp(20px, 2.2vw, 34px);
   padding: 7px 24px;
   overflow: hidden;
-  border: 1px solid rgba(231, 183, 91, 0.92);
+  border: 1px solid color-mix(in srgb, var(--council-portal-accent) 92%, transparent);
   border-radius: 13px;
   background: linear-gradient(
     180deg,
-    rgba(5, 55, 46, 0.86),
-    rgba(2, 38, 32, 0.9)
+    color-mix(in srgb, var(--council-portal-background) 90%, var(--council-portal-material)),
+    var(--council-portal-background)
   );
   box-shadow:
     0 10px 22px rgba(0, 0, 0, 0.27),
-    inset 0 1px rgba(255, 237, 189, 0.12);
-  color: #e9bd63;
+    inset 0 1px color-mix(in srgb, var(--council-portal-highlight) 12%, transparent);
+  color: var(--council-portal-accent);
   font-size: clamp(13px, 1.15vw, 18px);
   font-weight: 900;
   line-height: 1.2;
@@ -238,9 +238,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #101913;
+  color: var(--council-portal-shadow);
   text-align: center;
-  text-shadow: 0 1px rgba(255, 229, 162, 0.28);
+  text-shadow: 0 1px color-mix(in srgb, var(--council-portal-highlight) 28%, transparent);
 }
 
 .council-tower-inscription strong {
@@ -359,7 +359,7 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero 
   margin: 0 !important;
   padding: 0 !important;
   overflow: visible !important;
-  background: #032b26 !important;
+  background: var(--council-portal-background) !important;
 }
 
 html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero::before {
@@ -369,7 +369,7 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero:
   inset-block: 0 !important;
   left: 50% !important;
   width: 100vw !important;
-  background: #032b26 !important;
+  background: var(--council-portal-background) !important;
   transform: translateX(-50%) !important;
   pointer-events: none !important;
 }
@@ -412,7 +412,7 @@ html body .desktop-portal-stage {
   display: block !important;
   overflow: hidden !important;
   border-radius: 0 !important;
-  background: #032b26 !important;
+  background: var(--council-portal-background) !important;
 }
 
 html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section {
@@ -445,7 +445,7 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
 
   .council-portal-identity strong {
     font-size: clamp(30px, 9.4vw, 43px);
-    filter: drop-shadow(0 3px 0 rgba(61, 40, 10, 0.72))
+    filter: drop-shadow(0 3px 0 color-mix(in srgb, var(--council-portal-shadow) 72%, transparent))
       drop-shadow(0 8px 9px rgba(0, 0, 0, 0.52));
   }
 
@@ -546,11 +546,16 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
 
 
 /* uniform-council-portal-background-2026-09-02
- * Keep one continuous green surface behind the portal copy and model.
+ * Keep one continuous identity surface behind the portal copy and model.
  * On touch layouts, hide the RTL scroll thumb so it cannot appear as a grey seam.
  */
 :root {
-  --council-portal-background: #032b26;
+  --council-portal-background: color-mix(in srgb, var(--identity-header, var(--nav-bg, var(--primary))) 84%, black);
+  --council-portal-accent: color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 35%, var(--identity-tertiary, #ffffff) 65%);
+  --council-portal-highlight: color-mix(in srgb, var(--identity-tertiary, #ffffff) 85%, white);
+  --council-portal-material: var(--identity-panel, var(--primary));
+  --council-portal-metal: var(--identity-tertiary, var(--gold-primary));
+  --council-portal-shadow: color-mix(in srgb, var(--identity-header, var(--nav-bg, var(--primary))) 65%, black);
 }
 
 .heritage-pavilion-reference,
@@ -726,4 +731,3 @@ html body
     transform: translateX(50%);
   }
 }
-
