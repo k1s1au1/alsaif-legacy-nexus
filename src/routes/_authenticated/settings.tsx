@@ -30,33 +30,10 @@ import { setupPushNotifications } from "@/lib/pushNotifications";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
 import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
 import { useSimpleMode } from "@/hooks/use-simple-mode";
+import { APP_FONTS as FONTS, applyAppFont } from "@/lib/typography";
 import "@/settings-responsive.css";
 
-const FONTS = [
-  { id: "Tajawal", name: "تجوال (عصري)", family: "'Tajawal', sans-serif", desc: "خط ناعم وأنيق" },
-  { id: "Cairo", name: "كايـرو (عريض)", family: "'Cairo', sans-serif", desc: "وضوح عالي جداً" },
-  { id: "Lalezar", name: "لاليزار (فني)", family: "'Lalezar', cursive", desc: "خط عريض ومميز" },
-  { id: "Amiri", name: "الأميري (تراثي)", family: "'Amiri', serif", desc: "طابع كلاسيكي فاخر" },
-  { id: "Changa", name: "شانغا (هندسي)", family: "'Changa', sans-serif", desc: "زوايا حادة وقوية" },
-  {
-    id: "ReemKufi",
-    name: "ريم كوفي (كوفي)",
-    family: "'Reem Kufi', sans-serif",
-    desc: "أصالة الخط الكوفي",
-  },
-  {
-    id: "Markazi",
-    name: "مركزي (أدبي)",
-    family: "'Markazi Text', serif",
-    desc: "خط الكتب والروايات",
-  },
-  {
-    id: "Vazirmatn",
-    name: "وزير (بسيط)",
-    family: "'Vazirmatn', sans-serif",
-    desc: "بساطة تقنية حديثة",
-  },
-];
+
 
 type SettingsSectionId =
   | "appearance"
@@ -213,7 +190,7 @@ function SettingsPage() {
   };
 
   const applyFont = (fontFamily: string) => {
-    document.documentElement.style.setProperty("--app-font", fontFamily);
+    applyAppFont(fontFamily);
   };
 
   const applyFontScale = (scale: number) => {

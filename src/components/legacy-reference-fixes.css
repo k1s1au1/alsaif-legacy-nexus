@@ -2,19 +2,19 @@
 
 /* ---------- Family tree background ---------- */
 .family-tree-canvas::before {
-  inset: 3% 1.5% 0 !important;
-  opacity: 0.24 !important;
-  filter: blur(1px) saturate(0.58) sepia(0.13) !important;
-  background-image: url('/family-tree-background.svg') !important;
+  inset: -8px !important;
+  opacity: 0.52 !important;
+  filter: blur(3px) saturate(0.72) !important;
+  background-image: url('/family-tree-photo-v1.webp') !important;
   background-repeat: no-repeat !important;
-  background-position: center bottom !important;
-  background-size: min(96%, 1120px) auto !important;
+  background-position: center 48% !important;
+  background-size: cover !important;
 }
 
 .family-tree-canvas::after {
   background:
-    linear-gradient(180deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.14) 30%, rgba(255,253,248,.08) 66%, rgba(248,241,225,.44) 100%),
-    radial-gradient(ellipse at 50% 58%, transparent 0 47%, rgba(255,253,248,.26) 74%, rgba(255,253,248,.62) 100%) !important;
+    linear-gradient(180deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.12) 30%, rgba(255,253,248,.08) 66%, rgba(248,241,225,.25) 100%),
+    radial-gradient(ellipse at 50% 58%, transparent 0 47%, rgba(255,253,248,.16) 74%, rgba(255,253,248,.4) 100%) !important;
 }
 
 /* Keep the artwork decorative and always behind the real SVG tree. */
