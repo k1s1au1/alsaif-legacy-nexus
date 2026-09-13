@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { getPublicStats } from "@/lib/api/stats.functions";
 import { notifyAdminsOfNewRequest } from "@/lib/api/admin-notifications.functions";
 import { useQuery } from "@tanstack/react-query";
+import { queueLoginWelcome } from "@/lib/login-welcome";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -124,7 +125,7 @@ function AuthPage() {
   async function onLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
       let msg = "تأكد من صحة البريد وكلمة المرور";
@@ -134,6 +135,7 @@ function AuthPage() {
       toast.error("عذراً، فشل الدخول", { description: msg });
       return;
     }
+    if (data.user) queueLoginWelcome(data.user.id);
     navigate({ to: "/dashboard", replace: true });
   }
 

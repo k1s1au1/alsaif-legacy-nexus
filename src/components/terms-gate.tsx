@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { getCurrentUser, supabase } from "@/integrations/supabase/client";
 import { TermsContent, TERMS_SHORT } from "./terms-content";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+const TermsReadyContext = createContext(false);
+export const useTermsReady = () => useContext(TermsReadyContext);
 
 export function TermsGate({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
@@ -48,7 +51,7 @@ export function TermsGate({ children }: { children: React.ReactNode }) {
   if (!checked) return null;
 
   return (
-    <>
+    <TermsReadyContext.Provider value={!needsAccept}>
       {children}
       {needsAccept && (
         <div className="fixed inset-0 z-[100] bg-background/90 backdrop-blur-sm grid place-items-center p-4">
@@ -90,6 +93,6 @@ export function TermsGate({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
-    </>
+    </TermsReadyContext.Provider>
   );
 }
