@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { getCurrentUser, supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/integrations/supabase/client";
 import { TermsGate } from "@/components/terms-gate";
 import { AlertCircle, Home, RefreshCcw } from "lucide-react";
 import { AppShellLayout } from "@/components/app-shell";
@@ -45,30 +45,12 @@ export const Route = createFileRoute("/_authenticated")({
       </div>
     );
   },
-  beforeLoad: async ({ location }) => {
+  beforeLoad: async () => {
     try {
       const { data, error } = await getCurrentUser();
       if (error || !data.user) throw redirect({ to: "/auth" });
 
-      // Force onboarding if the three-part name, gender or birth date is missing
-      if (location.pathname !== "/onboarding") {
-        const { data: profile, error: pError } = await supabase
-          .from("profiles")
-          .select("first_name, father_name, grandfather_name, gender, birth_date, birth_date_hijri")
-          .eq("id", data.user.id)
-          .maybeSingle();
-
-        // If we can't check profile (e.g. columns missing), don't block the app
-        if (!pError && profile) {
-          const p = profile as any;
-          const missingName = !p.first_name || !p.father_name || !p.grandfather_name;
-          const missingBirth = !p.gender || (!p.birth_date && !p.birth_date_hijri);
-          if (missingName || missingBirth) {
-            throw redirect({ to: "/onboarding" });
-          }
-        }
-      }
-
+      // Accepted members enter directly; profile completion is not an access requirement.
       return { user: data.user };
     } catch (e) {
       // Re-throw redirects so the router handles them
