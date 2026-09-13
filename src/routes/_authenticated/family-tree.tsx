@@ -478,8 +478,7 @@ function FamilyTreePage() {
             dominantBaseline="middle"
             fill={isRoot || isSelected || isMe ? "#F7D98A" : "#153D2F"}
             fontSize={20}
-            fontWeight={900}
-            fontFamily="Tajawal, sans-serif"
+            fontWeight={700}
             direction="rtl"
           >
             {initial}
@@ -492,8 +491,7 @@ function FamilyTreePage() {
             dominantBaseline="middle"
             fill={primaryText}
             fontSize={15}
-            fontWeight={900}
-            fontFamily="Tajawal, sans-serif"
+            fontWeight={700}
             direction="rtl"
           >
             {shortenNodeLabel(nodeName, 20)}
@@ -505,8 +503,7 @@ function FamilyTreePage() {
             dominantBaseline="middle"
             fill={secondaryText}
             fontSize={11}
-            fontWeight={800}
-            fontFamily="Tajawal, sans-serif"
+            fontWeight={500}
             direction="rtl"
           >
             {nodeSubtitle}
@@ -1116,14 +1113,7 @@ function FamilyTreePage() {
         .rd3t-tree-container {
           width: 100%;
           height: 100%;
-          background-color: #fbf8ef;
-          background-image:
-            linear-gradient(180deg, rgba(255,253,247,0.28), rgba(250,245,232,0.2)),
-            url('/family-tree-background-approved.svg'),
-            radial-gradient(circle at 2px 2px, rgba(164, 128, 48, 0.045) 1px, transparent 0);
-          background-position: center, center bottom, 0 0;
-          background-repeat: no-repeat, no-repeat, repeat;
-          background-size: 100% 100%, min(1080px, 96%) auto, 34px 34px;
+          background: transparent;
         }
 
         .family-tree-canvas {
@@ -1231,6 +1221,16 @@ function FamilyTreePage() {
           outline: none;
         }
 
+        /* SVG labels inherit the same selected family/royal mode as HTML cards.
+           Reset D3's inherited node stroke so Arabic glyphs stay clear on Apple. */
+        .family-tree-canvas .ios-native-tree-node text {
+          font-family: inherit;
+          stroke: none;
+          stroke-width: 0;
+          font-synthesis: none;
+          letter-spacing: normal;
+        }
+
         .ios-native-tree-node:focus-visible > rect {
           stroke: #0f5a3f;
           stroke-width: 4px;
@@ -1321,11 +1321,6 @@ function FamilyTreePage() {
 
           .family-tree-approved-heading {
             display: flex;
-          }
-
-          .family-tree-approved .rd3t-tree-container {
-            background-position: center, center 72%, 0 0;
-            background-size: 100% 100%, 132% auto, 34px 34px;
           }
 
           .family-tree-approved .rd3t-tree-container,

@@ -90,6 +90,11 @@
 }
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   * {
     border-color: var(--color-border);
     transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
