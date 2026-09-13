@@ -112,7 +112,8 @@ export function MemberPostsPreview({ userId, authLoading, headingId }: {
     }
 
     const read = async () => {
-      if (busy || !navigator.onLine) {
+      if (busy) return;
+      if (!navigator.onLine) {
         if (alive && !hasPosts) setLoading(false);
         return;
       }
