@@ -164,47 +164,37 @@ export function HeritagePortal3D({
                 height="100%"
                 colorInterpolationFilters="sRGB"
               >
+                {/* Tint cooler stone gently while retaining the warm brass pixels. */}
                 <feColorMatrix
                   in="SourceGraphic"
-                  type="saturate"
-                  values="0"
-                  result="stone-detail"
-                />
-                <feColorMatrix
-                  in="stone-detail"
-                  type="luminanceToAlpha"
-                  result="highlight-mask"
+                  type="matrix"
+                  values="0 0 0 0 0
+                          0 0 0 0 0
+                          0 0 0 0 0
+                         -2 1 1 0 0.5"
+                  result="stone-mask"
                 />
                 <feFlood
                   style={{ floodColor: "var(--council-portal-material)" }}
-                  result="stone-color"
-                />
-                <feFlood
-                  style={{ floodColor: "var(--council-portal-metal)" }}
-                  result="metal-color"
+                  floodOpacity="0.35"
+                  result="identity-tint"
                 />
                 <feComposite
-                  in="metal-color"
-                  in2="highlight-mask"
+                  in="identity-tint"
+                  in2="stone-mask"
                   operator="in"
-                  result="colored-highlights"
+                  result="stone-tint"
                 />
                 <feBlend
-                  in="colored-highlights"
-                  in2="stone-color"
-                  mode="normal"
-                  result="identity-colors"
-                />
-                <feBlend
-                  in="identity-colors"
-                  in2="stone-detail"
-                  mode="color"
-                  result="colored-stone"
-                />
-                <feComposite
-                  in="colored-stone"
+                  in="stone-tint"
                   in2="SourceGraphic"
-                  operator="in"
+                  mode="soft-light"
+                  result="harmonized-stone"
+                />
+                <feComposite
+                  in="harmonized-stone"
+                  in2="SourceGraphic"
+                  operator="atop"
                 />
               </filter>
             </defs>

@@ -102,7 +102,7 @@
 
 .council-portal-identity span {
   margin-bottom: clamp(3px, 0.35vw, 7px);
-  color: var(--council-portal-accent);
+  color: var(--council-portal-copy);
   font-size: clamp(15px, 1.5vw, 25px);
   font-weight: 800;
   line-height: 1.25;
@@ -116,11 +116,11 @@
   color: var(--council-portal-highlight);
   background: linear-gradient(
     98deg,
-    var(--council-portal-accent) 0%,
+    color-mix(in srgb, var(--council-portal-highlight) 80%, var(--council-portal-accent)) 0%,
     var(--council-portal-highlight) 22%,
-    var(--council-portal-accent) 49%,
+    var(--council-portal-copy) 49%,
     var(--council-portal-highlight) 69%,
-    var(--council-portal-accent) 100%
+    color-mix(in srgb, var(--council-portal-highlight) 80%, var(--council-portal-accent)) 100%
   );
   background-size: 220% 100%;
   -webkit-background-clip: text;
@@ -144,7 +144,7 @@
   max-width: 94%;
   margin: clamp(18px, 2.2vw, 34px) 0 0;
   overflow: hidden;
-  color: var(--council-portal-accent);
+  color: var(--council-portal-copy);
   font-size: clamp(14px, 1.25vw, 20px);
   font-weight: 800;
   line-height: 1.45;
@@ -551,10 +551,10 @@ html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-sectio
  */
 :root {
   --council-portal-background: color-mix(in srgb, var(--identity-header, var(--nav-bg, var(--primary))) 84%, black);
-  --council-portal-accent: color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 35%, var(--identity-tertiary, #ffffff) 65%);
-  --council-portal-highlight: color-mix(in srgb, var(--identity-tertiary, #ffffff) 85%, white);
+  --council-portal-accent: color-mix(in srgb, #f0d8a0 80%, var(--identity-tertiary, #f3e6c7));
+  --council-portal-highlight: color-mix(in srgb, #fff8e8 92%, var(--identity-tertiary, #f3e6c7));
+  --council-portal-copy: color-mix(in srgb, #fff8e8 60%, var(--identity-tertiary, #f3e6c7));
   --council-portal-material: var(--identity-panel, var(--primary));
-  --council-portal-metal: var(--identity-tertiary, var(--gold-primary));
   --council-portal-shadow: color-mix(in srgb, var(--identity-header, var(--nav-bg, var(--primary))) 65%, black);
 }
 
@@ -568,7 +568,10 @@ html body .desktop-portal-stage {
   background-image: none !important;
 }
 
-.council-portal-ambient,
+.council-portal-ambient {
+  display: block !important;
+}
+
 .council-portal-sheen {
   display: none !important;
 }
