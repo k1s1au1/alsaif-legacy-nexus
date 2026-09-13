@@ -13,6 +13,7 @@ type HeritagePortal3DProps = {
   name: string;
   message: string;
   className?: string;
+  welcomeIntro?: boolean;
 };
 
 const clamp = (value: number, min: number, max: number) =>
@@ -23,6 +24,7 @@ export function HeritagePortal3D({
   name,
   message,
   className = "",
+  welcomeIntro = false,
 }: HeritagePortal3DProps) {
   const colorFilterId = `council-portal-colors-${useId().replace(/:/g, "")}`;
   const rootRef = useRef<HTMLDivElement>(null);
@@ -84,6 +86,7 @@ export function HeritagePortal3D({
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (
+      welcomeIntro ||
       reducedMotionRef.current ||
       (event.pointerType !== "mouse" && event.pointerType !== "pen")
     ) {
@@ -120,7 +123,7 @@ export function HeritagePortal3D({
       role="img"
       aria-label={[
         greeting,
-        `حياك الله، ${name}`,
+        welcomeIntro ? `أهلًا بك في ${name}` : `حياك الله، ${name}`,
         message,
         "مجلس السيف",
         "تأسس عام ١٤٤٨ هجري",
@@ -136,7 +139,7 @@ export function HeritagePortal3D({
         <p className="council-portal-greeting">{greeting}</p>
 
         <div className="council-portal-identity">
-          <span>حياك الله،</span>
+          <span>{welcomeIntro ? "أهلًا بك في" : "حياك الله،"}</span>
           <strong>{name}</strong>
         </div>
 
@@ -207,6 +210,7 @@ export function HeritagePortal3D({
             />
           </svg>
 
+          {welcomeIntro && <span className="council-portal-entry-light" />}
           <div className="council-tower-inscription">
             <strong>
               <span>مجلس</span>

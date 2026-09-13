@@ -6,6 +6,7 @@ import { AppShellLayout } from "@/components/app-shell";
 import { LegacyExperienceEnhancer } from "@/components/legacy-experience-enhancer";
 import { LegacyMiniMapRepair } from "@/components/legacy-minimap-repair";
 import { OfflineRouteWarmup } from "@/components/offline-route-warmup";
+import { LoginWelcome } from "@/components/login-welcome";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -64,14 +65,20 @@ export const Route = createFileRoute("/_authenticated")({
       throw redirect({ to: "/auth" });
     }
   },
-  component: () => (
+  component: AuthenticatedLayout,
+});
+
+function AuthenticatedLayout() {
+  const { user } = Route.useRouteContext();
+  return (
     <TermsGate>
       <AppShellLayout>
         <OfflineRouteWarmup />
         <LegacyExperienceEnhancer />
         <LegacyMiniMapRepair />
         <Outlet />
+        <LoginWelcome key={user.id} user={user} />
       </AppShellLayout>
     </TermsGate>
-  ),
-});
+  );
+}
