@@ -141,7 +141,8 @@ export function MemberPostsPreview({ userId, authLoading, headingId }: {
             .select("id", { count: "exact", head: true }).eq("post_id", post.id))),
         ]);
         if (!alive) return;
-        const authors = new Map((profiles.data ?? []).map((profile) => [profile.id, profile]));
+        const authors = new Map<string, NonNullable<PreviewPost["author"]>>();
+        for (const profile of profiles.data ?? []) authors.set(profile.id, profile);
         const next: Snapshot = { userId, total, posts: posts.map((post, index) => ({
           ...post,
           body: post.body?.slice(0, 500) ?? null,
