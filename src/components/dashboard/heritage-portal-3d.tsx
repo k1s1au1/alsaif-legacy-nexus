@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useRef,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -23,6 +24,7 @@ export function HeritagePortal3D({
   message,
   className = "",
 }: HeritagePortal3DProps) {
+  const colorFilterId = `council-portal-colors-${useId().replace(/:/g, "")}`;
   const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
   const targetRef = useRef({ x: 0, y: 0 });
@@ -147,12 +149,73 @@ export function HeritagePortal3D({
 
       <div className="council-portal-model" aria-hidden="true">
         <div className="council-portal-model-visual">
-          <img
+          <svg
             className="council-portal-towers"
-            src={councilTowers}
-            alt=""
-            draggable={false}
-          />
+            viewBox="0 0 1065 1477"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <defs>
+              <filter
+                id={colorFilterId}
+                x="0%"
+                y="0%"
+                width="100%"
+                height="100%"
+                colorInterpolationFilters="sRGB"
+              >
+                <feColorMatrix
+                  in="SourceGraphic"
+                  type="saturate"
+                  values="0"
+                  result="stone-detail"
+                />
+                <feColorMatrix
+                  in="stone-detail"
+                  type="luminanceToAlpha"
+                  result="highlight-mask"
+                />
+                <feFlood
+                  style={{ floodColor: "var(--council-portal-material)" }}
+                  result="stone-color"
+                />
+                <feFlood
+                  style={{ floodColor: "var(--council-portal-metal)" }}
+                  result="metal-color"
+                />
+                <feComposite
+                  in="metal-color"
+                  in2="highlight-mask"
+                  operator="in"
+                  result="colored-highlights"
+                />
+                <feBlend
+                  in="colored-highlights"
+                  in2="stone-color"
+                  mode="normal"
+                  result="identity-colors"
+                />
+                <feBlend
+                  in="identity-colors"
+                  in2="stone-detail"
+                  mode="color"
+                  result="colored-stone"
+                />
+                <feComposite
+                  in="colored-stone"
+                  in2="SourceGraphic"
+                  operator="in"
+                />
+              </filter>
+            </defs>
+            <image
+              href={councilTowers}
+              width="1065"
+              height="1477"
+              filter={`url(#${colorFilterId})`}
+              preserveAspectRatio="xMidYMid meet"
+            />
+          </svg>
 
           <div className="council-tower-inscription">
             <strong>
