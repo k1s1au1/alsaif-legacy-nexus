@@ -155,19 +155,34 @@ function HeritagePage() {
                 <h2 className="text-3xl md:text-6xl font-black tracking-tighter leading-none drop-shadow-2xl">إرث<br /><span className="text-white/30">السيف</span></h2>
                 <p className="text-white/60 font-bold text-sm md:text-xl max-w-xl">نحفظ قصص الأجداد، لتبقى فخراً للأحفاد.</p>
               </div>
-              {canManage && <button onClick={() => setShowCompose(true)} className="btn-gold relative px-8 py-4 md:px-12 md:py-6 rounded-2xl md:rounded-[32px] flex items-center justify-center gap-3 shadow-2xl shadow-gold-primary/30 text-sm md:text-xl font-black group/btn self-center md:self-auto shrink-0 active:scale-95 transition-all"><Scroll className="size-5 md:size-7 group-hover:rotate-12 transition-transform duration-500" /><span>إضافة موروث</span></button>}
             </div>
           </div>
         </section>
 
         <QuickActionsBanner />
 
-        <div className="heritage-filters flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 p-1.5 bg-muted/40 rounded-[28px] border border-border/40 overflow-x-auto no-scrollbar w-full md:w-auto">
-            <FilterTab active={filter === "all"} onClick={() => setFilter("all")} label="الكل" count={items.length} />
-            {(Object.entries(KIND_META) as [HeritageKind, any][]).map(([key, meta]) => <FilterTab key={key} active={filter === key} onClick={() => setFilter(key)} label={meta.label} icon={<meta.icon size={14} />} count={items.filter((i) => i.kind === key).length} />)}
+        <div className="heritage-toolbar space-y-4">
+          {canManage && (
+            <div className="heritage-add-actions flex justify-start">
+              <button
+                type="button"
+                aria-label="إضافة موروث"
+                onClick={() => setShowCompose(true)}
+                className="btn-gold inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black shadow-lg shadow-gold-primary/20 transition-all active:scale-95 sm:w-auto md:text-base"
+              >
+                <Plus className="size-5" />
+                <span>إضافة موروث</span>
+              </button>
+            </div>
+          )}
+
+          <div className="heritage-filters flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2 p-1.5 bg-muted/40 rounded-[28px] border border-border/40 overflow-x-auto no-scrollbar w-full md:w-auto">
+              <FilterTab active={filter === "all"} onClick={() => setFilter("all")} label="الكل" count={items.length} />
+              {(Object.entries(KIND_META) as [HeritageKind, any][]).map(([key, meta]) => <FilterTab key={key} active={filter === key} onClick={() => setFilter(key)} label={meta.label} icon={<meta.icon size={14} />} count={items.filter((i) => i.kind === key).length} />)}
+            </div>
+            <div className="relative group w-full md:w-80"><Search className="size-4 absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" /><input type="text" placeholder="ابحث في الإرث..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full bg-muted/30 border border-border rounded-2xl pr-11 pl-4 py-3.5 font-bold text-sm focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all" /></div>
           </div>
-          <div className="relative group w-full md:w-80"><Search className="size-4 absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" /><input type="text" placeholder="ابحث في الإرث..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full bg-muted/30 border border-border rounded-2xl pr-11 pl-4 py-3.5 font-bold text-sm focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all" /></div>
         </div>
 
         {loading ? <div className="flex flex-col items-center justify-center py-40 opacity-20"><Loader2 className="size-16 animate-spin text-primary" strokeWidth={3} /><p className="mt-4 font-black tracking-widest text-xs uppercase">جاري فتح سجلات التاريخ...</p></div> : filteredItems.length === 0 ? <div className="card-surface p-24 md:p-40 flex flex-col items-center text-center gap-8 border-dashed border-4 opacity-40 rounded-[56px] bg-muted/20"><Scroll size={80} className="text-muted-foreground opacity-20" /><div className="space-y-2"><p className="text-3xl font-black text-primary">لا توجد موروثات حالياً</p><p className="text-lg font-bold opacity-60">سيتم إضافة المحتوى قريباً من قبل مسؤولي الإرث.</p></div></div> : <div className="columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8">{filteredItems.map((item, idx) => <HeritageCard key={item.id} item={item} index={idx} canDelete={canManage} onDelete={() => deleteItem(item.id)} />)}</div>}
