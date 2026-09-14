@@ -568,6 +568,13 @@ html body .desktop-portal-stage {
   background-image: none !important;
 }
 
+/* Let the overview card paint one identity background behind the welcome and services. */
+html body .desktop-overview-shell > .desktop-portal-stage,
+html body .desktop-overview-shell > .desktop-portal-stage > .heritage-pavilion-reference {
+  background: transparent !important;
+  background-image: none !important;
+}
+
 .council-portal-ambient {
   display: block !important;
 }

@@ -48,9 +48,22 @@
     border-radius: 32px;
     color: #fff;
     background:
-      radial-gradient(circle at 8% 100%, rgba(201, 166, 91, 0.12), transparent 34%),
-      radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.045), transparent 24%),
-      linear-gradient(135deg, #032c23 0%, #073f32 52%, #052b22 100%);
+      radial-gradient(
+        circle at 8% 100%,
+        color-mix(in srgb, var(--council-portal-accent) 12%, transparent),
+        transparent 34%
+      ),
+      radial-gradient(
+        circle at 88% 12%,
+        color-mix(in srgb, var(--council-portal-highlight) 4.5%, transparent),
+        transparent 24%
+      ),
+      linear-gradient(
+        135deg,
+        var(--council-portal-background) 0%,
+        color-mix(in srgb, var(--council-portal-background) 90%, var(--council-portal-material)) 52%,
+        var(--council-portal-background) 100%
+      );
     box-shadow: 0 24px 62px rgba(5, 20, 16, 0.18);
   }
 
