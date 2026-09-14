@@ -7,6 +7,8 @@ export type LoginWelcomeTicket = {
 const PENDING_KEY = "council-login-welcome-v1";
 const MAX_AGE = 5 * 60 * 1000;
 export const WELCOME_SEEN_METADATA_KEY = "council_welcome_seen_at";
+export const WELCOME_VERSION_METADATA_KEY = "council_welcome_version";
+export const WELCOME_VERSION = 2;
 let pendingTicket: LoginWelcomeTicket | null = null;
 
 // Only the successful sign-in form queues an entrance. Restored sessions,
@@ -61,9 +63,10 @@ export function hasSeenCouncilWelcome(user: {
   id: string;
   user_metadata?: Record<string, unknown>;
 }) {
-  if (user.user_metadata?.[WELCOME_SEEN_METADATA_KEY]) return true;
+  const version = user.user_metadata?.[WELCOME_VERSION_METADATA_KEY];
+  if (typeof version === "number" && version >= WELCOME_VERSION) return true;
   try {
-    return !!localStorage.getItem(`council-welcome-seen-v1:${user.id}`);
+    return !!localStorage.getItem(`council-welcome-seen-v${WELCOME_VERSION}:${user.id}`);
   } catch {
     return false;
   }
@@ -71,7 +74,7 @@ export function hasSeenCouncilWelcome(user: {
 
 export function rememberCouncilWelcome(userId: string) {
   try {
-    localStorage.setItem(`council-welcome-seen-v1:${userId}`, new Date().toISOString());
+    localStorage.setItem(`council-welcome-seen-v${WELCOME_VERSION}:${userId}`, new Date().toISOString());
   } catch {
     // Account metadata is the cross-device source of truth.
   }

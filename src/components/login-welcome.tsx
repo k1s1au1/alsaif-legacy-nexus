@@ -7,10 +7,13 @@ import { useReducedMotion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/use-dashboard-data";
 import { useTermsReady } from "@/components/terms-gate";
-import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
+import entrancePortrait from "@/assets/council-entry-portrait-v2.webp";
+import entranceLandscape from "@/assets/council-entry-landscape-v2.webp";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
 import {
   WELCOME_SEEN_METADATA_KEY,
+  WELCOME_VERSION_METADATA_KEY,
+  WELCOME_VERSION,
   consumeLoginWelcome,
   hasSeenCouncilWelcome,
   readLoginWelcome,
@@ -25,6 +28,7 @@ export function LoginWelcome({ user }: { user: User }) {
   const [ticket] = useState(() => readLoginWelcome(user.id));
   const [firstEntrance] = useState(() => !hasSeenCouncilWelcome(user));
   const [identityReady, setIdentityReady] = useState(false);
+  const [artReady, setArtReady] = useState<"pending" | "ready" | "failed">("pending");
   const [visible, setVisible] = useState(false);
   const startedAt = useRef<number | null>(null);
   const remembered = useRef(false);
@@ -68,22 +72,71 @@ export function LoginWelcome({ user }: { user: User }) {
     };
   }, [ticket, user.id]);
 
+  // Decode both orientations before starting the clock. A slow/offline image
+  // falls back to the brief greeting and can be tried on a later sign-in.
+  useEffect(() => {
+    if (!ticket || !firstEntrance || reduceMotion) return;
+    let active = true;
+    let loaded = 0;
+    const images = [entrancePortrait, entranceLandscape].map(() => new Image());
+    const deadline = window.setTimeout(() => {
+      active = false;
+      setArtReady("failed");
+    }, 2500);
+    const fail = () => {
+      if (!active) return;
+      active = false;
+      window.clearTimeout(deadline);
+      setArtReady("failed");
+    };
+    images.forEach((image, index) => {
+      image.onload = async () => {
+        try {
+          await image.decode();
+        } catch {
+          // An already loaded image is usable on older WebKit versions.
+        }
+        if (!active) return;
+        loaded += 1;
+        if (loaded === images.length) {
+          window.clearTimeout(deadline);
+          setArtReady("ready");
+        }
+      };
+      image.onerror = fail;
+      image.src = index === 0 ? entrancePortrait : entranceLandscape;
+    });
+    return () => {
+      active = false;
+      window.clearTimeout(deadline);
+      images.forEach((image) => {
+        image.onload = null;
+        image.onerror = null;
+      });
+    };
+  }, [ticket, firstEntrance, reduceMotion]);
+
   useEffect(() => {
     if (!ticket || dismissed.current) return;
     if (startedAt.current === null && (!ready || !identityReady || profileLoading)) return;
+    if (startedAt.current === null && firstEntrance && !reduceMotion && artReady === "pending") return;
     consumeLoginWelcome(ticket);
-    if (!remembered.current) {
+    if (!remembered.current && (!firstEntrance || artReady === "ready" || reduceMotion)) {
       remembered.current = true;
       rememberCouncilWelcome(user.id);
       // This decorative preference belongs to the member's account and does
       // not change their profile fields, role, or permissions.
-      if (!user.user_metadata?.[WELCOME_SEEN_METADATA_KEY]) {
+      const version = user.user_metadata?.[WELCOME_VERSION_METADATA_KEY];
+      if (typeof version !== "number" || version < WELCOME_VERSION) {
         void (async () => {
           try {
             const { data } = await supabase.auth.getSession();
             if (data.session?.user.id !== user.id) return;
             await supabase.auth.updateUser({
-              data: { [WELCOME_SEEN_METADATA_KEY]: new Date().toISOString() },
+              data: {
+                [WELCOME_SEEN_METADATA_KEY]: new Date().toISOString(),
+                [WELCOME_VERSION_METADATA_KEY]: WELCOME_VERSION,
+              },
             });
           } catch {
             // Local recall prevents repeats here; a later login can resync.
@@ -96,7 +149,7 @@ export function LoginWelcome({ user }: { user: User }) {
       setVisible(false);
       return;
     }
-    const duration = firstEntrance ? 2000 : 850;
+    const duration = firstEntrance && artReady === "ready" ? 2800 : 850;
     if (startedAt.current === null) {
       startedAt.current = Date.now();
       setVisible(true);
@@ -107,10 +160,10 @@ export function LoginWelcome({ user }: { user: User }) {
       setVisible(false);
     }, remaining);
     return () => window.clearTimeout(finish);
-  }, [ready, identityReady, profileLoading, ticket, firstEntrance, reduceMotion, user]);
+  }, [ready, identityReady, profileLoading, artReady, ticket, firstEntrance, reduceMotion, user]);
 
   if (!visible) return null;
-  if (!firstEntrance) return <DailyLoginWelcome />;
+  if (!firstEntrance || artReady === "failed") return <DailyLoginWelcome />;
 
   return (
     <Dialog.Root open={visible} onOpenChange={(open) => {
@@ -122,17 +175,41 @@ export function LoginWelcome({ user }: { user: User }) {
       <Dialog.Portal>
         <Dialog.Content className="login-welcome-intro" dir="rtl">
           <Dialog.Title className="sr-only">أهلًا بك في مجلس السيف</Dialog.Title>
-          <Dialog.Description className="sr-only">إرث يجمعنا</Dialog.Description>
+          <Dialog.Description className="sr-only">تفتح بوابة المجلس لتعبر منها إلى الرئيسية.</Dialog.Description>
           <Dialog.Close className="login-welcome-skip" type="button">تخطي</Dialog.Close>
-          <HeritagePortal3D
-            greeting="إرث يجمعنا"
-            name="مجلس السيف"
-            message=""
-            welcomeIntro
-          />
+          <CouncilEntryScene />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+function CouncilEntryScene() {
+  return (
+    <div className="council-entry-scene" aria-hidden="true">
+      <picture className="council-entry-atmosphere">
+        <source media="(min-aspect-ratio: 1/1)" srcSet={entranceLandscape} />
+        <img src={entrancePortrait} alt="" />
+      </picture>
+      <div className="council-entry-world">
+        <div className="council-entry-camera">
+          <picture className="council-entry-architecture">
+            <source media="(min-aspect-ratio: 1/1)" srcSet={entranceLandscape} />
+            <img src={entrancePortrait} alt="" />
+          </picture>
+          <div className="council-entry-gate">
+            <span className="council-entry-door council-entry-door-left"><span /></span>
+            <span className="council-entry-door council-entry-door-right"><span /></span>
+            <span className="council-entry-door-seam" />
+          </div>
+        </div>
+      </div>
+      <div className="council-entry-copy">
+        <span>إرث يجمعنا</span>
+        <strong>أهلًا بك في مجلس السيف</strong>
+      </div>
+      <span className="council-entry-passage" />
+    </div>
   );
 }
 

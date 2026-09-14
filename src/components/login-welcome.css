@@ -1,16 +1,23 @@
+.login-welcome-intro,
+.login-welcome-daily,
+.login-welcome-header-glint {
+  --council-portal-background: color-mix(in srgb, var(--identity-header, #0d3f3e) 84%, black);
+  --council-portal-accent: color-mix(in srgb, #f0d8a0 80%, var(--identity-tertiary, #a7d1cc));
+  --council-portal-highlight: color-mix(in srgb, #fff8e8 92%, var(--identity-tertiary, #a7d1cc));
+  --council-portal-shadow: color-mix(in srgb, var(--identity-header, #0d3f3e) 65%, black);
+}
+
 .login-welcome-intro {
   position: fixed;
   z-index: 95;
   inset: 0;
-  display: grid;
-  place-items: center;
   height: 100vh;
-  height: 100svh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--council-portal-background);
   color: var(--council-portal-highlight);
   outline: none;
-  animation: login-welcome-intro-in 2s ease both;
+  animation: council-entry-reveal 2800ms linear both;
 }
 
 .login-welcome-skip {
@@ -35,93 +42,243 @@
   outline-offset: 4px;
 }
 
-.login-welcome-intro .heritage-pavilion-reference {
-  width: min(1200px, 100%);
-  height: 100% !important;
-  overflow: visible;
-  contain: none;
-  background: transparent !important;
-  animation: none !important;
-}
-
-.login-welcome-intro .council-portal-copy {
-  top: 13%;
-  left: 5%;
-  width: 90%;
-  max-width: none;
-  transform: none;
-  animation: login-welcome-copy-in 1s ease-out .25s both;
-}
-
-.login-welcome-intro .council-portal-greeting {
-  margin-bottom: 16px;
-  font-size: clamp(.9rem, 2vw, 1.2rem);
-}
-
-.login-welcome-intro .council-portal-identity span {
-  margin-bottom: 10px;
-  font-size: clamp(1rem, 3vw, 1.5rem);
-}
-
-.login-welcome-intro .council-portal-identity strong {
-  font-size: clamp(2rem, 6vw, 3.8rem);
-  animation: none;
-}
-
-.login-welcome-intro .council-portal-message,
-.login-welcome-intro .council-portal-plaque {
-  display: none;
-}
-
-.login-welcome-intro .council-portal-model {
-  right: 50%;
-  bottom: -4%;
-  width: min(78vw, 46vh, 460px);
-  width: min(78vw, 46svh, 460px);
-  transform: translateX(50%);
-}
-
-.login-welcome-intro .council-portal-model-visual {
-  animation: login-welcome-tower-arrive 1.7s cubic-bezier(.2,.7,.2,1) both !important;
-}
-
-.login-welcome-intro .council-portal-ambient {
-  right: 10%;
-  bottom: 1%;
-  width: 80%;
-  animation: login-welcome-warm-glow 1.7s ease both;
-}
-
-.login-welcome-intro .council-portal-sheen {
-  display: block !important;
-  animation: login-welcome-metal-glint 1.15s ease-out .3s both;
-}
-
-.council-portal-entry-light {
+.council-entry-scene {
+  --entry-door-x: 40.65%;
+  --entry-door-y: 58.55%;
+  --entry-door-width: 18.7%;
+  --entry-door-height: 17.65%;
+  --entry-door-center-y: 67.375%;
   position: absolute;
-  z-index: 1;
-  top: 56%;
-  left: 43%;
-  width: 7%;
-  height: 28%;
-  border-radius: 50%;
-  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--council-portal-accent) 58%, transparent) 85%, var(--council-portal-highlight));
-  filter: blur(5px);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  animation: login-welcome-entry-light 1.7s ease both;
+  inset: 0;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--council-portal-background);
 }
 
-.council-portal-entry-light::after {
+.council-entry-atmosphere,
+.council-entry-atmosphere img,
+.council-entry-architecture,
+.council-entry-architecture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.council-entry-atmosphere {
+  position: absolute;
+  inset: 0;
+  opacity: .48;
+  filter: blur(20px);
+  transform: scale(1.08);
+}
+
+.council-entry-atmosphere img { object-fit: cover; }
+
+.council-entry-world {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100vw, 66.666667vh);
+  width: max(100vw, 66.666667dvh);
+  aspect-ratio: 2 / 3;
+  transform: translate(-50%, -50%);
+}
+
+.council-entry-camera {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% var(--entry-door-center-y);
+  will-change: transform;
+  animation: council-entry-camera-through 2800ms cubic-bezier(.42, 0, .76, .42) both;
+}
+
+.council-entry-architecture { position: absolute; inset: 0; }
+
+.council-entry-architecture::after {
   content: "";
   position: absolute;
-  bottom: -7%;
-  left: 50%;
-  width: 700%;
-  height: 22%;
+  inset: 0;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--identity-header, #0d3f3e) 65%, transparent),
+    color-mix(in srgb, var(--identity-panel, #2a7f7b) 12%, transparent) 28%,
+    transparent 50%);
+  pointer-events: none;
+}
+
+.council-entry-gate {
+  position: absolute;
+  left: var(--entry-door-x);
+  top: var(--entry-door-y);
+  width: var(--entry-door-width);
+  height: var(--entry-door-height);
+  perspective: 900px;
+  transform-style: preserve-3d;
+}
+
+.council-entry-door {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  border: 2px solid #aa8347;
+  background:
+    repeating-linear-gradient(92deg, #1d110900 0 4%, #0c070930 4.5%, #ac774c20 5%, #1d110900 8%),
+    linear-gradient(90deg, #21140e, #684327 35%, #332018 72%, #21130c);
+  box-shadow: inset 0 0 14px #100803, 0 4px 12px #0b070c80;
+  backface-visibility: visible;
+  transform-style: preserve-3d;
+}
+
+.council-entry-door-left {
+  left: 0;
+  transform-origin: left center;
+  animation: council-entry-open-left 2800ms cubic-bezier(.22, .75, .2, 1) both;
+}
+
+.council-entry-door-right {
+  right: 0;
+  transform-origin: right center;
+  animation: council-entry-open-right 2800ms cubic-bezier(.22, .75, .2, 1) both;
+}
+
+.council-entry-door > span {
+  position: absolute;
+  inset: 8% 14%;
+  border: 1px solid #bc965c;
+  box-shadow: inset 0 0 0 3px #352110, inset 0 0 0 4px #987442;
+  background:
+    radial-gradient(circle at 50% 19%, #caac76 0 1%, transparent 1.6%),
+    radial-gradient(circle at 50% 81%, #caac76 0 1%, transparent 1.6%),
+    linear-gradient(90deg, transparent 48%, #bc965c42 49% 51%, transparent 52%);
+}
+
+.council-entry-door::after {
+  content: "";
+  position: absolute;
+  top: 49%;
+  width: 10%;
+  height: 6%;
+  border: 2px solid #e1bf7b;
   border-radius: 50%;
-  background: radial-gradient(ellipse, color-mix(in srgb, var(--council-portal-accent) 55%, transparent), transparent 70%);
-  transform: translateX(-50%);
+  box-shadow: 0 1px 2px #0c060a, inset 0 1px #fff1bc;
+}
+
+.council-entry-door-left::after { right: 12%; }
+.council-entry-door-right::after { left: 12%; }
+
+.council-entry-door-seam {
+  position: absolute;
+  left: 49.5%;
+  top: 0;
+  width: 1%;
+  height: 100%;
+  background: #ffe1a1;
+  box-shadow: 0 0 10px 3px #f6c36b80;
+  animation: council-entry-seam-light 2800ms ease both;
+  pointer-events: none;
+}
+
+.council-entry-copy {
+  position: absolute;
+  z-index: 3;
+  top: max(14%, 76px);
+  left: 6%;
+  width: 88%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  color: var(--council-portal-highlight);
+  text-align: center;
+  text-shadow: 0 2px 14px #051d20;
+  animation: council-entry-copy-away 2800ms ease both;
+}
+
+.council-entry-copy > span {
+  color: var(--council-portal-accent);
+  font-size: clamp(.9375rem, 2.3vw, 1.375rem);
+  font-weight: 700;
+}
+
+.council-entry-copy > strong {
+  font-size: clamp(1.375rem, 5.8vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.council-entry-passage {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  background: radial-gradient(ellipse, #fce1ae65, #f0bc5330 35%, transparent 75%);
+  opacity: 0;
+  pointer-events: none;
+  animation: council-entry-passage-light 2800ms ease both;
+}
+
+@media (min-aspect-ratio: 1/1) {
+  .council-entry-scene {
+    --entry-door-x: 44.83%;
+    --entry-door-y: 54.55%;
+    --entry-door-width: 10.34%;
+    --entry-door-height: 22.3%;
+    --entry-door-center-y: 65.7%;
+  }
+
+  .council-entry-world {
+    width: 150vh;
+    width: 150dvh;
+    aspect-ratio: 3 / 2;
+  }
+
+  .council-entry-copy { top: max(4%, 16px); gap: 3px; }
+  .council-entry-copy > span { font-size: clamp(.875rem, 2.2vh, 1.25rem); }
+  .council-entry-copy > strong { font-size: clamp(1.25rem, 3.8vh, 2.375rem); }
+}
+
+@keyframes council-entry-reveal {
+  0% { opacity: 0; }
+  5%, 88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes council-entry-open-left {
+  0%, 17% { transform: rotateY(0deg); }
+  44%, 100% { transform: rotateY(-104deg); }
+}
+
+@keyframes council-entry-open-right {
+  0%, 17% { transform: rotateY(0deg); }
+  44%, 100% { transform: rotateY(104deg); }
+}
+
+@keyframes council-entry-camera-through {
+  0%, 12% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-2%) scale(1.08); }
+  52% { transform: translateY(-5%) scale(1.45); }
+  72% { transform: translateY(-11%) scale(3.4); }
+  90% { transform: translateY(calc(50% - var(--entry-door-center-y))) scale(9); }
+  100% { transform: translateY(calc(50% - var(--entry-door-center-y))) scale(18); }
+}
+
+@keyframes council-entry-copy-away {
+  0% { opacity: 0; transform: translateY(8px); }
+  12%, 32% { opacity: 1; transform: translateY(0); }
+  47%, 100% { opacity: 0; transform: translateY(-16px); }
+}
+
+@keyframes council-entry-seam-light {
+  0%, 9% { opacity: 0; }
+  17% { opacity: .9; }
+  35%, 100% { opacity: 0; }
+}
+
+@keyframes council-entry-passage-light {
+  0%, 69% { opacity: 0; }
+  88% { opacity: .45; }
+  100% { opacity: 0; }
 }
 
 .login-welcome-daily {
@@ -149,10 +306,7 @@
   animation: login-welcome-daily-in .85s ease both;
 }
 
-.login-welcome-daily svg {
-  flex-shrink: 0;
-  color: #9a7737;
-}
+.login-welcome-daily svg { flex-shrink: 0; color: #9a7737; }
 
 .login-welcome-daily::after {
   content: "";
@@ -178,66 +332,6 @@
   animation: login-welcome-line-in .85s ease both;
 }
 
-@media (min-aspect-ratio: 1/1) {
-  .login-welcome-intro .council-portal-copy {
-    top: 48%;
-    left: 4%;
-    width: 46%;
-    transform: translateY(-50%);
-  }
-
-  .login-welcome-intro .council-portal-model {
-    right: 6%;
-    bottom: -8%;
-    width: min(43vw, 63vh);
-    width: min(43vw, 63svh);
-    transform: none;
-  }
-
-  .login-welcome-intro .council-portal-identity strong {
-    font-size: clamp(2rem, 4.2vw, 4rem);
-  }
-
-  .login-welcome-intro .council-portal-ambient {
-    right: 0;
-    width: 60%;
-  }
-}
-
-@keyframes login-welcome-intro-in {
-  0% { opacity: 0; }
-  10%, 83% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-@keyframes login-welcome-copy-in {
-  from { opacity: 0; filter: blur(3px); }
-  to { opacity: 1; filter: blur(0); }
-}
-
-@keyframes login-welcome-tower-arrive {
-  from { transform: scale(.95) translateY(12px); }
-  to { transform: scale(1) translateY(0); }
-}
-
-@keyframes login-welcome-warm-glow {
-  0% { opacity: .35; }
-  55% { opacity: .95; }
-  100% { opacity: .5; }
-}
-
-@keyframes login-welcome-entry-light {
-  0%, 12% { opacity: 0; transform: scaleY(.65); }
-  55% { opacity: .68; transform: scaleY(1); }
-  100% { opacity: .1; transform: scaleY(1); }
-}
-
-@keyframes login-welcome-metal-glint {
-  0% { left: -25%; opacity: 0; }
-  30% { opacity: .35; }
-  100% { left: 112%; opacity: 0; }
-}
-
 @keyframes login-welcome-daily-in {
   0% { opacity: 0; transform: translate(-50%, -5px); }
   22%, 67% { opacity: 1; transform: translate(-50%, 0); }
@@ -258,12 +352,8 @@
 @media (prefers-reduced-motion: reduce) {
   .login-welcome-intro,
   .login-welcome-daily,
-  .login-welcome-header-glint {
-    display: none !important;
-  }
+  .login-welcome-header-glint { display: none !important; }
 
   .login-welcome-intro *,
-  .login-welcome-intro *::after {
-    animation: none !important;
-  }
+  .login-welcome-intro *::after { animation: none !important; }
 }
