@@ -4,6 +4,7 @@ import {
   useRef,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import councilSandyGround from "@/assets/council-sandy-ground-v1.webp";
 import { councilTowers } from "@/assets/najdi-council-towers-v1";
 import "./heritage-portal-3d.css";
 
@@ -152,6 +153,12 @@ export function HeritagePortal3D({
 
       <div className="council-portal-model" aria-hidden="true">
         <div className="council-portal-model-visual">
+          <img
+            className="council-portal-ground"
+            src={councilSandyGround}
+            alt=""
+            draggable={false}
+          />
           <svg
             className="council-portal-towers"
             viewBox="0 0 1065 1477"
@@ -212,9 +219,12 @@ export function HeritagePortal3D({
 
           {welcomeIntro && <span className="council-portal-entry-light" />}
           <div className="council-tower-inscription">
-            <strong>
-              <span>مجلس</span>
-              <span>السيف</span>
+            <strong
+              className="council-tower-inscription-text"
+              lang="ar"
+              dir="rtl"
+            >
+              مجلس السيف
             </strong>
             <bdi className="council-tower-year" dir="rtl">
               ١٤٤٨هـ

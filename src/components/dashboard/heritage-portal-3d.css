@@ -212,7 +212,28 @@
   transition: transform 110ms linear, filter 240ms ease;
 }
 
+.council-portal-ground {
+  position: absolute;
+  z-index: 0;
+  top: 68.2%;
+  left: 44%;
+  display: block;
+  width: 128%;
+  height: auto;
+  max-width: none;
+  opacity: 0.82;
+  filter: saturate(0.72) brightness(0.76) contrast(1.06)
+    drop-shadow(0 1.5cqw 1.8cqw rgba(0, 0, 0, 0.34));
+  transform: translateX(-50%) scaleY(0.82);
+  transform-origin: 50% 50%;
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
 .council-portal-towers {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
@@ -232,40 +253,57 @@
   z-index: 2;
   top: 34.2%;
   left: 37.6%;
-  display: flex;
+  display: block;
   width: 14%;
   height: 21.5%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   color: var(--council-portal-shadow);
+  font-family: var(--app-font, inherit);
   text-align: center;
-  text-shadow: 0 1px color-mix(in srgb, var(--council-portal-highlight) 28%, transparent);
 }
 
-.council-tower-inscription strong {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 4.55cqw;
-  font-weight: 950;
-  line-height: 1.34;
-  letter-spacing: -0.04em;
-}
-
-.council-tower-inscription strong span {
+.council-tower-inscription-text {
+  position: absolute;
+  top: 42%;
+  left: 50%;
   display: block;
+  width: max-content;
+  color: color-mix(in srgb, var(--council-portal-shadow) 86%, #3a1d0d);
+  font-family: inherit;
+  font-size: 4.15cqw;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: -0.055em;
+  direction: rtl;
   white-space: nowrap;
+  unicode-bidi: isolate;
+  -webkit-text-stroke: 0.11cqw
+    color-mix(in srgb, var(--council-portal-shadow) 78%, #211006);
+  text-shadow:
+    -0.13cqw -0.13cqw 0 rgba(31, 14, 6, 0.72),
+    0.12cqw 0.13cqw 0
+      color-mix(in srgb, var(--council-portal-accent) 44%, transparent),
+    0 0.28cqw 0.42cqw rgba(36, 16, 7, 0.34);
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
 }
 
 .council-tower-year {
+  position: absolute;
+  bottom: 4.5%;
+  left: 50%;
   display: block;
-  margin-top: 2.2cqw;
-  font-size: 2.7cqw;
+  color: color-mix(in srgb, var(--council-portal-shadow) 88%, #3a1d0d);
+  font-family: inherit;
+  font-size: 2.55cqw;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
   unicode-bidi: isolate;
+  text-shadow:
+    -0.08cqw -0.08cqw 0 rgba(31, 14, 6, 0.62),
+    0.08cqw 0.09cqw 0
+      color-mix(in srgb, var(--council-portal-accent) 38%, transparent);
+  transform: translateX(-50%);
 }
 
 @keyframes council-portal-enter {
