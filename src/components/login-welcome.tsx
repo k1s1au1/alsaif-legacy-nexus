@@ -10,15 +10,7 @@ import { useTermsReady } from "@/components/terms-gate";
 import entrancePortrait from "@/assets/council-entry-portrait-v2.webp";
 import entranceLandscape from "@/assets/council-entry-landscape-v2.webp";
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
-import {
-  WELCOME_SEEN_METADATA_KEY,
-  WELCOME_VERSION_METADATA_KEY,
-  WELCOME_VERSION,
-  consumeLoginWelcome,
-  hasSeenCouncilWelcome,
-  readLoginWelcome,
-  rememberCouncilWelcome,
-} from "@/lib/login-welcome";
+import { consumeLoginWelcome, readLoginWelcome } from "@/lib/login-welcome";
 import "./login-welcome.css";
 
 export function LoginWelcome({ user }: { user: User }) {
@@ -26,12 +18,10 @@ export function LoginWelcome({ user }: { user: User }) {
   const { isLoading: profileLoading } = useProfile();
   const reduceMotion = useReducedMotion();
   const [ticket] = useState(() => readLoginWelcome(user.id));
-  const [firstEntrance] = useState(() => !hasSeenCouncilWelcome(user));
   const [identityReady, setIdentityReady] = useState(false);
   const [artReady, setArtReady] = useState<"pending" | "ready" | "failed">("pending");
   const [visible, setVisible] = useState(false);
   const startedAt = useRef<number | null>(null);
-  const remembered = useRef(false);
   const dismissed = useRef(false);
 
   // Sync the member's chosen identity before the entrance, including a new
@@ -75,7 +65,7 @@ export function LoginWelcome({ user }: { user: User }) {
   // Decode both orientations before starting the clock. A slow/offline image
   // falls back to the brief greeting and can be tried on a later sign-in.
   useEffect(() => {
-    if (!ticket || !firstEntrance || reduceMotion) return;
+    if (!ticket || reduceMotion) return;
     let active = true;
     let loaded = 0;
     const images = [entrancePortrait, entranceLandscape].map(() => new Image());
@@ -114,42 +104,19 @@ export function LoginWelcome({ user }: { user: User }) {
         image.onerror = null;
       });
     };
-  }, [ticket, firstEntrance, reduceMotion]);
+  }, [ticket, reduceMotion]);
 
   useEffect(() => {
     if (!ticket || dismissed.current) return;
     if (startedAt.current === null && (!ready || !identityReady || profileLoading)) return;
-    if (startedAt.current === null && firstEntrance && !reduceMotion && artReady === "pending") return;
+    if (startedAt.current === null && !reduceMotion && artReady === "pending") return;
     consumeLoginWelcome(ticket);
-    if (!remembered.current && (!firstEntrance || artReady === "ready" || reduceMotion)) {
-      remembered.current = true;
-      rememberCouncilWelcome(user.id);
-      // This decorative preference belongs to the member's account and does
-      // not change their profile fields, role, or permissions.
-      const version = user.user_metadata?.[WELCOME_VERSION_METADATA_KEY];
-      if (typeof version !== "number" || version < WELCOME_VERSION) {
-        void (async () => {
-          try {
-            const { data } = await supabase.auth.getSession();
-            if (data.session?.user.id !== user.id) return;
-            await supabase.auth.updateUser({
-              data: {
-                [WELCOME_SEEN_METADATA_KEY]: new Date().toISOString(),
-                [WELCOME_VERSION_METADATA_KEY]: WELCOME_VERSION,
-              },
-            });
-          } catch {
-            // Local recall prevents repeats here; a later login can resync.
-          }
-        })();
-      }
-    }
     if (reduceMotion) {
       dismissed.current = true;
       setVisible(false);
       return;
     }
-    const duration = firstEntrance && artReady === "ready" ? 2800 : 850;
+    const duration = artReady === "ready" ? 2800 : 850;
     if (startedAt.current === null) {
       startedAt.current = Date.now();
       setVisible(true);
@@ -160,10 +127,10 @@ export function LoginWelcome({ user }: { user: User }) {
       setVisible(false);
     }, remaining);
     return () => window.clearTimeout(finish);
-  }, [ready, identityReady, profileLoading, artReady, ticket, firstEntrance, reduceMotion, user]);
+  }, [ready, identityReady, profileLoading, artReady, ticket, reduceMotion]);
 
   if (!visible) return null;
-  if (!firstEntrance || artReady === "failed") return <DailyLoginWelcome />;
+  if (artReady === "failed") return <BriefLoginWelcome />;
 
   return (
     <Dialog.Root open={visible} onOpenChange={(open) => {
@@ -213,7 +180,7 @@ function CouncilEntryScene() {
   );
 }
 
-function DailyLoginWelcome() {
+function BriefLoginWelcome() {
   const [top, setTop] = useState(96);
   useLayoutEffect(() => {
     const position = () => {
