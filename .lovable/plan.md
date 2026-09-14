@@ -1,90 +1,79 @@
-## Scope & approach
+# إعادة بناء ميدان الألعاب
 
-The existing chat (`chat_rooms`, `chat_room_members`, `messages`, `/messages` routes) will be **dropped and replaced** with a new WhatsApp-style messenger. Given the size of the request, I'll deliver every item you listed, but be upfront about the realistic tradeoffs for two of them:
+## النتيجة المستهدفة
+إعادة بناء ميدان الألعاب كليًا بهوية «طاولة مجلس فاخرة» وبطريقة لعب مناسبة للجوال والآيباد والكمبيوتر، مع الحفاظ على الألعاب الحالية وتزامن الغرف، واستبدال القرعة العامة بقرعة بداية مستقلة داخل كل لعبة.
 
-- **Push notifications**: I'll wire **in-app realtime notifications** (sound + badge + browser `Notification` API when the tab is granted permission). True mobile push (APNs/FCM) requires a native shell or a paid web-push provider and isn't possible from a Lovable web app alone — I'll flag where to plug that in later.
-- **Voice messages**: recorded via the browser `MediaRecorder` API (webm/opus). Plays back inline. No transcription.
+## ما سيتغير
 
-Everything else ships in this rebuild.
+### 1. بنية الميدان والغرف
+- تحويل شاشة الدخول والانتظار واختيار اللعبة إلى مجلس ألعاب متكامل بدل البطاقات العامة الحالية.
+- إبقاء نظام رموز الغرف، الحضور المباشر، استعادة الجلسة، انتقال الاستضافة، البوتات، والصوت والاهتزاز.
+- إضافة مرحلة افتتاحية لكل لعبة تعرض قرعة متزامنة لاختيار اللاعب الأول، ثم تبدأ الجولة تلقائيًا.
+- حذف «القرعة» كلعبة مستقلة، دون حذف أي لعبة أخرى.
+- تقسيم الملف الضخم إلى نواة غرفة مشتركة ووحدات مستقلة للألعاب لتسهيل تطوير القواعد واختبارها دون كسر المزامنة.
 
-## New data model (single migration; old tables dropped)
+### 2. العرض حسب الجهاز
+- **الجوال:** طاولة رأسية تملأ مساحة اللعب، الخصوم أعلى الشاشة، مركز اللعب واضح، ويد اللاعب ثابتة أسفل الطاولة مع سحب وتمرير باللمس.
+- **الآيباد الطولي:** طاولة أوسع مع توزيع دائري للاعبين ورف أدوات جانبي لا يغطي البطاقات.
+- **الآيباد العرضي والكمبيوتر:** طاولة أفقية كاملة بمواضع لاعبين حولها، يد كبيرة أسفل الشاشة، وكل الأراضي والأوراق العامة ظاهرة دون فتح نافذة.
+- الحفاظ على AppShell والشريط العلوي والسفلي كما هما.
+- دعم Safe Area، لوحة المفاتيح، اللمس، تقليل الحركة، ومقاسات ثابتة تمنع تداخل النص والبطاقات.
 
-- `conversations` — `id`, `kind` (`direct` | `group`), `title` (group only), `avatar_url` (group only), `created_by`, `last_message_at` (for sorting), timestamps.
-- `conversation_participants` — `conversation_id`, `user_id`, `role` (`owner` | `admin` | `member`), `joined_at`, `archived_at` (per-user archive), `muted` (bool), `last_read_at`. Unique `(conversation_id, user_id)`.
-- `messages` — `id`, `conversation_id`, `sender_id`, `kind` (`text` | `image` | `video` | `audio` | `file`), `body` (text), `attachment_url`, `attachment_name`, `attachment_size`, `attachment_mime`, `attachment_duration_ms` (voice/video), `reply_to_id` (FK), `deleted_at` (soft delete), `edited_at`, `created_at`.
-- `message_reactions` — `message_id`, `user_id`, `emoji`. Unique `(message_id, user_id, emoji)`.
-- `message_deliveries` — `message_id`, `user_id`, `delivered_at`, `read_at`. Drives ✓ / ✓✓ / ✓✓ (blue) indicators.
-- `user_presence` — `user_id` (PK), `status` (`online` | `offline`), `last_seen_at`.
+### 3. الهوية البصرية والصوتية
+- تثبيت الهوية المختارة: أخضر مجلس عميق، خشب داكن، ذهب معتّق، وعاجي؛ طاولة نسيجية وإضاءة مجلس هادئة.
+- بطاقات مصممة لكل لعبة، ظهر موحد للسيف، حالات واضحة للبطاقة المسموحة والممنوعة، وحركات توزيع/قلب/رمي محسوبة.
+- مؤثرات صوتية مستقلة للسحب واللعب والدور والفوز والخطأ، مع مفتاح كتم واحترام تفضيل تقليل الحركة.
+- استخدام خطوط عربية واضحة ومتوافقة مع الهوية الحالية؛ لا تُستخدم مراجع الصور كأصول مباشرة.
 
-Helpers (SECURITY DEFINER): `is_conversation_member(_user, _conv)`, `is_conversation_admin(_user, _conv)`, `find_or_create_direct(_other_user)` (atomic — finds the existing 1:1 conversation between caller and `_other_user`, or creates it and seeds both participants).
+### 4. سعودي ديل
+- توسيع المحرك إلى رزمة كاملة من الأراضي، الأموال، والأكشن.
+- إضافة: فرصة استثمار، إيجار، تحصيل دين، هدية جماعية، استحواذ على أرض، تبادل إجباري، استحواذ على مجموعة، مضاعفة الإيجار، ورفض العملية.
+- بناء تدفق اختيار الهدف والدفع والرد على الأكشن، مع حد ثلاث حركات وسبع بطاقات في نهاية الدور.
+- السحب في بداية الدور تلقائيًا، وإظهار أملاك اللاعب وبنكه والخصوم مباشرة على الطاولة.
+- الفوز عند اكتمال ثلاث مجموعات مختلفة، مع شرح قوانين داخل اللعبة.
 
-RLS: members see their conversation, its participants, messages, reactions, and delivery rows; only senders edit/delete their own messages; group admins/owners manage participants and group metadata; users update only their own presence, reads, and reactions.
+### 5. أونو
+- إضافة اختيار الوضع قبل البداية: كلاسيكي، فليب، وبدون رحمة.
+- دعم التخطي، العكس، +2، البطاقات الحرة، +4 والتحدي، ونداء أونو وعقوبته.
+- فليب يضيف جانبي البطاقات وقلب الطاولة؛ بدون رحمة يضيف التكديس وسلسلة السحب حسب قواعد الوضع.
+- السحب تلقائيًا عند عدم وجود حركة صالحة، مع إتاحة لعب الورقة المسحوبة أو تمرير الدور حسب الوضع.
+- إبقاء أوراق الخصوم سرية وإظهار عددها ومؤشر الدور حول الطاولة.
 
-Realtime publication: `conversations`, `conversation_participants`, `messages`, `message_reactions`, `message_deliveries`, `user_presence`.
+### 6. البلوت
+- إعادة تصميم الطاولة والفرق والشراء والأكلة واليد بالكامل مع الحفاظ على المحرك الحالي.
+- جعل المقاعد متقابلة، توضيح الصن/الحكم والدور والنوع المطلوب، وتحسين توزيع الأوراق لكل جهاز.
+- لا تغيير لقواعد البلوت خارج إصلاحات العرض والتفاعل المطلوبة.
 
-Typing indicators and "user is online right now" use Supabase Realtime **broadcast + presence channels** (no DB writes per keystroke).
+### 7. الألعاب الاجتماعية
+- **سجال الحروف:** إعادة تصميم كاملة، وشرح مختصر قبل البداية، منع تكرار الكلمات، معالجة الحروف النهائية العربية، مؤقت اختياري، وسجل بصري للسلسلة.
+- **قاضي الجماعة:** بنك مواقف كبير مصنف، خلط بلا تكرار داخل الجلسة، وحفظ العناصر المستخدمة محليًا حتى لا تعود سريعًا. يُحدّث البنك من ملف بيانات مستقل قابل للتوسعة.
+- **من أنا؟:** تحل محل مزاد المعلومات؛ هوية سرية عن صاحب الدور، إجابات نعم/لا/غير واضح، مؤقت، تخمين، ونقاط فردية أو فرق.
+- **بنك الأسئلة و30 ثانية:** الإبقاء عليهما مع تطبيق الطاولة الجديدة وقرعة البداية والسحب التلقائي للدور.
 
-GRANTs on every new table for `authenticated` + `service_role`.
+### 8. مونوبولي
+- إضافة لعبة جديدة بلوحة أصلية سعودية من 40 خانة وقواعد الاقتصاد الكاملة: شراء، مزاد إلزامي، إيجار، مجموعات، بيوت وفنادق بالتساوي، رهن، تبادل، ضرائب، سجن، بطاقات أحداث، إفلاس، ونرد ودبل.
+- الوضع الرسمي هو الافتراضي، مع خيارات مستقلة للقواعد المنزلية قبل بدء الغرفة.
+- كل العمليات تمر عبر المضيف المرجعي نفسه لضمان تطابق اللوحة على الأجهزة.
 
-## Storage
+### 9. الكيرم
+- إضافة لعبة جديدة فردية أو زوجية باستخدام محرك فيزياء ثنائي الأبعاد موثوق.
+- سحب للتصويب، مؤشر اتجاه وقوة، اصطدام واحتكاك وجيوب، الملكة وتغطيتها، الأخطاء، استمرار الدور، ونظام الجولات والنقاط.
+- معايرة منفصلة للمس والماوس، مع تثبيت أبعاد اللوحة ومنع اختلاف الفيزياء بين الأجهزة عبر احتساب النتيجة لدى المضيف وبث الحالة.
 
-- New private bucket `chat-attachments` with RLS scoped to conversation members. Path layout `{conversation_id}/{message_id}/{filename}`. Signed URLs for downloads.
+### 10. الاختبارات والتسليم
+- اختبارات وحدة لنواة كل لعبة: الدور، الحركات القانونية، الفوز، السحب، الأكشن، العقوبات، والإفلاس/الأخطاء.
+- اختبار غرفتين متزامنتين: دخول، إعادة اتصال، خروج المضيف، بوتات، وقرعة البداية.
+- اختبار بصري وتفاعلي على جوال، آيباد طولي، آيباد عرضي، وكمبيوتر؛ فحص عدم التداخل وأن البطاقات قابلة للقراءة واللمس.
+- تشغيل فحص TypeScript والبناء وإصلاح أي أخطاء قبل التسليم.
 
-## Routes (replace existing `/messages*`)
+## إصلاح أمني مرافق
+- نقل أرقام الهواتف من سجل الملفات العامة إلى جدول منفصل محمي.
+- إبقاء ظهور الهاتف لصاحبه والقيادة فقط عبر الدالة المقيدة الحالية، مع ترحيل القيم دون فقدانها وتحديث عمليات التسجيل والملف الشخصي.
+- التحقق من أن قراءة قائمة الأعضاء لا تستطيع إرجاع أرقام الهواتف، ثم إغلاق نتيجة الفحص الأمني.
 
-```
-src/routes/_authenticated/chat.tsx                 # layout: conv list (left) + outlet
-src/routes/_authenticated/chat.index.tsx           # empty-state ("اختر محادثة")
-src/routes/_authenticated/chat.$conversationId.tsx # conversation view
-```
-
-The old `messages.tsx` and `messages.$roomId.tsx` files are deleted and `AppShell` nav swaps from "الرسائل" → "المحادثات" pointing at `/chat`.
-
-## UI (WhatsApp-style)
-
-**Layout** — two-pane desktop, single-pane mobile:
-
-- **Left pane (conversation list)**: search box, "new chat" + "new group" buttons, list sorted by `last_message_at`, each row shows avatar, name, last message preview, time, unread badge, mute icon, ✓/✓✓/✓✓-blue mini-indicator on your last sent message. Long-press / kebab → archive / delete / mute.
-- **Right pane (conversation view)**:
-  - Header: avatar, name, presence ("online" / "last seen ...") for direct chats, or "N members" for groups; clicking opens an info drawer (members, admin controls for groups: add/remove, promote/demote, rename, change avatar).
-  - Message list: bubbles right-aligned for you (gold), left for others (secondary), grouped by day with date separators, reply-quote shown above message, reactions chip under bubble, ✓ / ✓✓ / ✓✓-blue ticks on your bubbles. Long-press (or hover toolbar) → react, reply, copy, delete. Tap a reaction chip to toggle. Search bar inside the chat header filters/highlights matches.
-  - Attachment rendering: image/video inline with lightbox, voice message with waveform progress + play button + duration, file with icon + name + size + download.
-  - Composer: emoji picker, paperclip (image/video/file from device), camera (image capture), mic (hold-to-record voice; release to send, slide to cancel), text field, send button. Reply context strip and edit context strip render above the input.
-  - Typing dots appear under header when someone in the room is typing (debounced via Realtime broadcast).
-- Mobile: list and conversation are separate screens; back arrow returns to list. Sidebar `AppShell` rail stays.
-
-**Search**: top of the conversation list searches across conversation titles, participants, and last message previews. Inside a chat, ⌘F / search icon filters messages.
-
-**Archive view**: filter toggle at top of list ("نشطة" / "أرشيف"). Archived conversations are hidden from the main list and surface in the archive view.
-
-**Notifications**:
-
-- Sound + visible toast for incoming messages when window is hidden or the chat isn't focused.
-- Browser `Notification` permission requested on first chat open; falls back silently if denied.
-- Per-conversation mute respected.
-
-## Implementation order (single response, multiple steps)
-
-1. **Migration** — drop old tables/policies; create new schema, helpers, RLS, GRANTs, realtime, storage bucket policies.
-2. **Storage** — create `chat-attachments` bucket (private) + RLS on `storage.objects`.
-3. **Frontend primitives** — `src/lib/chat/` with hooks: `useConversations`, `useConversation`, `useMessages`, `usePresence`, `useTyping`, `useUploads`, `useNotifications`.
-4. **Routes** — `chat.tsx` (layout), `chat.index.tsx`, `chat.$conversationId.tsx`, plus dialog components: `NewChatDialog`, `NewGroupDialog`, `ConversationInfoDrawer`, `EmojiPicker`, `VoiceRecorder`, `AttachmentMenu`, `MessageBubble`, `MessageList`, `Composer`.
-5. **Nav swap** — update `AppShell` nav from `/messages` to `/chat`.
-6. **Cleanup** — delete old `messages*.tsx`, leave migration history intact.
-
-## Performance / scalability notes
-
-- Messages query is paginated with infinite scroll (`limit 50` reverse chronological).
-- Conversation list reads `last_message_at` + unread count derived from `last_read_at` vs `messages.created_at`.
-- Realtime channels are per-conversation (`messages:conv-{id}`), torn down on unmount.
-- Presence uses one global presence channel; typing uses per-conversation broadcast.
-- Indexes: `messages(conversation_id, created_at desc)`, `conversation_participants(user_id)`, `message_deliveries(user_id, message_id)`.
-
-## Out of scope (called out, not built)
-
-- True mobile push notifications (APNs/FCM) — needs a native wrapper or paid web-push.
-- End-to-end encryption.
-- Calls (voice/video calling).
-- Voice message transcription.
-
-I'll execute the full plan after you approve.
+## تفاصيل تقنية
+- تستمر الغرفة بنموذج المضيف المرجعي الحالي؛ لا تتغير عقود الرسائل دفعة واحدة.
+- تُستخرج الأنواع، Hook الغرفة، طاولة اللعب، وكل محرك لعبة تدريجيًا مع طبقة توافق للجلسات المحفوظة.
+- تُضاف مكتبة فيزياء معروفة للكيرم بدل كتابة الاصطدامات يدويًا.
+- تستعمل الألوان والظلال متغيرات دلالية في نظام التصميم، وتبقى قواعد العرض الخاصة بالميدان معزولة عن بقية التطبيق.
+- التنفيذ سيكون على دفعات قابلة للتحقق: النواة والتصميم، الألعاب الحالية، توسعات سعودي ديل وأونو، الألعاب الاجتماعية، ثم مونوبولي والـكيرم، ثم الاختبار الشامل.
