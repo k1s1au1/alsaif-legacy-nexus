@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Info, AlertCircle, Loader2, Calendar, Zap } from "lucide-react";
+import { CheckCircle2, Info, AlertCircle, Loader2, Calendar } from "lucide-react";
+import { FamilyRelationshipFinder } from "@/components/family-relationship-finder";
 
 export type IslandStatus = "success" | "loading" | "info" | "error" | "event";
 
@@ -56,45 +57,49 @@ export function DynamicIsland() {
   }, []);
 
   return (
-    <div className="fixed top-4 inset-x-0 z-[200] flex justify-center pointer-events-none">
-      <AnimatePresence mode="wait">
-        {state && (
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0, y: -10 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: -20 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            onClick={state.onClick}
-            className={cn(
-              "pointer-events-auto h-9 md:h-12 min-w-[100px] max-w-[85vw] bg-black/90 text-white rounded-full flex items-center px-4 gap-2.5 shadow-2xl border border-white/10 backdrop-blur-xl",
-              "ring-1 ring-gold-primary/20",
-              state.onClick && "cursor-pointer active:scale-95 transition-transform",
-            )}
-          >
-            <div className="shrink-0">
-              {state.status === "loading" && (
-                <Loader2 className="size-4 animate-spin text-gold-primary" />
+    <>
+      <div className="fixed top-4 inset-x-0 z-[200] flex justify-center pointer-events-none">
+        <AnimatePresence mode="wait">
+          {state && (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: -10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: -20 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              onClick={state.onClick}
+              className={cn(
+                "pointer-events-auto h-9 md:h-12 min-w-[100px] max-w-[85vw] bg-black/90 text-white rounded-full flex items-center px-4 gap-2.5 shadow-2xl border border-white/10 backdrop-blur-xl",
+                "ring-1 ring-gold-primary/20",
+                state.onClick && "cursor-pointer active:scale-95 transition-transform",
               )}
-              {state.status === "success" && <CheckCircle2 className="size-4 text-emerald-400" />}
-              {state.status === "error" && <AlertCircle className="size-4 text-rose-400" />}
-              {state.status === "info" && <Info className="size-4 text-blue-400" />}
-              {state.status === "event" && <Calendar className="size-4 text-amber-400" />}
-            </div>
-
-            <motion.span
-              initial={{ opacity: 0, x: 5 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="text-[11px] font-black tracking-tight whitespace-nowrap overflow-hidden text-ellipsis"
             >
-              {state.message}
-            </motion.span>
+              <div className="shrink-0">
+                {state.status === "loading" && (
+                  <Loader2 className="size-4 animate-spin text-gold-primary" />
+                )}
+                {state.status === "success" && <CheckCircle2 className="size-4 text-emerald-400" />}
+                {state.status === "error" && <AlertCircle className="size-4 text-rose-400" />}
+                {state.status === "info" && <Info className="size-4 text-blue-400" />}
+                {state.status === "event" && <Calendar className="size-4 text-amber-400" />}
+              </div>
 
-            {state.status === "loading" && (
-              <div className="ml-auto size-1.5 rounded-full bg-gold-primary animate-pulse" />
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+              <motion.span
+                initial={{ opacity: 0, x: 5 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-[11px] font-black tracking-tight whitespace-nowrap overflow-hidden text-ellipsis"
+              >
+                {state.message}
+              </motion.span>
+
+              {state.status === "loading" && (
+                <div className="ml-auto size-1.5 rounded-full bg-gold-primary animate-pulse" />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <FamilyRelationshipFinder />
+    </>
   );
 }
