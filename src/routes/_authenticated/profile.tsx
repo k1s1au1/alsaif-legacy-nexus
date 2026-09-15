@@ -61,7 +61,6 @@ type ProfileRow = {
   id: string;
   arabic_name: string | null;
   full_name: string | null;
-  phone: string | null;
   avatar_url: string | null;
   created_at: string;
 };
@@ -130,7 +129,8 @@ function ProfilePage() {
       if (p) {
         setArabicName(p.arabic_name ?? "");
         setFullName(p.full_name ?? "");
-        setPhone(p.phone ?? "");
+        const { data: privatePhone } = await supabase.rpc("get_member_phone", { _user: u.user.id });
+        setPhone(privatePhone ?? "");
         const cal: BirthCalendar = p.birth_calendar === "hijri" ? "hijri" : "gregorian";
         setGender(p.gender ?? null);
         setCalendar(cal);
@@ -244,7 +244,7 @@ function ProfilePage() {
     }
     setSaving(true);
     // Locked identity fields are never sent from here; they change only through an approved request.
-    const payload: Record<string, any> = { phone: phone.trim() || null };
+    const payload: Record<string, any> = {};
     if (!lockedName) {
       payload["arabic_name"] = arabicName.trim() || null;
       payload["full_name"] = fullName.trim() || null;
@@ -258,9 +258,12 @@ function ProfilePage() {
         payload["birth_date_hijri"] = birthPayload["birth_date_hijri"];
       }
     }
-    const { error } = await supabase.from("profiles").update(payload as any).eq("id", userId);
+    const [{ error }, { error: phoneError }] = await Promise.all([
+      supabase.from("profiles").update(payload as any).eq("id", userId),
+      supabase.from("profile_phones").upsert({ user_id: userId, phone: phone.trim() || null }),
+    ]);
     setSaving(false);
-    if (error) {
+    if (error || phoneError) {
       toast.error(
         error.message?.includes("PROFILE_LOCKED")
           ? "بيانات الهوية مقفلة — أرسل طلب تعديل ليعتمده المسؤول"

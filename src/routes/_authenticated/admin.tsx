@@ -501,7 +501,7 @@ function AdminPage() {
       if (status === "approved") {
         const res = await approveFn({ data: { id } });
         if (!res.ok) throw new Error("لم تكتمل الموافقة على طلب العضوية");
-        toast.success("تم قبول العضو وإنشاء الحساب بنجاح");
+        toast.success("تم قبول العضو وإرسال رابط تعيين كلمة المرور");
       } else {
         const { error } = await supabase.from("account_requests").update({ status }).eq("id", id);
         if (error) throw error;

@@ -9,5 +9,5 @@
 - [ ] Add Saudi property board game with full core economy rules
 - [ ] Add Carrom with deterministic host-authoritative physics
 - [ ] Add game engine and room synchronization tests
-- [ ] Verify phone isolation security migration and close scanner finding
+- [x] Verify phone isolation security migration and close scanner finding
 - [ ] Verify TypeScript, build, and phone/tablet/desktop gameplay
