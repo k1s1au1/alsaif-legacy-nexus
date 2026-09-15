@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, GitBranch, Link2, Loader2, Search, UserCircle2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { UserAvatar } from "@/components/user-avatar";
@@ -26,6 +27,8 @@ function normalizeArabic(value: string) {
     .replace(/ى/g, "ي")
     .replace(/ؤ/g, "و")
     .replace(/ئ/g, "ي")
+    .replace(/…/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -38,9 +41,31 @@ function displayName(member: Member | null | undefined) {
   );
 }
 
+function cardName(member: Member) {
+  return [member.first_name, member.father_name].filter(Boolean).join(" ") || displayName(member);
+}
+
+function findMembersByVisibleName(members: Member[], visibleName: string) {
+  const wanted = normalizeArabic(visibleName);
+  if (!wanted || wanted === normalizeArabic("عائلة السيف")) return [];
+
+  return members.filter((member) => {
+    const candidates = [displayName(member), cardName(member), member.first_name || ""]
+      .map(normalizeArabic)
+      .filter(Boolean);
+
+    return candidates.some(
+      (candidate) =>
+        candidate === wanted ||
+        candidate.startsWith(wanted) ||
+        wanted.startsWith(candidate),
+    );
+  });
+}
+
 export function FamilyRelationshipFinder() {
-  const onFamilyTree =
-    typeof window !== "undefined" && window.location.pathname.includes("/family-tree");
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const onFamilyTree = pathname.includes("/family-tree");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,19 +80,28 @@ export function FamilyRelationshipFinder() {
       return;
     }
 
-    const interceptLegacyButton = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      const button = target?.closest("button");
-      if (!button?.textContent?.includes("تحديد صلة القرابة")) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      setOpen(true);
+    // The old standalone relationship button is intentionally removed.
+    // Relationship lookup now starts by clicking the person's name in the tree.
+    const hiddenButtons = new Map<HTMLElement, string>();
+    const hideLegacyButtons = () => {
+      document.querySelectorAll("button").forEach((button) => {
+        if (!button.textContent?.includes("تحديد صلة القرابة")) return;
+        const element = button as HTMLElement;
+        if (!hiddenButtons.has(element)) hiddenButtons.set(element, element.style.display);
+        element.style.display = "none";
+      });
     };
 
-    document.addEventListener("click", interceptLegacyButton, true);
-    return () => document.removeEventListener("click", interceptLegacyButton, true);
+    hideLegacyButtons();
+    const observer = new MutationObserver(hideLegacyButtons);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      hiddenButtons.forEach((display, element) => {
+        element.style.display = display;
+      });
+    };
   }, [onFamilyTree]);
 
   useEffect(() => {
@@ -135,6 +169,68 @@ export function FamilyRelationshipFinder() {
     };
   }, [onFamilyTree, members.length, loading]);
 
+  useEffect(() => {
+    if (!onFamilyTree) return;
+
+    const handleNameClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return;
+
+      const target = event.target;
+      let visibleName = "";
+      let isPersonName = false;
+
+      // Desktop / Android / most browsers: the first <p> inside the old tree node is the person's name.
+      const htmlNode = target.closest(".tree-node-content");
+      if (htmlNode) {
+        const nameElement = htmlNode.querySelector("p");
+        if (nameElement && (target === nameElement || nameElement.contains(target))) {
+          visibleName = nameElement.textContent?.trim() || "";
+          isPersonName = true;
+        }
+      }
+
+      // iPhone / iPad native SVG node: the name text uses y=7 in the approved tree design.
+      if (!isPersonName && target.tagName.toLowerCase() === "text" && target.closest(".ios-native-tree-node")) {
+        const y = target.getAttribute("y");
+        if (y === "7") {
+          visibleName = target.textContent?.trim() || "";
+          isPersonName = true;
+        }
+      }
+
+      // Also make the person's name in the side card behave the same way on desktop/tablet.
+      if (!isPersonName) {
+        const summaryName = target.closest(".member-summary-copy h2");
+        if (summaryName) {
+          visibleName = summaryName.textContent?.trim() || "";
+          isPersonName = true;
+        }
+      }
+
+      if (!isPersonName || !visibleName) return;
+
+      const matches = findMembersByVisibleName(members, visibleName).filter((member) => member.id !== meId);
+      if (!matches.length) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      if (matches.length === 1) {
+        setTargetId(matches[0].id);
+        setQuery(displayName(matches[0]));
+      } else {
+        // If two relatives have the same visible name, open the same window already filtered by that name.
+        setTargetId(null);
+        setQuery(visibleName);
+      }
+      setOpen(true);
+    };
+
+    document.addEventListener("click", handleNameClick, true);
+    return () => document.removeEventListener("click", handleNameClick, true);
+  }, [onFamilyTree, members, meId]);
+
   const membersById = useMemo(
     () => new Map(members.map((member) => [member.id, member])),
     [members],
@@ -146,7 +242,7 @@ export function FamilyRelationshipFinder() {
       .filter((member) => member.id !== meId)
       .filter((member) => {
         if (!normalizedQuery) return true;
-        return [member.full_name, member.first_name, member.father_name]
+        return [member.full_name, cardName(member), member.first_name, member.father_name]
           .filter(Boolean)
           .some((value) => normalizeArabic(String(value)).includes(normalizedQuery));
       })
@@ -230,175 +326,155 @@ export function FamilyRelationshipFinder() {
   const me = meId ? membersById.get(meId) : null;
   const selected = targetId ? membersById.get(targetId) : null;
 
-  const openFinder = () => {
-    setTargetId(null);
-    setQuery("");
-    setOpen(true);
-  };
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={openFinder}
-        className="md:hidden fixed left-4 bottom-[calc(5.6rem+env(safe-area-inset-bottom,0px))] z-[155] flex items-center gap-2 rounded-2xl border border-[#D6AD4B] bg-[#0F5139] px-4 py-3 text-sm font-black text-white shadow-2xl"
+  return open ? (
+    <div
+      className="fixed inset-0 z-[240] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onClick={() => setOpen(false)}
+    >
+      <div
+        dir="rtl"
+        className="w-full max-w-xl overflow-hidden rounded-[28px] border border-[#D6AD4B]/40 bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
       >
-        <GitBranch className="size-4 text-[#F6D37E]" />
-        صلة القرابة
-      </button>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-[240] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            dir="rtl"
-            className="w-full max-w-xl overflow-hidden rounded-[28px] border border-[#D6AD4B]/40 bg-white shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+        <div className="flex items-start gap-3 border-b border-[#E7E0CF] bg-[#FBF9F2] p-5">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#0F5139]">
+            <GitBranch className="size-6 text-[#F6D37E]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl font-black text-[#153D2F]">صلة القرابة</h2>
+            <p className="mt-1 text-xs font-bold text-[#7B7B76]">
+              اضغط على اسم أي فرد في الشجرة لمعرفة صلة القرابة بينكما.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="flex size-9 shrink-0 items-center justify-center rounded-xl text-[#6F766F] transition hover:bg-black/5"
+            aria-label="إغلاق"
           >
-            <div className="flex items-start gap-3 border-b border-[#E7E0CF] bg-[#FBF9F2] p-5">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#0F5139]">
-                <GitBranch className="size-6 text-[#F6D37E]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-xl font-black text-[#153D2F]">وش علاقتي بفلان؟</h2>
-                <p className="mt-1 text-xs font-bold text-[#7B7B76]">
-                  اختر فردًا من العائلة وسنحسب مسار القرابة بينكما.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="flex size-9 shrink-0 items-center justify-center rounded-xl text-[#6F766F] transition hover:bg-black/5"
-                aria-label="إغلاق"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
+            <X className="size-5" />
+          </button>
+        </div>
 
-            <div className="max-h-[72vh] space-y-4 overflow-y-auto p-5">
-              {loading ? (
-                <div className="flex min-h-48 items-center justify-center gap-3 text-sm font-black text-[#153D2F]">
-                  <Loader2 className="size-5 animate-spin text-[#B78A2B]" />
-                  جاري تحميل شجرة العائلة...
-                </div>
-              ) : error ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-center text-sm font-bold text-red-700">
-                  {error}
-                </div>
-              ) : (
+        <div className="max-h-[72vh] space-y-4 overflow-y-auto p-5">
+          {loading ? (
+            <div className="flex min-h-48 items-center justify-center gap-3 text-sm font-black text-[#153D2F]">
+              <Loader2 className="size-5 animate-spin text-[#B78A2B]" />
+              جاري تحميل شجرة العائلة...
+            </div>
+          ) : error ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-center text-sm font-bold text-red-700">
+              {error}
+            </div>
+          ) : (
+            <>
+              {!selected && (
                 <>
                   <div className="relative">
                     <Search className="absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#8E8E88]" />
                     <input
                       autoFocus
                       value={query}
-                      onChange={(event) => {
-                        setQuery(event.target.value);
-                        setTargetId(null);
-                      }}
-                      placeholder="ابحث باسم الفرد..."
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="اختر الشخص المطابق..."
                       className="w-full rounded-2xl border border-[#E7E0CF] bg-[#F8F7F3] py-3 pl-4 pr-11 text-sm font-bold text-[#153D2F] outline-none focus:border-[#D6AD4B]"
                     />
                   </div>
 
-                  {!selected && (
-                    <div className="overflow-hidden rounded-2xl border border-[#E7E0CF]">
-                      {matches.length ? (
-                        matches.map((member) => (
-                          <button
-                            key={member.id}
-                            type="button"
-                            onClick={() => {
-                              setTargetId(member.id);
-                              setQuery(displayName(member));
-                            }}
-                            className="flex w-full items-center gap-3 border-b border-[#EEE9DD] px-4 py-3 text-right transition last:border-b-0 hover:bg-[#FBF9F2]"
-                          >
-                            <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F2EEE2] ring-1 ring-[#E2D5B5]">
-                              {member.kind === "extra" ? (
-                                <UserCircle2 className="size-6 text-[#8E7745]" />
-                              ) : (
-                                <UserAvatar
-                                  name={member.first_name || "ع"}
-                                  path={member.avatar_url}
-                                  userId={member.id}
-                                  className="size-full"
-                                />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-black text-[#153D2F]">{displayName(member)}</p>
-                              <p className="mt-0.5 text-[10px] font-bold text-[#8E8E88]">
-                                {member.father_name ? `والده: ${member.father_name}` : "فرد في شجرة العائلة"}
-                              </p>
-                            </div>
-                            <ArrowLeft className="size-4 shrink-0 text-[#B78A2B]" />
-                          </button>
-                        ))
-                      ) : (
-                        <div className="p-6 text-center text-sm font-bold text-[#7B7B76]">لا يوجد فرد مطابق للبحث.</div>
-                      )}
-                    </div>
-                  )}
-
-                  {selected && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                        <PersonCard member={me} label="أنت" />
-                        <div className="flex size-10 items-center justify-center rounded-full border border-[#D6AD4B]/40 bg-[#FFF8E7]">
-                          <Link2 className="size-4 text-[#8E7745]" />
-                        </div>
-                        <PersonCard member={selected} label="الفرد المختار" />
-                      </div>
-
-                      {relationship ? (
-                        <div className="rounded-[24px] border border-[#D6AD4B]/35 bg-[#F8FBF8] p-4">
-                          <p className="text-center text-[10px] font-black tracking-widest text-[#8E7745]">صلة القرابة</p>
-                          <p className="mt-1 text-center text-xl font-black text-[#153D2F]">{relationship.label}</p>
-                          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                            {relationship.path.map((member, index) => (
-                              <div key={`${member.id}-${index}`} className="flex items-center gap-2">
-                                <span className="rounded-xl border border-[#E7E0CF] bg-white px-3 py-2 text-xs font-black text-[#153D2F] shadow-sm">
-                                  {member.id === meId ? "أنت" : member.first_name || displayName(member)}
-                                </span>
-                                {index < relationship.path.length - 1 && (
-                                  <ArrowLeft className="size-3 text-[#B78A2B]" />
-                                )}
-                              </div>
-                            ))}
+                  <div className="overflow-hidden rounded-2xl border border-[#E7E0CF]">
+                    {matches.length ? (
+                      matches.map((member) => (
+                        <button
+                          key={member.id}
+                          type="button"
+                          onClick={() => {
+                            setTargetId(member.id);
+                            setQuery(displayName(member));
+                          }}
+                          className="flex w-full items-center gap-3 border-b border-[#EEE9DD] px-4 py-3 text-right transition last:border-b-0 hover:bg-[#FBF9F2]"
+                        >
+                          <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F2EEE2] ring-1 ring-[#E2D5B5]">
+                            {member.kind === "extra" ? (
+                              <UserCircle2 className="size-6 text-[#8E7745]" />
+                            ) : (
+                              <UserAvatar
+                                name={member.first_name || "ع"}
+                                path={member.avatar_url}
+                                userId={member.id}
+                                className="size-full"
+                              />
+                            )}
                           </div>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-[#D6AD4B]/30 bg-[#FFF8E7] p-4 text-center">
-                          <p className="text-sm font-black text-[#6E5A21]">لم نجد مسار قرابة متصلًا بينكما.</p>
-                          <p className="mt-1 text-[10px] font-bold text-[#8E7745]">
-                            تأكد من ربط الفردين داخل نفس جذور الشجرة.
-                          </p>
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTargetId(null);
-                          setQuery("");
-                        }}
-                        className="w-full rounded-xl bg-[#F2F0EA] py-3 text-xs font-black text-[#153D2F] transition hover:bg-[#0F5139] hover:text-white"
-                      >
-                        اختيار شخص آخر
-                      </button>
-                    </div>
-                  )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-black text-[#153D2F]">{displayName(member)}</p>
+                            <p className="mt-0.5 text-[10px] font-bold text-[#8E8E88]">
+                              {member.father_name ? `والده: ${member.father_name}` : "فرد في شجرة العائلة"}
+                            </p>
+                          </div>
+                          <ArrowLeft className="size-4 shrink-0 text-[#B78A2B]" />
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-sm font-bold text-[#7B7B76]">لا يوجد فرد مطابق للاسم.</div>
+                    )}
+                  </div>
                 </>
               )}
-            </div>
-          </div>
+
+              {selected && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                    <PersonCard member={me} label="أنت" />
+                    <div className="flex size-10 items-center justify-center rounded-full border border-[#D6AD4B]/40 bg-[#FFF8E7]">
+                      <Link2 className="size-4 text-[#8E7745]" />
+                    </div>
+                    <PersonCard member={selected} label="الفرد المختار" />
+                  </div>
+
+                  {relationship ? (
+                    <div className="rounded-[24px] border border-[#D6AD4B]/35 bg-[#F8FBF8] p-4">
+                      <p className="text-center text-[10px] font-black tracking-widest text-[#8E7745]">صلة القرابة</p>
+                      <p className="mt-1 text-center text-xl font-black text-[#153D2F]">{relationship.label}</p>
+                      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                        {relationship.path.map((member, index) => (
+                          <div key={`${member.id}-${index}`} className="flex items-center gap-2">
+                            <span className="rounded-xl border border-[#E7E0CF] bg-white px-3 py-2 text-xs font-black text-[#153D2F] shadow-sm">
+                              {member.id === meId ? "أنت" : member.first_name || displayName(member)}
+                            </span>
+                            {index < relationship.path.length - 1 && (
+                              <ArrowLeft className="size-3 text-[#B78A2B]" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-[#D6AD4B]/30 bg-[#FFF8E7] p-4 text-center">
+                      <p className="text-sm font-black text-[#6E5A21]">لم نجد مسار قرابة متصلًا بينكما.</p>
+                      <p className="mt-1 text-[10px] font-bold text-[#8E7745]">
+                        تأكد من ربط الفردين داخل نفس جذور الشجرة.
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetId(null);
+                      setQuery("");
+                    }}
+                    className="w-full rounded-xl bg-[#F2F0EA] py-3 text-xs font-black text-[#153D2F] transition hover:bg-[#0F5139] hover:text-white"
+                  >
+                    اختيار شخص آخر
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
-    </>
-  );
+      </div>
+    </div>
+  ) : null;
 }
 
 function PersonCard({ member, label }: { member: Member | null | undefined; label: string }) {
