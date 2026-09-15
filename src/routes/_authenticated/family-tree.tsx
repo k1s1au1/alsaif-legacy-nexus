@@ -30,6 +30,7 @@ import {
   UsersRound,
   X,
   ArrowLeft,
+  Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -60,8 +61,15 @@ type Member = {
   kind: "profile" | "extra";
 };
 
-const NODE_W = 184;
-const NODE_H = 116;
+type RelationshipResult = {
+  label: string;
+  path: Member[];
+  upGenerations: number;
+  downGenerations: number;
+};
+
+const NODE_W = 140;
+const NODE_H = 160;
 
 function shouldUseNativeIOSNodes() {
   if (typeof navigator === "undefined") return false;
@@ -109,22 +117,26 @@ function FamilyTreePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftParent, setDraftParent] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [zoom, setZoom] = useState(0.68);
+  const [zoom, setZoom] = useState(0.6);
   const [translate, setTranslate] = useState({ x: 200, y: 100 });
   const [addOpen, setAddOpen] = useState(false);
   const [pathIds, setPathIds] = useState<Set<string>>(new Set());
   const [useNativeIOSNodes] = useState(shouldUseNativeIOSNodes);
+  const [relationOpen, setRelationOpen] = useState(false);
+  const [relationQuery, setRelationQuery] = useState("");
+  const [relationTargetId, setRelationTargetId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lastContainerWidthRef = useRef(0);
   const mobileTreeInitializedRef = useRef(false);
 
-  // Normalizing Arabic text for better search
   const normalize = (text: string) => {
     return text
       ? text
           .replace(/[أإآ]/g, "ا")
           .replace(/ة/g, "ه")
           .replace(/ى/g, "ي")
+          .replace(/ؤ/g, "و")
+          .replace(/ئ/g, "ي")
           .trim()
       : "";
   };
@@ -347,6 +359,97 @@ function FamilyTreePage() {
       .filter((name): name is string => Boolean(name));
   }, [membersById, selectedId]);
 
+  const relationship = useMemo<RelationshipResult | null>(() => {
+    if (!me?.id || !relationTargetId || relationTargetId === "__root__") return null;
+    const current = membersById.get(me.id);
+    const target = membersById.get(relationTargetId);
+    if (!current || !target) return null;
+    if (current.id === target.id) {
+      return { label: "أنت", path: [current], upGenerations: 0, downGenerations: 0 };
+    }
+
+    const ancestors = new Map<string, { member: Member; distance: number }>();
+    let cursor: Member | undefined = current;
+    let distance = 0;
+    const visitedA = new Set<string>();
+    while (cursor && !visitedA.has(cursor.id)) {
+      visitedA.add(cursor.id);
+      ancestors.set(cursor.id, { member: cursor, distance });
+      cursor = cursor.parent_id ? membersById.get(cursor.parent_id) : undefined;
+      distance += 1;
+    }
+
+    const targetChain: { member: Member; distance: number }[] = [];
+    cursor = target;
+    distance = 0;
+    const visitedB = new Set<string>();
+    while (cursor && !visitedB.has(cursor.id)) {
+      visitedB.add(cursor.id);
+      targetChain.push({ member: cursor, distance });
+      cursor = cursor.parent_id ? membersById.get(cursor.parent_id) : undefined;
+      distance += 1;
+    }
+
+    const common = targetChain.find((item) => ancestors.has(item.member.id));
+    if (!common) return null;
+
+    const upGenerations = ancestors.get(common.member.id)?.distance ?? 0;
+    const downGenerations = common.distance;
+    const upPath: Member[] = [];
+    cursor = current;
+    let guard = 0;
+    while (cursor && guard < members.length + 2) {
+      upPath.push(cursor);
+      if (cursor.id === common.member.id) break;
+      cursor = cursor.parent_id ? membersById.get(cursor.parent_id) : undefined;
+      guard += 1;
+    }
+
+    const downPath = targetChain
+      .slice(0, downGenerations + 1)
+      .map((item) => item.member)
+      .reverse();
+    const path = [...upPath, ...downPath.slice(1)];
+
+    let label = "صلة قرابة";
+    if (upGenerations === 0 && downGenerations === 1) label = "والدك / والدتك";
+    else if (upGenerations === 0 && downGenerations === 2) label = "جدك / جدتك";
+    else if (upGenerations === 0 && downGenerations > 2)
+      label = `من أجدادك (${downGenerations} أجيال)`;
+    else if (upGenerations === 1 && downGenerations === 0) label = "ابنك / ابنتك";
+    else if (upGenerations === 2 && downGenerations === 0) label = "حفيدك / حفيدتك";
+    else if (upGenerations > 2 && downGenerations === 0)
+      label = `من ذريتك (${upGenerations} أجيال)`;
+    else if (upGenerations === 1 && downGenerations === 1) label = "أخ / أخت";
+    else if (upGenerations === 1 && downGenerations === 2) label = "عم / خال / خالة (بحسب الفرع)";
+    else if (upGenerations === 2 && downGenerations === 1) label = "ابن أخ / ابن أخت";
+    else if (upGenerations >= 2 && downGenerations >= 2) {
+      const degree = Math.min(upGenerations, downGenerations) - 1;
+      label = `ابن عم/خالة من الدرجة ${degree}`;
+    } else if (upGenerations > 0 && downGenerations > 0) {
+      label = `قريب من فرع مشترك — ${upGenerations + downGenerations - 2} مسافة قرابة`;
+    }
+
+    return { label, path, upGenerations, downGenerations };
+  }, [me?.id, relationTargetId, membersById, members.length]);
+
+  const relationshipPathIds = useMemo(
+    () => new Set((relationship?.path ?? []).map((member) => member.id)),
+    [relationship],
+  );
+
+  const relationMatches = useMemo(() => {
+    const query = normalize(relationQuery);
+    if (!query) return members.filter((m) => m.id !== me?.id).slice(0, 10);
+    return members
+      .filter((m) => {
+        const name = normalize(m.full_name || "");
+        const first = normalize(m.first_name || "");
+        return m.id !== me?.id && (name.includes(query) || first.includes(query));
+      })
+      .slice(0, 10);
+  }, [relationQuery, members, me?.id]);
+
   async function saveParent(member: Member) {
     setSaving(true);
     try {
@@ -379,234 +482,97 @@ function FamilyTreePage() {
     const m = memberId ? members.find((mem) => mem.id === memberId) : null;
     const isRoot = memberId === "__root__";
     const isMe = me?.id && m && m.id === me.id;
-    const isInPath = memberId && pathIds.has(memberId);
-    const isSelected = Boolean(memberId && memberId === selectedId);
+    const isInRelationPath = !!m && relationshipPathIds.has(m.id);
+    const relationMode = relationOpen && !!relationTargetId;
 
-    const handleNodeClick = () => {
-      if (isRoot) {
-        setSelectedId(null);
-        setPathIds(new Set());
-        toggleNode();
-        return;
-      }
-
-      if (!memberId) return;
-      setSelectedId(memberId);
-      highlightRelationship(memberId);
-
-      toggleNode();
-    };
-
-    // Improved search matching with normalization
     const isSearchMatch =
       search &&
       m &&
       (normalize(m.first_name || "").includes(normalize(search)) ||
-       normalize(m.full_name || "").includes(normalize(search)));
+        normalize(m.full_name || "").includes(normalize(search)));
 
     const isExtra = m?.kind === "extra";
 
-    if (useNativeIOSNodes) {
-      const nodeName = isRoot ? nodeDatum.name : m ? memberCardName(m) : "فرد من العائلة";
-      const nodeSubtitle = isRoot ? "جذور العائلة" : isExtra ? "قيد التسجيل" : "عضو العائلة";
-      const initial = isRoot ? "س" : shortenNodeLabel(m?.first_name, 2).slice(0, 1);
-      const cardFill = isRoot
-        ? "#0F5139"
-        : isSelected
-          ? "#D6AD4B"
-          : isInPath
-            ? "#FFF2C7"
-            : isExtra
-              ? "#FFF9E9"
-              : "#FFFEFA";
-      const cardStroke = isRoot || isSelected || isSearchMatch ? "#C79A32" : "#D8CCAB";
-      const primaryText = isRoot ? "#FFFFFF" : "#153D2F";
-      const secondaryText = isRoot ? "#F7D98A" : "#8A713A";
-
-      return (
-        <g
-          className="ios-native-tree-node"
-          onClick={handleNodeClick}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              handleNodeClick();
-            }
-          }}
-          role="button"
-          tabIndex={0}
-          aria-label={`${nodeName}، ${nodeSubtitle}`}
-          style={{ cursor: "pointer", WebkitTapHighlightColor: "transparent" }}
-        >
-          {(isSearchMatch || isSelected) && (
-            <rect
-              x={-97}
-              y={-59}
-              width={194}
-              height={118}
-              rx={26}
-              fill="none"
-              stroke="#C79A32"
-              strokeWidth={isSearchMatch ? 5 : 3}
-              opacity={0.82}
-            />
-          )}
-
-          <rect
-            x={-91}
-            y={-53}
-            width={182}
-            height={106}
-            rx={22}
-            fill={cardFill}
-            stroke={cardStroke}
-            strokeWidth={isSelected ? 3 : 2}
-          />
-
-          <circle
-            cx={0}
-            cy={-51}
-            r={25}
-            fill={isRoot || isSelected || isMe ? "#0F5139" : "#FFFFFF"}
-            stroke="#D6AD4B"
-            strokeWidth={3}
-          />
-          <text
-            x={0}
-            y={-50}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill={isRoot || isSelected || isMe ? "#F7D98A" : "#153D2F"}
-            fontSize={20}
-            fontWeight={700}
-            direction="rtl"
-          >
-            {initial}
-          </text>
-
-          <text
-            x={0}
-            y={7}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill={primaryText}
-            fontSize={15}
-            fontWeight={700}
-            direction="rtl"
-          >
-            {shortenNodeLabel(nodeName, 20)}
-          </text>
-          <text
-            x={0}
-            y={31}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill={secondaryText}
-            fontSize={11}
-            fontWeight={500}
-            direction="rtl"
-          >
-            {nodeSubtitle}
-          </text>
-
-          {isPriv && !isRoot && m && (
-            <g
-              transform="translate(74 -43)"
-              onClick={(event) => {
-                event.stopPropagation();
-                setEditing(m.id);
-                setDraftParent(m.parent_id);
-              }}
-              role="button"
-              aria-label={`تعديل ارتباط ${m.first_name || "الفرد"}`}
-            >
-              <circle r={15} fill="#FFFFFF" stroke="#C79A32" strokeWidth={2} />
-              <text
-                x={0}
-                y={1}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="#153D2F"
-                fontSize={15}
-                fontWeight={900}
-              >
-                ✎
-              </text>
-            </g>
-          )}
-        </g>
-      );
-    }
-
     return (
-      <g className="node-group">
+      <g className={cn("node-group", relationMode && !isRoot && !isInRelationPath && "relation-dim")}>
         <foreignObject width={NODE_W} height={NODE_H} x={-NODE_W / 2} y={-NODE_H / 2}>
           <div
-            {...{ xmlns: "http://www.w3.org/1999/xhtml" }}
-            onClick={handleNodeClick}
+            onClick={toggleNode}
             className={cn(
-              "tree-node-content relative cursor-pointer group transition-transform duration-300",
-              isSearchMatch && "scale-105",
+              "relative flex flex-col items-center justify-center gap-3 transition-all duration-500 p-4 cursor-pointer group",
+              isSearchMatch && "scale-110",
+              relationMode && isInRelationPath && "scale-110",
             )}
           >
-            <div
-              className={cn(
-                "absolute inset-x-1 top-5 bottom-1 rounded-[22px] border-2 px-3 pb-3 pt-9 text-center shadow-[0_10px_24px_rgba(34,51,42,0.12)] transition-all duration-300",
-                isRoot
-                  ? "border-[#C79A32] bg-[#0F5139] text-white"
-                  : isSelected
-                    ? "border-[#0F5139] bg-[#D6AD4B] text-[#153D2F] shadow-[0_14px_30px_rgba(199,154,50,0.28)]"
-                    : isInPath
-                      ? "border-[#D6AD4B] bg-[#FFF2C7] text-[#153D2F]"
-                      : isExtra
-                        ? "border-[#DCCB9E] bg-[#FFF9E9] text-[#153D2F]"
-                        : "border-[#DED4B9] bg-[#FFFEFA] text-[#153D2F]",
-                isSearchMatch && "ring-4 ring-[#D6AD4B]/45",
-              )}
-            >
+            <div className="relative">
               <div
                 className={cn(
-                  "absolute -top-7 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center overflow-hidden rounded-full border-[3px] border-[#D6AD4B] bg-white shadow-md",
-                  (isRoot || isSelected || isMe) && "bg-[#0F5139]",
+                  "size-20 md:size-24 rounded-full p-1 transition-all duration-500 shadow-xl",
+                  isRoot
+                    ? "bg-gradient-to-br from-gold-primary via-white to-gold-primary animate-pulse"
+                    : isMe
+                      ? "bg-gradient-to-br from-emerald-400 to-primary"
+                      : isExtra
+                        ? "bg-slate-200"
+                        : "bg-gradient-to-br from-primary/20 to-primary/5",
+                  isSearchMatch && "ring-4 ring-gold-primary ring-offset-4",
+                  relationMode && isInRelationPath && "ring-4 ring-primary ring-offset-4 ring-offset-white",
                 )}
               >
-                {isRoot ? (
-                  <Trees size={25} className="text-[#F5CF73]" />
-                ) : isExtra ? (
-                  <UserCircle2 size={30} className="text-[#90753C]" />
-                ) : (
-                  <UserAvatar
-                    name={m?.first_name || "ع"}
-                    path={m?.avatar_url}
-                    className="size-full"
-                    userId={m?.id}
-                  />
-                )}
+                <div className="size-full rounded-full bg-white overflow-hidden border-2 border-white shadow-inner flex items-center justify-center relative">
+                  {isRoot ? (
+                    <div className="size-full bg-primary flex items-center justify-center">
+                      <Trees size={32} className="text-gold-primary" />
+                    </div>
+                  ) : isExtra ? (
+                    <UserCircle2 size={48} className="text-slate-400" />
+                  ) : (
+                    <UserAvatar
+                      name={m?.first_name || "ع"}
+                      path={m?.avatar_url}
+                      className="size-full"
+                      userId={m?.id}
+                    />
+                  )}
+                  {!isRoot && !isExtra && (
+                    <div className="absolute bottom-1 right-1 size-4 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
+                  )}
+                </div>
               </div>
+            </div>
 
-              <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] font-black tracking-tight">
-                {isRoot ? nodeDatum.name : m ? memberCardName(m) : "فرد من العائلة"}
+            <div
+              className={cn(
+                "px-4 py-2 rounded-2xl border text-center min-w-[120px] shadow-sm backdrop-blur-md transition-all duration-300",
+                isRoot
+                  ? "bg-primary text-white border-gold-primary/50 shadow-gold-primary/20"
+                  : isMe
+                    ? "bg-primary text-white border-primary"
+                    : "bg-white/80 text-primary border-border",
+                relationMode && isInRelationPath && "border-primary shadow-lg shadow-primary/20",
+              )}
+            >
+              <p className="text-sm font-black tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                {isRoot ? nodeDatum.name : m?.first_name}
               </p>
               <p
                 className={cn(
-                  "mt-1 text-[11px] font-bold",
-                  isRoot ? "text-[#F5CF73]" : "text-[#8A713A]",
+                  "text-[9px] font-bold uppercase tracking-widest mt-0.5 opacity-60",
+                  isRoot || isMe ? "text-white/70" : "text-gold-primary",
                 )}
               >
-                {isRoot ? "جذور العائلة" : isExtra ? "قيد التسجيل" : "عضو العائلة"}
+                {isRoot ? "الأصل" : isExtra ? "قيد التسجيل" : m?.father_name || "السيف"}
               </p>
             </div>
 
             {isPriv && !isRoot && m && (
               <button
-                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setEditing(m.id);
                   setDraftParent(m.parent_id);
                 }}
-                aria-label={`تعديل ارتباط ${m.first_name || "الفرد"}`}
-                className="absolute right-0 top-1 z-10 flex size-8 items-center justify-center rounded-full border-2 border-[#D6AD4B] bg-white text-[#153D2F] shadow-md transition-colors hover:bg-[#0F5139] hover:text-white"
+                className="absolute top-2 right-2 size-8 rounded-full bg-white shadow-lg border border-border flex items-center justify-center text-primary hover:bg-gold-primary hover:text-white transition-all opacity-0 group-hover:opacity-100"
               >
                 <Pencil size={14} />
               </button>
@@ -626,270 +592,259 @@ function FamilyTreePage() {
   }
 
   const editingMember = editing ? members.find((m) => m.id === editing) : null;
+  const selectedRelationMember = relationTargetId ? membersById.get(relationTargetId) : null;
 
   return (
-    <AppShell title="نسب وأثر" user={me}>
-      <div className="family-tree-page space-y-4 px-1 md:px-0">
-        <header className="rounded-[24px] border border-[#E7E0CF] bg-white p-4 shadow-[0_12px_34px_rgba(30,59,47,0.08)] md:rounded-[30px] md:p-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#0F5139] shadow-lg shadow-[#0F5139]/15 md:size-14">
-                <LineageLegacyIcon className="size-6 text-[#F5CF73] md:size-7" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="truncate text-xl font-black text-[#153D2F] md:text-2xl">
-                  نسب وأثر
-                </h1>
-                <p className="mt-0.5 text-sm font-bold text-[#7B7B76]">
-                  أنساب العائلة وإرثها
-                </p>
-              </div>
+    <AppShell title="شجرة عائلة السيف" user={me}>
+      <div className="space-y-4 px-1 md:px-0">
+        <QuickActionsBanner />
+        <header className="flex flex-col gap-4 bg-white p-4 md:p-6 rounded-[24px] md:rounded-[32px] shadow-sm border border-border">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="size-10 md:size-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
+              <Trees className="size-6 md:size-8 text-white" />
             </div>
-
-            {isPriv && (
+            <div className="flex-1 min-w-[200px]">
+              <h1 className="text-lg md:text-2xl font-black text-[#1B4332]">شجرة عائلة السيف</h1>
+              <p className="text-[10px] md:text-sm font-bold text-[#8E8E93]">
+                استكشف تفرعات وجذور عائلة السيف العريقة
+              </p>
+            </div>
+            <div className="flex items-center gap-2 w-full md:w-auto justify-end">
               <button
-                type="button"
-                onClick={() => setAddOpen(true)}
-                className="btn-gold flex min-h-11 items-center gap-2 rounded-2xl px-4 text-sm font-black shadow-md"
+                onClick={() => {
+                  setRelationOpen(true);
+                  setRelationQuery("");
+                  setRelationTargetId(null);
+                }}
+                className={cn(
+                  "flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 rounded-2xl text-xs md:text-sm font-bold shadow-md border transition-all",
+                  relationOpen
+                    ? "bg-primary text-white border-primary"
+                    : "bg-white text-primary border-[#D4AF37]/40 hover:bg-primary hover:text-white",
+                )}
               >
-                <UserPlus className="size-4" />
-                <span>إضافة فرد</span>
+                <GitBranch className="size-4" />
+                <span>صلة القرابة</span>
               </button>
-            )}
+              {isPriv && (
+                <button
+                  onClick={() => setAddOpen(true)}
+                  className="btn-gold flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 rounded-2xl text-xs md:text-sm font-bold shadow-md"
+                >
+                  <UserPlus className="size-4" />
+                  <span className="hidden md:inline">إضافة فرد</span>
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="relative min-w-0 flex-1">
-              <Search className="absolute right-4 top-1/2 size-5 -translate-y-1/2 text-[#8E8E88]" />
+          <div className="flex flex-col md:flex-row items-center gap-3 w-full">
+            <div className="relative w-full md:w-auto flex-1">
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-[#8E8E93]" />
               <input
-                type="search"
+                type="text"
                 placeholder="ابحث عن فرد..."
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="min-h-12 w-full rounded-2xl border border-transparent bg-[#F6F4EF] pr-12 pl-4 text-base font-bold text-[#153D2F] outline-none transition focus:border-[#D6AD4B] focus:bg-white focus:ring-4 focus:ring-[#D6AD4B]/10"
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pr-11 pl-4 py-3 bg-[#F2F2F7] border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#1B4332]/10 transition-all"
               />
             </div>
-
-            <div className="flex items-center justify-center gap-2 md:justify-start">
+            <div className="flex gap-2 w-full md:w-auto justify-center">
+              <ControlBtn onClick={() => setZoom((z) => Math.min(2, z + 0.15))} icon={<ZoomIn size={18} />} />
+              <ControlBtn onClick={() => setZoom((z) => Math.max(0.1, z - 0.15))} icon={<ZoomOut size={18} />} />
               <ControlBtn
-                label="تكبير الشجرة"
-                onClick={() => setZoom((value) => Math.min(2, value + 0.15))}
-                icon={<ZoomIn size={19} />}
-              />
-              <ControlBtn
-                label="تصغير الشجرة"
-                onClick={() => setZoom((value) => Math.max(0.1, value - 0.15))}
-                icon={<ZoomOut size={19} />}
-              />
-              <ControlBtn
-                label="إعادة ضبط العرض"
                 onClick={() => {
-                  const mobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
-                  setZoom(mobile ? 0.52 : 0.68);
+                  setZoom(0.6);
                   if (containerRef.current) {
-                    setTranslate({
-                      x: containerRef.current.clientWidth / 2,
-                      y: mobile ? 150 : useNativeIOSNodes ? 112 : 96,
-                    });
+                    setTranslate({ x: containerRef.current.clientWidth / 2, y: 80 });
                   }
                 }}
-                icon={<Maximize2 size={19} />}
+                icon={<Maximize2 size={18} />}
               />
             </div>
           </div>
         </header>
 
-        <div className="family-tree-workspace">
-          <aside className="member-panel">
-            {selectedMember ? (
-              <div className="member-panel-content">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-[#F6D37E]">
-                    <IdCard className="size-5" />
-                    <span className="text-sm font-black">بطاقة الفرد</span>
+        <div
+          ref={containerRef}
+          className="w-full rounded-[32px] md:rounded-[44px] bg-white border border-[#E5E4E0] overflow-hidden shadow-2xl relative"
+          style={{ height: "calc(100vh - 240px)", minHeight: 500 }}
+        >
+          {loading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
+              <Loader2 className="size-10 animate-spin text-gold-primary" />
+            </div>
+          ) : treeData.length > 0 ? (
+            <Tree
+              data={treeData[0]}
+              orientation="vertical"
+              translate={translate}
+              zoom={zoom}
+              onUpdate={(state) => {
+                if (Math.abs(state.zoom - zoom) > 0.01) setZoom(state.zoom);
+                if (
+                  Math.abs(state.translate.x - translate.x) > 1 ||
+                  Math.abs(state.translate.y - translate.y) > 1
+                ) {
+                  setTranslate(state.translate);
+                }
+              }}
+              pathFunc="diagonal"
+              pathClassFunc={() => "tree-link-curved"}
+              nodeSize={{ x: NODE_W + 100, y: NODE_H + 120 }}
+              renderCustomNodeElement={renderNode}
+              collapsible={false}
+              zoomable
+              draggable
+              transitionDuration={800}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground font-bold">
+              لا توجد بيانات لعرضها في الشجرة
+            </div>
+          )}
+
+          {relationOpen && relationship && (
+            <div className="absolute left-4 bottom-4 z-40 rounded-2xl bg-white/95 backdrop-blur-md border border-primary/15 shadow-xl px-4 py-3 min-w-[220px]">
+              <div className="flex items-center gap-2 text-primary text-xs font-black">
+                <Link2 className="size-4 text-gold-primary" />
+                <span>المسار مفعّل</span>
+              </div>
+              <p className="mt-1 text-sm font-black text-[#1B4332]">{relationship.label}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground font-bold">عدد الأفراد في المسار: {relationship.path.length}</p>
+            </div>
+          )}
+        </div>
+
+        {relationOpen && (
+          <div
+            className="fixed inset-0 z-[180] bg-black/55 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setRelationOpen(false)}
+          >
+            <div
+              dir="rtl"
+              className="w-full max-w-xl rounded-[30px] border border-[#D4AF37]/30 bg-white shadow-2xl overflow-hidden animate-fade-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-3 p-5 border-b border-border bg-gradient-to-b from-white to-[#FCFBF6]">
+                <div className="size-12 rounded-2xl bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-primary/15">
+                  <GitBranch className="size-6 text-gold-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-xl font-black text-[#1B4332]">وش علاقتي بفلان؟</h2>
+                      <p className="text-xs font-bold text-[#8E8E93] mt-1">اختر أي فرد من الشجرة ليظهر لك مسار القرابة بينكما.</p>
+                    </div>
+                    <button
+                      onClick={() => setRelationOpen(false)}
+                      className="size-9 rounded-xl hover:bg-[#F2F2F7] flex items-center justify-center text-muted-foreground"
+                    >
+                      <X className="size-5" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedId(null);
-                      setPathIds(new Set());
+                </div>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div className="relative">
+                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <input
+                    autoFocus
+                    value={relationQuery}
+                    onChange={(e) => {
+                      setRelationQuery(e.target.value);
+                      if (relationTargetId) setRelationTargetId(null);
                     }}
-                    aria-label="إغلاق بطاقة الفرد"
-                    className="flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/15"
-                  >
-                    <X className="size-4" />
-                  </button>
+                    placeholder="ابحث باسم الفرد..."
+                    className="w-full pr-11 pl-4 py-3 rounded-2xl bg-[#F2F2F7] border border-transparent focus:border-primary/15 focus:ring-2 focus:ring-primary/10 text-sm font-bold"
+                  />
                 </div>
 
-                <div className="member-summary">
-                  <div className="member-avatar">
-                    {selectedMember.kind === "extra" ? (
-                      <UserCircle2 className="size-12 text-[#8B713B]" />
+                {!selectedRelationMember && (
+                  <div className="rounded-2xl border border-border overflow-hidden">
+                    {relationMatches.length > 0 ? (
+                      relationMatches.map((member) => (
+                        <button
+                          key={member.id}
+                          onClick={() => {
+                            setRelationTargetId(member.id);
+                            setRelationQuery(member.full_name || member.first_name || "");
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-right hover:bg-[#FBFAF5] border-b last:border-b-0 border-border transition-all"
+                        >
+                          <div className="size-10 rounded-full overflow-hidden bg-[#F2F2F7] flex items-center justify-center shrink-0 ring-1 ring-border">
+                            {member.kind === "extra" ? (
+                              <UserCircle2 className="size-6 text-[#8E7745]" />
+                            ) : (
+                              <UserAvatar name={member.first_name || "ع"} path={member.avatar_url} className="size-full" userId={member.id} />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black text-[#1B4332] truncate">{member.full_name || member.first_name}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground mt-0.5">{member.father_name ? `والده: ${member.father_name}` : "عضو في الشجرة"}</p>
+                          </div>
+                          <ArrowLeft className="size-4 text-gold-primary" />
+                        </button>
+                      ))
                     ) : (
-                      <UserAvatar
-                        name={selectedMember.first_name || "ع"}
-                        path={selectedMember.avatar_url}
-                        className="size-full"
-                        userId={selectedMember.id}
-                      />
+                      <div className="p-6 text-center text-sm font-bold text-muted-foreground">لا يوجد فرد مطابق للبحث.</div>
                     )}
                   </div>
-                  <div className="member-summary-copy min-w-0">
-                    <h2 className="text-xl font-black leading-snug text-white">
-                      {memberDisplayName(selectedMember)}
-                    </h2>
-                    <p className="mt-1 text-sm font-bold text-[#F6D37E]">
-                      {selectedMember.kind === "extra" ? "فرد مضاف إلى الشجرة" : "عضو مرتبط بالنظام"}
-                    </p>
-                  </div>
-                </div>
+                )}
 
-                <div className="rounded-2xl border border-white/12 bg-black/10 p-3.5">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-black text-white/70">
-                    <GitBranch className="size-4 text-[#F6D37E]" />
-                    مسار العائلة
-                  </div>
-                  <p className="text-sm font-black leading-7 text-[#F8E7B5]">
-                    {selectedLineage.length > 0 ? selectedLineage.join(" ← ") : "غير محدد"}
-                  </p>
-                </div>
+                {selectedRelationMember && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
+                      <RelationPersonCard member={membersById.get(me.id) ?? null} label="أنت" highlight />
+                      <div className="size-10 rounded-full bg-[#FFF8E7] border border-[#D4AF37]/30 flex items-center justify-center">
+                        <Link2 className="size-4 text-[#8E7745]" />
+                      </div>
+                      <RelationPersonCard member={selectedRelationMember} label="الفرد المختار" />
+                    </div>
 
-                <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
-                  <div className="member-info-row">
-                    <span>الفرع</span>
-                    <strong>
-                      {selectedMember.father_name ? `فرع ${selectedMember.father_name}` : "جذور العائلة"}
-                    </strong>
-                  </div>
-                  <div className="member-info-row">
-                    <span>السجل</span>
-                    <strong>{selectedMember.kind === "extra" ? "مضاف يدويًا" : "حساب معتمد"}</strong>
-                  </div>
-                </div>
+                    {relationship ? (
+                      <div className="rounded-[24px] border border-primary/15 bg-[#F7FBF8] p-4 space-y-3">
+                        <div className="text-center">
+                          <p className="text-[10px] font-black text-[#8E7745] uppercase tracking-widest">صلة القرابة</p>
+                          <p className="text-xl font-black text-[#1B4332] mt-1">{relationship.label}</p>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          {relationship.path.map((member, index) => (
+                            <div key={`${member.id}-${index}`} className="flex items-center gap-2">
+                              <div className="px-3 py-2 rounded-xl bg-white border border-border text-xs font-black text-primary shadow-sm">
+                                {member.id === me.id ? "أنت" : member.first_name || member.full_name || "فرد"}
+                              </div>
+                              {index < relationship.path.length - 1 && <ArrowLeft className="size-3 text-[#C6A53D]" />}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-center text-muted-foreground font-bold leading-relaxed">
+                          تم إبراز أفراد المسار على الشجرة خلف النافذة، مع إظهار كامل التسلسل المشترك.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl bg-[#FFF8E7] border border-[#D4AF37]/20 p-4 text-center">
+                        <p className="text-sm font-black text-[#6E5A21]">لم نتمكن من إيجاد مسار قرابة متصل بين الحسابين.</p>
+                        <p className="text-[10px] font-bold text-[#8E7745] mt-1">تأكد من أن الشخصين مرتبطان داخل الشجرة بنفس الجذور.</p>
+                      </div>
+                    )}
 
-                <div className="mt-auto grid gap-2 pt-1">
-                  {selectedMember.kind === "profile" && (
                     <button
-                      type="button"
-                      onClick={() =>
-                        router.navigate({
-                          to: "/members/$userId",
-                          params: { userId: selectedMember.id },
-                        })
-                      }
-                      className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D6AD4B] px-4 text-sm font-black text-[#153D2F] shadow-lg shadow-black/10 transition hover:bg-[#E1BB5C]"
-                    >
-                      عرض الملف
-                      <ArrowLeft className="size-4" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => highlightRelationship(selectedMember.id)}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#D6AD4B] bg-transparent px-4 text-sm font-black text-white transition hover:bg-white/10"
-                  >
-                    <GitBranch className="size-4 text-[#F6D37E]" />
-                    تحديد صلة القرابة
-                  </button>
-                  {isPriv && (
-                    <button
-                      type="button"
                       onClick={() => {
-                        setEditing(selectedMember.id);
-                        setDraftParent(selectedMember.parent_id);
+                        setRelationTargetId(null);
+                        setRelationQuery("");
                       }}
-                      className="flex min-h-11 items-center justify-center gap-2 rounded-2xl text-sm font-black text-[#F8E7B5] transition hover:bg-white/10"
+                      className="w-full py-2.5 rounded-xl bg-[#F2F2F7] text-primary text-xs font-black hover:bg-primary hover:text-white transition-all"
                     >
-                      <Pencil className="size-4" />
-                      تعديل الارتباط
+                      اختيار شخص آخر
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex h-full min-h-52 flex-col items-center justify-center px-5 text-center">
-                <div className="flex size-16 items-center justify-center rounded-full border border-[#D6AD4B]/40 bg-white/5 text-[#F6D37E]">
-                  <UsersRound className="size-8" />
-                </div>
-                <h2 className="mt-4 text-lg font-black text-white">اختر فردًا من الشجرة</h2>
-                <p className="mt-2 max-w-56 text-sm font-bold leading-6 text-white/60">
-                  ستظهر هنا بياناته ومسار صلة القرابة به.
-                </p>
-              </div>
-            )}
-          </aside>
-
-          <div
-            ref={containerRef}
-            className="family-tree-canvas family-tree-approved relative w-full overflow-hidden rounded-[28px] border border-[#DCCDA8] shadow-[0_18px_45px_rgba(40,58,48,0.14)] md:rounded-[34px]"
-          >
-            <div className="family-tree-approved-heading">
-              <div className="family-tree-approved-copy">
-                <span className="family-tree-approved-icon"><Trees size={22} /></span>
-                <div>
-                  <h2>شجرة العائلة</h2>
-                  <p>اكتشف روابط العائلة وتعرّف على أصولك</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="family-tree-approved-fit"
-                onClick={() => {
-                  const mobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
-                  setZoom(mobile ? 0.52 : 0.68);
-                  if (containerRef.current) {
-                    setTranslate({
-                      x: containerRef.current.clientWidth / 2,
-                      y: mobile ? 148 : useNativeIOSNodes ? 112 : 96,
-                    });
-                  }
-                }}
-              >
-                <Maximize2 size={17} />
-                <span>عرض الكل</span>
-              </button>
             </div>
-            {loading ? (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#FAF7EE]/75 backdrop-blur-sm">
-                <Loader2 className="size-10 animate-spin text-[#B78A2B]" />
-              </div>
-            ) : treeData.length > 0 ? (
-              <Tree
-                data={treeData[0]}
-                orientation="vertical"
-                translate={translate}
-                zoom={zoom}
-                onUpdate={(state) => {
-                  if (Math.abs(state.zoom - zoom) > 0.01) setZoom(state.zoom);
-                  if (
-                    Math.abs(state.translate.x - translate.x) > 1 ||
-                    Math.abs(state.translate.y - translate.y) > 1
-                  ) {
-                    setTranslate(state.translate);
-                  }
-                }}
-                pathFunc="diagonal"
-                pathClassFunc={(link) => {
-                  const targetId = link.target.data.attributes?.memberId as string;
-                  const sourceId = link.source.data.attributes?.memberId as string;
-                  if (pathIds.has(targetId) && pathIds.has(sourceId)) return "tree-link-active";
-                  return "tree-link-curved";
-                }}
-                nodeSize={{ x: NODE_W + 72, y: NODE_H + 74 }}
-                renderCustomNodeElement={renderNode}
-                collapsible={false}
-                zoomable
-                draggable
-                transitionDuration={useNativeIOSNodes ? 0 : 500}
-              />
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-[#6F766F]">
-                <Trees className="mb-3 size-9 text-[#B78A2B]" />
-                <p className="text-base font-black">لا توجد بيانات لعرضها في الشجرة</p>
-              </div>
-            )}
           </div>
-        </div>
+        )}
 
         {editingMember && (
           <div
@@ -906,46 +861,28 @@ function FamilyTreePage() {
                   {editingMember.kind === "extra" ? (
                     <UserCircle2 className="size-7 text-[#8E7745]" />
                   ) : (
-                    <UserAvatar
-                      name={editingMember.first_name || "ع"}
-                      path={editingMember.avatar_url}
-                      className="size-full"
-                    />
+                    <UserAvatar name={editingMember.first_name || "ع"} path={editingMember.avatar_url} className="size-full" />
                   )}
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-[#1B4332]">
-                    تعديل ارتباط {editingMember.first_name}
-                  </h3>
+                  <h3 className="text-lg font-black text-[#1B4332]">تعديل ارتباط {editingMember.first_name}</h3>
                   <p className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 mt-1">
-                    {editingMember.kind === "extra" ? (
-                      "فرد مضاف بدون حساب"
-                    ) : (
-                      <>
-                        <ShieldCheck size={12} /> حساب معتمد ومرتبط بالنظام
-                      </>
-                    )}
+                    {editingMember.kind === "extra" ? "فرد مضاف بدون حساب" : <><ShieldCheck size={12} /> حساب معتمد ومرتبط بالنظام</>}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">
-                  والد العضو
-                </label>
+                <label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">والد العضو</label>
                 <select
                   value={draftParent ?? ""}
                   onChange={(e) => setDraftParent(e.target.value || null)}
                   className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary focus:ring-2 focus:ring-primary/10 transition-all"
                 >
                   <option value="">— لا أب (رأس شجرة) —</option>
-                  {members
-                    .filter((x) => x.id !== editingMember.id)
-                    .map((x) => (
-                      <option key={x.id} value={x.id}>
-                        {(x.full_name || x.first_name) + (x.kind === "extra" ? " (بدون حساب)" : "")}
-                      </option>
-                    ))}
+                  {members.filter((x) => x.id !== editingMember.id).map((x) => (
+                    <option key={x.id} value={x.id}>{(x.full_name || x.first_name) + (x.kind === "extra" ? " (بدون حساب)" : "")}</option>
+                  ))}
                 </select>
               </div>
 
@@ -997,6 +934,33 @@ function FamilyTreePage() {
       </div>
 
       <style>{`
+        .tree-link-curved {
+          fill: none;
+          stroke: #D4AF37;
+          stroke-width: 3.5px;
+          stroke-linecap: round;
+          opacity: 0.6;
+          transition: all 0.5s ease;
+        }
+
+        .relation-dim {
+          opacity: 0.22;
+          transition: opacity 0.4s ease;
+        }
+
+        .rd3t-tree-container {
+          width: 100%;
+          height: 100%;
+          background: #051410;
+          background-image:
+            radial-gradient(circle at 2px 2px, rgba(212,175,55,0.05) 1px, transparent 0);
+          background-size: 32px 32px;
+        }
+
+        .node-group {
+          filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+        }
+
         .family-tree-workspace {
           display: grid;
           grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
@@ -1014,9 +978,7 @@ function FamilyTreePage() {
           border: 1px solid rgba(214, 173, 75, 0.48);
           border-radius: 30px;
           color: white;
-          background:
-            radial-gradient(circle at 14% 8%, rgba(246, 211, 126, 0.14), transparent 28%),
-            linear-gradient(155deg, #0f5a3f 0%, #073b2c 100%);
+          background: linear-gradient(155deg, #0f5a3f 0%, #073b2c 100%);
           box-shadow: 0 18px 45px rgba(25, 60, 44, 0.18);
         }
 
@@ -1083,13 +1045,25 @@ function FamilyTreePage() {
           white-space: nowrap;
         }
 
-        .tree-link-curved {
-          fill: none;
-          stroke: #b99745;
-          stroke-width: 2.8px;
-          stroke-linecap: round;
-          opacity: 0.62;
-          transition: all 0.35s ease;
+        .family-tree-canvas {
+          grid-area: tree;
+          direction: rtl;
+          height: min(760px, calc(100vh - 250px));
+          min-height: 600px;
+          overscroll-behavior: contain;
+          -webkit-user-select: none;
+          user-select: none;
+        }
+
+        .family-tree-canvas .rd3t-tree-container,
+        .family-tree-canvas .rd3t-tree-container > svg {
+          touch-action: none;
+          -webkit-user-select: none;
+          user-select: none;
+        }
+
+        .family-tree-canvas .rd3t-tree-container {
+          background: transparent;
         }
 
         .tree-link-active {
@@ -1110,152 +1084,8 @@ function FamilyTreePage() {
           }
         }
 
-        .rd3t-tree-container {
-          width: 100%;
-          height: 100%;
-          background: transparent;
-        }
-
-        .family-tree-canvas {
-          grid-area: tree;
-          direction: rtl;
-          height: min(760px, calc(100vh - 250px));
-          min-height: 600px;
-          overscroll-behavior: contain;
-          -webkit-user-select: none;
-          user-select: none;
-        }
-
-        @supports (height: 100dvh) {
-          .family-tree-canvas {
-            height: min(760px, calc(100dvh - 250px - env(safe-area-inset-bottom, 0px)));
-          }
-        }
-
-        .family-tree-canvas .rd3t-tree-container,
-        .family-tree-canvas .rd3t-tree-container > svg {
-          touch-action: none;
-          -webkit-user-select: none;
-          user-select: none;
-        }
-
-        .family-tree-approved-heading {
-          position: absolute;
-          z-index: 25;
-          top: 16px;
-          right: 18px;
-          left: 18px;
-          display: none;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-          pointer-events: none;
-        }
-
-        .family-tree-approved-copy {
-          display: flex;
-          align-items: flex-start;
-          gap: 9px;
-          color: #0f5139;
-          text-align: right;
-        }
-
-        .family-tree-approved-icon {
-          display: grid;
-          width: 36px;
-          height: 36px;
-          flex: 0 0 auto;
-          place-items: center;
-          color: #0f5a3f;
-        }
-
-        .family-tree-approved-copy h2 {
-          margin: 0;
-          font-size: 20px;
-          line-height: 1.25;
-          font-weight: 900;
-          letter-spacing: -0.02em;
-        }
-
-        .family-tree-approved-copy p {
-          margin: 3px 0 0;
-          color: #68736d;
-          font-size: 11px;
-          line-height: 1.45;
-          font-weight: 700;
-        }
-
-        .family-tree-approved-fit {
-          pointer-events: auto;
-          display: inline-flex;
-          min-height: 42px;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          border: 1px solid #e1d6b9;
-          border-radius: 15px;
-          background: rgba(255, 253, 247, 0.9);
-          padding: 0 13px;
-          color: #0f5139;
-          font-size: 12px;
-          font-weight: 900;
-          box-shadow: 0 8px 22px rgba(55, 68, 59, 0.08);
-          backdrop-filter: blur(10px);
-        }
-
-        .node-group {
-          filter: drop-shadow(0 8px 14px rgba(38, 54, 46, 0.1));
-        }
-
-        .tree-node-content {
-          width: ${NODE_W}px;
-          height: ${NODE_H}px;
-          box-sizing: border-box;
-        }
-
-        foreignObject {
-          overflow: visible;
-        }
-
-        .ios-native-tree-node:focus-visible {
-          outline: none;
-        }
-
-        /* SVG labels inherit the same selected family/royal mode as HTML cards.
-           Reset D3's inherited node stroke so Arabic glyphs stay clear on Apple. */
-        .family-tree-canvas .ios-native-tree-node text {
-          font-family: inherit;
-          stroke: none;
-          stroke-width: 0;
-          font-synthesis: none;
-          letter-spacing: normal;
-        }
-
-        .ios-native-tree-node:focus-visible > rect {
-          stroke: #0f5a3f;
-          stroke-width: 4px;
-        }
-
-        @supports (-webkit-touch-callout: none) {
-          .node-group {
-            filter: none;
-          }
-
-          foreignObject {
-            transform: none !important;
-            -webkit-transform: none !important;
-          }
-
-          .tree-node-content {
-            transform: none;
-            -webkit-transform: none;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-          }
-
-          .tree-link-active {
-            filter: none;
-          }
+        .family-tree-canvas .relation-dim {
+          opacity: 0.2;
         }
 
         @media (max-width: 1023px) {
@@ -1264,7 +1094,6 @@ function FamilyTreePage() {
             grid-template-areas:
               "member"
               "tree";
-            gap: 12px;
           }
 
           .member-panel {
@@ -1295,12 +1124,6 @@ function FamilyTreePage() {
             height: min(68vh, 700px);
             min-height: 520px;
           }
-
-          @supports (height: 100dvh) {
-            .family-tree-canvas {
-              height: min(68dvh, 700px);
-            }
-          }
         }
 
         @media (max-width: 767px) {
@@ -1312,109 +1135,58 @@ function FamilyTreePage() {
             display: none;
           }
 
-          .family-tree-canvas.family-tree-approved {
+          .family-tree-canvas {
             height: clamp(360px, 42dvh, 470px);
             min-height: 0;
             border-radius: 24px;
             overscroll-behavior-y: auto;
           }
 
-          .family-tree-approved-heading {
-            display: flex;
-          }
-
-          .family-tree-approved .rd3t-tree-container,
-          .family-tree-approved .rd3t-tree-container > svg {
+          .family-tree-canvas .rd3t-tree-container,
+          .family-tree-canvas .rd3t-tree-container > svg {
             touch-action: pan-y !important;
             overscroll-behavior-y: auto;
           }
 
-          .family-tree-approved .rd3t-tree-container > svg {
+          .family-tree-canvas .rd3t-tree-container > svg {
             padding-top: 54px;
             box-sizing: border-box;
           }
         }
 
-        @media (max-width: 560px) {
-          .member-panel-content {
-            padding: 15px;
-          }
-
-          .member-info-row {
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 3px;
-          }
-
-          .family-tree-canvas:not(.family-tree-approved) {
-            min-height: 500px;
-          }
-        }
-
-        @media (orientation: landscape) and (max-height: 700px) {
-          .family-tree-workspace {
-            grid-template-columns: minmax(230px, 270px) minmax(0, 1fr);
-            grid-template-areas: "member tree";
-          }
-
-          .member-panel-content {
-            gap: 10px;
-            overflow-y: auto;
-            padding: 14px;
-          }
-
-          .member-summary {
-            flex-direction: row;
-            gap: 10px;
-            text-align: right;
-          }
-
-          .member-summary-copy {
-            text-align: right;
-          }
-
-          .member-avatar {
-            width: 58px;
-            height: 58px;
-          }
-
+        @supports (height: 100dvh) {
           .family-tree-canvas {
-            height: calc(100dvh - 190px - env(safe-area-inset-bottom, 0px));
-            min-height: 430px;
+            height: min(760px, calc(100dvh - 250px - env(safe-area-inset-bottom, 0px)));
           }
         }
       `}</style>
-
-      {/* SVG Gradients for Links */}
-      <svg style={{ width: 0, height: 0, position: 'absolute' }}>
-        <defs>
-          <linearGradient id="link-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.2" />
-            <stop offset="50%" stopColor="#D4AF37" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.2" />
-          </linearGradient>
-        </defs>
-      </svg>
     </AppShell>
   );
 }
 
-function ControlBtn({
-  onClick,
-  icon,
-  label,
-}: {
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}) {
+function RelationPersonCard({ member, label, highlight = false }: { member: Member | null; label: string; highlight?: boolean }) {
+  return (
+    <div className={cn("rounded-2xl border p-3 text-center bg-white", highlight ? "border-primary/20 shadow-sm" : "border-border")}>
+      <div className={cn("mx-auto size-12 rounded-full overflow-hidden bg-[#F2F2F7] flex items-center justify-center mb-2", highlight && "ring-2 ring-primary/20")}> 
+        {member?.kind === "extra" ? (
+          <UserCircle2 className="size-7 text-[#8E7745]" />
+        ) : member ? (
+          <UserAvatar name={member.first_name || "ع"} path={member.avatar_url} className="size-full" userId={member.id} />
+        ) : (
+          <UserCircle2 className="size-7 text-muted-foreground" />
+        )}
+      </div>
+      <p className="text-[10px] font-black text-[#8E7745]">{label}</p>
+      <p className="mt-1 text-xs font-black text-[#1B4332] truncate">{member ? memberDisplayName(member) : "غير متاح"}</p>
+    </div>
+  );
+}
+
+function ControlBtn({ onClick, icon }: { onClick: () => void; icon: React.ReactNode }) {
   return (
     <button
-      type="button"
       onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[#E3DCCB] bg-[#F7F5F0] text-[#153D2F] shadow-sm transition-all hover:border-[#0F5139] hover:bg-[#0F5139] hover:text-white"
+      className="size-10 md:size-12 rounded-xl bg-[#F2F2F7] text-[#1B4332] flex items-center justify-center hover:bg-[#1B4332] hover:text-white transition-all shadow-sm shrink-0"
     >
       {icon}
     </button>
@@ -1490,83 +1262,46 @@ function AddMemberDialog({
 
         <div className="grid grid-cols-1 gap-3">
           <Field label="الاسم الأول *">
-            <input
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary"
-            />
+            <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="اسم الأب">
-              <input
-                value={fatherName}
-                onChange={(e) => setFatherName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary"
-              />
+              <input value={fatherName} onChange={(e) => setFatherName(e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary" />
             </Field>
             <Field label="اسم الجد">
-              <input
-                value={grandfatherName}
-                onChange={(e) => setGrandfatherName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary"
-              />
+              <input value={grandfatherName} onChange={(e) => setGrandfatherName(e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary" />
             </Field>
           </div>
-
           <Field label="صلة القرابة">
-            <select
-              value={relation}
-              onChange={(e) => setRelation(e.target.value as AddPayload["relation"])}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary"
-            >
+            <select value={relation} onChange={(e) => setRelation(e.target.value as AddPayload["relation"])} className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary">
               <option value="child">ابن لـ ...</option>
               <option value="father">أب لـ ...</option>
               <option value="grandfather">جد لـ ...</option>
               <option value="root">رأس شجرة (بدون أب)</option>
             </select>
           </Field>
-
           {relation !== "root" && (
             <Field label="العضو المرجعي">
-              <select
-                value={targetId}
-                onChange={(e) => setTargetId(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary"
-              >
+              <select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-[#F2F2F7] border-none text-xs font-bold text-primary">
                 <option value="">— اختر —</option>
                 {members.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {(x.full_name || x.first_name) + (x.kind === "extra" ? " (بدون حساب)" : "")}
-                  </option>
+                  <option key={x.id} value={x.id}>{(x.full_name || x.first_name) + (x.kind === "extra" ? " (بدون حساب)" : "")}</option>
                 ))}
               </select>
             </Field>
           )}
-
           <p className="text-[10px] font-bold text-[#8E7745] leading-relaxed bg-[#FFF8E7] rounded-xl p-3">
             {relation === "child" && "سيتم إضافة الفرد الجديد كابن مباشر للعضو المختار."}
-            {relation === "father" &&
-              "سيتم إضافة الفرد كأب للعضو المختار، وسيرث ارتباط جدّه إن وجد."}
-            {relation === "grandfather" &&
-              "سيتم إضافة الفرد كجد، أي والداً لأب العضو المختار. يجب أن يكون للعضو أب مسجّل."}
+            {relation === "father" && "سيتم إضافة الفرد كأب للعضو المختار، وسيرث ارتباط جدّه إن وجد."}
+            {relation === "grandfather" && "سيتم إضافة الفرد كجد، أي والداً لأب العضو المختار. يجب أن يكون للعضو أب مسجّل."}
             {relation === "root" && "سيظهر الفرد كرأس شجرة مستقل."}
           </p>
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-1">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:bg-[#F2F2F7] transition-all"
-          >
-            إلغاء
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="flex-[2] btn-gold py-2.5 text-xs font-bold flex items-center justify-center gap-2"
-          >
-            {saving ? <Loader2 className="size-3 animate-spin" /> : <UserPlus className="size-3" />}{" "}
-            إضافة
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:bg-[#F2F2F7] transition-all">إلغاء</button>
+          <button onClick={handleSubmit} disabled={saving} className="flex-[2] btn-gold py-2.5 text-xs font-bold flex items-center justify-center gap-2">
+            {saving ? <Loader2 className="size-3 animate-spin" /> : <UserPlus className="size-3" />} إضافة
           </button>
         </div>
       </div>
@@ -1577,9 +1312,7 @@ function AddMemberDialog({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">
-        {label}
-      </label>
+      <label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">{label}</label>
       {children}
     </div>
   );
