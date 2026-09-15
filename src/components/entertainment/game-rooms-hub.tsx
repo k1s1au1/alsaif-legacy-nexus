@@ -65,7 +65,6 @@ type GameKey =
   | "saudi-deal"
   | "word-duel"
   | "baloot"
-  | "wheel"
   | "challenge30"
   | "auction"
   | "judge"
@@ -167,13 +166,6 @@ const GAMES: GameMeta[] = [
     label: "مزاد المعلومات",
     short: "كل لاعب يرسل مزايدته ويختار المضيف الفائز.",
     icon: Gavel,
-    minPlayers: 2,
-  },
-  {
-    id: "wheel",
-    label: "القرعة",
-    short: "قرعة مباشرة بين جميع الموجودين في الغرفة.",
-    icon: RotateCw,
     minPlayers: 2,
   },
   {
@@ -323,7 +315,7 @@ function buildUnoDeck(): UnoCard[] {
   return shuffle(cards);
 }
 
-function initialUnoData(players: Player[]) {
+function initialUnoData(players: Player[], starterIndex = 0) {
   const deck = buildUnoDeck();
   const hands: Record<string, UnoCard[]> = {};
   players.forEach((player) => {
@@ -337,7 +329,7 @@ function initialUnoData(players: Player[]) {
     drawPile: deck,
     discard: [first],
     currentColor: first.color,
-    turnIndex: 0,
+    turnIndex: starterIndex,
     direction: 1,
     drawnCardId: null,
     unoCalled: {},
@@ -375,7 +367,7 @@ function buildDealDeck(): DealCard[] {
   return shuffle(cards);
 }
 
-function initialDealData(players: Player[]) {
+function initialDealData(players: Player[], starterIndex = 0) {
   const deck = buildDealDeck();
   const hands: Record<string, DealCard[]> = {};
   const banks: Record<string, DealCard[]> = {};
@@ -391,7 +383,7 @@ function initialDealData(players: Player[]) {
     properties,
     drawPile: deck,
     discard: [],
-    turnIndex: 0,
+    turnIndex: starterIndex,
     needsDraw: true,
     actionsLeft: 3,
     winnerId: null,
@@ -462,19 +454,19 @@ function nextIndex(current: number, length: number) {
   return length ? (current + 1) % length : 0;
 }
 
-function initialGameData(game: GameKey, players: Player[], round = 0): Record<string, any> {
+function initialGameData(game: GameKey, players: Player[], round = 0, starterIndex = 0): Record<string, any> {
   switch (game) {
     case "uno":
-      return initialUnoData(players);
+      return initialUnoData(players, starterIndex);
     case "saudi-deal":
-      return initialDealData(players);
+      return initialDealData(players, starterIndex);
     case "trivia":
-      return { questionIndex: round % TRIVIA_QUESTIONS.length, answers: {}, revealed: false };
+      return { questionIndex: round % TRIVIA_QUESTIONS.length, answers: {}, revealed: false, activeIndex: starterIndex };
     case "judge":
-      return { scenarioIndex: round % JUDGE_SCENARIOS.length, votes: {}, revealed: false };
+      return { scenarioIndex: round % JUDGE_SCENARIOS.length, votes: {}, revealed: false, activeIndex: starterIndex };
     case "challenge30":
       return {
-        activeIndex: round % Math.max(players.length, 1),
+        activeIndex: starterIndex,
         wordIndex: Math.floor(Math.random() * CHALLENGE_WORDS.length),
         correct: 0,
         skips: 0,
@@ -482,17 +474,15 @@ function initialGameData(game: GameKey, players: Player[], round = 0): Record<st
         finished: false,
       };
     case "auction":
-      return { promptIndex: round % AUCTION_PROMPTS.length, bids: {}, revealed: false, winnerId: null };
+      return { promptIndex: round % AUCTION_PROMPTS.length, bids: {}, revealed: false, winnerId: null, activeIndex: starterIndex };
     case "word-duel":
       return {
         currentLetter: LETTERS[Math.floor(Math.random() * LETTERS.length)],
-        turnIndex: 0,
+        turnIndex: starterIndex,
         words: [],
       };
-    case "wheel":
-      return { winnerId: null, spin: 0 };
     case "baloot":
-      return initialBalootData(players);
+      return initialBalootData(players, [0, 0], wrappedIndex(starterIndex - 1, players.length));
   }
 }
 
@@ -519,12 +509,20 @@ function startState(previous: RoomState, players: Player[]): RoomState {
   players.forEach((player) => {
     if (scores[player.id] == null) scores[player.id] = 0;
   });
+  const starterIndex = Math.floor(Math.random() * Math.max(players.length, 1));
+  const starter = players[starterIndex];
   return {
     ...previous,
     phase: "playing",
     round: 0,
     scores,
-    data: initialGameData(previous.game, players),
+    data: {
+      ...initialGameData(previous.game, players, 0, starterIndex),
+      starterId: starter?.id ?? null,
+      starterName: starter?.name ?? "اللاعب الأول",
+      starterIndex,
+      startingDrawAt: Date.now(),
+    },
   };
 }
 
@@ -1085,11 +1083,6 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
         },
       };
     }
-  }
-
-  if (state.game === "wheel" && action.type === "spin" && players.length) {
-    const winner = players[Math.floor(Math.random() * players.length)];
-    return { ...state, data: { winnerId: winner.id, spin: (data.spin ?? 0) + 1 } };
   }
 
   return state;
@@ -1880,8 +1873,8 @@ function RoomEntry({
   onJoin: () => void;
 }) {
   return (
-    <div className="mx-auto grid w-full max-w-5xl gap-5 px-3 sm:px-5 lg:grid-cols-[1.05fr_.95fr]" dir="rtl">
-      <Surface className="relative overflow-hidden bg-gradient-to-br from-[#073f34] via-[#075744] to-[#0a241e] p-6 text-white sm:p-10">
+    <div className="arena-room-entry mx-auto grid w-full max-w-6xl gap-5 px-3 sm:px-5 lg:grid-cols-[1.15fr_.85fr]" dir="rtl">
+      <Surface className="arena-room-entry-main relative overflow-hidden p-6 text-white sm:p-10">
         <div className="absolute -left-20 -top-20 size-72 rounded-full bg-gold-primary/15 blur-3xl" />
         <div className="relative space-y-7">
           <div className="flex items-center gap-4">
@@ -1926,7 +1919,7 @@ function RoomEntry({
         </div>
       </Surface>
 
-      <Surface className="p-6 sm:p-9">
+      <Surface className="arena-room-entry-join p-6 sm:p-9">
         <div className="flex h-full flex-col justify-center gap-6">
           <div>
             <p className="text-xs font-black text-gold-primary">مرحبًا {me.name}</p>
@@ -2558,6 +2551,18 @@ function GameBoard({
   const { preferences, toggle } = useGameExperiencePreferences();
   const gameModeRef = useRef<HTMLDivElement | null>(null);
   const feedbackRef = useRef<string | null>(null);
+  const [showStartingDraw, setShowStartingDraw] = useState(() => Date.now() - Number(state.data.startingDrawAt ?? 0) < 3200);
+
+  useEffect(() => {
+    const elapsed = Date.now() - Number(state.data.startingDrawAt ?? 0);
+    if (elapsed >= 3200) {
+      setShowStartingDraw(false);
+      return;
+    }
+    setShowStartingDraw(true);
+    const timer = window.setTimeout(() => setShowStartingDraw(false), 3200 - Math.max(0, elapsed));
+    return () => window.clearTimeout(timer);
+  }, [state.data.startingDrawAt]);
 
   useEffect(() => {
     if (!gameMode) return;
@@ -2674,6 +2679,15 @@ function GameBoard({
           <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">سعودي ديل مرتبة للشاشة العريضة. إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
         </div>
       )}
+      {showStartingDraw && (
+        <div className="arena-starting-draw" role="status" aria-live="polite">
+          <div className="arena-starting-draw__halo" />
+          <Crown className="arena-starting-draw__crown" />
+          <p>قرعة بداية {meta.label}</p>
+          <strong>{state.data.starterName}</strong>
+          <span>يبدأ الجولة</span>
+        </div>
+      )}
       <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && state.game === "saudi-deal" && "bg-transparent")}>
         <div
           className={cn(
@@ -2750,7 +2764,6 @@ function GameBoard({
           {state.game === "challenge30" && <ChallengeGame state={state} players={players} me={me} isHost={isHost} now={now} dispatch={dispatch} />}
           {state.game === "auction" && <AuctionRoom state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
           {state.game === "word-duel" && <WordDuelRoom state={state} players={players} me={me} dispatch={dispatch} />}
-          {state.game === "wheel" && <WheelRoom state={state} players={players} isHost={isHost} dispatch={dispatch} />}
           {state.game === "baloot" && <BalootRoom state={state} players={players} me={me} isHost={isHost} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
         </div>
       </Surface>
@@ -4403,54 +4416,6 @@ function WordDuelRoom({
             ))}
           </div>
         </div>
-      )}
-    </div>
-  );
-}
-
-function WheelRoom({
-  state,
-  players,
-  isHost,
-  dispatch,
-}: {
-  state: RoomState;
-  players: Player[];
-  isHost: boolean;
-  dispatch: (type: string, value?: any) => Promise<void>;
-}) {
-  const winner = players.find((player) => player.id === state.data.winnerId);
-  const rotation = (state.data.spin ?? 0) * 1080 + ((state.data.spin ?? 0) * 137) % 360;
-  return (
-    <div className="mx-auto max-w-2xl space-y-7 text-center">
-      <div className="relative mx-auto size-64 sm:size-80">
-        <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 border-x-[14px] border-t-[24px] border-x-transparent border-t-gold-primary" />
-        <div
-          className="flex size-full items-center justify-center rounded-full border-[12px] border-primary bg-[conic-gradient(from_45deg,#d4af37,#0b5b47,#ead38a,#073f34,#d4af37)] shadow-2xl transition-transform duration-[1800ms] ease-out"
-          style={{ transform: `rotate(${rotation}deg)` }}
-        >
-          <div className="flex size-24 items-center justify-center rounded-full border-4 border-gold-primary bg-card shadow-xl">
-            <RotateCw className="size-10 text-primary" />
-          </div>
-        </div>
-      </div>
-
-      {winner ? (
-        <div className="rounded-3xl bg-gold-primary/15 p-6">
-          <PlayerAvatar player={winner} size="lg" />
-          <p className="mt-3 text-xs font-black text-gold-primary">وقع الاختيار على</p>
-          <h4 className="mt-1 text-3xl font-black text-primary">{winner.name}</h4>
-        </div>
-      ) : (
-        <p className="text-sm font-bold text-muted-foreground">القرعة تشمل كل الموجودين في الغرفة</p>
-      )}
-
-      {isHost ? (
-        <PrimaryAction onClick={() => void dispatch("spin")} tone="gold">
-          <RotateCw className="size-5" /> {winner ? "إعادة القرعة" : "تشغيل القرعة عند الجميع"}
-        </PrimaryAction>
-      ) : (
-        <p className="text-sm font-bold text-muted-foreground">بانتظار المضيف لتشغيل القرعة</p>
       )}
     </div>
   );
