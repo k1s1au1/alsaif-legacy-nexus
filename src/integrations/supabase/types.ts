@@ -20,7 +20,6 @@ export type Database = {
           birth_date: string | null
           birth_date_hijri: string | null
           created_at: string
-          desired_password: string | null
           email: string
           father_name: string
           first_name: string
@@ -40,7 +39,6 @@ export type Database = {
           birth_date?: string | null
           birth_date_hijri?: string | null
           created_at?: string
-          desired_password?: string | null
           email: string
           father_name: string
           first_name: string
@@ -60,7 +58,6 @@ export type Database = {
           birth_date?: string | null
           birth_date_hijri?: string | null
           created_at?: string
-          desired_password?: string | null
           email?: string
           father_name?: string
           first_name?: string
@@ -1255,7 +1252,6 @@ export type Database = {
           id: string
           is_active: boolean
           parent_id: string | null
-          phone: string | null
           terms_accepted_at: string | null
           theme_color: string | null
           updated_at: string
@@ -1278,7 +1274,6 @@ export type Database = {
           id: string
           is_active?: boolean
           parent_id?: string | null
-          phone?: string | null
           terms_accepted_at?: string | null
           theme_color?: string | null
           updated_at?: string
@@ -1301,7 +1296,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           parent_id?: string | null
-          phone?: string | null
           terms_accepted_at?: string | null
           theme_color?: string | null
           updated_at?: string
@@ -1671,7 +1665,6 @@ export type Database = {
           id: string
           is_active: boolean
           parent_id: string | null
-          phone: string | null
           terms_accepted_at: string | null
           theme_color: string | null
           updated_at: string

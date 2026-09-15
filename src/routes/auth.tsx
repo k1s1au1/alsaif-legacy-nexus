@@ -76,7 +76,6 @@ function AuthPage() {
     grandFatherName: "",
     phone: "",
     email: "",
-    password: "",
   });
   const [reqGender, setReqGender] = useState<Gender | null>(null);
   const [reqCalendar, setReqCalendar] = useState<BirthCalendar>("gregorian");
@@ -177,7 +176,6 @@ function AuthPage() {
       grandfather_name: reqForm.grandFatherName,
       phone: reqForm.phone,
       email: reqForm.email,
-      desired_password: reqForm.password,
       status: "pending",
       ...buildBirthPayload(reqGender, reqCalendar, reqBirthDate),
     } as any);
@@ -196,7 +194,7 @@ function AuthPage() {
     }
 
     setLoading(false);
-    toast.success("تم إرسال طلبك بنجاح", { description: "سيتم مراجعة طلبك من قبل إدارة المجلس." });
+    toast.success("تم إرسال طلبك بنجاح", { description: "بعد الموافقة سيصلك رابط آمن لتعيين كلمة المرور." });
     setAuthMode("login");
   }
 
@@ -493,14 +491,6 @@ function AuthPage() {
                       onChange={(v: string) => setReqForm({ ...reqForm, email: v })}
                       placeholder="mail@example.com"
                       icon={<Mail size={18} />}
-                    />
-                    <AuthField
-                      label="كلمة المرور"
-                      type="password"
-                      value={reqForm.password}
-                      onChange={(v: string) => setReqForm({ ...reqForm, password: v })}
-                      placeholder="••••••••"
-                      icon={<Lock size={18} />}
                     />
                   </div>
 

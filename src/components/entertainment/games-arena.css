@@ -107,6 +107,19 @@
   }
 }
 
+@keyframes arena-starting-draw-in {
+  0% { opacity: 0; transform: scale(0.72) translateY(28px); }
+  24% { opacity: 1; transform: scale(1.04) translateY(0); }
+  76% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.96) translateY(-18px); }
+}
+
+@keyframes arena-starting-draw-halo {
+  0% { transform: scale(.45) rotate(0); opacity: 0; }
+  30%, 70% { opacity: .8; }
+  100% { transform: scale(1.45) rotate(110deg); opacity: 0; }
+}
+
 /* بطاقات اليد: توزيع متدرج */
 .arena-card-deal {
   animation: arena-card-deal 0.52s cubic-bezier(0.18, 0.9, 0.24, 1.05) both;
@@ -223,6 +236,86 @@
   animation: arena-trophy-pop 0.7s cubic-bezier(0.2, 1.2, 0.3, 1) both;
 }
 
+.arena-room-entry-main {
+  background:
+    linear-gradient(145deg, color-mix(in oklab, var(--primary) 94%, transparent), color-mix(in oklab, var(--background) 88%, transparent)),
+    repeating-linear-gradient(45deg, transparent 0 16px, color-mix(in oklab, var(--gold-primary) 7%, transparent) 16px 17px);
+  min-height: 31rem;
+}
+
+.arena-room-entry-main::after {
+  content: "";
+  position: absolute;
+  inset: 1rem;
+  pointer-events: none;
+  border: 1px solid color-mix(in oklab, var(--gold-primary) 30%, transparent);
+  border-radius: 1.25rem;
+}
+
+.arena-room-entry-join {
+  min-height: 31rem;
+  background: color-mix(in oklab, var(--card) 94%, var(--gold-primary) 6%);
+}
+
+.arena-starting-draw {
+  position: fixed;
+  inset: 0;
+  z-index: 10100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--primary-foreground);
+  background: color-mix(in oklab, var(--primary) 94%, transparent);
+  backdrop-filter: blur(18px);
+  animation: arena-starting-draw-in 3.2s cubic-bezier(.22,.9,.28,1) both;
+}
+
+.arena-starting-draw__halo {
+  position: absolute;
+  width: min(72vw, 32rem);
+  aspect-ratio: 1;
+  border: 2px solid color-mix(in oklab, var(--gold-primary) 75%, transparent);
+  border-radius: 50%;
+  box-shadow: inset 0 0 5rem color-mix(in oklab, var(--gold-primary) 20%, transparent);
+  animation: arena-starting-draw-halo 3.2s ease-out both;
+}
+
+.arena-starting-draw__crown {
+  position: relative;
+  width: 4rem;
+  height: 4rem;
+  color: var(--gold-primary);
+  filter: drop-shadow(0 0 1.5rem color-mix(in oklab, var(--gold-primary) 70%, transparent));
+}
+
+.arena-starting-draw p,
+.arena-starting-draw span {
+  position: relative;
+  margin-top: .75rem;
+  font-weight: 800;
+  color: color-mix(in oklab, var(--primary-foreground) 65%, transparent);
+}
+
+.arena-starting-draw strong {
+  position: relative;
+  margin-top: .5rem;
+  max-width: min(88vw, 38rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(2rem, 6vw, 4.25rem);
+  color: var(--gold-primary);
+}
+
+@media (max-width: 639px) {
+  .arena-room-entry { padding-inline: .25rem; }
+  .arena-room-entry-main,
+  .arena-room-entry-join { min-height: auto; }
+  .arena-majlis { border-radius: 1.25rem; padding: .45rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arena-card-deal,
   .arena-card-flip,
@@ -232,6 +325,11 @@
   .arena-dust,
   .arena-confetti,
   .arena-trophy-pop {
+    animation: none !important;
+  }
+
+  .arena-starting-draw,
+  .arena-starting-draw__halo {
     animation: none !important;
   }
 }

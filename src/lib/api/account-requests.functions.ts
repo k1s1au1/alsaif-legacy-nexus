@@ -25,11 +25,9 @@ export const approveAccountRequest = createServerFn({ method: "POST" })
     if (!req) throw new Error("Request not found");
 
     const fullName = `${req.first_name} ${req.father_name}`;
-    const { data: authUser, error: authErr } = await admin.auth.admin.createUser({
-      email: req.email,
-      password: req.desired_password ?? undefined,
-      email_confirm: true,
-      user_metadata: { full_name: fullName, arabic_name: fullName },
+    const { data: authUser, error: authErr } = await admin.auth.admin.inviteUserByEmail(req.email, {
+      data: { full_name: fullName, arabic_name: fullName },
+      redirectTo: `${process.env['SITE_URL'] ?? 'https://alsaif-legacy-nexus.lovable.app'}/reset-password`,
     });
 
     if (authErr) throw authErr;
@@ -40,17 +38,19 @@ export const approveAccountRequest = createServerFn({ method: "POST" })
         id: authUser.user.id,
         arabic_name: fullName,
         full_name: fullName,
-        phone: req.phone,
         gender: (req as any).gender ?? null,
         birth_calendar: (req as any).birth_calendar ?? "gregorian",
         birth_date: (req as any).birth_date ?? null,
         birth_date_hijri: (req as any).birth_date_hijri ?? null,
       } as any);
+    await admin.from("profile_phones").upsert({
+      user_id: authUser.user.id,
+      phone: req.phone,
+    });
     await admin.from("user_roles").insert({ user_id: authUser.user.id, role: "member" });
-    // Clear the temporary password once the account exists — never keep it stored.
     await admin
       .from("account_requests")
-      .update({ status: "approved", desired_password: null })
+      .update({ status: "approved" })
       .eq("id", data.id);
 
     return { ok: true };
