@@ -227,7 +227,7 @@ type DealCard = {
   label: string;
   value: number;
   group?: string;
-  action?: "draw2" | "rent" | "steal";
+  action?: "draw2" | "rent" | "steal" | "forced_swap" | "deal_breaker" | "debt" | "birthday" | "double_rent" | "just_say_no";
 };
 
 type BalootSuit = "spades" | "hearts" | "diamonds" | "clubs";
@@ -364,6 +364,24 @@ function buildDealDeck(): DealCard[] {
   for (let index = 0; index < 5; index += 1) {
     cards.push({ id: `deal-${id++}`, type: "action", label: "استحواذ على أرض", value: 3, action: "steal" });
   }
+  for (let index = 0; index < 3; index += 1) {
+    cards.push({ id: `deal-${id++}`, type: "action", label: "صفقة تبادل", value: 3, action: "forced_swap" });
+  }
+  for (let index = 0; index < 2; index += 1) {
+    cards.push({ id: `deal-${id++}`, type: "action", label: "كسر الصفقة", value: 5, action: "deal_breaker" });
+  }
+  for (let index = 0; index < 3; index += 1) {
+    cards.push({ id: `deal-${id++}`, type: "action", label: "تحصيل دين", value: 3, action: "debt" });
+  }
+  for (let index = 0; index < 3; index += 1) {
+    cards.push({ id: `deal-${id++}`, type: "action", label: "العيدية", value: 2, action: "birthday" });
+  }
+  for (let index = 0; index < 2; index += 1) {
+    cards.push({ id: `deal-${id++}`, type: "action", label: "إيجار مضاعف", value: 1, action: "double_rent" });
+  }
+  for (let index = 0; index < 3; index += 1) {
+    cards.push({ id: `deal-${id++}`, type: "action", label: "مرفوض!", value: 4, action: "just_say_no" });
+  }
   return shuffle(cards);
 }
 
@@ -386,6 +404,7 @@ function initialDealData(players: Player[], starterIndex = 0) {
     turnIndex: starterIndex,
     needsDraw: true,
     actionsLeft: 3,
+    rentMultiplier: 1,
     winnerId: null,
     lastAction: "بدأت الجولة",
   };
@@ -692,6 +711,26 @@ function takeDealPayment(data: any, payerId: string, amount: number): DealCard[]
   return paid;
 }
 
+function blockDealAttack(data: any, targetId: string) {
+  const targetHand = (data.hands[targetId] ?? []) as DealCard[];
+  const shieldIndex = targetHand.findIndex((card) => card.action === "just_say_no");
+  if (shieldIndex < 0) return false;
+  const [shield] = targetHand.splice(shieldIndex, 1);
+  data.hands[targetId] = targetHand;
+  data.discard.push(shield);
+  return true;
+}
+
+function transferDealPayment(data: any, receiverId: string, payerId: string, amount: number) {
+  if (blockDealAttack(data, payerId)) return false;
+  const payment = takeDealPayment(data, payerId, amount);
+  payment.forEach((paidCard) => {
+    if (paidCard.type === "property") data.properties[receiverId].push(paidCard);
+    else data.banks[receiverId].push(paidCard);
+  });
+  return true;
+}
+
 function reduceDeal(state: RoomState, action: RoomAction, players: Player[]): RoomState {
   const data = copyData(state.data);
   const active = players[data.turnIndex % Math.max(players.length, 1)];
@@ -746,7 +785,30 @@ function reduceDeal(state: RoomState, action: RoomAction, players: Player[]): Ro
 
   if (action.type !== "deal-action" || card.type !== "action") return state;
   const targetId = action.value?.targetId as string | undefined;
-  if (card.action !== "draw2" && (!targetId || targetId === action.playerId)) return state;
+  const noTargetActions = ["draw2", "birthday", "double_rent"];
+  if (!noTargetActions.includes(card.action ?? "") && (!targetId || targetId === action.playerId)) return state;
+  if (card.action === "just_say_no") return state;
+
+  if (card.action === "steal" && targetId) {
+    const targetProperties = data.properties[targetId] as DealCard[];
+    const property = targetProperties.find((item) => item.id === action.value?.propertyId);
+    if (!property || isProtectedDealProperty(targetProperties, property)) return state;
+  }
+  if (card.action === "forced_swap" && targetId) {
+    const targetProperties = data.properties[targetId] as DealCard[];
+    const property = targetProperties.find((item) => item.id === action.value?.propertyId);
+    const ownProperties = data.properties[action.playerId] as DealCard[];
+    const ownProperty = ownProperties.find((item) => !isProtectedDealProperty(ownProperties, item));
+    if (!property || isProtectedDealProperty(targetProperties, property) || !ownProperty) return state;
+  }
+  if (card.action === "deal_breaker" && targetId) {
+    const targetProperties = data.properties[targetId] as DealCard[];
+    const requestedGroup = action.value?.group as string | undefined;
+    const completeGroup = DEAL_GROUPS.find((group) =>
+      (!requestedGroup || group.id === requestedGroup) && targetProperties.filter((item) => item.group === group.id).length >= group.size,
+    );
+    if (!completeGroup) return state;
+  }
   hand.splice(cardIndex, 1);
   data.hands[action.playerId] = hand;
   data.discard.push(card);
@@ -759,14 +821,11 @@ function reduceDeal(state: RoomState, action: RoomAction, players: Player[]): Ro
   if (card.action === "rent" && targetId) {
     const ownProperties = data.properties[action.playerId] as DealCard[];
     const groupCounts = DEAL_GROUPS.map((group) => ownProperties.filter((item) => item.group === group.id).length);
-    const rent = Math.max(1, Math.min(5, ...groupCounts));
-    const payment = takeDealPayment(data, targetId, rent);
-    payment.forEach((paidCard) => {
-      if (paidCard.type === "property") data.properties[action.playerId].push(paidCard);
-      else data.banks[action.playerId].push(paidCard);
-    });
+    const rent = Math.max(1, Math.min(5, ...groupCounts)) * (data.rentMultiplier ?? 1);
+    const paid = transferDealPayment(data, action.playerId, targetId, rent);
+    data.rentMultiplier = 1;
     const target = players.find((player) => player.id === targetId);
-    data.lastAction = `${active.name} حصّل ${rent} مليون من ${target?.name ?? "لاعب"}`;
+    data.lastAction = paid ? `${active.name} حصّل ${rent} مليون من ${target?.name ?? "لاعب"}` : `${target?.name ?? "اللاعب"} رفض بطاقة الإيجار`;
   }
 
   if (card.action === "steal" && targetId) {
@@ -776,12 +835,65 @@ function reduceDeal(state: RoomState, action: RoomAction, players: Player[]): Ro
       const property = targetProperties[propertyIndex];
       const group = DEAL_GROUPS.find((item) => item.id === property.group);
       const groupCount = targetProperties.filter((item) => item.group === property.group).length;
-      if (!group || groupCount < group.size) {
+      if ((!group || groupCount < group.size) && !blockDealAttack(data, targetId)) {
         targetProperties.splice(propertyIndex, 1);
         data.properties[action.playerId].push(property);
         data.lastAction = `${active.name} استحوذ على ${property.label}`;
       }
     }
+  }
+
+  if (card.action === "forced_swap" && targetId) {
+    const targetProperties = data.properties[targetId] as DealCard[];
+    const targetIndex = targetProperties.findIndex((item) => item.id === action.value?.propertyId);
+    const ownProperties = data.properties[action.playerId] as DealCard[];
+    const ownIndex = ownProperties.findIndex((item) => !isProtectedDealProperty(ownProperties, item));
+    const target = players.find((player) => player.id === targetId);
+    if (blockDealAttack(data, targetId)) {
+      data.lastAction = `${target?.name ?? "اللاعب"} رفض صفقة التبادل`;
+    } else if (targetIndex >= 0 && ownIndex >= 0) {
+      const [targetProperty] = targetProperties.splice(targetIndex, 1);
+      const [ownProperty] = ownProperties.splice(ownIndex, 1);
+      targetProperties.push(ownProperty);
+      ownProperties.push(targetProperty);
+      data.lastAction = `${active.name} أتم صفقة تبادل مع ${target?.name ?? "لاعب"}`;
+    }
+  }
+
+  if (card.action === "deal_breaker" && targetId) {
+    const targetProperties = data.properties[targetId] as DealCard[];
+    const requestedGroup = action.value?.group as string | undefined;
+    const completeGroup = DEAL_GROUPS.find((group) =>
+      (!requestedGroup || group.id === requestedGroup) && targetProperties.filter((item) => item.group === group.id).length >= group.size,
+    );
+    const target = players.find((player) => player.id === targetId);
+    if (blockDealAttack(data, targetId)) {
+      data.lastAction = `${target?.name ?? "اللاعب"} رفض كسر الصفقة`;
+    } else if (completeGroup) {
+      const captured = targetProperties.filter((item) => item.group === completeGroup.id);
+      data.properties[targetId] = targetProperties.filter((item) => item.group !== completeGroup.id);
+      data.properties[action.playerId].push(...captured);
+      data.lastAction = `${active.name} استحوذ على مجموعة ${completeGroup.label} كاملة`;
+    }
+  }
+
+  if (card.action === "debt" && targetId) {
+    const target = players.find((player) => player.id === targetId);
+    const paid = transferDealPayment(data, action.playerId, targetId, 5);
+    data.lastAction = paid ? `${active.name} حصّل دينًا بقيمة 5 ملايين من ${target?.name ?? "لاعب"}` : `${target?.name ?? "اللاعب"} رفض تحصيل الدين`;
+  }
+
+  if (card.action === "birthday") {
+    let payers = 0;
+    players.filter((player) => player.id !== action.playerId).forEach((player) => {
+      if (transferDealPayment(data, action.playerId, player.id, 2)) payers += 1;
+    });
+    data.lastAction = `${active.name} جمع العيدية من ${payers} لاعبين`;
+  }
+
+  if (card.action === "double_rent") {
+    data.rentMultiplier = 2;
+    data.lastAction = `${active.name} فعّل الإيجار المضاعف للبطاقة التالية`;
   }
 
   return finishDealMove(state, data, action.playerId, players);
