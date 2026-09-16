@@ -310,6 +310,61 @@ function FamilyTreePage() {
     return ids;
   };
 
+  const getRelationshipLabel = (targetId: string | null | undefined) => {
+    if (!me?.id || !targetId) return null;
+    const current = membersById.get(me.id);
+    const target = membersById.get(targetId);
+    if (!current || !target) return null;
+
+    const currentAncestors = new Map<string, { member: Member; distance: number }>();
+    let cursor: Member | undefined = current;
+    let distance = 0;
+    const visitedCurrent = new Set<string>();
+
+    while (cursor && !visitedCurrent.has(cursor.id)) {
+      visitedCurrent.add(cursor.id);
+      currentAncestors.set(cursor.id, { member: cursor, distance });
+      cursor = cursor.parent_id ? membersById.get(cursor.parent_id) : undefined;
+      distance += 1;
+    }
+
+    const targetChain: { member: Member; distance: number }[] = [];
+    cursor = target;
+    distance = 0;
+    const visitedTarget = new Set<string>();
+
+    while (cursor && !visitedTarget.has(cursor.id)) {
+      visitedTarget.add(cursor.id);
+      targetChain.push({ member: cursor, distance });
+      cursor = cursor.parent_id ? membersById.get(cursor.parent_id) : undefined;
+      distance += 1;
+    }
+
+    const common = targetChain.find((entry) => currentAncestors.has(entry.member.id));
+    if (!common) return null;
+
+    const up = currentAncestors.get(common.member.id)?.distance ?? 0;
+    const down = common.distance;
+
+    if (up === 0 && down === 0) return "أنت";
+    if (up === 1 && down === 0) return "والدك / والدتك";
+    if (up === 2 && down === 0) return "جدك / جدتك";
+    if (up > 2 && down === 0) return `من أجدادك (${up} أجيال)`;
+    if (up === 0 && down === 1) return "ابنك / ابنتك";
+    if (up === 0 && down === 2) return "حفيدك / حفيدتك";
+    if (up === 0 && down > 2) return `من ذريتك (${down} أجيال)`;
+    if (up === 1 && down === 1) return "أخ / أخت";
+    if (up === 2 && down === 1) return "عم / عمة / خال / خالة";
+    if (up === 1 && down === 2) return "ابن / ابنة أخ أو أخت";
+    if (up >= 2 && down >= 2 && up === down) {
+      return `ابن / ابنة عم أو خال من الدرجة ${Math.min(up, down) - 1}`;
+    }
+    if (up > 0 && down > 0) {
+      return `قريب من فرع مشترك`;
+    }
+    return "قريب";
+  };
+
   const highlightRelationship = (memberId: string) => {
     const targetAncestors = getAncestorIds(memberId);
 
@@ -408,7 +463,7 @@ function FamilyTreePage() {
 
     if (useNativeIOSNodes) {
       const nodeName = isRoot ? nodeDatum.name : m ? memberCardName(m) : "فرد من العائلة";
-      const nodeSubtitle = isRoot ? "جذور العائلة" : isExtra ? "قيد التسجيل" : "عضو العائلة";
+      const nodeSubtitle = isRoot ? "جذور العائلة" : (me?.id && m ? getRelationshipLabel(m.id) : null) || (isExtra ? "قيد التسجيل" : "عضو العائلة");
       const initial = isRoot ? "س" : shortenNodeLabel(m?.first_name, 2).slice(0, 1);
       const cardFill = isRoot
         ? "#0F5139"
@@ -593,7 +648,7 @@ function FamilyTreePage() {
                   isRoot ? "text-[#F5CF73]" : "text-[#8A713A]",
                 )}
               >
-                {isRoot ? "جذور العائلة" : isExtra ? "قيد التسجيل" : "عضو العائلة"}
+                {isRoot ? "جذور العائلة" : (me?.id && m ? getRelationshipLabel(m.id) : null) || (isExtra ? "قيد التسجيل" : "عضو العائلة")}
               </p>
             </div>
 
@@ -753,6 +808,15 @@ function FamilyTreePage() {
                     {selectedLineage.length > 0 ? selectedLineage.join(" ← ") : "غير محدد"}
                   </p>
                 </div>
+
+                {getRelationshipLabel(selectedMember.id) && (
+                  <div className="rounded-2xl border border-[#D6AD4B]/40 bg-[#0F5139]/30 p-3.5 flex justify-between items-center shadow-inner">
+                    <span className="text-xs font-bold text-[#F6D37E]">صلة القرابة</span>
+                    <strong className="text-sm font-black text-white bg-[#0F5139] px-3 py-1 rounded-xl border border-[#D6AD4B]/20">
+                      {getRelationshipLabel(selectedMember.id)}
+                    </strong>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
                   <div className="member-info-row">

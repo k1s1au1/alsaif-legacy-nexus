@@ -179,31 +179,38 @@ export function FamilyRelationshipFinder() {
       let visibleName = "";
       let isPersonName = false;
 
-      // Desktop / Android / most browsers: the first <p> inside the old tree node is the person's name.
+      // Desktop / Android / most browsers: anywhere inside the tree node content card.
       const htmlNode = target.closest(".tree-node-content");
       if (htmlNode) {
         const nameElement = htmlNode.querySelector("p");
-        if (nameElement && (target === nameElement || nameElement.contains(target))) {
+        if (nameElement) {
           visibleName = nameElement.textContent?.trim() || "";
           isPersonName = true;
         }
       }
 
-      // iPhone / iPad native SVG node: the name text uses y=7 in the approved tree design.
-      if (!isPersonName && target.tagName.toLowerCase() === "text" && target.closest(".ios-native-tree-node")) {
-        const y = target.getAttribute("y");
-        if (y === "7") {
-          visibleName = target.textContent?.trim() || "";
-          isPersonName = true;
+      // iPhone / iPad native SVG node: anywhere inside the native tree node element.
+      const iosNode = target.closest(".ios-native-tree-node");
+      if (!isPersonName && iosNode) {
+        const textElements = iosNode.querySelectorAll("text");
+        for (const txt of textElements) {
+          if (txt.getAttribute("y") === "7") {
+            visibleName = txt.textContent?.trim() || "";
+            isPersonName = true;
+            break;
+          }
         }
       }
 
-      // Also make the person's name in the side card behave the same way on desktop/tablet.
+      // Also make the person's name or picture in the side card behave the same way.
       if (!isPersonName) {
-        const summaryName = target.closest(".member-summary-copy h2");
-        if (summaryName) {
-          visibleName = summaryName.textContent?.trim() || "";
-          isPersonName = true;
+        const summaryCard = target.closest(".member-panel-content") || target.closest(".member-summary");
+        if (summaryCard) {
+          const summaryName = summaryCard.querySelector(".member-summary-copy h2");
+          if (summaryName) {
+            visibleName = summaryName.textContent?.trim() || "";
+            isPersonName = true;
+          }
         }
       }
 
