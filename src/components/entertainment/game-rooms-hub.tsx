@@ -18,6 +18,7 @@ import {
   Clipboard,
   Crown,
   Eye,
+  Gift,
   Gavel,
   HelpCircle,
   Landmark,
@@ -91,6 +92,7 @@ type RoomState = {
   scores: Record<string, number>;
   data: Record<string, any>;
   bots: Player[];
+  gameOptions?: { unoMode?: UnoMode };
 };
 
 type RoomAction = {
@@ -215,6 +217,7 @@ const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق
 const SESSION_KEY = "alsaif-live-game-room-v1";
 
 type UnoColor = "red" | "blue" | "green" | "yellow" | "wild";
+type UnoMode = "classic" | "flip" | "no-mercy";
 type UnoCard = {
   id: string;
   color: UnoColor;
@@ -298,7 +301,7 @@ function copyData<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function buildUnoDeck(): UnoCard[] {
+function buildUnoDeck(mode: UnoMode = "classic"): UnoCard[] {
   const cards: UnoCard[] = [];
   let id = 0;
   UNO_COLORS.forEach((color) => {
@@ -312,11 +315,28 @@ function buildUnoDeck(): UnoCard[] {
     cards.push({ id: `uno-${id++}`, color: "wild", value: "wild" });
     cards.push({ id: `uno-${id++}`, color: "wild", value: "wild4" });
   }
+  if (mode === "flip") {
+    UNO_COLORS.forEach((color) => {
+      for (let index = 0; index < 2; index += 1) cards.push({ id: `uno-${id++}`, color, value: "flip" });
+      cards.push({ id: `uno-${id++}`, color, value: "draw5" });
+      cards.push({ id: `uno-${id++}`, color, value: "skipAll" });
+    });
+  }
+  if (mode === "no-mercy") {
+    UNO_COLORS.forEach((color) => {
+      cards.push({ id: `uno-${id++}`, color, value: "draw4" });
+      cards.push({ id: `uno-${id++}`, color, value: "discardAll" });
+      cards.push({ id: `uno-${id++}`, color, value: "skipAll" });
+    });
+    for (let index = 0; index < 4; index += 1) {
+      cards.push({ id: `uno-${id++}`, color: "wild", value: index < 2 ? "draw6" : "draw10" });
+    }
+  }
   return shuffle(cards);
 }
 
-function initialUnoData(players: Player[], starterIndex = 0) {
-  const deck = buildUnoDeck();
+function initialUnoData(players: Player[], starterIndex = 0, mode: UnoMode = "classic") {
+  const deck = buildUnoDeck(mode);
   const hands: Record<string, UnoCard[]> = {};
   players.forEach((player) => {
     hands[player.id] = deck.splice(0, 7);
@@ -334,6 +354,8 @@ function initialUnoData(players: Player[], starterIndex = 0) {
     drawnCardId: null,
     unoCalled: {},
     winnerId: null,
+    mode,
+    side: "light",
     lastAction: "تم توزيع 7 أوراق لكل لاعب",
   };
 }
@@ -473,10 +495,10 @@ function nextIndex(current: number, length: number) {
   return length ? (current + 1) % length : 0;
 }
 
-function initialGameData(game: GameKey, players: Player[], round = 0, starterIndex = 0): Record<string, any> {
+function initialGameData(game: GameKey, players: Player[], round = 0, starterIndex = 0, options?: RoomState["gameOptions"]): Record<string, any> {
   switch (game) {
     case "uno":
-      return initialUnoData(players, starterIndex);
+      return initialUnoData(players, starterIndex, options?.unoMode ?? "classic");
     case "saudi-deal":
       return initialDealData(players, starterIndex);
     case "trivia":
@@ -505,8 +527,8 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
   }
 }
 
-function lobbyState(game: GameKey = "trivia"): RoomState {
-  return { phase: "lobby", game, round: 0, scores: {}, data: {}, bots: [] };
+function lobbyState(game: GameKey = "trivia", gameOptions: RoomState["gameOptions"] = { unoMode: "classic" }): RoomState {
+  return { phase: "lobby", game, round: 0, scores: {}, data: {}, bots: [], gameOptions };
 }
 
 function makeBotPlayer(existing: Player[], difficulty: BotDifficulty): Player {
@@ -536,7 +558,7 @@ function startState(previous: RoomState, players: Player[]): RoomState {
     round: 0,
     scores,
     data: {
-      ...initialGameData(previous.game, players, 0, starterIndex),
+      ...initialGameData(previous.game, players, 0, starterIndex, previous.gameOptions),
       starterId: starter?.id ?? null,
       starterName: starter?.name ?? "اللاعب الأول",
       starterIndex,
@@ -687,6 +709,7 @@ function finishDealMove(state: RoomState, data: any, playerId: string, players: 
     data.turnIndex = nextIndex(data.turnIndex, players.length);
     data.actionsLeft = 3;
     data.needsDraw = true;
+    data.rentMultiplier = 1;
   }
   return { ...state, data };
 }
@@ -758,6 +781,7 @@ function reduceDeal(state: RoomState, action: RoomAction, players: Player[]): Ro
     data.turnIndex = nextIndex(data.turnIndex, players.length);
     data.actionsLeft = 3;
     data.needsDraw = true;
+    data.rentMultiplier = 1;
     data.lastAction = `انتهى دور ${active.name}`;
     return { ...state, data };
   }
@@ -1077,10 +1101,15 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
     };
   }
   if (action.type === "set-game" && state.phase === "lobby") {
-    return { ...lobbyState(action.value as GameKey), bots };
+    return { ...lobbyState(action.value as GameKey, state.gameOptions), bots };
+  }
+  if (action.type === "set-uno-mode" && state.phase === "lobby" && state.game === "uno") {
+    const mode = action.value as UnoMode;
+    if (!["classic", "flip", "no-mercy"].includes(mode)) return state;
+    return { ...state, gameOptions: { ...state.gameOptions, unoMode: mode } };
   }
   if (action.type === "start" && state.phase === "lobby") return startState(state, players);
-  if (action.type === "lobby") return { ...lobbyState(state.game), bots };
+  if (action.type === "lobby") return { ...lobbyState(state.game, state.gameOptions), bots };
   if (action.type === "finish") return { ...state, phase: "results" };
   if (state.phase !== "playing") return state;
 
@@ -1331,6 +1360,32 @@ function dealBotAction(state: RoomState, bot: Player, players: Player[]): RoomAc
         value: { cardId: card.id, targetId: choice.target.id, propertyId: choice.property.id },
       };
     }
+  }
+  if (card.action === "forced_swap") {
+    const ownProperties = (data.properties[bot.id] ?? []) as DealCard[];
+    const canOffer = ownProperties.some((property) => !isProtectedDealProperty(ownProperties, property));
+    const choices = opponents.flatMap((target) =>
+      ((data.properties[target.id] ?? []) as DealCard[])
+        .filter((property) => !isProtectedDealProperty(data.properties[target.id] ?? [], property))
+        .map((property) => ({ target, property })),
+    );
+    const choice = canOffer ? randomItem(choices) : undefined;
+    if (choice) return { type: "deal-action", playerId: bot.id, value: { cardId: card.id, targetId: choice.target.id, propertyId: choice.property.id } };
+  }
+  if (card.action === "deal_breaker") {
+    const choices = opponents.flatMap((target) => DEAL_GROUPS
+      .filter((group) => ((data.properties[target.id] ?? []) as DealCard[]).filter((property) => property.group === group.id).length >= group.size)
+      .map((group) => ({ target, group })),
+    );
+    const choice = randomItem(choices);
+    if (choice) return { type: "deal-action", playerId: bot.id, value: { cardId: card.id, targetId: choice.target.id, group: choice.group.id } };
+  }
+  if (card.action === "debt") {
+    const target = opponents.slice().sort((a, b) => dealTargetWealth(data, b.id) - dealTargetWealth(data, a.id))[0];
+    if (target && dealTargetWealth(data, target.id) > 0) return { type: "deal-action", playerId: bot.id, value: { cardId: card.id, targetId: target.id } };
+  }
+  if (card.action === "birthday" || card.action === "double_rent") {
+    return { type: "deal-action", playerId: bot.id, value: { cardId: card.id } };
   }
   return { type: "deal-bank", playerId: bot.id, value: { cardId: card.id } };
 }
@@ -3439,6 +3494,24 @@ function dealActionHelp(card: DealCard) {
       description: "اختر لاعبًا لتحصيل الإيجار منه. قيمة الإيجار تعتمد على أكبر مجموعة أملاك لديك، من مليون إلى 5 ملايين.",
     };
   }
+  if (card.action === "forced_swap") {
+    return { title: "صفقة تبادل", description: "اختر أرضًا غير مكتملة عند خصم. تتبادلها اللعبة مع أرض غير مكتملة من أملاكك." };
+  }
+  if (card.action === "deal_breaker") {
+    return { title: "كسر الصفقة", description: "استحوذ على مجموعة أراضٍ مكتملة كاملة من خصم. يمكن للخصم صدها ببطاقة مرفوض." };
+  }
+  if (card.action === "debt") {
+    return { title: "تحصيل دين", description: "اختر لاعبًا ليدفع لك 5 ملايين من البنك أو الأملاك المكشوفة." };
+  }
+  if (card.action === "birthday") {
+    return { title: "العيدية", description: "يحاول كل لاعب آخر دفع مليونيْن لك. من يحمل بطاقة مرفوض يصد الدفع تلقائيًا." };
+  }
+  if (card.action === "double_rent") {
+    return { title: "إيجار مضاعف", description: "ضاعف قيمة بطاقة الإيجار التالية التي تلعبها في الدور نفسه." };
+  }
+  if (card.action === "just_say_no") {
+    return { title: "مرفوض!", description: "بطاقة دفاع تُستخدم تلقائيًا من يدك لصد الإيجار أو الدين أو الاستحواذ أو كسر الصفقة." };
+  }
   return {
     title: "استحواذ على أرض",
     description: "اختر أرضًا واحدة من خصم واستحوذ عليها، بشرط ألا تكون الأرض ضمن مجموعة مكتملة.",
@@ -3456,7 +3529,15 @@ function DealCardFace({
 }) {
   const group = dealGroup(card);
   const PropertyIcon = dealGroupIcon(card.group);
-  const ActionIcon = card.action === "draw2" ? Sparkles : card.action === "rent" ? Banknote : Gavel;
+  const ActionIcon = card.action === "draw2"
+    ? Sparkles
+    : card.action === "rent" || card.action === "debt" || card.action === "double_rent"
+      ? Banknote
+      : card.action === "just_say_no"
+        ? ShieldCheck
+        : card.action === "birthday"
+          ? Gift
+          : Gavel;
 
   if (card.type === "property") {
     return (
@@ -3741,8 +3822,8 @@ function DealPublicRack({
     group,
     count: properties.filter((property) => property.group === group.id).length,
   })).filter((entry) => entry.count > 0);
-  const targetingRent = pendingAction?.action === "rent";
-  const targetingProperty = pendingAction?.action === "steal";
+  const targetingRent = pendingAction?.action === "rent" || pendingAction?.action === "debt";
+  const targetingProperty = pendingAction?.action === "steal" || pendingAction?.action === "forced_swap" || pendingAction?.action === "deal_breaker";
 
   return (
     <div className={cn("absolute z-30 flex flex-col items-center", positionClass)}>
@@ -3849,22 +3930,35 @@ function SaudiDealRoom({
 
 
   const useAction = (card: DealCard) => {
-    if (card.action === "draw2") {
+    if (card.action === "draw2" || card.action === "birthday" || card.action === "double_rent") {
       void dispatch("deal-action", { cardId: card.id });
+      return;
+    }
+    if (card.action === "just_say_no") {
+      toast.info("بطاقة مرفوض تُستخدم تلقائيًا عند مهاجمتك");
       return;
     }
     setPendingAction(card);
   };
 
   const targetRentPlayer = (player: Player) => {
-    if (pendingAction?.action !== "rent") return;
+    if (pendingAction?.action !== "rent" && pendingAction?.action !== "debt") return;
     void dispatch("deal-action", { cardId: pendingAction.id, targetId: player.id });
     setPendingAction(null);
   };
 
   const targetProperty = (player: Player, property: DealCard) => {
-    if (pendingAction?.action !== "steal" || isProtectedDealProperty((data.properties[player.id] ?? []) as DealCard[], property)) return;
-    void dispatch("deal-action", { cardId: pendingAction.id, targetId: player.id, propertyId: property.id });
+    if (!pendingAction || !["steal", "forced_swap", "deal_breaker"].includes(pendingAction.action ?? "")) return;
+    const targetProperties = (data.properties[player.id] ?? []) as DealCard[];
+    const protectedProperty = isProtectedDealProperty(targetProperties, property);
+    if (pendingAction.action !== "deal_breaker" && protectedProperty) return;
+    if (pendingAction.action === "deal_breaker" && !protectedProperty) return;
+    void dispatch("deal-action", {
+      cardId: pendingAction.id,
+      targetId: player.id,
+      propertyId: property.id,
+      group: pendingAction.action === "deal_breaker" ? property.group : undefined,
+    });
     setPendingAction(null);
   };
 
@@ -3936,7 +4030,15 @@ function SaudiDealRoom({
                 <div className="flex min-w-0 items-center gap-2">
                   <Target className="size-4 shrink-0 animate-pulse" />
                   <p className="truncate text-[10px] font-black sm:text-xs">
-                    {pendingAction.action === "rent" ? "اضغط اسم اللاعب لتحصيل الإيجار" : "اختر أرضًا متوهجة — المجموعة المكتملة محمية"}
+                    {pendingAction.action === "rent"
+                      ? "اضغط اسم اللاعب لتحصيل الإيجار"
+                      : pendingAction.action === "debt"
+                        ? "اضغط اسم اللاعب لتحصيل 5 ملايين"
+                        : pendingAction.action === "deal_breaker"
+                          ? "اختر أرضًا من مجموعة مكتملة للاستحواذ عليها كلها"
+                          : pendingAction.action === "forced_swap"
+                            ? "اختر أرضًا غير مكتملة لمبادلتها"
+                            : "اختر أرضًا متوهجة — المجموعة المكتملة محمية"}
                   </p>
                 </div>
                 <button type="button" onClick={() => setPendingAction(null)} className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-black text-white">إلغاء</button>
