@@ -92,6 +92,7 @@ type RoomState = {
   scores: Record<string, number>;
   data: Record<string, any>;
   bots: Player[];
+  gameOptions?: { unoMode?: UnoMode };
 };
 
 type RoomAction = {
@@ -216,6 +217,7 @@ const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق
 const SESSION_KEY = "alsaif-live-game-room-v1";
 
 type UnoColor = "red" | "blue" | "green" | "yellow" | "wild";
+type UnoMode = "classic" | "flip" | "no-mercy";
 type UnoCard = {
   id: string;
   color: UnoColor;
@@ -299,7 +301,7 @@ function copyData<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function buildUnoDeck(): UnoCard[] {
+function buildUnoDeck(mode: UnoMode = "classic"): UnoCard[] {
   const cards: UnoCard[] = [];
   let id = 0;
   UNO_COLORS.forEach((color) => {
@@ -313,11 +315,28 @@ function buildUnoDeck(): UnoCard[] {
     cards.push({ id: `uno-${id++}`, color: "wild", value: "wild" });
     cards.push({ id: `uno-${id++}`, color: "wild", value: "wild4" });
   }
+  if (mode === "flip") {
+    UNO_COLORS.forEach((color) => {
+      for (let index = 0; index < 2; index += 1) cards.push({ id: `uno-${id++}`, color, value: "flip" });
+      cards.push({ id: `uno-${id++}`, color, value: "draw5" });
+      cards.push({ id: `uno-${id++}`, color, value: "skipAll" });
+    });
+  }
+  if (mode === "no-mercy") {
+    UNO_COLORS.forEach((color) => {
+      cards.push({ id: `uno-${id++}`, color, value: "draw4" });
+      cards.push({ id: `uno-${id++}`, color, value: "discardAll" });
+      cards.push({ id: `uno-${id++}`, color, value: "skipAll" });
+    });
+    for (let index = 0; index < 4; index += 1) {
+      cards.push({ id: `uno-${id++}`, color: "wild", value: index < 2 ? "draw6" : "draw10" });
+    }
+  }
   return shuffle(cards);
 }
 
-function initialUnoData(players: Player[], starterIndex = 0) {
-  const deck = buildUnoDeck();
+function initialUnoData(players: Player[], starterIndex = 0, mode: UnoMode = "classic") {
+  const deck = buildUnoDeck(mode);
   const hands: Record<string, UnoCard[]> = {};
   players.forEach((player) => {
     hands[player.id] = deck.splice(0, 7);
@@ -335,6 +354,8 @@ function initialUnoData(players: Player[], starterIndex = 0) {
     drawnCardId: null,
     unoCalled: {},
     winnerId: null,
+    mode,
+    side: "light",
     lastAction: "تم توزيع 7 أوراق لكل لاعب",
   };
 }
@@ -474,10 +495,10 @@ function nextIndex(current: number, length: number) {
   return length ? (current + 1) % length : 0;
 }
 
-function initialGameData(game: GameKey, players: Player[], round = 0, starterIndex = 0): Record<string, any> {
+function initialGameData(game: GameKey, players: Player[], round = 0, starterIndex = 0, options?: RoomState["gameOptions"]): Record<string, any> {
   switch (game) {
     case "uno":
-      return initialUnoData(players, starterIndex);
+      return initialUnoData(players, starterIndex, options?.unoMode ?? "classic");
     case "saudi-deal":
       return initialDealData(players, starterIndex);
     case "trivia":
@@ -506,8 +527,8 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
   }
 }
 
-function lobbyState(game: GameKey = "trivia"): RoomState {
-  return { phase: "lobby", game, round: 0, scores: {}, data: {}, bots: [] };
+function lobbyState(game: GameKey = "trivia", gameOptions: RoomState["gameOptions"] = { unoMode: "classic" }): RoomState {
+  return { phase: "lobby", game, round: 0, scores: {}, data: {}, bots: [], gameOptions };
 }
 
 function makeBotPlayer(existing: Player[], difficulty: BotDifficulty): Player {
@@ -537,7 +558,7 @@ function startState(previous: RoomState, players: Player[]): RoomState {
     round: 0,
     scores,
     data: {
-      ...initialGameData(previous.game, players, 0, starterIndex),
+      ...initialGameData(previous.game, players, 0, starterIndex, previous.gameOptions),
       starterId: starter?.id ?? null,
       starterName: starter?.name ?? "اللاعب الأول",
       starterIndex,
@@ -1080,10 +1101,15 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
     };
   }
   if (action.type === "set-game" && state.phase === "lobby") {
-    return { ...lobbyState(action.value as GameKey), bots };
+    return { ...lobbyState(action.value as GameKey, state.gameOptions), bots };
+  }
+  if (action.type === "set-uno-mode" && state.phase === "lobby" && state.game === "uno") {
+    const mode = action.value as UnoMode;
+    if (!["classic", "flip", "no-mercy"].includes(mode)) return state;
+    return { ...state, gameOptions: { ...state.gameOptions, unoMode: mode } };
   }
   if (action.type === "start" && state.phase === "lobby") return startState(state, players);
-  if (action.type === "lobby") return { ...lobbyState(state.game), bots };
+  if (action.type === "lobby") return { ...lobbyState(state.game, state.gameOptions), bots };
   if (action.type === "finish") return { ...state, phase: "results" };
   if (state.phase !== "playing") return state;
 
