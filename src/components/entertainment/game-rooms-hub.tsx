@@ -18,6 +18,7 @@ import {
   Clipboard,
   Crown,
   Eye,
+  Gift,
   Gavel,
   HelpCircle,
   Landmark,
