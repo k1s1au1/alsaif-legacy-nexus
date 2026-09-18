@@ -356,6 +356,7 @@ function initialUnoData(players: Player[], starterIndex = 0, mode: UnoMode = "cl
     winnerId: null,
     mode,
     side: "light",
+    pendingDraw: 0,
     lastAction: "تم توزيع 7 أوراق لكل لاعب",
   };
 }
@@ -595,6 +596,7 @@ function takeUnoCards(data: any, count: number): UnoCard[] {
 
 function unoPlayable(card: UnoCard, data: any, hand: UnoCard[]) {
   const top = data.discard[data.discard.length - 1] as UnoCard;
+  if ((data.pendingDraw ?? 0) > 0) return ["draw2", "draw4", "wild4", "draw5", "draw6", "draw10"].includes(card.value);
   if (card.value === "wild4") {
     return !hand.some((item) => item.id !== card.id && item.color === data.currentColor);
   }
@@ -615,12 +617,21 @@ function reduceUno(state: RoomState, action: RoomAction, players: Player[]): Roo
 
   if (action.type === "uno-draw") {
     if (data.drawnCardId) return state;
-    const [card] = takeUnoCards(data, 1);
+    const drawCount = Math.max(1, Number(data.pendingDraw ?? 0));
+    const cards = takeUnoCards(data, drawCount);
+    const card = cards[0];
     if (!card) return state;
-    hand.push(card);
+    hand.push(...cards);
     data.hands[action.playerId] = hand;
-    data.drawnCardId = card.id;
-    data.lastAction = `${active.name} سحب ورقة`;
+    data.pendingDraw = 0;
+    if (drawCount > 1) {
+      data.drawnCardId = null;
+      data.turnIndex = unoAdvance(data.turnIndex, data.direction, 1, players);
+      data.lastAction = `${active.name} سحب ${drawCount} أوراق`;
+    } else {
+      data.drawnCardId = card.id;
+      data.lastAction = `${active.name} سحب ورقة`;
+    }
     return { ...state, data };
   }
 
@@ -663,15 +674,40 @@ function reduceUno(state: RoomState, action: RoomAction, players: Player[]): Roo
     steps = players.length === 2 ? 2 : 1;
   }
   if (card.value === "skip") steps = 2;
-  if (card.value === "draw2" || card.value === "wild4") {
+  if (card.value === "flip") {
+    data.side = data.side === "dark" ? "light" : "dark";
+    data.direction *= -1;
+    direction = data.direction;
+    data.lastAction = `${active.name} قلب جهة اللعب`;
+  }
+  if (card.value === "skipAll") steps = players.length;
+  if (card.value === "discardAll") {
+    const sameColor = hand.filter((item) => item.color === card.color);
+    data.hands[action.playerId] = hand.filter((item) => item.color !== card.color);
+    data.discard.push(...sameColor);
+    data.lastAction = `${active.name} تخلص من أوراق اللون نفسه`;
+  }
+  const drawValues: Record<string, number> = { draw2: 2, wild4: 4, draw4: 4, draw5: 5, draw6: 6, draw10: 10 };
+  if (drawValues[card.value]) {
     const targetIndex = unoAdvance(data.turnIndex, direction, 1, players);
     const target = players[targetIndex];
     if (target) {
-      const targetHand = (data.hands[target.id] ?? []) as UnoCard[];
-      targetHand.push(...takeUnoCards(data, card.value === "draw2" ? 2 : 4));
-      data.hands[target.id] = targetHand;
+      if ((data.mode ?? "classic") === "no-mercy") {
+        data.pendingDraw = Number(data.pendingDraw ?? 0) + drawValues[card.value];
+        steps = 1;
+      } else {
+        const targetHand = (data.hands[target.id] ?? []) as UnoCard[];
+        targetHand.push(...takeUnoCards(data, drawValues[card.value]));
+        data.hands[target.id] = targetHand;
+        steps = 2;
+      }
     }
-    steps = 2;
+  }
+  if ((data.hands[action.playerId] as UnoCard[]).length === 0) {
+    data.winnerId = action.playerId;
+    data.lastAction = `${active.name} أنهى أوراقه وفاز بالجولة`;
+    const scores = { ...state.scores, [action.playerId]: scoreFor(state.scores, action.playerId) + 1 };
+    return { ...state, phase: "results", scores, data };
   }
   data.turnIndex = unoAdvance(data.turnIndex, direction, steps, players);
   return { ...state, data };
@@ -1255,7 +1291,7 @@ function unoBotAction(state: RoomState, bot: Player, players: Player[]): RoomAct
   if (!data.drawnCardId && difficulty === "easy" && Math.random() < 0.22) {
     return { type: "uno-draw", playerId: bot.id };
   }
-  const valueScore: Record<string, number> = { wild4: 9, draw2: 8, skip: 7, reverse: 6, wild: 5 };
+  const valueScore: Record<string, number> = { draw10: 15, draw6: 13, draw5: 12, wild4: 11, draw4: 10, draw2: 9, skipAll: 8, discardAll: 8, flip: 7, skip: 6, reverse: 5, wild: 4 };
   if (difficulty === "medium") playable.sort((a, b) => (valueScore[b.value] ?? 0) - (valueScore[a.value] ?? 0));
   if (difficulty === "hard") {
     const colorCount = UNO_COLORS.reduce<Record<string, number>>((acc, color) => {
@@ -1984,6 +2020,7 @@ export function GameRoomsHub() {
           minimumReached={minimumReached}
           onReady={() => void toggleReady()}
           onSelectGame={(game) => void dispatch("set-game", game)}
+          onSelectUnoMode={(mode) => void dispatch("set-uno-mode", mode)}
           onStart={() => void dispatch("start")}
           onAddBot={(difficulty) => void dispatch("add-bot", difficulty)}
           onFillBots={(difficulty) => void dispatch("fill-bots", difficulty)}
@@ -2216,6 +2253,7 @@ function Lobby({
   minimumReached,
   onReady,
   onSelectGame,
+  onSelectUnoMode,
   onStart,
   onAddBot,
   onFillBots,
@@ -2231,6 +2269,7 @@ function Lobby({
   minimumReached: boolean;
   onReady: () => void;
   onSelectGame: (game: GameKey) => void;
+  onSelectUnoMode: (mode: UnoMode) => void;
   onStart: () => void;
   onAddBot: (difficulty: BotDifficulty) => void;
   onFillBots: (difficulty: BotDifficulty) => void;
@@ -2283,6 +2322,31 @@ function Lobby({
             );
           })}
         </div>
+        {state.game === "uno" && (
+          <div className="mt-5 rounded-2xl border border-border/70 bg-muted/25 p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div><p className="text-sm font-black text-primary">طريقة أونو</p><p className="text-[11px] font-bold text-muted-foreground">يحددها المضيف قبل بدء الجولة</p></div>
+              <Zap className="size-5 text-gold-primary" />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                ["classic", "كلاسيك"],
+                ["flip", "فليب"],
+                ["no-mercy", "نو ميرسي"],
+              ] as Array<[UnoMode, string]>).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  disabled={!isHost}
+                  onClick={() => onSelectUnoMode(mode)}
+                  className={cn("min-h-12 rounded-xl border px-2 text-xs font-black transition", (state.gameOptions?.unoMode ?? "classic") === mode ? "border-gold-primary bg-gold-primary text-primary" : "border-border bg-card text-muted-foreground", !isHost && "cursor-default")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </Surface>
 
       <div className="space-y-5">
@@ -3241,6 +3305,13 @@ function unoValueLabel(value: string) {
   if (value === "draw2") return "+2";
   if (value === "wild") return "اختيار لون";
   if (value === "wild4") return "+4";
+  if (value === "draw4") return "+4";
+  if (value === "draw5") return "+5";
+  if (value === "draw6") return "+6";
+  if (value === "draw10") return "+10";
+  if (value === "flip") return "قلب";
+  if (value === "skipAll") return "تخطي الجميع";
+  if (value === "discardAll") return "تخلص من اللون";
   return value;
 }
 
@@ -3331,6 +3402,7 @@ function UnoRoom({
   const active = players[data.turnIndex % Math.max(players.length, 1)];
   const amActive = active?.id === me.id;
   const top = data.discard[data.discard.length - 1] as UnoCard;
+  const modeLabel = data.mode === "flip" ? "فليب" : data.mode === "no-mercy" ? "نو ميرسي" : "كلاسيك";
   const [choosingWild, setChoosingWild] = useState<UnoCard | null>(null);
   const colorClass: Record<string, string> = {
     red: "bg-red-600",
@@ -3368,7 +3440,7 @@ function UnoRoom({
       <div className={cn("grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-3 py-2.5 text-[#173e34] shadow-sm sm:px-5 sm:py-3", immersive && "sticky top-0 z-40 rounded-[24px] shadow-[0_12px_28px_-20px_rgba(0,0,0,.9)]")}>
         <div className="flex min-w-0 items-center gap-2.5">
           {active && <PlayerAvatar player={active} size="sm" />}
-          <div className="min-w-0"><p className="truncate text-sm font-black sm:text-base">الدور عند {active?.name?.split(" ")[0] ?? "—"}</p><p className="truncate text-xs font-bold text-[#173e34]/55">{data.lastAction}</p></div>
+          <div className="min-w-0"><p className="truncate text-sm font-black sm:text-base">الدور عند {active?.name?.split(" ")[0] ?? "—"}</p><p className="truncate text-xs font-bold text-[#173e34]/55">أونو {modeLabel} · {data.lastAction}</p></div>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-[#0b5b47] px-3 py-2 text-white">
           <span className={cn("size-4 rounded-full border-2 border-white/35", colorClass[data.currentColor])} />
@@ -3410,6 +3482,11 @@ function UnoRoom({
               <span className="text-[#efd078]">{data.direction === 1 ? "↺" : "↻"}</span>
               <span>{data.direction === 1 ? "الاتجاه المعتاد" : "الاتجاه معكوس"}</span>
             </div>
+            {(data.pendingDraw ?? 0) > 0 && (
+              <div className="mt-2 animate-pulse rounded-full border border-rose-300/40 bg-rose-700/85 px-4 py-1.5 text-xs font-black text-white shadow-lg">
+                اسحب {data.pendingDraw} أو ارمِ بطاقة سحب أقوى
+              </div>
+            )}
           </div>
         </div>
       </GameTableSurface>
@@ -3841,7 +3918,11 @@ function DealPublicRack({
           <div className="flex w-full flex-wrap items-start justify-center gap-1 rounded-xl border border-[#dabb6c]/45 bg-[#052d26]/80 p-1 shadow-xl backdrop-blur-sm">
             {sortedProperties.map((property) => {
               const protectedProperty = isProtectedDealProperty(properties, property);
-              const targetable = Boolean(targetingProperty && !protectedProperty);
+              const targetable = Boolean(
+                targetingProperty && (
+                  pendingAction?.action === "deal_breaker" ? protectedProperty : !protectedProperty
+                ),
+              );
               return (
                 <DealPublicPropertyCard
                   key={property.id}
