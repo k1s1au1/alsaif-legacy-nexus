@@ -595,6 +595,7 @@ function takeUnoCards(data: any, count: number): UnoCard[] {
 
 function unoPlayable(card: UnoCard, data: any, hand: UnoCard[]) {
   const top = data.discard[data.discard.length - 1] as UnoCard;
+  if ((data.pendingDraw ?? 0) > 0) return ["draw2", "draw4", "wild4", "draw5", "draw6", "draw10"].includes(card.value);
   if (card.value === "wild4") {
     return !hand.some((item) => item.id !== card.id && item.color === data.currentColor);
   }
@@ -615,12 +616,25 @@ function reduceUno(state: RoomState, action: RoomAction, players: Player[]): Roo
 
   if (action.type === "uno-draw") {
     if (data.drawnCardId) return state;
-    const [card] = takeUnoCards(data, 1);
+    const drawCount = Math.max(1, Number(data.pendingDraw ?? 0));
+    const cards = takeUnoCards(data, drawCount);
+    const card = cards[0];
     if (!card) return state;
-    hand.push(card);
+    hand.push(...cards);
     data.hands[action.playerId] = hand;
-    data.drawnCardId = card.id;
-    data.lastAction = `${active.name} سحب ورقة`;
+    data.pendingDraw = 0;
+    if (drawCount > 1) {
+      data.drawnCardId = null;
+      data.turnIndex = unoAdvance(data.turnIndex, data.direction, 1, players);
+      data.lastAction = `${active.name} سحب ${drawCount} أوراق`;
+    } else {
+      data.drawnCardId = card.id;
+      data.lastAction = `${active.name} سحب ورقة`;
+    }
+    if ((data.mode ?? "classic") === "no-mercy" && hand.length >= 25) {
+      data.eliminated = { ...(data.eliminated ?? {}), [action.playerId]: true };
+      data.lastAction = `${active.name} خرج بعد وصوله إلى 25 ورقة`;
+    }
     return { ...state, data };
   }
 
@@ -663,15 +677,34 @@ function reduceUno(state: RoomState, action: RoomAction, players: Player[]): Roo
     steps = players.length === 2 ? 2 : 1;
   }
   if (card.value === "skip") steps = 2;
-  if (card.value === "draw2" || card.value === "wild4") {
+  if (card.value === "flip") {
+    data.side = data.side === "dark" ? "light" : "dark";
+    data.direction *= -1;
+    direction = data.direction;
+    data.lastAction = `${active.name} قلب جهة اللعب`;
+  }
+  if (card.value === "skipAll") steps = players.length;
+  if (card.value === "discardAll") {
+    const sameColor = hand.filter((item) => item.color === card.color);
+    data.hands[action.playerId] = hand.filter((item) => item.color !== card.color);
+    data.discard.push(...sameColor);
+    data.lastAction = `${active.name} تخلص من أوراق اللون نفسه`;
+  }
+  const drawValues: Record<string, number> = { draw2: 2, wild4: 4, draw4: 4, draw5: 5, draw6: 6, draw10: 10 };
+  if (drawValues[card.value]) {
     const targetIndex = unoAdvance(data.turnIndex, direction, 1, players);
     const target = players[targetIndex];
     if (target) {
-      const targetHand = (data.hands[target.id] ?? []) as UnoCard[];
-      targetHand.push(...takeUnoCards(data, card.value === "draw2" ? 2 : 4));
-      data.hands[target.id] = targetHand;
+      if ((data.mode ?? "classic") === "no-mercy") {
+        data.pendingDraw = Number(data.pendingDraw ?? 0) + drawValues[card.value];
+        steps = 1;
+      } else {
+        const targetHand = (data.hands[target.id] ?? []) as UnoCard[];
+        targetHand.push(...takeUnoCards(data, drawValues[card.value]));
+        data.hands[target.id] = targetHand;
+        steps = 2;
+      }
     }
-    steps = 2;
   }
   data.turnIndex = unoAdvance(data.turnIndex, direction, steps, players);
   return { ...state, data };
@@ -2216,6 +2249,7 @@ function Lobby({
   minimumReached,
   onReady,
   onSelectGame,
+  onSelectUnoMode,
   onStart,
   onAddBot,
   onFillBots,
@@ -2231,6 +2265,7 @@ function Lobby({
   minimumReached: boolean;
   onReady: () => void;
   onSelectGame: (game: GameKey) => void;
+  onSelectUnoMode: (mode: UnoMode) => void;
   onStart: () => void;
   onAddBot: (difficulty: BotDifficulty) => void;
   onFillBots: (difficulty: BotDifficulty) => void;
@@ -2283,6 +2318,31 @@ function Lobby({
             );
           })}
         </div>
+        {state.game === "uno" && (
+          <div className="mt-5 rounded-2xl border border-border/70 bg-muted/25 p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div><p className="text-sm font-black text-primary">طريقة أونو</p><p className="text-[11px] font-bold text-muted-foreground">يحددها المضيف قبل بدء الجولة</p></div>
+              <Zap className="size-5 text-gold-primary" />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                ["classic", "كلاسيك"],
+                ["flip", "فليب"],
+                ["no-mercy", "نو ميرسي"],
+              ] as Array<[UnoMode, string]>).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  disabled={!isHost}
+                  onClick={() => onSelectUnoMode(mode)}
+                  className={cn("min-h-12 rounded-xl border px-2 text-xs font-black transition", (state.gameOptions?.unoMode ?? "classic") === mode ? "border-gold-primary bg-gold-primary text-primary" : "border-border bg-card text-muted-foreground", !isHost && "cursor-default")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </Surface>
 
       <div className="space-y-5">
