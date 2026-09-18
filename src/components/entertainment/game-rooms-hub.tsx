@@ -1291,7 +1291,7 @@ function unoBotAction(state: RoomState, bot: Player, players: Player[]): RoomAct
   if (!data.drawnCardId && difficulty === "easy" && Math.random() < 0.22) {
     return { type: "uno-draw", playerId: bot.id };
   }
-  const valueScore: Record<string, number> = { wild4: 9, draw2: 8, skip: 7, reverse: 6, wild: 5 };
+  const valueScore: Record<string, number> = { draw10: 15, draw6: 13, draw5: 12, wild4: 11, draw4: 10, draw2: 9, skipAll: 8, discardAll: 8, flip: 7, skip: 6, reverse: 5, wild: 4 };
   if (difficulty === "medium") playable.sort((a, b) => (valueScore[b.value] ?? 0) - (valueScore[a.value] ?? 0));
   if (difficulty === "hard") {
     const colorCount = UNO_COLORS.reduce<Record<string, number>>((acc, color) => {
@@ -3402,6 +3402,7 @@ function UnoRoom({
   const active = players[data.turnIndex % Math.max(players.length, 1)];
   const amActive = active?.id === me.id;
   const top = data.discard[data.discard.length - 1] as UnoCard;
+  const modeLabel = data.mode === "flip" ? "فليب" : data.mode === "no-mercy" ? "نو ميرسي" : "كلاسيك";
   const [choosingWild, setChoosingWild] = useState<UnoCard | null>(null);
   const colorClass: Record<string, string> = {
     red: "bg-red-600",
@@ -3439,7 +3440,7 @@ function UnoRoom({
       <div className={cn("grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-3 py-2.5 text-[#173e34] shadow-sm sm:px-5 sm:py-3", immersive && "sticky top-0 z-40 rounded-[24px] shadow-[0_12px_28px_-20px_rgba(0,0,0,.9)]")}>
         <div className="flex min-w-0 items-center gap-2.5">
           {active && <PlayerAvatar player={active} size="sm" />}
-          <div className="min-w-0"><p className="truncate text-sm font-black sm:text-base">الدور عند {active?.name?.split(" ")[0] ?? "—"}</p><p className="truncate text-xs font-bold text-[#173e34]/55">{data.lastAction}</p></div>
+          <div className="min-w-0"><p className="truncate text-sm font-black sm:text-base">الدور عند {active?.name?.split(" ")[0] ?? "—"}</p><p className="truncate text-xs font-bold text-[#173e34]/55">أونو {modeLabel} · {data.lastAction}</p></div>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-[#0b5b47] px-3 py-2 text-white">
           <span className={cn("size-4 rounded-full border-2 border-white/35", colorClass[data.currentColor])} />
@@ -3481,6 +3482,11 @@ function UnoRoom({
               <span className="text-[#efd078]">{data.direction === 1 ? "↺" : "↻"}</span>
               <span>{data.direction === 1 ? "الاتجاه المعتاد" : "الاتجاه معكوس"}</span>
             </div>
+            {(data.pendingDraw ?? 0) > 0 && (
+              <div className="mt-2 animate-pulse rounded-full border border-rose-300/40 bg-rose-700/85 px-4 py-1.5 text-xs font-black text-white shadow-lg">
+                اسحب {data.pendingDraw} أو ارمِ بطاقة سحب أقوى
+              </div>
+            )}
           </div>
         </div>
       </GameTableSurface>
