@@ -356,6 +356,7 @@ function initialUnoData(players: Player[], starterIndex = 0, mode: UnoMode = "cl
     winnerId: null,
     mode,
     side: "light",
+    pendingDraw: 0,
     lastAction: "تم توزيع 7 أوراق لكل لاعب",
   };
 }
@@ -631,10 +632,6 @@ function reduceUno(state: RoomState, action: RoomAction, players: Player[]): Roo
       data.drawnCardId = card.id;
       data.lastAction = `${active.name} سحب ورقة`;
     }
-    if ((data.mode ?? "classic") === "no-mercy" && hand.length >= 25) {
-      data.eliminated = { ...(data.eliminated ?? {}), [action.playerId]: true };
-      data.lastAction = `${active.name} خرج بعد وصوله إلى 25 ورقة`;
-    }
     return { ...state, data };
   }
 
@@ -705,6 +702,12 @@ function reduceUno(state: RoomState, action: RoomAction, players: Player[]): Roo
         steps = 2;
       }
     }
+  }
+  if ((data.hands[action.playerId] as UnoCard[]).length === 0) {
+    data.winnerId = action.playerId;
+    data.lastAction = `${active.name} أنهى أوراقه وفاز بالجولة`;
+    const scores = { ...state.scores, [action.playerId]: scoreFor(state.scores, action.playerId) + 1 };
+    return { ...state, phase: "results", scores, data };
   }
   data.turnIndex = unoAdvance(data.turnIndex, direction, steps, players);
   return { ...state, data };
@@ -2017,6 +2020,7 @@ export function GameRoomsHub() {
           minimumReached={minimumReached}
           onReady={() => void toggleReady()}
           onSelectGame={(game) => void dispatch("set-game", game)}
+          onSelectUnoMode={(mode) => void dispatch("set-uno-mode", mode)}
           onStart={() => void dispatch("start")}
           onAddBot={(difficulty) => void dispatch("add-bot", difficulty)}
           onFillBots={(difficulty) => void dispatch("fill-bots", difficulty)}
@@ -3301,6 +3305,13 @@ function unoValueLabel(value: string) {
   if (value === "draw2") return "+2";
   if (value === "wild") return "اختيار لون";
   if (value === "wild4") return "+4";
+  if (value === "draw4") return "+4";
+  if (value === "draw5") return "+5";
+  if (value === "draw6") return "+6";
+  if (value === "draw10") return "+10";
+  if (value === "flip") return "قلب";
+  if (value === "skipAll") return "تخطي الجميع";
+  if (value === "discardAll") return "تخلص من اللون";
   return value;
 }
 
