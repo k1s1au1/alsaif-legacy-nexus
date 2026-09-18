@@ -3918,7 +3918,11 @@ function DealPublicRack({
           <div className="flex w-full flex-wrap items-start justify-center gap-1 rounded-xl border border-[#dabb6c]/45 bg-[#052d26]/80 p-1 shadow-xl backdrop-blur-sm">
             {sortedProperties.map((property) => {
               const protectedProperty = isProtectedDealProperty(properties, property);
-              const targetable = Boolean(targetingProperty && !protectedProperty);
+              const targetable = Boolean(
+                targetingProperty && (
+                  pendingAction?.action === "deal_breaker" ? protectedProperty : !protectedProperty
+                ),
+              );
               return (
                 <DealPublicPropertyCard
                   key={property.id}
