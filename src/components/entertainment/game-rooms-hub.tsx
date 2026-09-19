@@ -165,9 +165,9 @@ const GAMES: GameMeta[] = [
   },
   {
     id: "auction",
-    label: "مزاد المعلومات",
-    short: "كل لاعب يرسل مزايدته ويختار المضيف الفائز.",
-    icon: Gavel,
+    label: "من أنا؟",
+    short: "اكشف الشخصية أو المكان من التلميحات المتدرجة قبل الآخرين.",
+    icon: Eye,
     minPlayers: 2,
   },
   {
@@ -203,14 +203,29 @@ const JUDGE_SCENARIOS = [
   "من أكثر شخص يصنع أجواءً حلوة في المجلس؟",
   "من أكثر شخص يعرف أخبار العائلة؟",
   "من الأنسب لتنظيم الرحلة القادمة؟",
+  "من أكثر شخص يحوّل أي موقف إلى قصة مضحكة؟",
+  "من يعرف الطريق حتى من دون خريطة؟",
+  "من أكثر شخص يتذكر تفاصيل المناسبات القديمة؟",
+  "من يصلح أن يكون حكمًا في خلاف ودي؟",
+  "من يختار أفضل مكان لاجتماع العائلة؟",
+  "من أكثر شخص يبادر بالسؤال عن الجميع؟",
+  "من يستطيع تجهيز رحلة مفاجئة بأسرع وقت؟",
+  "من أكثر شخص يلتزم بوعده مهما تأخر الوقت؟",
+  "من سيكون أفضل مقدم لفعالية عائلية؟",
+  "من أكثر شخص يكتشف المقالب قبل وقوعها؟",
 ];
 
-const AUCTION_PROMPTS = [
-  "كم مدينة في المملكة زرتها؟",
-  "كم اسمًا من أسماء الصحابة تستطيع ذكره؟",
-  "كم طبقًا شعبيًا سعوديًا تستطيع تسميته؟",
-  "كم دولة عربية تستطيع ذكر عاصمتها؟",
-  "كم مثلًا شعبيًا تعرفه؟",
+const WHO_AM_I_CARDS = [
+  { answer: "النخلة", clues: ["أعيش طويلًا", "أتحمل الحر", "ثمري حاضر في الضيافة"] },
+  { answer: "الرياض", clues: ["أنا مدينة كبيرة", "في وسط المملكة", "أنا عاصمة السعودية"] },
+  { answer: "الصقر", clues: ["سريع النظر", "أحلّق عاليًا", "رمز عربي أصيل"] },
+  { answer: "الدلة", clues: ["لي فم طويل", "أرافق المجالس", "أحمل القهوة العربية"] },
+  { answer: "الدرعية", clues: ["لي بيوت طينية", "أحكي تاريخ الدولة", "أقع قرب الرياض"] },
+  { answer: "البشت", clues: ["أرتدى فوق الثوب", "أظهر في المناسبات", "عباءة رجالية فاخرة"] },
+  { answer: "العرضة", clues: ["لي إيقاع وسيوف", "أؤدى في الاحتفالات", "رقصة وطنية سعودية"] },
+  { answer: "الكعبة", clues: ["أتجه إليّ في الصلاة", "أكسى بالسواد", "أقع في مكة المكرمة"] },
+  { answer: "البحر الأحمر", clues: ["مياهي مالحة", "غرب المملكة", "اسمي يحمل لونًا"] },
+  { answer: "جبل طويق", clues: ["أنا مرتفع طويل", "أحيط بنجد", "شبهت بي همة السعوديين"] },
 ];
 
 const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق", "ك", "م", "ن", "هـ", "و"];
@@ -505,7 +520,7 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
     case "trivia":
       return { questionIndex: round % TRIVIA_QUESTIONS.length, answers: {}, revealed: false, activeIndex: starterIndex };
     case "judge":
-      return { scenarioIndex: round % JUDGE_SCENARIOS.length, votes: {}, revealed: false, activeIndex: starterIndex };
+      return { scenarioIndex: Math.floor(Math.random() * JUDGE_SCENARIOS.length), votes: {}, revealed: false, activeIndex: starterIndex };
     case "challenge30":
       return {
         activeIndex: starterIndex,
@@ -516,7 +531,7 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
         finished: false,
       };
     case "auction":
-      return { promptIndex: round % AUCTION_PROMPTS.length, bids: {}, revealed: false, winnerId: null, activeIndex: starterIndex };
+      return { cardIndex: round % WHO_AM_I_CARDS.length, clueIndex: 0, guesses: {}, solvedBy: null, revealed: false, activeIndex: starterIndex };
     case "word-duel":
       return {
         currentLetter: LETTERS[Math.floor(Math.random() * LETTERS.length)],
@@ -1217,15 +1232,17 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
   }
 
   if (state.game === "auction") {
-    if (action.type === "bid" && !data.revealed) {
-      const bid = Math.max(0, Math.min(999, Number(action.value) || 0));
-      return { ...state, data: { ...data, bids: { ...data.bids, [action.playerId]: bid } } };
+    const card = WHO_AM_I_CARDS[data.cardIndex % WHO_AM_I_CARDS.length];
+    if (action.type === "guess" && !data.revealed && !data.solvedBy) {
+      const guess = String(action.value ?? "").trim().slice(0, 60);
+      if (!guess || data.guesses[action.playerId]) return state;
+      const normalized = (value: string) => value.replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/\s+/g, "").toLowerCase();
+      const correct = normalized(guess) === normalized(card.answer);
+      if (correct) scores[action.playerId] = scoreFor(scores, action.playerId) + Math.max(1, 3 - data.clueIndex);
+      return { ...state, scores, data: { ...data, guesses: { ...data.guesses, [action.playerId]: guess }, solvedBy: correct ? action.playerId : null, revealed: correct } };
     }
+    if (action.type === "next-clue" && !data.revealed) return { ...state, data: { ...data, guesses: {}, clueIndex: Math.min(card.clues.length - 1, data.clueIndex + 1) } };
     if (action.type === "reveal") return { ...state, data: { ...data, revealed: true } };
-    if (action.type === "award" && data.revealed && players.some((p) => p.id === action.value)) {
-      scores[action.value] = scoreFor(scores, action.value) + 1;
-      return { ...state, scores, data: { ...data, winnerId: action.value } };
-    }
     if (action.type === "next") {
       const round = state.round + 1;
       return { ...state, round, data: initialGameData("auction", players, round) };
@@ -1236,7 +1253,7 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
     const active = players[data.turnIndex % Math.max(players.length, 1)];
     if (action.type === "word" && active?.id === action.playerId) {
       const word = String(action.value ?? "").trim();
-      if (word.length < 2 || !word.startsWith(data.currentLetter)) return state;
+      if (word.length < 2 || !word.startsWith(data.currentLetter) || data.words.some((item: { word: string }) => item.word === word)) return state;
       const words = [...data.words, { playerId: action.playerId, word }];
       scores[action.playerId] = scoreFor(scores, action.playerId) + 1;
       return {
@@ -1533,10 +1550,11 @@ function chooseBotAction(state: RoomState, players: Player[]): RoomAction | null
     return target ? { type: "vote", playerId: bot.id, value: target.id } : null;
   }
   if (state.game === "auction" && !data.revealed) {
-    const bot = bots.find((player) => data.bids[player.id] == null);
+    const bot = bots.find((player) => data.guesses[player.id] == null);
     if (!bot) return null;
-    const base = botDifficulty(bot) === "easy" ? 3 : botDifficulty(bot) === "medium" ? 6 : 9;
-    return { type: "bid", playerId: bot.id, value: Math.max(1, base + Math.floor(Math.random() * 5) - 2) };
+    const card = WHO_AM_I_CARDS[data.cardIndex % WHO_AM_I_CARDS.length];
+    const chance = botDifficulty(bot) === "easy" ? 0.2 : botDifficulty(bot) === "medium" ? 0.45 : 0.72;
+    return { type: "guess", playerId: bot.id, value: Math.random() < chance ? card.answer : "لا أعرف" };
   }
   if (state.game === "challenge30") {
     const active = players[data.activeIndex % Math.max(players.length, 1)];
