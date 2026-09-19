@@ -22,7 +22,12 @@
 }
 
 .uno-game-room.is-immersive {
-  height: 100%;
+  width: 100vw;
+  width: 100dvw;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   min-height: 0;
 }
 
@@ -167,6 +172,7 @@
   position: relative;
   z-index: 1;
   min-height: 0;
+  overflow: hidden;
   padding: clamp(8px, 1.2vw, 18px) clamp(10px, 2.2vw, 34px) 0;
 }
 
@@ -299,8 +305,8 @@
   box-shadow: 0 0 0 3px rgb(232 198 111 / 10%), 0 0 30px rgb(232 198 111 / 16%), 0 12px 30px rgb(0 0 0 / 38%);
 }
 .uno-opponent--top { top: clamp(12px, 2vh, 25px); left: 50%; transform: translateX(-50%); }
-.uno-opponent--left { top: 46%; left: clamp(12px, 1.6vw, 26px); transform: translateY(-50%); }
-.uno-opponent--right { top: 46%; right: clamp(12px, 1.6vw, 26px); transform: translateY(-50%); }
+.uno-opponent--left { top: 46%; left: clamp(54px, 5vw, 96px); transform: translateY(-50%); }
+.uno-opponent--right { top: 46%; right: clamp(82px, 7vw, 132px); transform: translateY(-50%); }
 .uno-opponent--top.is-active { transform: translateX(-50%) scale(1.025); }
 .uno-opponent--left.is-active,
 .uno-opponent--right.is-active { transform: translateY(-50%) scale(1.025); }
@@ -853,7 +859,7 @@
   .uno-hud__mark { width: 34px; }
   .uno-turn-pill { min-width: 118px; }
   .uno-turn-pill strong { font-size: 10px; }
-  .uno-table { min-height: 215px; }
+  .uno-table { min-height: 0; }
   .uno-opponent__cards { display: none; }
   .uno-opponent__turn { bottom: -17px; }
   .uno-table-center { width: 160px; height: 112px; }
@@ -877,7 +883,7 @@
   .uno-opponent--left,
   .uno-opponent--right { min-width: 96px; }
   .uno-opponent--left { left: 7px; }
-  .uno-opponent--right { right: 7px; }
+  .uno-opponent--right { right: 54px; }
   .uno-opponent__copy strong { max-width: 50px; }
   .uno-table-center { left: 48%; }
   .uno-hand-zone { grid-template-columns: 58px minmax(0, 1fr); gap: 4px; }

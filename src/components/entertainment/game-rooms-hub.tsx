@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
@@ -2929,12 +2930,29 @@ function GameBoard({
   const GameIcon = meta.icon;
   const logoUrl = useSiteLogo();
   const [gameMode, setGameMode] = useState(() => state.game === "uno");
+  const [portalReady, setPortalReady] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const { preferences, toggle } = useGameExperiencePreferences();
   const gameModeRef = useRef<HTMLDivElement | null>(null);
   const feedbackRef = useRef<string | null>(null);
   const [showStartingDraw, setShowStartingDraw] = useState(() => Date.now() - Number(state.data.startingDrawAt ?? 0) < 3200);
+
+  useEffect(() => setPortalReady(true), []);
+
+  const landscapeGameActive = gameMode && (state.game === "uno" || state.game === "saudi-deal");
+
+  useEffect(() => {
+    if (!landscapeGameActive) return;
+    document.documentElement.dataset.gameLandscape = "true";
+    window.dispatchEvent(new Event("alsaif:game-orientation-change"));
+    const orientation = window.screen.orientation as unknown as { unlock?: () => void };
+    try { orientation?.unlock?.(); } catch { /* The browser may own orientation state. */ }
+    return () => {
+      delete document.documentElement.dataset.gameLandscape;
+      window.dispatchEvent(new Event("alsaif:game-orientation-change"));
+    };
+  }, [landscapeGameActive]);
 
   useEffect(() => {
     const elapsed = Date.now() - Number(state.data.startingDrawAt ?? 0);
@@ -3039,12 +3057,12 @@ function GameBoard({
     }
   };
 
-  return (
+  const gameBoard = (
     <div
       ref={gameModeRef}
       className={cn(
         "grid gap-5 lg:grid-cols-[1fr_260px]",
-        gameMode && "fixed inset-0 z-[9999] block h-screen h-[100dvh] w-screen overflow-hidden bg-[#031d18]",
+        gameMode && "fixed inset-0 z-[9999] block !m-0 h-screen h-[100dvh] w-screen !max-w-none overflow-hidden bg-[#031d18] !transform-none",
         gameMode && state.game === "saudi-deal" && "bg-cover bg-center",
         gameMode && preferences.reducedMotion && "[&_*]:!animate-none [&_*]:!transition-none",
       )}
@@ -3171,6 +3189,11 @@ function GameBoard({
       {showSettings && <GameSettingsSheet preferences={preferences} onToggle={toggle} onClose={() => setShowSettings(false)} />}
     </div>
   );
+
+  if (gameMode && portalReady && typeof document !== "undefined") {
+    return createPortal(gameBoard, document.body);
+  }
+  return gameBoard;
 }
 
 function ScoreRail({ players, scores, hostId }: { players: Player[]; scores: Record<string, number>; hostId?: string }) {
