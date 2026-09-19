@@ -4586,65 +4586,64 @@ function AuctionRoom({
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const data = state.data;
-  const [bid, setBid] = useState("");
-  const myBid = data.bids[me.id] as number | undefined;
+  const card = WHO_AM_I_CARDS[data.cardIndex % WHO_AM_I_CARDS.length];
+  const [guess, setGuess] = useState("");
+  const myGuess = data.guesses[me.id] as string | undefined;
+  const solver = players.find((player) => player.id === data.solvedBy);
+  useEffect(() => setGuess(""), [data.clueIndex, data.cardIndex]);
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="rounded-[30px] bg-gradient-to-br from-primary to-[#132e27] p-7 text-center text-white sm:p-10">
-        <Gavel className="mx-auto size-10 text-gold-primary" />
-        <p className="mt-3 text-xs font-black text-gold-primary">قدّم أعلى مزايدة تستطيع تنفيذها</p>
-        <h4 className="mt-3 text-2xl font-black leading-relaxed">{AUCTION_PROMPTS[data.promptIndex % AUCTION_PROMPTS.length]}</h4>
+    <div className="arena-social-stage mx-auto max-w-4xl space-y-5">
+      <div className="arena-who-card text-center">
+        <Eye className="mx-auto size-10 text-gold-primary" />
+        <p className="mt-3 text-xs font-black text-gold-primary">من أنا؟ · التلميح {data.clueIndex + 1} من {card.clues.length}</p>
+        <h4 className="mt-4 text-2xl font-black leading-relaxed sm:text-4xl">{card.clues[data.clueIndex]}</h4>
+        <div className="mx-auto mt-5 flex max-w-xs gap-2" dir="ltr">
+          {card.clues.map((_, index) => <span key={index} className={cn("h-2 flex-1 rounded-full", index <= data.clueIndex ? "bg-gold-primary" : "bg-white/15")} />)}
+        </div>
+        {data.revealed && <div className="arena-answer-reveal mt-6"><span>الإجابة</span><strong>{card.answer}</strong>{solver && <small>اكتشفها {solver.name}</small>}</div>}
       </div>
 
-      {!data.revealed && myBid == null ? (
-        <div className="mx-auto flex max-w-md gap-3" dir="ltr">
+      {!data.revealed && myGuess == null ? (
+        <div className="mx-auto flex max-w-xl gap-3" dir="rtl">
+          <input
+            value={guess}
+            maxLength={60}
+            onChange={(event) => setGuess(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && guess.trim() && void dispatch("guess", guess)}
+            placeholder="اكتب تخمينك هنا"
+            className="h-16 min-w-0 flex-1 rounded-2xl border-2 border-border bg-card px-5 text-center text-lg font-black text-primary outline-none focus:border-gold-primary"
+          />
           <button
             type="button"
-            disabled={!bid}
-            onClick={() => void dispatch("bid", Number(bid))}
+            disabled={!guess.trim()}
+            onClick={() => void dispatch("guess", guess)}
             className="min-w-28 rounded-2xl bg-gold-primary px-5 font-black text-[#10251e] disabled:opacity-35"
           >
-            إرسال
+            تخمين
           </button>
-          <input
-            type="number"
-            min={0}
-            max={999}
-            value={bid}
-            onChange={(event) => setBid(event.target.value)}
-            placeholder="مزايدتك"
-            className="h-16 min-w-0 flex-1 rounded-2xl border-2 border-border bg-muted/30 px-5 text-center text-2xl font-black text-primary outline-none focus:border-gold-primary"
-          />
         </div>
       ) : !data.revealed ? (
-        <p className="text-center text-lg font-black text-emerald-600">تم إرسال مزايدتك: {myBid}</p>
+        <p className="text-center text-base font-black text-emerald-600">تم إرسال تخمينك: {myGuess}</p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {players.map((player) => (
-          <button
-            key={player.id}
-            type="button"
-            disabled={!isHost || !data.revealed || Boolean(data.winnerId)}
-            onClick={() => void dispatch("award", player.id)}
-            className={cn(
-              "flex min-h-20 items-center gap-3 rounded-3xl border-2 p-4 text-right",
-              data.winnerId === player.id ? "border-gold-primary bg-gold-primary/15" : "border-border bg-muted/25",
-            )}
-          >
+          <div key={player.id} className={cn("flex min-h-20 items-center gap-3 rounded-2xl border p-3", data.solvedBy === player.id ? "arena-turn-glow border-gold-primary bg-gold-primary/15" : "border-border bg-muted/25")}>
             <PlayerAvatar player={player} />
             <span className="min-w-0 flex-1 truncate font-black text-primary">{player.name}</span>
-            <span className="text-2xl font-black text-gold-primary">{data.revealed ? (data.bids[player.id] ?? "—") : data.bids[player.id] != null ? "✓" : "…"}</span>
-          </button>
+            <span className="font-black text-gold-primary">{data.guesses[player.id] != null ? "✓" : "…"}</span>
+          </div>
         ))}
       </div>
 
       {isHost && !data.revealed && (
-        <PrimaryAction onClick={() => void dispatch("reveal")} disabled={!Object.keys(data.bids).length} tone="gold">كشف جميع المزايدات</PrimaryAction>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PrimaryAction onClick={() => void dispatch("next-clue")} disabled={data.clueIndex >= card.clues.length - 1} tone="gold">تلميح أوضح <ChevronLeft className="size-5" /></PrimaryAction>
+          <PrimaryAction onClick={() => void dispatch("reveal")} tone="muted">كشف الإجابة</PrimaryAction>
+        </div>
       )}
-      {isHost && data.revealed && !data.winnerId && <p className="text-center text-sm font-bold text-muted-foreground">اضغط اسم الفائز لمنحه النقطة</p>}
-      {isHost && data.winnerId && (
-        <PrimaryAction onClick={() => void dispatch("next")}>مزاد جديد <ChevronLeft className="size-5" /></PrimaryAction>
+      {isHost && data.revealed && (
+        <PrimaryAction onClick={() => void dispatch("next")}>بطاقة جديدة <ChevronLeft className="size-5" /></PrimaryAction>
       )}
     </div>
   );
@@ -4676,8 +4675,8 @@ function WordDuelRoom({
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 text-center">
-      <div className="flex items-center justify-center gap-3">
+    <div className="arena-social-stage mx-auto max-w-4xl space-y-5 text-center">
+      <div className="flex items-center justify-center gap-3 rounded-2xl border border-border bg-card/70 p-3">
         {active && <PlayerAvatar player={active} size="lg" />}
         <div className="text-right">
           <p className="text-xs font-bold text-muted-foreground">الدور الآن عند</p>
@@ -4685,9 +4684,10 @@ function WordDuelRoom({
         </div>
       </div>
 
-      <div className="rounded-[36px] bg-gradient-to-br from-[#0b4f3e] to-[#081f1a] p-8 text-white sm:p-12">
-        <p className="text-sm font-black text-gold-primary">اكتب كلمة تبدأ بحرف</p>
-        <p className="mt-3 text-8xl font-black text-white">{data.currentLetter}</p>
+      <div className="arena-letter-stage">
+        <p className="text-sm font-black text-gold-primary">آخر حرف يبدأ التحدي التالي</p>
+        <p className="arena-letter-glyph">{data.currentLetter}</p>
+        <p className="text-xs font-bold text-white/55">لا تكرر كلمة ظهرت في السجل</p>
       </div>
 
       {amActive ? (
@@ -4721,11 +4721,9 @@ function WordDuelRoom({
       {data.words.length > 0 && (
         <div className="text-right">
           <p className="mb-3 text-xs font-black text-muted-foreground">آخر الكلمات</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="arena-word-stream">
             {data.words.slice(-10).reverse().map((item: { playerId: string; word: string }, index: number) => (
-              <span key={`${item.playerId}-${item.word}-${index}`} className="rounded-full bg-gold-primary/12 px-4 py-2 text-sm font-black text-primary">
-                {item.word}
-              </span>
+              <div key={`${item.playerId}-${item.word}-${index}`} className="arena-word-chip"><span>{item.word}</span><small>{players.find((player) => player.id === item.playerId)?.name.split(" ")[0]}</small></div>
             ))}
           </div>
         </div>
