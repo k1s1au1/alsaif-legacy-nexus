@@ -513,6 +513,22 @@ function initialBalootData(players: Player[], matchScore: [number, number] = [0,
   };
 }
 
+function initialMonopolyData(players: Player[], starterIndex = 0) {
+  return {
+    turnIndex: starterIndex,
+    positions: Object.fromEntries(players.map((player) => [player.id, 0])),
+    cash: Object.fromEntries(players.map((player) => [player.id, 1500])),
+    properties: {} as Record<number, string>,
+    bankrupt: {} as Record<string, boolean>,
+    jailTurns: {} as Record<string, number>,
+    dice: null as [number, number] | null,
+    rolled: false,
+    canBuy: false,
+    winnerId: null as string | null,
+    lastAction: "بدأ السباق العقاري",
+  };
+}
+
 function gameMeta(id: GameKey) {
   return GAMES.find((game) => game.id === id) ?? GAMES[0];
 }
@@ -567,6 +583,8 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
       };
     case "baloot":
       return initialBalootData(players, [0, 0], wrappedIndex(starterIndex - 1, players.length));
+    case "monopoly":
+      return initialMonopolyData(players, starterIndex);
   }
 }
 
@@ -1148,6 +1166,86 @@ function reduceBaloot(state: RoomState, action: RoomAction, players: Player[]): 
   return { ...state, phase: matchFinished ? "results" : state.phase, scores, data };
 }
 
+function nextMonopolyPlayer(current: number, players: Player[], bankrupt: Record<string, boolean>) {
+  for (let offset = 1; offset <= players.length; offset += 1) {
+    const index = (current + offset) % players.length;
+    if (!bankrupt[players[index]?.id]) return index;
+  }
+  return current;
+}
+
+function reduceMonopoly(state: RoomState, action: RoomAction, players: Player[]): RoomState {
+  const data = copyData(state.data);
+  const active = players[data.turnIndex];
+  if (!active || active.id !== action.playerId || data.winnerId) return state;
+
+  if (action.type === "monopoly-roll" && !data.rolled) {
+    if ((data.jailTurns[active.id] ?? 0) > 0) {
+      data.jailTurns[active.id] -= 1;
+      data.rolled = true;
+      data.lastAction = `${active.name} أمضى دوره في التوقيف`;
+      return { ...state, data };
+    }
+    const dice: [number, number] = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+    const oldPosition = data.positions[active.id] ?? 0;
+    const rawPosition = oldPosition + dice[0] + dice[1];
+    const position = rawPosition % MONOPOLY_BOARD.length;
+    if (rawPosition >= MONOPOLY_BOARD.length) data.cash[active.id] += 200;
+    data.positions[active.id] = position;
+    data.dice = dice;
+    data.rolled = true;
+    data.canBuy = false;
+    const space = MONOPOLY_BOARD[position];
+    if (space.kind === "property") {
+      const ownerId = data.properties[position];
+      if (!ownerId) data.canBuy = data.cash[active.id] >= space.price;
+      else if (ownerId !== active.id && !data.bankrupt[ownerId]) {
+        const payment = Math.min(data.cash[active.id], space.rent);
+        data.cash[active.id] -= payment;
+        data.cash[ownerId] += payment;
+      }
+    } else if (space.kind === "tax") data.cash[active.id] -= space.rent;
+    else if (space.kind === "chance") {
+      const reward = Math.random() < .5 ? 100 : -75;
+      data.cash[active.id] += reward;
+      data.lastAction = reward > 0 ? `${active.name} ربح 100 من صندوق المجلس` : `${active.name} دفع 75 لصندوق المجلس`;
+    } else if (space.kind === "go-jail") {
+      data.positions[active.id] = 6;
+      data.jailTurns[active.id] = 1;
+    }
+    if (data.cash[active.id] < 0) {
+      data.bankrupt[active.id] = true;
+      Object.keys(data.properties).forEach((key) => { if (data.properties[key] === active.id) delete data.properties[key]; });
+      data.lastAction = `${active.name} خرج من السوق`;
+    } else if (!data.lastAction.includes(active.name)) data.lastAction = `${active.name} وصل إلى ${space.name}`;
+    const remaining = players.filter((player) => !data.bankrupt[player.id]);
+    if (remaining.length === 1) {
+      data.winnerId = remaining[0].id;
+      return { ...state, phase: "results", scores: { ...state.scores, [remaining[0].id]: scoreFor(state.scores, remaining[0].id) + 1 }, data };
+    }
+    return { ...state, data };
+  }
+  if (action.type === "monopoly-buy" && data.rolled && data.canBuy) {
+    const position = data.positions[active.id];
+    const space = MONOPOLY_BOARD[position];
+    if (space.kind !== "property" || data.properties[position] || data.cash[active.id] < space.price) return state;
+    data.cash[active.id] -= space.price;
+    data.properties[position] = active.id;
+    data.canBuy = false;
+    data.lastAction = `${active.name} اشترى ${space.name}`;
+    return { ...state, data };
+  }
+  if (action.type === "monopoly-end" && data.rolled) {
+    data.turnIndex = nextMonopolyPlayer(data.turnIndex, players, data.bankrupt);
+    data.rolled = false;
+    data.canBuy = false;
+    data.dice = null;
+    data.lastAction = `الدور عند ${players[data.turnIndex]?.name ?? "اللاعب التالي"}`;
+    return { ...state, data };
+  }
+  return state;
+}
+
 function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]): RoomState {
   const bots = state.bots ?? [];
   if (action.type === "add-bot" && state.phase === "lobby") {
@@ -1194,6 +1292,7 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
   if (state.game === "uno") return reduceUno(state, action, players);
   if (state.game === "saudi-deal") return reduceDeal(state, action, players);
   if (state.game === "baloot") return reduceBaloot(state, action, players);
+  if (state.game === "monopoly") return reduceMonopoly(state, action, players);
 
   const data = state.data;
   const scores = { ...state.scores };
@@ -1560,6 +1659,13 @@ function chooseBotAction(state: RoomState, players: Player[]): RoomAction | null
   if (state.game === "baloot") {
     const active = data.stage === "bidding" ? players[data.bidTurnIndex] : players[data.turnIndex];
     return active?.isBot ? balootBotAction(state, active, players) : null;
+  }
+  if (state.game === "monopoly") {
+    const active = players[data.turnIndex];
+    if (!active?.isBot) return null;
+    if (!data.rolled) return { type: "monopoly-roll", playerId: active.id };
+    if (data.canBuy) return { type: data.cash[active.id] > 250 ? "monopoly-buy" : "monopoly-end", playerId: active.id };
+    return { type: "monopoly-end", playerId: active.id };
   }
   if (state.game === "trivia" && !data.revealed) {
     const bot = bots.find((player) => data.answers[player.id] == null);
