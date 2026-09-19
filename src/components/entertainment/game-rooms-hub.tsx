@@ -60,6 +60,7 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { cn } from "@/lib/utils";
 import { playGameSfx, type GameSfx } from "@/lib/game-sfx";
 import "./games-arena.css";
+import { UnoGameRoom } from "./uno-game-room";
 
 type GameKey =
   | "uno"
@@ -2927,7 +2928,7 @@ function GameBoard({
   const meta = gameMeta(state.game);
   const GameIcon = meta.icon;
   const logoUrl = useSiteLogo();
-  const [gameMode, setGameMode] = useState(false);
+  const [gameMode, setGameMode] = useState(() => state.game === "uno");
   const [showGuide, setShowGuide] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const { preferences, toggle } = useGameExperiencePreferences();
@@ -3014,7 +3015,7 @@ function GameBoard({
     } catch {
       // iOS browsers may reject the native API; the fixed 100dvh game shell remains active.
     }
-    if (state.game === "saudi-deal") {
+    if (state.game === "saudi-deal" || state.game === "uno") {
       const orientation = window.screen.orientation as unknown as { lock?: (value: string) => Promise<void> };
       try { await orientation?.lock?.("landscape"); } catch { /* iOS uses the rotate-device prompt below. */ }
     }
@@ -3022,7 +3023,7 @@ function GameBoard({
 
   const leaveGameMode = async () => {
     setGameMode(false);
-    if (state.game === "saudi-deal") {
+    if (state.game === "saudi-deal" || state.game === "uno") {
       const orientation = window.screen.orientation as unknown as { unlock?: () => void };
       try { orientation?.unlock?.(); } catch { /* The operating system owns orientation state. */ }
     }
@@ -3052,13 +3053,13 @@ function GameBoard({
         backgroundPosition: "center top",
       } : undefined}
     >
-      {gameMode && state.game === "saudi-deal" && (
+      {gameMode && (state.game === "saudi-deal" || state.game === "uno") && (
         <div className="fixed inset-0 z-[10050] hidden flex-col items-center justify-center bg-[#021f19]/98 px-8 text-center text-white portrait:flex xl:hidden">
           <span className="flex size-20 items-center justify-center rounded-[26px] border border-[#e8c66f]/40 bg-[#0a5948] text-[#f0cf77] shadow-[0_0_40px_rgba(232,198,111,.2)]">
             <RotateCw className="size-10 animate-pulse" />
           </span>
           <h4 className="mt-6 text-2xl font-black text-[#f0cf77]">لف الجهاز للوضع الأفقي</h4>
-          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">سعودي ديل مرتبة للشاشة العريضة. إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
+          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
         </div>
       )}
       {showStartingDraw && (
@@ -3076,6 +3077,7 @@ function GameBoard({
             "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
             gameMode && "relative mb-0 min-h-[82px] shrink-0 border-white/10 bg-[radial-gradient(circle_at_50%_0%,#0b5a48_0%,#052d26_58%,#031f1a_100%)] px-3 pb-2 text-white shadow-lg landscape:min-h-[58px] landscape:pb-1",
             gameMode && state.game === "saudi-deal" && "bg-none bg-[#032b24]/85 backdrop-blur-md",
+            gameMode && state.game === "uno" && "hidden",
           )}
           style={gameMode ? { paddingTop: "max(.5rem, env(safe-area-inset-top))" } : undefined}
         >
@@ -3120,7 +3122,7 @@ function GameBoard({
                   onClick={() => void enterGameMode()}
                   className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground shadow 2xl:hidden"
                 >
-                  <Maximize2 className="size-4" /> {state.game === "saudi-deal" ? "اللعب أفقيًا" : "وضع اللعبة"}
+                  <Maximize2 className="size-4" /> {state.game === "saudi-deal" || state.game === "uno" ? "اللعب أفقيًا" : "وضع اللعبة"}
                 </button>
                 {isHost && (
                   <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
@@ -3136,10 +3138,24 @@ function GameBoard({
           className={cn(
             gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_50%_12%,rgba(23,102,80,.32),transparent_42%),linear-gradient(#031d18,#021713)] px-2 py-2 sm:px-4",
             gameMode && state.game === "saudi-deal" && "bg-none bg-transparent",
+            gameMode && state.game === "uno" && "overflow-hidden bg-none bg-transparent !p-0",
           )}
-          style={gameMode ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
+          style={gameMode && state.game !== "uno" ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
         >
-          {state.game === "uno" && <UnoRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
+          {state.game === "uno" && (
+            <UnoGameRoom
+              state={state}
+              players={players}
+              me={me}
+              immersive={gameMode}
+              dispatch={dispatch}
+              onExit={() => void leaveGameMode()}
+              onGuide={() => setShowGuide(true)}
+              onSettings={() => setShowSettings(true)}
+              isHost={isHost}
+              onFinish={() => void dispatch("finish")}
+            />
+          )}
           {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
           {state.game === "trivia" && <TriviaGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
           {state.game === "judge" && <JudgeGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
