@@ -214,17 +214,17 @@
 
 .council-portal-ground {
   position: absolute;
-  z-index: 0;
-  top: 68.2%;
+  z-index: 2;
+  top: 78.3%;
   left: 44%;
   display: block;
   width: 128%;
   height: auto;
   max-width: none;
-  opacity: 0.82;
-  filter: saturate(0.72) brightness(0.76) contrast(1.06)
+  opacity: 0.9;
+  filter: saturate(0.76) brightness(0.82) contrast(1.06)
     drop-shadow(0 1.5cqw 1.8cqw rgba(0, 0, 0, 0.34));
-  transform: translateX(-50%) scaleY(0.82);
+  transform: translateX(-50%) scaleY(0.9);
   transform-origin: 50% 50%;
   user-select: none;
   pointer-events: none;
@@ -250,7 +250,7 @@
 
 .council-tower-inscription {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   top: 34.2%;
   left: 37.6%;
   display: block;
