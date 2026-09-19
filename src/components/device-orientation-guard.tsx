@@ -68,6 +68,14 @@ async function tryOrientationLock(device: DeviceKind) {
   } catch {}
 }
 
+function unlockOrientationForGame() {
+  if (typeof screen === "undefined") return;
+  const orientation = (screen as Screen & { orientation?: ScreenOrientation & { unlock?: () => void } }).orientation;
+  try {
+    orientation?.unlock?.();
+  } catch {}
+}
+
 function forceDesktopViewport() {
   const content = "width=1440, initial-scale=1, viewport-fit=cover";
   let metas = Array.from(document.querySelectorAll<HTMLMetaElement>('meta[name="viewport"]'));
@@ -85,6 +93,16 @@ export function DeviceOrientationGuard() {
   const [desktopRequest, setDesktopRequest] = useState(initialDesktopRequest);
   const device = useMemo(() => detectDeviceKind(), [desktopRequest]);
   const [portrait, setPortrait] = useState(true);
+  const [landscapeGame, setLandscapeGame] = useState(false);
+
+  useEffect(() => {
+    const syncGamePolicy = () => {
+      setLandscapeGame(document.documentElement.dataset.gameLandscape === "true");
+    };
+    syncGamePolicy();
+    window.addEventListener("alsaif:game-orientation-change", syncGamePolicy);
+    return () => window.removeEventListener("alsaif:game-orientation-change", syncGamePolicy);
+  }, []);
 
   useEffect(() => {
     const syncDesktopRequest = () => {
@@ -111,7 +129,8 @@ export function DeviceOrientationGuard() {
     if (device === "desktop") return;
     const sync = () => setPortrait(isPortrait());
     sync();
-    void tryOrientationLock(device);
+    if (landscapeGame) unlockOrientationForGame();
+    else void tryOrientationLock(device);
     window.addEventListener("resize", sync);
     window.addEventListener("orientationchange", sync);
     const mq = window.matchMedia?.("(orientation: portrait)");
@@ -121,10 +140,11 @@ export function DeviceOrientationGuard() {
       window.removeEventListener("orientationchange", sync);
       mq?.removeEventListener?.("change", sync);
     };
-  }, [device]);
+  }, [device, landscapeGame]);
 
   // iPad/tablets work in both orientations, so only phones get the rotate hint.
-  if (desktopRequest || device !== "mobile") return null;
+  // Full-screen games own their orientation policy and must be usable in landscape.
+  if (desktopRequest || device !== "mobile" || landscapeGame) return null;
   const wrongOrientation = !portrait;
   if (!wrongOrientation) return null;
   const mobile = device === "mobile";
