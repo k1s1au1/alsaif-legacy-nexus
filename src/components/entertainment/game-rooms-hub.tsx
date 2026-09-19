@@ -4448,9 +4448,10 @@ function JudgeGame({
     return acc;
   }, {});
   const highest = Math.max(0, ...Object.values(counts));
+  const voteTotal = Math.max(1, Object.keys(data.votes).length);
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="rounded-[30px] bg-gradient-to-br from-[#6b4a12] to-[#1f180c] p-7 text-center text-white sm:p-10">
+    <div className="arena-social-stage mx-auto max-w-4xl space-y-5">
+      <div className="arena-judge-bench text-center">
         <Gavel className="mx-auto size-9 text-gold-primary" />
         <p className="mt-3 text-xs font-black text-gold-primary">صوّت بسرية من جوالك</p>
         <h4 className="mt-3 text-2xl font-black leading-relaxed">{JUDGE_SCENARIOS[data.scenarioIndex % JUDGE_SCENARIOS.length]}</h4>
@@ -4467,13 +4468,14 @@ function JudgeGame({
               disabled={myVote != null || data.revealed}
               onClick={() => void dispatch("vote", player.id)}
               className={cn(
-                "flex min-h-20 items-center gap-3 rounded-3xl border-2 p-4 text-right transition",
+                "relative flex min-h-20 items-center gap-3 overflow-hidden rounded-2xl border-2 p-4 text-right transition",
                 selected ? "border-gold-primary bg-gold-primary/10" : "border-border bg-muted/25",
                 winner && "border-emerald-500 bg-emerald-500/15",
               )}
             >
+              {data.revealed && <span aria-hidden className="absolute inset-y-0 right-0 bg-gold-primary/12 transition-all duration-700" style={{ width: `${((counts[player.id] ?? 0) / voteTotal) * 100}%` }} />}
               <PlayerAvatar player={player} />
-              <span className="min-w-0 flex-1 truncate font-black text-primary">{player.name}</span>
+              <span className="relative min-w-0 flex-1 truncate font-black text-primary">{player.name}</span>
               {data.revealed && <span className="text-xl font-black text-gold-primary">{counts[player.id] ?? 0}</span>}
             </button>
           );
