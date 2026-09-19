@@ -368,3 +368,76 @@
   mix-blend-mode: screen;
   opacity: 0.55;
 }
+
+@keyframes arena-letter-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 1rem rgba(232, 198, 111, .25)); }
+  50% { transform: scale(1.06); filter: drop-shadow(0 0 2.2rem rgba(232, 198, 111, .62)); }
+}
+
+.arena-social-stage {
+  min-height: min(42rem, 72dvh);
+  padding: clamp(.25rem, 1.5vw, 1rem);
+}
+
+.arena-who-card,
+.arena-judge-bench,
+.arena-letter-stage {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--gold-primary) 35%, transparent);
+  border-radius: 1.75rem;
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  color: var(--primary-foreground);
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--gold-primary) 16%, transparent), transparent 42%),
+    linear-gradient(145deg, color-mix(in oklab, var(--primary) 96%, black), color-mix(in oklab, var(--primary) 72%, black));
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--gold-primary) 25%, transparent), 0 1.5rem 3rem -2rem rgba(0, 0, 0, .8);
+}
+
+.arena-who-card::before,
+.arena-judge-bench::before,
+.arena-letter-stage::before {
+  content: "";
+  position: absolute;
+  inset: .7rem;
+  pointer-events: none;
+  border: 1px solid color-mix(in oklab, var(--gold-primary) 18%, transparent);
+  border-radius: 1.25rem;
+}
+
+.arena-answer-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .25rem;
+  animation: arena-trophy-pop .6s cubic-bezier(.2, 1.2, .3, 1) both;
+}
+
+.arena-answer-reveal span,
+.arena-answer-reveal small { color: color-mix(in oklab, var(--primary-foreground) 62%, transparent); font-weight: 700; }
+.arena-answer-reveal strong { font-size: clamp(2rem, 8vw, 4rem); color: var(--gold-primary); }
+
+.arena-letter-glyph {
+  margin-block: .5rem;
+  font-size: clamp(6rem, 24vw, 13rem);
+  font-weight: 950;
+  line-height: .95;
+  color: var(--primary-foreground);
+  animation: arena-letter-pulse 2.4s ease-in-out infinite;
+}
+
+.arena-word-stream { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: .6rem; }
+.arena-word-chip { display: flex; align-items: center; justify-content: space-between; gap: .5rem; border: 1px solid color-mix(in oklab, var(--gold-primary) 24%, transparent); border-radius: 1rem; padding: .7rem .85rem; background: color-mix(in oklab, var(--card) 88%, var(--gold-primary) 12%); }
+.arena-word-chip span { font-size: .95rem; font-weight: 900; color: var(--primary); }
+.arena-word-chip small { max-width: 4.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: var(--muted-foreground); }
+
+@media (max-width: 639px) {
+  .arena-social-stage { min-height: auto; }
+  .arena-who-card, .arena-judge-bench, .arena-letter-stage { border-radius: 1.25rem; }
+  .arena-word-stream { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-letter-glyph,
+  .arena-answer-reveal { animation: none !important; }
+}

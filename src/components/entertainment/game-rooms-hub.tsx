@@ -69,7 +69,8 @@ type GameKey =
   | "challenge30"
   | "auction"
   | "judge"
-  | "trivia";
+  | "trivia"
+  | "monopoly";
 
 type RoomPhase = "lobby" | "playing" | "results";
 type BotDifficulty = "easy" | "medium" | "hard";
@@ -165,9 +166,9 @@ const GAMES: GameMeta[] = [
   },
   {
     id: "auction",
-    label: "مزاد المعلومات",
-    short: "كل لاعب يرسل مزايدته ويختار المضيف الفائز.",
-    icon: Gavel,
+    label: "من أنا؟",
+    short: "اكشف الشخصية أو المكان من التلميحات المتدرجة قبل الآخرين.",
+    icon: Eye,
     minPlayers: 2,
   },
   {
@@ -178,6 +179,14 @@ const GAMES: GameMeta[] = [
     minPlayers: 4,
     exactPlayers: 4,
     maxPlayers: 4,
+  },
+  {
+    id: "monopoly",
+    label: "عقارات المملكة",
+    short: "اشترِ المواقع، اجمع الإيجارات، وابقَ آخر مستثمر في الميدان.",
+    icon: Landmark,
+    minPlayers: 2,
+    maxPlayers: 6,
   },
 ];
 
@@ -203,17 +212,50 @@ const JUDGE_SCENARIOS = [
   "من أكثر شخص يصنع أجواءً حلوة في المجلس؟",
   "من أكثر شخص يعرف أخبار العائلة؟",
   "من الأنسب لتنظيم الرحلة القادمة؟",
+  "من أكثر شخص يحوّل أي موقف إلى قصة مضحكة؟",
+  "من يعرف الطريق حتى من دون خريطة؟",
+  "من أكثر شخص يتذكر تفاصيل المناسبات القديمة؟",
+  "من يصلح أن يكون حكمًا في خلاف ودي؟",
+  "من يختار أفضل مكان لاجتماع العائلة؟",
+  "من أكثر شخص يبادر بالسؤال عن الجميع؟",
+  "من يستطيع تجهيز رحلة مفاجئة بأسرع وقت؟",
+  "من أكثر شخص يلتزم بوعده مهما تأخر الوقت؟",
+  "من سيكون أفضل مقدم لفعالية عائلية؟",
+  "من أكثر شخص يكتشف المقالب قبل وقوعها؟",
 ];
 
-const AUCTION_PROMPTS = [
-  "كم مدينة في المملكة زرتها؟",
-  "كم اسمًا من أسماء الصحابة تستطيع ذكره؟",
-  "كم طبقًا شعبيًا سعوديًا تستطيع تسميته؟",
-  "كم دولة عربية تستطيع ذكر عاصمتها؟",
-  "كم مثلًا شعبيًا تعرفه؟",
+const WHO_AM_I_CARDS = [
+  { answer: "النخلة", clues: ["أعيش طويلًا", "أتحمل الحر", "ثمري حاضر في الضيافة"] },
+  { answer: "الرياض", clues: ["أنا مدينة كبيرة", "في وسط المملكة", "أنا عاصمة السعودية"] },
+  { answer: "الصقر", clues: ["سريع النظر", "أحلّق عاليًا", "رمز عربي أصيل"] },
+  { answer: "الدلة", clues: ["لي فم طويل", "أرافق المجالس", "أحمل القهوة العربية"] },
+  { answer: "الدرعية", clues: ["لي بيوت طينية", "أحكي تاريخ الدولة", "أقع قرب الرياض"] },
+  { answer: "البشت", clues: ["أرتدى فوق الثوب", "أظهر في المناسبات", "عباءة رجالية فاخرة"] },
+  { answer: "العرضة", clues: ["لي إيقاع وسيوف", "أؤدى في الاحتفالات", "رقصة وطنية سعودية"] },
+  { answer: "الكعبة", clues: ["أتجه إليّ في الصلاة", "أكسى بالسواد", "أقع في مكة المكرمة"] },
+  { answer: "البحر الأحمر", clues: ["مياهي مالحة", "غرب المملكة", "اسمي يحمل لونًا"] },
+  { answer: "جبل طويق", clues: ["أنا مرتفع طويل", "أحيط بنجد", "شبهت بي همة السعوديين"] },
 ];
 
 const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق", "ك", "م", "ن", "هـ", "و"];
+const MONOPOLY_BOARD = [
+  { name: "الانطلاق", kind: "start", price: 0, rent: 0 },
+  { name: "الدرعية", kind: "property", price: 60, rent: 8 },
+  { name: "صندوق المجلس", kind: "chance", price: 0, rent: 0 },
+  { name: "العلا", kind: "property", price: 80, rent: 10 },
+  { name: "ضريبة الخدمات", kind: "tax", price: 0, rent: 40 },
+  { name: "جدة التاريخية", kind: "property", price: 120, rent: 16 },
+  { name: "زيارة مجانية", kind: "rest", price: 0, rent: 0 },
+  { name: "أبها", kind: "property", price: 140, rent: 18 },
+  { name: "بطاقة حظ", kind: "chance", price: 0, rent: 0 },
+  { name: "الخبر", kind: "property", price: 160, rent: 22 },
+  { name: "الرياض", kind: "property", price: 200, rent: 28 },
+  { name: "إلى التوقيف", kind: "go-jail", price: 0, rent: 0 },
+  { name: "القصيم", kind: "property", price: 220, rent: 32 },
+  { name: "صندوق المجلس", kind: "chance", price: 0, rent: 0 },
+  { name: "الطائف", kind: "property", price: 240, rent: 36 },
+  { name: "نيوم", kind: "property", price: 300, rent: 48 },
+] as const;
 const SESSION_KEY = "alsaif-live-game-room-v1";
 
 type UnoColor = "red" | "blue" | "green" | "yellow" | "wild";
@@ -471,6 +513,22 @@ function initialBalootData(players: Player[], matchScore: [number, number] = [0,
   };
 }
 
+function initialMonopolyData(players: Player[], starterIndex = 0) {
+  return {
+    turnIndex: starterIndex,
+    positions: Object.fromEntries(players.map((player) => [player.id, 0])),
+    cash: Object.fromEntries(players.map((player) => [player.id, 1500])),
+    properties: {} as Record<number, string>,
+    bankrupt: {} as Record<string, boolean>,
+    jailTurns: {} as Record<string, number>,
+    dice: null as [number, number] | null,
+    rolled: false,
+    canBuy: false,
+    winnerId: null as string | null,
+    lastAction: "بدأ السباق العقاري",
+  };
+}
+
 function gameMeta(id: GameKey) {
   return GAMES.find((game) => game.id === id) ?? GAMES[0];
 }
@@ -505,7 +563,7 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
     case "trivia":
       return { questionIndex: round % TRIVIA_QUESTIONS.length, answers: {}, revealed: false, activeIndex: starterIndex };
     case "judge":
-      return { scenarioIndex: round % JUDGE_SCENARIOS.length, votes: {}, revealed: false, activeIndex: starterIndex };
+      return { scenarioIndex: Math.floor(Math.random() * JUDGE_SCENARIOS.length), votes: {}, revealed: false, activeIndex: starterIndex };
     case "challenge30":
       return {
         activeIndex: starterIndex,
@@ -516,7 +574,7 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
         finished: false,
       };
     case "auction":
-      return { promptIndex: round % AUCTION_PROMPTS.length, bids: {}, revealed: false, winnerId: null, activeIndex: starterIndex };
+      return { cardIndex: round % WHO_AM_I_CARDS.length, clueIndex: 0, guesses: {}, solvedBy: null, revealed: false, activeIndex: starterIndex };
     case "word-duel":
       return {
         currentLetter: LETTERS[Math.floor(Math.random() * LETTERS.length)],
@@ -525,6 +583,8 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
       };
     case "baloot":
       return initialBalootData(players, [0, 0], wrappedIndex(starterIndex - 1, players.length));
+    case "monopoly":
+      return initialMonopolyData(players, starterIndex);
   }
 }
 
@@ -1106,6 +1166,86 @@ function reduceBaloot(state: RoomState, action: RoomAction, players: Player[]): 
   return { ...state, phase: matchFinished ? "results" : state.phase, scores, data };
 }
 
+function nextMonopolyPlayer(current: number, players: Player[], bankrupt: Record<string, boolean>) {
+  for (let offset = 1; offset <= players.length; offset += 1) {
+    const index = (current + offset) % players.length;
+    if (!bankrupt[players[index]?.id]) return index;
+  }
+  return current;
+}
+
+function reduceMonopoly(state: RoomState, action: RoomAction, players: Player[]): RoomState {
+  const data = copyData(state.data);
+  const active = players[data.turnIndex];
+  if (!active || active.id !== action.playerId || data.winnerId) return state;
+
+  if (action.type === "monopoly-roll" && !data.rolled) {
+    if ((data.jailTurns[active.id] ?? 0) > 0) {
+      data.jailTurns[active.id] -= 1;
+      data.rolled = true;
+      data.lastAction = `${active.name} أمضى دوره في التوقيف`;
+      return { ...state, data };
+    }
+    const dice: [number, number] = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+    const oldPosition = data.positions[active.id] ?? 0;
+    const rawPosition = oldPosition + dice[0] + dice[1];
+    const position = rawPosition % MONOPOLY_BOARD.length;
+    if (rawPosition >= MONOPOLY_BOARD.length) data.cash[active.id] += 200;
+    data.positions[active.id] = position;
+    data.dice = dice;
+    data.rolled = true;
+    data.canBuy = false;
+    const space = MONOPOLY_BOARD[position];
+    if (space.kind === "property") {
+      const ownerId = data.properties[position];
+      if (!ownerId) data.canBuy = data.cash[active.id] >= space.price;
+      else if (ownerId !== active.id && !data.bankrupt[ownerId]) {
+        const payment = Math.min(data.cash[active.id], space.rent);
+        data.cash[active.id] -= payment;
+        data.cash[ownerId] += payment;
+      }
+    } else if (space.kind === "tax") data.cash[active.id] -= space.rent;
+    else if (space.kind === "chance") {
+      const reward = Math.random() < .5 ? 100 : -75;
+      data.cash[active.id] += reward;
+      data.lastAction = reward > 0 ? `${active.name} ربح 100 من صندوق المجلس` : `${active.name} دفع 75 لصندوق المجلس`;
+    } else if (space.kind === "go-jail") {
+      data.positions[active.id] = 6;
+      data.jailTurns[active.id] = 1;
+    }
+    if (data.cash[active.id] < 0) {
+      data.bankrupt[active.id] = true;
+      Object.keys(data.properties).forEach((key) => { if (data.properties[key] === active.id) delete data.properties[key]; });
+      data.lastAction = `${active.name} خرج من السوق`;
+    } else if (!data.lastAction.includes(active.name)) data.lastAction = `${active.name} وصل إلى ${space.name}`;
+    const remaining = players.filter((player) => !data.bankrupt[player.id]);
+    if (remaining.length === 1) {
+      data.winnerId = remaining[0].id;
+      return { ...state, phase: "results", scores: { ...state.scores, [remaining[0].id]: scoreFor(state.scores, remaining[0].id) + 1 }, data };
+    }
+    return { ...state, data };
+  }
+  if (action.type === "monopoly-buy" && data.rolled && data.canBuy) {
+    const position = data.positions[active.id];
+    const space = MONOPOLY_BOARD[position];
+    if (space.kind !== "property" || data.properties[position] || data.cash[active.id] < space.price) return state;
+    data.cash[active.id] -= space.price;
+    data.properties[position] = active.id;
+    data.canBuy = false;
+    data.lastAction = `${active.name} اشترى ${space.name}`;
+    return { ...state, data };
+  }
+  if (action.type === "monopoly-end" && data.rolled) {
+    data.turnIndex = nextMonopolyPlayer(data.turnIndex, players, data.bankrupt);
+    data.rolled = false;
+    data.canBuy = false;
+    data.dice = null;
+    data.lastAction = `الدور عند ${players[data.turnIndex]?.name ?? "اللاعب التالي"}`;
+    return { ...state, data };
+  }
+  return state;
+}
+
 function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]): RoomState {
   const bots = state.bots ?? [];
   if (action.type === "add-bot" && state.phase === "lobby") {
@@ -1152,6 +1292,7 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
   if (state.game === "uno") return reduceUno(state, action, players);
   if (state.game === "saudi-deal") return reduceDeal(state, action, players);
   if (state.game === "baloot") return reduceBaloot(state, action, players);
+  if (state.game === "monopoly") return reduceMonopoly(state, action, players);
 
   const data = state.data;
   const scores = { ...state.scores };
@@ -1217,15 +1358,17 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
   }
 
   if (state.game === "auction") {
-    if (action.type === "bid" && !data.revealed) {
-      const bid = Math.max(0, Math.min(999, Number(action.value) || 0));
-      return { ...state, data: { ...data, bids: { ...data.bids, [action.playerId]: bid } } };
+    const card = WHO_AM_I_CARDS[data.cardIndex % WHO_AM_I_CARDS.length];
+    if (action.type === "guess" && !data.revealed && !data.solvedBy) {
+      const guess = String(action.value ?? "").trim().slice(0, 60);
+      if (!guess || data.guesses[action.playerId]) return state;
+      const normalized = (value: string) => value.replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/\s+/g, "").toLowerCase();
+      const correct = normalized(guess) === normalized(card.answer);
+      if (correct) scores[action.playerId] = scoreFor(scores, action.playerId) + Math.max(1, 3 - data.clueIndex);
+      return { ...state, scores, data: { ...data, guesses: { ...data.guesses, [action.playerId]: guess }, solvedBy: correct ? action.playerId : null, revealed: correct } };
     }
+    if (action.type === "next-clue" && !data.revealed) return { ...state, data: { ...data, guesses: {}, clueIndex: Math.min(card.clues.length - 1, data.clueIndex + 1) } };
     if (action.type === "reveal") return { ...state, data: { ...data, revealed: true } };
-    if (action.type === "award" && data.revealed && players.some((p) => p.id === action.value)) {
-      scores[action.value] = scoreFor(scores, action.value) + 1;
-      return { ...state, scores, data: { ...data, winnerId: action.value } };
-    }
     if (action.type === "next") {
       const round = state.round + 1;
       return { ...state, round, data: initialGameData("auction", players, round) };
@@ -1236,7 +1379,7 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
     const active = players[data.turnIndex % Math.max(players.length, 1)];
     if (action.type === "word" && active?.id === action.playerId) {
       const word = String(action.value ?? "").trim();
-      if (word.length < 2 || !word.startsWith(data.currentLetter)) return state;
+      if (word.length < 2 || !word.startsWith(data.currentLetter) || data.words.some((item: { word: string }) => item.word === word)) return state;
       const words = [...data.words, { playerId: action.playerId, word }];
       scores[action.playerId] = scoreFor(scores, action.playerId) + 1;
       return {
@@ -1517,6 +1660,13 @@ function chooseBotAction(state: RoomState, players: Player[]): RoomAction | null
     const active = data.stage === "bidding" ? players[data.bidTurnIndex] : players[data.turnIndex];
     return active?.isBot ? balootBotAction(state, active, players) : null;
   }
+  if (state.game === "monopoly") {
+    const active = players[data.turnIndex];
+    if (!active?.isBot) return null;
+    if (!data.rolled) return { type: "monopoly-roll", playerId: active.id };
+    if (data.canBuy) return { type: data.cash[active.id] > 250 ? "monopoly-buy" : "monopoly-end", playerId: active.id };
+    return { type: "monopoly-end", playerId: active.id };
+  }
   if (state.game === "trivia" && !data.revealed) {
     const bot = bots.find((player) => data.answers[player.id] == null);
     if (!bot) return null;
@@ -1533,10 +1683,11 @@ function chooseBotAction(state: RoomState, players: Player[]): RoomAction | null
     return target ? { type: "vote", playerId: bot.id, value: target.id } : null;
   }
   if (state.game === "auction" && !data.revealed) {
-    const bot = bots.find((player) => data.bids[player.id] == null);
+    const bot = bots.find((player) => data.guesses[player.id] == null);
     if (!bot) return null;
-    const base = botDifficulty(bot) === "easy" ? 3 : botDifficulty(bot) === "medium" ? 6 : 9;
-    return { type: "bid", playerId: bot.id, value: Math.max(1, base + Math.floor(Math.random() * 5) - 2) };
+    const card = WHO_AM_I_CARDS[data.cardIndex % WHO_AM_I_CARDS.length];
+    const chance = botDifficulty(bot) === "easy" ? 0.2 : botDifficulty(bot) === "medium" ? 0.45 : 0.72;
+    return { type: "guess", playerId: bot.id, value: Math.random() < chance ? card.answer : "لا أعرف" };
   }
   if (state.game === "challenge30") {
     const active = players[data.activeIndex % Math.max(players.length, 1)];
@@ -4430,9 +4581,10 @@ function JudgeGame({
     return acc;
   }, {});
   const highest = Math.max(0, ...Object.values(counts));
+  const voteTotal = Math.max(1, Object.keys(data.votes).length);
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="rounded-[30px] bg-gradient-to-br from-[#6b4a12] to-[#1f180c] p-7 text-center text-white sm:p-10">
+    <div className="arena-social-stage mx-auto max-w-4xl space-y-5">
+      <div className="arena-judge-bench text-center">
         <Gavel className="mx-auto size-9 text-gold-primary" />
         <p className="mt-3 text-xs font-black text-gold-primary">صوّت بسرية من جوالك</p>
         <h4 className="mt-3 text-2xl font-black leading-relaxed">{JUDGE_SCENARIOS[data.scenarioIndex % JUDGE_SCENARIOS.length]}</h4>
@@ -4449,13 +4601,14 @@ function JudgeGame({
               disabled={myVote != null || data.revealed}
               onClick={() => void dispatch("vote", player.id)}
               className={cn(
-                "flex min-h-20 items-center gap-3 rounded-3xl border-2 p-4 text-right transition",
+                "relative flex min-h-20 items-center gap-3 overflow-hidden rounded-2xl border-2 p-4 text-right transition",
                 selected ? "border-gold-primary bg-gold-primary/10" : "border-border bg-muted/25",
                 winner && "border-emerald-500 bg-emerald-500/15",
               )}
             >
+              {data.revealed && <span aria-hidden className="absolute inset-y-0 right-0 bg-gold-primary/12 transition-all duration-700" style={{ width: `${((counts[player.id] ?? 0) / voteTotal) * 100}%` }} />}
               <PlayerAvatar player={player} />
-              <span className="min-w-0 flex-1 truncate font-black text-primary">{player.name}</span>
+              <span className="relative min-w-0 flex-1 truncate font-black text-primary">{player.name}</span>
               {data.revealed && <span className="text-xl font-black text-gold-primary">{counts[player.id] ?? 0}</span>}
             </button>
           );
@@ -4568,65 +4721,64 @@ function AuctionRoom({
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const data = state.data;
-  const [bid, setBid] = useState("");
-  const myBid = data.bids[me.id] as number | undefined;
+  const card = WHO_AM_I_CARDS[data.cardIndex % WHO_AM_I_CARDS.length];
+  const [guess, setGuess] = useState("");
+  const myGuess = data.guesses[me.id] as string | undefined;
+  const solver = players.find((player) => player.id === data.solvedBy);
+  useEffect(() => setGuess(""), [data.clueIndex, data.cardIndex]);
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="rounded-[30px] bg-gradient-to-br from-primary to-[#132e27] p-7 text-center text-white sm:p-10">
-        <Gavel className="mx-auto size-10 text-gold-primary" />
-        <p className="mt-3 text-xs font-black text-gold-primary">قدّم أعلى مزايدة تستطيع تنفيذها</p>
-        <h4 className="mt-3 text-2xl font-black leading-relaxed">{AUCTION_PROMPTS[data.promptIndex % AUCTION_PROMPTS.length]}</h4>
+    <div className="arena-social-stage mx-auto max-w-4xl space-y-5">
+      <div className="arena-who-card text-center">
+        <Eye className="mx-auto size-10 text-gold-primary" />
+        <p className="mt-3 text-xs font-black text-gold-primary">من أنا؟ · التلميح {data.clueIndex + 1} من {card.clues.length}</p>
+        <h4 className="mt-4 text-2xl font-black leading-relaxed sm:text-4xl">{card.clues[data.clueIndex]}</h4>
+        <div className="mx-auto mt-5 flex max-w-xs gap-2" dir="ltr">
+          {card.clues.map((_, index) => <span key={index} className={cn("h-2 flex-1 rounded-full", index <= data.clueIndex ? "bg-gold-primary" : "bg-white/15")} />)}
+        </div>
+        {data.revealed && <div className="arena-answer-reveal mt-6"><span>الإجابة</span><strong>{card.answer}</strong>{solver && <small>اكتشفها {solver.name}</small>}</div>}
       </div>
 
-      {!data.revealed && myBid == null ? (
-        <div className="mx-auto flex max-w-md gap-3" dir="ltr">
+      {!data.revealed && myGuess == null ? (
+        <div className="mx-auto flex max-w-xl gap-3" dir="rtl">
+          <input
+            value={guess}
+            maxLength={60}
+            onChange={(event) => setGuess(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && guess.trim() && void dispatch("guess", guess)}
+            placeholder="اكتب تخمينك هنا"
+            className="h-16 min-w-0 flex-1 rounded-2xl border-2 border-border bg-card px-5 text-center text-lg font-black text-primary outline-none focus:border-gold-primary"
+          />
           <button
             type="button"
-            disabled={!bid}
-            onClick={() => void dispatch("bid", Number(bid))}
+            disabled={!guess.trim()}
+            onClick={() => void dispatch("guess", guess)}
             className="min-w-28 rounded-2xl bg-gold-primary px-5 font-black text-[#10251e] disabled:opacity-35"
           >
-            إرسال
+            تخمين
           </button>
-          <input
-            type="number"
-            min={0}
-            max={999}
-            value={bid}
-            onChange={(event) => setBid(event.target.value)}
-            placeholder="مزايدتك"
-            className="h-16 min-w-0 flex-1 rounded-2xl border-2 border-border bg-muted/30 px-5 text-center text-2xl font-black text-primary outline-none focus:border-gold-primary"
-          />
         </div>
       ) : !data.revealed ? (
-        <p className="text-center text-lg font-black text-emerald-600">تم إرسال مزايدتك: {myBid}</p>
+        <p className="text-center text-base font-black text-emerald-600">تم إرسال تخمينك: {myGuess}</p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {players.map((player) => (
-          <button
-            key={player.id}
-            type="button"
-            disabled={!isHost || !data.revealed || Boolean(data.winnerId)}
-            onClick={() => void dispatch("award", player.id)}
-            className={cn(
-              "flex min-h-20 items-center gap-3 rounded-3xl border-2 p-4 text-right",
-              data.winnerId === player.id ? "border-gold-primary bg-gold-primary/15" : "border-border bg-muted/25",
-            )}
-          >
+          <div key={player.id} className={cn("flex min-h-20 items-center gap-3 rounded-2xl border p-3", data.solvedBy === player.id ? "arena-turn-glow border-gold-primary bg-gold-primary/15" : "border-border bg-muted/25")}>
             <PlayerAvatar player={player} />
             <span className="min-w-0 flex-1 truncate font-black text-primary">{player.name}</span>
-            <span className="text-2xl font-black text-gold-primary">{data.revealed ? (data.bids[player.id] ?? "—") : data.bids[player.id] != null ? "✓" : "…"}</span>
-          </button>
+            <span className="font-black text-gold-primary">{data.guesses[player.id] != null ? "✓" : "…"}</span>
+          </div>
         ))}
       </div>
 
       {isHost && !data.revealed && (
-        <PrimaryAction onClick={() => void dispatch("reveal")} disabled={!Object.keys(data.bids).length} tone="gold">كشف جميع المزايدات</PrimaryAction>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PrimaryAction onClick={() => void dispatch("next-clue")} disabled={data.clueIndex >= card.clues.length - 1} tone="gold">تلميح أوضح <ChevronLeft className="size-5" /></PrimaryAction>
+          <PrimaryAction onClick={() => void dispatch("reveal")} tone="muted">كشف الإجابة</PrimaryAction>
+        </div>
       )}
-      {isHost && data.revealed && !data.winnerId && <p className="text-center text-sm font-bold text-muted-foreground">اضغط اسم الفائز لمنحه النقطة</p>}
-      {isHost && data.winnerId && (
-        <PrimaryAction onClick={() => void dispatch("next")}>مزاد جديد <ChevronLeft className="size-5" /></PrimaryAction>
+      {isHost && data.revealed && (
+        <PrimaryAction onClick={() => void dispatch("next")}>بطاقة جديدة <ChevronLeft className="size-5" /></PrimaryAction>
       )}
     </div>
   );
@@ -4658,8 +4810,8 @@ function WordDuelRoom({
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 text-center">
-      <div className="flex items-center justify-center gap-3">
+    <div className="arena-social-stage mx-auto max-w-4xl space-y-5 text-center">
+      <div className="flex items-center justify-center gap-3 rounded-2xl border border-border bg-card/70 p-3">
         {active && <PlayerAvatar player={active} size="lg" />}
         <div className="text-right">
           <p className="text-xs font-bold text-muted-foreground">الدور الآن عند</p>
@@ -4667,9 +4819,10 @@ function WordDuelRoom({
         </div>
       </div>
 
-      <div className="rounded-[36px] bg-gradient-to-br from-[#0b4f3e] to-[#081f1a] p-8 text-white sm:p-12">
-        <p className="text-sm font-black text-gold-primary">اكتب كلمة تبدأ بحرف</p>
-        <p className="mt-3 text-8xl font-black text-white">{data.currentLetter}</p>
+      <div className="arena-letter-stage">
+        <p className="text-sm font-black text-gold-primary">آخر حرف يبدأ التحدي التالي</p>
+        <p className="arena-letter-glyph">{data.currentLetter}</p>
+        <p className="text-xs font-bold text-white/55">لا تكرر كلمة ظهرت في السجل</p>
       </div>
 
       {amActive ? (
@@ -4703,11 +4856,9 @@ function WordDuelRoom({
       {data.words.length > 0 && (
         <div className="text-right">
           <p className="mb-3 text-xs font-black text-muted-foreground">آخر الكلمات</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="arena-word-stream">
             {data.words.slice(-10).reverse().map((item: { playerId: string; word: string }, index: number) => (
-              <span key={`${item.playerId}-${item.word}-${index}`} className="rounded-full bg-gold-primary/12 px-4 py-2 text-sm font-black text-primary">
-                {item.word}
-              </span>
+              <div key={`${item.playerId}-${item.word}-${index}`} className="arena-word-chip"><span>{item.word}</span><small>{players.find((player) => player.id === item.playerId)?.name.split(" ")[0]}</small></div>
             ))}
           </div>
         </div>
