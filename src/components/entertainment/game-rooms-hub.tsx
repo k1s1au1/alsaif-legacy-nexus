@@ -69,7 +69,8 @@ type GameKey =
   | "challenge30"
   | "auction"
   | "judge"
-  | "trivia";
+  | "trivia"
+  | "monopoly";
 
 type RoomPhase = "lobby" | "playing" | "results";
 type BotDifficulty = "easy" | "medium" | "hard";
@@ -179,6 +180,14 @@ const GAMES: GameMeta[] = [
     exactPlayers: 4,
     maxPlayers: 4,
   },
+  {
+    id: "monopoly",
+    label: "عقارات المملكة",
+    short: "اشترِ المواقع، اجمع الإيجارات، وابقَ آخر مستثمر في الميدان.",
+    icon: Landmark,
+    minPlayers: 2,
+    maxPlayers: 6,
+  },
 ];
 
 const CHALLENGE_WORDS = [
@@ -229,6 +238,24 @@ const WHO_AM_I_CARDS = [
 ];
 
 const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق", "ك", "م", "ن", "هـ", "و"];
+const MONOPOLY_BOARD = [
+  { name: "الانطلاق", kind: "start", price: 0, rent: 0 },
+  { name: "الدرعية", kind: "property", price: 60, rent: 8 },
+  { name: "صندوق المجلس", kind: "chance", price: 0, rent: 0 },
+  { name: "العلا", kind: "property", price: 80, rent: 10 },
+  { name: "ضريبة الخدمات", kind: "tax", price: 0, rent: 40 },
+  { name: "جدة التاريخية", kind: "property", price: 120, rent: 16 },
+  { name: "زيارة مجانية", kind: "rest", price: 0, rent: 0 },
+  { name: "أبها", kind: "property", price: 140, rent: 18 },
+  { name: "بطاقة حظ", kind: "chance", price: 0, rent: 0 },
+  { name: "الخبر", kind: "property", price: 160, rent: 22 },
+  { name: "الرياض", kind: "property", price: 200, rent: 28 },
+  { name: "إلى التوقيف", kind: "go-jail", price: 0, rent: 0 },
+  { name: "القصيم", kind: "property", price: 220, rent: 32 },
+  { name: "صندوق المجلس", kind: "chance", price: 0, rent: 0 },
+  { name: "الطائف", kind: "property", price: 240, rent: 36 },
+  { name: "نيوم", kind: "property", price: 300, rent: 48 },
+] as const;
 const SESSION_KEY = "alsaif-live-game-room-v1";
 
 type UnoColor = "red" | "blue" | "green" | "yellow" | "wild";
