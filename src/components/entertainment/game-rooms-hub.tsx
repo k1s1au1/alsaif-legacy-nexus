@@ -62,6 +62,7 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { cn } from "@/lib/utils";
 import { playGameSfx, type GameSfx } from "@/lib/game-sfx";
 import "./games-arena.css";
+import { MILLIONAIRE_BOARD, MillionaireGameRoom } from "./millionaire-game-room";
 import { UnoGameRoom } from "./uno-game-room";
 
 type GameKey =
@@ -185,11 +186,12 @@ const GAMES: GameMeta[] = [
   },
   {
     id: "monopoly",
-    label: "عقارات المملكة",
-    short: "اشترِ المواقع، اجمع الإيجارات، وابقَ آخر مستثمر في الميدان.",
+    label: "رحلة المليونير",
+    short: "ارمِ النرد، امتلك مدن المملكة، اجمع الإيجارات، وكن آخر مليونير في الميدان.",
     icon: Landmark,
-    minPlayers: 2,
-    maxPlayers: 6,
+    minPlayers: 4,
+    exactPlayers: 4,
+    maxPlayers: 4,
   },
 ];
 
@@ -241,24 +243,7 @@ const WHO_AM_I_CARDS = [
 ];
 
 const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق", "ك", "م", "ن", "هـ", "و"];
-const MONOPOLY_BOARD = [
-  { name: "الانطلاق", kind: "start", price: 0, rent: 0 },
-  { name: "الدرعية", kind: "property", price: 60, rent: 8 },
-  { name: "صندوق المجلس", kind: "chance", price: 0, rent: 0 },
-  { name: "العلا", kind: "property", price: 80, rent: 10 },
-  { name: "ضريبة الخدمات", kind: "tax", price: 0, rent: 40 },
-  { name: "جدة التاريخية", kind: "property", price: 120, rent: 16 },
-  { name: "زيارة مجانية", kind: "rest", price: 0, rent: 0 },
-  { name: "أبها", kind: "property", price: 140, rent: 18 },
-  { name: "بطاقة حظ", kind: "chance", price: 0, rent: 0 },
-  { name: "الخبر", kind: "property", price: 160, rent: 22 },
-  { name: "الرياض", kind: "property", price: 200, rent: 28 },
-  { name: "إلى التوقيف", kind: "go-jail", price: 0, rent: 0 },
-  { name: "القصيم", kind: "property", price: 220, rent: 32 },
-  { name: "صندوق المجلس", kind: "chance", price: 0, rent: 0 },
-  { name: "الطائف", kind: "property", price: 240, rent: 36 },
-  { name: "نيوم", kind: "property", price: 300, rent: 48 },
-] as const;
+const MONOPOLY_BOARD = MILLIONAIRE_BOARD;
 const SESSION_KEY = "alsaif-live-game-room-v1";
 
 type UnoColor = "red" | "blue" | "green" | "yellow" | "wild";
@@ -528,7 +513,7 @@ function initialMonopolyData(players: Player[], starterIndex = 0) {
     rolled: false,
     canBuy: false,
     winnerId: null as string | null,
-    lastAction: "بدأ السباق العقاري",
+    lastAction: "بدأت رحلة المليونير",
   };
 }
 
@@ -1201,13 +1186,24 @@ function reduceMonopoly(state: RoomState, action: RoomAction, players: Player[])
     const space = MONOPOLY_BOARD[position];
     if (space.kind === "property") {
       const ownerId = data.properties[position];
-      if (!ownerId) data.canBuy = data.cash[active.id] >= space.price;
+      if (!ownerId) {
+        data.canBuy = data.cash[active.id] >= space.price;
+        data.lastAction = data.canBuy
+          ? `${active.name} وصل إلى ${space.name} ويمكنه شراء الموقع`
+          : `${active.name} وصل إلى ${space.name} ولا يملك قيمة الشراء`;
+      }
       else if (ownerId !== active.id && !data.bankrupt[ownerId]) {
         const payment = Math.min(data.cash[active.id], space.rent);
         data.cash[active.id] -= payment;
         data.cash[ownerId] += payment;
+        data.lastAction = `${active.name} دفع ${payment}K إيجار ${space.name} إلى ${players.find((player) => player.id === ownerId)?.name ?? "صاحب الموقع"}`;
+      } else {
+        data.lastAction = `${active.name} زار ملكه في ${space.name}`;
       }
-    } else if (space.kind === "tax") data.cash[active.id] -= space.rent;
+    } else if (space.kind === "tax") {
+      data.cash[active.id] -= space.rent;
+      data.lastAction = `${active.name} دفع ${space.rent}K ضريبة خدمات`;
+    }
     else if (space.kind === "chance") {
       const reward = Math.random() < .5 ? 100 : -75;
       data.cash[active.id] += reward;
@@ -1215,12 +1211,17 @@ function reduceMonopoly(state: RoomState, action: RoomAction, players: Player[])
     } else if (space.kind === "go-jail") {
       data.positions[active.id] = 6;
       data.jailTurns[active.id] = 1;
+      data.lastAction = `${active.name} انتقل إلى التوقيف لدور واحد`;
+    } else if (space.kind === "start") {
+      data.lastAction = `${active.name} وصل إلى الانطلاق`;
+    } else {
+      data.lastAction = `${active.name} أخذ استراحة قصيرة`;
     }
     if (data.cash[active.id] < 0) {
       data.bankrupt[active.id] = true;
       Object.keys(data.properties).forEach((key) => { if (data.properties[key] === active.id) delete data.properties[key]; });
       data.lastAction = `${active.name} خرج من السوق`;
-    } else if (!data.lastAction.includes(active.name)) data.lastAction = `${active.name} وصل إلى ${space.name}`;
+    }
     const remaining = players.filter((player) => !data.bankrupt[player.id]);
     if (remaining.length === 1) {
       data.winnerId = remaining[0].id;
@@ -2445,13 +2446,14 @@ function Lobby({
           </div>
           {!isHost && <span className="text-xs font-bold text-muted-foreground">الاختيار عند المضيف</span>}
         </div>
+
         <Link
           to="/game-previews"
           className="mb-5 flex items-center justify-between gap-4 rounded-2xl border border-gold-primary/30 bg-gold-primary/10 px-4 py-3 transition hover:border-gold-primary/60 hover:bg-gold-primary/15"
         >
           <span>
             <span className="block text-xs font-black text-gold-primary">تصاميم جديدة قيد الاعتماد</span>
-            <span className="mt-1 block text-sm font-black text-primary">شاهد معاينة الكِيرم وعقارات المملكة</span>
+            <span className="mt-1 block text-sm font-black text-primary">شاهد معاينة الكِيرم ورحلة المليونير</span>
           </span>
           <ChevronLeft className="size-5 shrink-0 text-gold-primary" />
         </Link>
@@ -2819,6 +2821,15 @@ const GAME_GUIDES: Partial<Record<GameKey, {
     ],
     notes: ["الفريقان متقابلان حول الطاولة.", "النوع المطلوب يظهر أعلى أوراقك عندما يحين دورك."],
   },
+  monopoly: {
+    goal: "امتلك مواقع المملكة، اجمع الإيجارات، وابقَ آخر مليونير مستمر في الرحلة.",
+    steps: [
+      "ارمِ النرد في دورك، وتتحرك قطعتك تلقائيًا بعدد مجموع النردين.",
+      "إذا وصلت إلى موقع غير مملوك يمكنك شراءه، وإذا كان مملوكًا تدفع إيجاره لصاحبه.",
+      "بطاقات الحظ والضرائب والتوقيف تغيّر رصيدك أو توقف دورك، والمرور بالانطلاق يمنحك 200K.",
+    ],
+    notes: ["الطاولة مصممة لأربعة لاعبين أو بوتات.", "المواقع المملوكة تحمل لون صاحبها على اللوحة."],
+  },
 };
 
 function GameGuideSheet({ game, onClose }: { game: GameKey; onClose: () => void }) {
@@ -2940,7 +2951,7 @@ function GameBoard({
   const meta = gameMeta(state.game);
   const GameIcon = meta.icon;
   const logoUrl = useSiteLogo();
-  const [gameMode, setGameMode] = useState(() => state.game === "uno");
+  const [gameMode, setGameMode] = useState(() => state.game === "uno" || state.game === "monopoly");
   const [portalReady, setPortalReady] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -2951,7 +2962,7 @@ function GameBoard({
 
   useEffect(() => setPortalReady(true), []);
 
-  const landscapeGameActive = gameMode && (state.game === "uno" || state.game === "saudi-deal");
+  const landscapeGameActive = gameMode && (state.game === "uno" || state.game === "saudi-deal" || state.game === "monopoly");
 
   useEffect(() => {
     if (!landscapeGameActive) return;
@@ -3044,7 +3055,7 @@ function GameBoard({
     } catch {
       // iOS browsers may reject the native API; the fixed 100dvh game shell remains active.
     }
-    if (state.game === "saudi-deal" || state.game === "uno") {
+    if (state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly") {
       const orientation = window.screen.orientation as unknown as { lock?: (value: string) => Promise<void> };
       try { await orientation?.lock?.("landscape"); } catch { /* iOS uses the rotate-device prompt below. */ }
     }
@@ -3052,7 +3063,7 @@ function GameBoard({
 
   const leaveGameMode = async () => {
     setGameMode(false);
-    if (state.game === "saudi-deal" || state.game === "uno") {
+    if (state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly") {
       const orientation = window.screen.orientation as unknown as { unlock?: () => void };
       try { orientation?.unlock?.(); } catch { /* The operating system owns orientation state. */ }
     }
@@ -3082,13 +3093,13 @@ function GameBoard({
         backgroundPosition: "center top",
       } : undefined}
     >
-      {gameMode && (state.game === "saudi-deal" || state.game === "uno") && (
+      {gameMode && (state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly") && (
         <div className="fixed inset-0 z-[10050] hidden flex-col items-center justify-center bg-[#021f19]/98 px-8 text-center text-white portrait:flex xl:hidden">
           <span className="flex size-20 items-center justify-center rounded-[26px] border border-[#e8c66f]/40 bg-[#0a5948] text-[#f0cf77] shadow-[0_0_40px_rgba(232,198,111,.2)]">
             <RotateCw className="size-10 animate-pulse" />
           </span>
           <h4 className="mt-6 text-2xl font-black text-[#f0cf77]">لف الجهاز للوضع الأفقي</h4>
-          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
+          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : state.game === "monopoly" ? "رحلة المليونير تظهر كطاولة كاملة على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
         </div>
       )}
       {showStartingDraw && (
@@ -3100,13 +3111,13 @@ function GameBoard({
           <span>يبدأ الجولة</span>
         </div>
       )}
-      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && state.game === "saudi-deal" && "bg-transparent")}>
+      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && (state.game === "saudi-deal" || state.game === "monopoly") && "bg-transparent")}>
         <div
           className={cn(
             "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
             gameMode && "relative mb-0 min-h-[82px] shrink-0 border-white/10 bg-[radial-gradient(circle_at_50%_0%,#0b5a48_0%,#052d26_58%,#031f1a_100%)] px-3 pb-2 text-white shadow-lg landscape:min-h-[58px] landscape:pb-1",
             gameMode && state.game === "saudi-deal" && "bg-none bg-[#032b24]/85 backdrop-blur-md",
-            gameMode && state.game === "uno" && "hidden",
+            gameMode && (state.game === "uno" || state.game === "monopoly") && "hidden",
           )}
           style={gameMode ? { paddingTop: "max(.5rem, env(safe-area-inset-top))" } : undefined}
         >
@@ -3151,7 +3162,7 @@ function GameBoard({
                   onClick={() => void enterGameMode()}
                   className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground shadow 2xl:hidden"
                 >
-                  <Maximize2 className="size-4" /> {state.game === "saudi-deal" || state.game === "uno" ? "اللعب أفقيًا" : "وضع اللعبة"}
+                  <Maximize2 className="size-4" /> {state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly" ? "اللعب أفقيًا" : "وضع اللعبة"}
                 </button>
                 {isHost && (
                   <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
@@ -3167,9 +3178,9 @@ function GameBoard({
           className={cn(
             gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_50%_12%,rgba(23,102,80,.32),transparent_42%),linear-gradient(#031d18,#021713)] px-2 py-2 sm:px-4",
             gameMode && state.game === "saudi-deal" && "bg-none bg-transparent",
-            gameMode && state.game === "uno" && "overflow-hidden bg-none bg-transparent !p-0",
+            gameMode && (state.game === "uno" || state.game === "monopoly") && "overflow-hidden bg-none bg-transparent !p-0",
           )}
-          style={gameMode && state.game !== "uno" ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
+          style={gameMode && state.game !== "uno" && state.game !== "monopoly" ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
         >
           {state.game === "uno" && (
             <UnoGameRoom
@@ -3183,6 +3194,18 @@ function GameBoard({
               onSettings={() => setShowSettings(true)}
               isHost={isHost}
               onFinish={() => void dispatch("finish")}
+            />
+          )}
+          {state.game === "monopoly" && (
+            <MillionaireGameRoom
+              state={state}
+              players={players}
+              me={me}
+              immersive={gameMode}
+              dispatch={dispatch}
+              onExit={() => void leaveGameMode()}
+              onGuide={() => setShowGuide(true)}
+              onSettings={() => setShowSettings(true)}
             />
           )}
           {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
