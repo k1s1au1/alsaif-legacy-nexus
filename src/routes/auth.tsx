@@ -120,7 +120,7 @@ function AuthPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        navigate({ to: "/dashboard", replace: true });
+        goAfterAuth();
         // Also check if admin for the uploader button
         supabase
           .from("user_roles")
@@ -148,7 +148,7 @@ function AuthPage() {
       return;
     }
     if (data.user) queueLoginWelcome(data.user.id);
-    navigate({ to: "/dashboard", replace: true });
+    goAfterAuth();
   }
 
   async function onForgot(e: React.FormEvent) {
