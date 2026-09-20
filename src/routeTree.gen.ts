@@ -40,6 +40,7 @@ import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedTripsTripIdRouteImport } from './routes/_authenticated/trips.$tripId'
 import { Route as AuthenticatedMembersUserIdRouteImport } from './routes/_authenticated/members.$userId'
 import { Route as AuthenticatedChatConversationIdRouteImport } from './routes/_authenticated/chat.$conversationId'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -202,6 +203,11 @@ const AuthenticatedChatConversationIdRoute =
     path: '/$conversationId',
     getParentRoute: () => AuthenticatedChatRoute,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/suggestions': typeof AuthenticatedSuggestionsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/vault': typeof AuthenticatedVaultRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
   '/members/$userId': typeof AuthenticatedMembersUserIdRoute
   '/trips/$tripId': typeof AuthenticatedTripsTripIdRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/suggestions': typeof AuthenticatedSuggestionsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/vault': typeof AuthenticatedVaultRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
   '/members/$userId': typeof AuthenticatedMembersUserIdRoute
   '/trips/$tripId': typeof AuthenticatedTripsTripIdRoute
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/_authenticated/suggestions': typeof AuthenticatedSuggestionsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/vault': typeof AuthenticatedVaultRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
   '/_authenticated/members/$userId': typeof AuthenticatedMembersUserIdRoute
   '/_authenticated/trips/$tripId': typeof AuthenticatedTripsTripIdRoute
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/suggestions'
     | '/tasks'
     | '/vault'
+    | '/.lovable/oauth/consent'
     | '/chat/$conversationId'
     | '/members/$userId'
     | '/trips/$tripId'
@@ -358,6 +368,7 @@ export interface FileRouteTypes {
     | '/suggestions'
     | '/tasks'
     | '/vault'
+    | '/.lovable/oauth/consent'
     | '/chat/$conversationId'
     | '/members/$userId'
     | '/trips/$tripId'
@@ -391,6 +402,7 @@ export interface FileRouteTypes {
     | '/_authenticated/suggestions'
     | '/_authenticated/tasks'
     | '/_authenticated/vault'
+    | '/.lovable/oauth/consent'
     | '/_authenticated/chat/$conversationId'
     | '/_authenticated/members/$userId'
     | '/_authenticated/trips/$tripId'
@@ -405,6 +417,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   GamePreviewsRoute: typeof GamePreviewsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -626,6 +639,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatConversationIdRouteImport
       parentRoute: typeof AuthenticatedChatRoute
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -705,6 +725,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   GamePreviewsRoute: GamePreviewsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
