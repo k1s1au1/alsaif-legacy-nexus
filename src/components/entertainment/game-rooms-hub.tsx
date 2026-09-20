@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
@@ -2444,6 +2445,16 @@ function Lobby({
           </div>
           {!isHost && <span className="text-xs font-bold text-muted-foreground">الاختيار عند المضيف</span>}
         </div>
+        <Link
+          to="/game-previews"
+          className="mb-5 flex items-center justify-between gap-4 rounded-2xl border border-gold-primary/30 bg-gold-primary/10 px-4 py-3 transition hover:border-gold-primary/60 hover:bg-gold-primary/15"
+        >
+          <span>
+            <span className="block text-xs font-black text-gold-primary">تصاميم جديدة قيد الاعتماد</span>
+            <span className="mt-1 block text-sm font-black text-primary">شاهد معاينة الكِيرم وعقارات المملكة</span>
+          </span>
+          <ChevronLeft className="size-5 shrink-0 text-gold-primary" />
+        </Link>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {GAMES.map((game) => {
