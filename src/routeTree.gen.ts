@@ -10,10 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as GamePreviewsRouteImport } from './routes/game-previews'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as GamePreviewsRouteImport } from './routes/game-previews'
 import { Route as AuthenticatedVaultRouteImport } from './routes/_authenticated/vault'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSuggestionsRouteImport } from './routes/_authenticated/suggestions'
@@ -46,6 +46,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GamePreviewsRoute = GamePreviewsRouteImport.update({
+  id: '/game-previews',
+  path: '/game-previews',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -58,11 +63,6 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GamePreviewsRoute = GamePreviewsRouteImport.update({
-  id: '/game-previews',
-  path: '/game-previews',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedVaultRoute = AuthenticatedVaultRouteImport.update({
@@ -205,8 +205,8 @@ const AuthenticatedChatConversationIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/game-previews': typeof GamePreviewsRoute
   '/auth': typeof AuthRoute
+  '/game-previews': typeof GamePreviewsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/archive': typeof AuthenticatedArchiveRoute
@@ -237,8 +237,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/game-previews': typeof GamePreviewsRoute
   '/auth': typeof AuthRoute
+  '/game-previews': typeof GamePreviewsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/archive': typeof AuthenticatedArchiveRoute
@@ -269,9 +269,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/game-previews': typeof GamePreviewsRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/game-previews': typeof GamePreviewsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/archive': typeof AuthenticatedArchiveRoute
@@ -304,8 +304,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/game-previews'
     | '/auth'
+    | '/game-previews'
     | '/reset-password'
     | '/admin'
     | '/archive'
@@ -336,8 +336,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/game-previews'
     | '/auth'
+    | '/game-previews'
     | '/reset-password'
     | '/admin'
     | '/archive'
@@ -367,9 +367,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/game-previews'
     | '/_authenticated'
     | '/auth'
+    | '/game-previews'
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/archive'
@@ -401,9 +401,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  GamePreviewsRoute: typeof GamePreviewsRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  GamePreviewsRoute: typeof GamePreviewsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
@@ -414,6 +414,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/game-previews': {
+      id: '/game-previews'
+      path: '/game-previews'
+      fullPath: '/game-previews'
+      preLoaderRoute: typeof GamePreviewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -435,13 +442,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/game-previews': {
-      id: '/game-previews'
-      path: '/game-previews'
-      fullPath: '/game-previews'
-      preLoaderRoute: typeof GamePreviewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/vault': {
@@ -701,9 +701,9 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  GamePreviewsRoute: GamePreviewsRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  GamePreviewsRoute: GamePreviewsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
