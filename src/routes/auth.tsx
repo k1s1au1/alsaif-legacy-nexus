@@ -137,6 +137,10 @@ function AuthPage() {
 
   async function onLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (loginMethod === "phone") {
+      await onPhoneLogin();
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
@@ -150,6 +154,46 @@ function AuthPage() {
     }
     if (data.user) queueLoginWelcome(data.user.id);
     goAfterAuth();
+  }
+
+  /** Phone sign-in: ask for a WhatsApp code, then exchange it for a session. */
+  async function onPhoneLogin() {
+    setLoading(true);
+    try {
+      if (otpStage === "phone") {
+        const result = await requestPhoneLoginCode({ data: { phone: loginPhone } });
+        if (!result.ok) {
+          toast.error("تعذّر إرسال الرمز", { description: result.error });
+          return;
+        }
+        setOtpStage("code");
+        toast.success("تم إرسال رمز التحقق", { description: "تفقّد رسائل واتساب على رقمك المسجّل." });
+        return;
+      }
+
+      const result = await verifyPhoneLoginCode({ data: { phone: loginPhone, code: otpCode } });
+      if (!result.ok) {
+        toast.error("رمز غير صحيح", { description: result.error });
+        return;
+      }
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: result.tokenHash,
+        type: "email",
+      });
+      if (error || !data.user) {
+        toast.error("تعذّر إكمال الدخول", { description: "يرجى طلب رمز جديد والمحاولة مرة أخرى." });
+        setOtpStage("phone");
+        setOtpCode("");
+        return;
+      }
+      queueLoginWelcome(data.user.id);
+      goAfterAuth();
+    } catch {
+      toast.error("تعذّر الاتصال بالخدمة", { description: "تحقق من اتصالك بالإنترنت وحاول مجدداً." });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function onForgot(e: React.FormEvent) {
