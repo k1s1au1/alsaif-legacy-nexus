@@ -61,6 +61,10 @@ function AuthPage() {
     navigate({ to: "/dashboard", replace: true });
   };
   const [mode, setAuthMode] = useState<AuthMode>("login");
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
+  const [loginPhone, setLoginPhone] = useState("");
+  const [otpStage, setOtpStage] = useState<"phone" | "code">("phone");
+  const [otpCode, setOtpCode] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
