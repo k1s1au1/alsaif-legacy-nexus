@@ -61,6 +61,10 @@ function AuthPage() {
     navigate({ to: "/dashboard", replace: true });
   };
   const [mode, setAuthMode] = useState<AuthMode>("login");
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
+  const [loginPhone, setLoginPhone] = useState("");
+  const [otpStage, setOtpStage] = useState<"phone" | "code">("phone");
+  const [otpCode, setOtpCode] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -137,6 +141,10 @@ function AuthPage() {
 
   async function onLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (loginMethod === "phone") {
+      await onPhoneLogin();
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
@@ -150,6 +158,46 @@ function AuthPage() {
     }
     if (data.user) queueLoginWelcome(data.user.id);
     goAfterAuth();
+  }
+
+  /** Phone sign-in: ask for a WhatsApp code, then exchange it for a session. */
+  async function onPhoneLogin() {
+    setLoading(true);
+    try {
+      if (otpStage === "phone") {
+        const result = await requestPhoneLoginCode({ data: { phone: loginPhone } });
+        if (!result.ok) {
+          toast.error("تعذّر إرسال الرمز", { description: result.error });
+          return;
+        }
+        setOtpStage("code");
+        toast.success("تم إرسال رمز التحقق", { description: "تفقّد رسائل واتساب على رقمك المسجّل." });
+        return;
+      }
+
+      const result = await verifyPhoneLoginCode({ data: { phone: loginPhone, code: otpCode } });
+      if (!result.ok) {
+        toast.error("رمز غير صحيح", { description: result.error });
+        return;
+      }
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: result.tokenHash,
+        type: "email",
+      });
+      if (error || !data.user) {
+        toast.error("تعذّر إكمال الدخول", { description: "يرجى طلب رمز جديد والمحاولة مرة أخرى." });
+        setOtpStage("phone");
+        setOtpCode("");
+        return;
+      }
+      queueLoginWelcome(data.user.id);
+      goAfterAuth();
+    } catch {
+      toast.error("تعذّر الاتصال بالخدمة", { description: "تحقق من اتصالك بالإنترنت وحاول مجدداً." });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function onForgot(e: React.FormEvent) {
@@ -307,55 +355,138 @@ function AuthPage() {
                 onSubmit={onLogin}
                 className="w-full space-y-6"
               >
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-[#0B3F3A]/65 mr-1 uppercase tracking-widest">
-                    البريد الإلكتروني
-                  </label>
-                  <div className="relative group">
-                    <Mail className="absolute right-5 top-1/2 -translate-y-1/2 size-5 text-gold-primary/40 group-focus-within:text-gold-primary transition-colors" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-16 bg-white/60 border border-[#0B5D4B]/20 rounded-2xl pr-14 pl-6 font-bold text-sm text-[#0B3F3A] focus:outline-none focus:ring-4 focus:ring-gold-primary/5 focus:border-gold-primary transition-all shadow-inner"
-                      placeholder="example@mail.com"
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-2 p-1.5 rounded-2xl bg-[#0B5D4B]/5 border border-[#0B5D4B]/15">
+                  {(
+                    [
+                      { id: "email" as const, label: "البريد وكلمة المرور" },
+                      { id: "phone" as const, label: "رقم الجوال ورمز التحقق" },
+                    ]
+                  ).map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setLoginMethod(tab.id)}
+                      className={cn(
+                        "h-12 rounded-xl text-[11px] font-black transition-all",
+                        loginMethod === tab.id
+                          ? "bg-gold-primary text-emerald-950 shadow-md"
+                          : "text-[#0B3F3A]/70 hover:bg-white/60",
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center px-1">
-                    <label className="text-[11px] font-black text-[#0B3F3A]/65 uppercase tracking-widest">
-                      كلمة المرور
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setAuthMode("forgot")}
-                      className="text-[11px] font-black text-[#0B5D4B] hover:text-[#064A43] hover:underline"
-                    >
-                      نسيت الكلمة؟
-                    </button>
-                  </div>
-                  <div className="relative group">
-                    <Lock className="absolute right-5 top-1/2 -translate-y-1/2 size-5 text-gold-primary/40 group-focus-within:text-gold-primary transition-colors" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full h-16 bg-white/60 border border-[#0B5D4B]/20 rounded-2xl pr-14 pl-14 font-bold text-sm text-[#0B3F3A] focus:outline-none focus:ring-4 focus:ring-gold-primary/5 focus:border-gold-primary transition-all shadow-inner"
-                      placeholder="••••••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gold-primary transition-colors p-1"
-                    >
-                      {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
-                    </button>
-                  </div>
-                </div>
+                {loginMethod === "email" ? (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-[#0B3F3A]/65 mr-1 uppercase tracking-widest">
+                        البريد الإلكتروني
+                      </label>
+                      <div className="relative group">
+                        <Mail className="absolute right-5 top-1/2 -translate-y-1/2 size-5 text-gold-primary/40 group-focus-within:text-gold-primary transition-colors" />
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full h-16 bg-white/60 border border-[#0B5D4B]/20 rounded-2xl pr-14 pl-6 font-bold text-sm text-[#0B3F3A] focus:outline-none focus:ring-4 focus:ring-gold-primary/5 focus:border-gold-primary transition-all shadow-inner"
+                          placeholder="example@mail.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center px-1">
+                        <label className="text-[11px] font-black text-[#0B3F3A]/65 uppercase tracking-widest">
+                          كلمة المرور
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setAuthMode("forgot")}
+                          className="text-[11px] font-black text-[#0B5D4B] hover:text-[#064A43] hover:underline"
+                        >
+                          نسيت الكلمة؟
+                        </button>
+                      </div>
+                      <div className="relative group">
+                        <Lock className="absolute right-5 top-1/2 -translate-y-1/2 size-5 text-gold-primary/40 group-focus-within:text-gold-primary transition-colors" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full h-16 bg-white/60 border border-[#0B5D4B]/20 rounded-2xl pr-14 pl-14 font-bold text-sm text-[#0B3F3A] focus:outline-none focus:ring-4 focus:ring-gold-primary/5 focus:border-gold-primary transition-all shadow-inner"
+                          placeholder="••••••••••••"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gold-primary transition-colors p-1"
+                        >
+                          {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-[#0B3F3A]/65 mr-1 uppercase tracking-widest">
+                        رقم الجوال المسجّل
+                      </label>
+                      <div className="relative group">
+                        <Phone className="absolute right-5 top-1/2 -translate-y-1/2 size-5 text-gold-primary/40 group-focus-within:text-gold-primary transition-colors" />
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          required
+                          disabled={otpStage === "code"}
+                          value={loginPhone}
+                          onChange={(e) => setLoginPhone(e.target.value)}
+                          className="w-full h-16 bg-white/60 border border-[#0B5D4B]/20 rounded-2xl pr-14 pl-6 font-bold text-sm text-[#0B3F3A] focus:outline-none focus:ring-4 focus:ring-gold-primary/5 focus:border-gold-primary transition-all shadow-inner disabled:opacity-60"
+                          placeholder="05xxxxxxxx"
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+
+                    {otpStage === "code" && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center px-1">
+                          <label className="text-[11px] font-black text-[#0B3F3A]/65 uppercase tracking-widest">
+                            رمز التحقق
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOtpStage("phone");
+                              setOtpCode("");
+                            }}
+                            className="text-[11px] font-black text-[#0B5D4B] hover:underline"
+                          >
+                            تغيير الرقم
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          required
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                          className="w-full h-16 bg-white/60 border border-[#0B5D4B]/20 rounded-2xl px-6 font-black text-2xl tracking-[0.6em] text-center text-[#0B3F3A] focus:outline-none focus:ring-4 focus:ring-gold-primary/5 focus:border-gold-primary transition-all shadow-inner"
+                          placeholder="______"
+                          dir="ltr"
+                        />
+                        <p className="text-[10px] font-bold text-[#0B3F3A]/55 text-center leading-relaxed">
+                          أرسلنا رمزاً من ٦ أرقام على واتساب الخاص برقمك المسجّل، وصلاحيته ٥ دقائق.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
 
                 <button
                   type="submit"
@@ -366,11 +497,18 @@ function AuthPage() {
                     <Loader2 className="animate-spin size-6" />
                   ) : (
                     <>
-                      <span>دخول للمجلس</span>
+                      <span>
+                        {loginMethod === "email"
+                          ? "دخول للمجلس"
+                          : otpStage === "phone"
+                            ? "إرسال رمز التحقق"
+                            : "تأكيد الرمز والدخول"}
+                      </span>
                       <ArrowLeft className="size-6 rotate-180" />
                     </>
                   )}
                 </button>
+
 
                 <div className="pt-12 text-center border-t border-[#0B3F3A]/10 mt-6">
                   <p className="text-xs font-bold text-[#0B3F3A]/60 mb-6 uppercase tracking-widest">
