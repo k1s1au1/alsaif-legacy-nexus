@@ -27,6 +27,7 @@ import { BackgroundUploader } from "@/components/background-uploader";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { getPublicStats } from "@/lib/api/stats.functions";
+import { requestPhoneLoginCode, verifyPhoneLoginCode } from "@/lib/api/phone-otp.functions";
 import { notifyAdminsOfNewRequest } from "@/lib/api/admin-notifications.functions";
 import { useQuery } from "@tanstack/react-query";
 import { queueLoginWelcome } from "@/lib/login-welcome";
