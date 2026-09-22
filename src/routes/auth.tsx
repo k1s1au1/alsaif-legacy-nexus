@@ -33,6 +33,10 @@ import { queueLoginWelcome } from "@/lib/login-welcome";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (s: Record<string, unknown>): { next?: string } => {
+    const next = typeof s.next === "string" && s.next.startsWith("/") && !s.next.startsWith("//") ? s.next : "";
+    return next ? { next } : {};
+  },
   head: () => ({
     meta: [
       { title: "مجلس السيف — بوابة الدخول" },
@@ -46,6 +50,16 @@ type AuthMode = "login" | "request" | "forgot";
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  // Honor a preserved same-origin return path (used by the agent-integrations
+  // consent flow) instead of always landing on the dashboard.
+  const goAfterAuth = () => {
+    if (next) {
+      window.location.replace(next);
+      return;
+    }
+    navigate({ to: "/dashboard", replace: true });
+  };
   const [mode, setAuthMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -107,7 +121,7 @@ function AuthPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        navigate({ to: "/dashboard", replace: true });
+        goAfterAuth();
         // Also check if admin for the uploader button
         supabase
           .from("user_roles")
@@ -135,7 +149,7 @@ function AuthPage() {
       return;
     }
     if (data.user) queueLoginWelcome(data.user.id);
-    navigate({ to: "/dashboard", replace: true });
+    goAfterAuth();
   }
 
   async function onForgot(e: React.FormEvent) {

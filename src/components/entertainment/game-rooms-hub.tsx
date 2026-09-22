@@ -62,6 +62,7 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { cn } from "@/lib/utils";
 import { playGameSfx, type GameSfx } from "@/lib/game-sfx";
 import "./games-arena.css";
+import { MILLIONAIRE_BOARD, MillionaireGameRoom } from "./millionaire-game-room";
 import { UnoGameRoom } from "./uno-game-room";
 
 type GameKey =
@@ -185,11 +186,12 @@ const GAMES: GameMeta[] = [
   },
   {
     id: "monopoly",
-    label: "عقارات المملكة",
-    short: "اشترِ المواقع، اجمع الإيجارات، وابقَ آخر مستثمر في الميدان.",
+    label: "رحلة المليونير",
+    short: "سافر بين مدن المملكة، ابنِ المعالم، استحوذ على المواقع، واحسم أحد أنواع الاحتكار.",
     icon: Landmark,
-    minPlayers: 2,
-    maxPlayers: 6,
+    minPlayers: 4,
+    exactPlayers: 4,
+    maxPlayers: 4,
   },
 ];
 
@@ -241,24 +243,7 @@ const WHO_AM_I_CARDS = [
 ];
 
 const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق", "ك", "م", "ن", "هـ", "و"];
-const MONOPOLY_BOARD = [
-  { name: "الانطلاق", kind: "start", price: 0, rent: 0 },
-  { name: "الدرعية", kind: "property", price: 60, rent: 8 },
-  { name: "صندوق المجلس", kind: "chance", price: 0, rent: 0 },
-  { name: "العلا", kind: "property", price: 80, rent: 10 },
-  { name: "ضريبة الخدمات", kind: "tax", price: 0, rent: 40 },
-  { name: "جدة التاريخية", kind: "property", price: 120, rent: 16 },
-  { name: "زيارة مجانية", kind: "rest", price: 0, rent: 0 },
-  { name: "أبها", kind: "property", price: 140, rent: 18 },
-  { name: "بطاقة حظ", kind: "chance", price: 0, rent: 0 },
-  { name: "الخبر", kind: "property", price: 160, rent: 22 },
-  { name: "الرياض", kind: "property", price: 200, rent: 28 },
-  { name: "إلى التوقيف", kind: "go-jail", price: 0, rent: 0 },
-  { name: "القصيم", kind: "property", price: 220, rent: 32 },
-  { name: "صندوق المجلس", kind: "chance", price: 0, rent: 0 },
-  { name: "الطائف", kind: "property", price: 240, rent: 36 },
-  { name: "نيوم", kind: "property", price: 300, rent: 48 },
-] as const;
+const MONOPOLY_BOARD = MILLIONAIRE_BOARD;
 const SESSION_KEY = "alsaif-live-game-room-v1";
 
 type UnoColor = "red" | "blue" | "green" | "yellow" | "wild";
@@ -520,15 +505,22 @@ function initialMonopolyData(players: Player[], starterIndex = 0) {
   return {
     turnIndex: starterIndex,
     positions: Object.fromEntries(players.map((player) => [player.id, 0])),
-    cash: Object.fromEntries(players.map((player) => [player.id, 1500])),
-    properties: {} as Record<number, string>,
+    cash: Object.fromEntries(players.map((player) => [player.id, 5000])),
+    properties: {} as Record<number, { ownerId: string; level: number; invested: number }>,
     bankrupt: {} as Record<string, boolean>,
     jailTurns: {} as Record<string, number>,
+    escapeCards: {} as Record<string, number>,
     dice: null as [number, number] | null,
     rolled: false,
-    canBuy: false,
+    doublesStreak: 0,
+    extraTurn: false,
+    pending: null,
+    festival: null,
+    turnNumber: 1,
     winnerId: null as string | null,
-    lastAction: "بدأ السباق العقاري",
+    victoryType: null,
+    actionLog: ["بدأت رحلة المليونير"],
+    lastAction: "بدأت رحلة المليونير · لكل لاعب 5M",
   };
 }
 
@@ -1177,73 +1169,463 @@ function nextMonopolyPlayer(current: number, players: Player[], bankrupt: Record
   return current;
 }
 
+type MonopolyPropertyState = {
+  ownerId: string;
+  level: number;
+  invested: number;
+};
+
+const MONOPOLY_START_BONUS = 300;
+const MONOPOLY_STARTING_CASH = 5000;
+const MONOPOLY_ISLAND_INDEX = 6;
+const MONOPOLY_ISLAND_FEE = 150;
+const MONOPOLY_TOLL_MULTIPLIERS = [0, 1, 2.2, 4, 7, 11];
+
+function monopolyProperty(data: any, index: number): MonopolyPropertyState | null {
+  const property = data.properties?.[index];
+  if (!property) return null;
+  if (typeof property === "string") {
+    const space = MONOPOLY_BOARD[index];
+    return { ownerId: property, level: 1, invested: space?.price ?? 0 };
+  }
+  return property as MonopolyPropertyState;
+}
+
+function monopolyOwnable(index: number) {
+  const space = MONOPOLY_BOARD[index];
+  return space?.kind === "city" || space?.kind === "tourism";
+}
+
+function monopolyStructureTotal(index: number, targetLevel: number) {
+  const space = MONOPOLY_BOARD[index];
+  if (!space || !monopolyOwnable(index)) return 0;
+  if (space.kind === "tourism") return space.price;
+  let total = space.price;
+  const build = space.build ?? [0, 0, 0, 0];
+  for (let level = 1; level < targetLevel; level += 1) total += build[level - 1] ?? 0;
+  return total;
+}
+
+function monopolyUpgradeCost(index: number, currentLevel: number, targetLevel: number) {
+  return Math.max(0, monopolyStructureTotal(index, targetLevel) - monopolyStructureTotal(index, currentLevel));
+}
+
+function monopolyGroupComplete(data: any, ownerId: string, group?: string) {
+  if (!group || group === "tourism") return false;
+  const groupIndices = MONOPOLY_BOARD
+    .map((space, index) => ({ space, index }))
+    .filter(({ space }) => space.group === group)
+    .map(({ index }) => index);
+  return groupIndices.length > 0 && groupIndices.every((index) => monopolyProperty(data, index)?.ownerId === ownerId);
+}
+
+function monopolyToll(data: any, index: number) {
+  const space = MONOPOLY_BOARD[index];
+  const property = monopolyProperty(data, index);
+  if (!space || !property) return 0;
+  const level = space.kind === "tourism" ? 1 : Math.max(1, Math.min(4, property.level));
+  let toll = space.rent * MONOPOLY_TOLL_MULTIPLIERS[level];
+  if (monopolyGroupComplete(data, property.ownerId, space.group)) toll *= 2;
+  if (data.festival?.spaceIndex === index && Number(data.turnNumber ?? 1) <= Number(data.festival.untilTurn ?? 0)) toll *= 2;
+  return Math.max(1, Math.round(toll));
+}
+
+function monopolyMessage(data: any, message: string) {
+  data.lastAction = message;
+  data.actionLog = [message, ...(data.actionLog ?? [])].slice(0, 8);
+}
+
+function monopolyVictoryType(data: any, ownerId: string): "line" | "triple" | "tourism" | null {
+  const tourism = MONOPOLY_BOARD
+    .map((space, index) => ({ space, index }))
+    .filter(({ space }) => space.kind === "tourism")
+    .map(({ index }) => index);
+  if (tourism.length && tourism.every((index) => monopolyProperty(data, index)?.ownerId === ownerId)) return "tourism";
+
+  for (let side = 0; side < 4; side += 1) {
+    const sideIndices = MONOPOLY_BOARD
+      .map((space, index) => ({ space, index }))
+      .filter(({ space, index }) => space.side === side && monopolyOwnable(index))
+      .map(({ index }) => index);
+    if (sideIndices.length >= 4 && sideIndices.every((index) => monopolyProperty(data, index)?.ownerId === ownerId)) return "line";
+  }
+
+  const groups = Array.from(new Set(MONOPOLY_BOARD.map((space) => space.group).filter((group) => group && group !== "tourism")));
+  const completeGroups = groups.filter((group) => monopolyGroupComplete(data, ownerId, group));
+  return completeGroups.length >= 3 ? "triple" : null;
+}
+
+function monopolyVictoryLabel(type: string | null) {
+  if (type === "line") return "الاحتكار الخطي";
+  if (type === "triple") return "الاحتكار الثلاثي";
+  if (type === "tourism") return "الاحتكار السياحي";
+  return "إفلاس المنافسين";
+}
+
+function finishMonopoly(state: RoomState, data: any, winnerId: string, victoryType: string): RoomState {
+  data.winnerId = winnerId;
+  data.victoryType = victoryType;
+  monopolyMessage(data, (victoryType === "bankruptcy" ? "آخر مستثمر في الرحلة" : monopolyVictoryLabel(victoryType)) + " حسم المباراة");
+  return {
+    ...state,
+    phase: "results",
+    scores: { ...state.scores, [winnerId]: scoreFor(state.scores, winnerId) + 1 },
+    data,
+  };
+}
+
+function checkMonopolyWinner(state: RoomState, data: any, players: Player[], ownerId?: string): RoomState | null {
+  if (ownerId) {
+    const victory = monopolyVictoryType(data, ownerId);
+    if (victory) return finishMonopoly(state, data, ownerId, victory);
+  }
+  const remaining = players.filter((player) => !data.bankrupt[player.id]);
+  if (remaining.length === 1) return finishMonopoly(state, data, remaining[0].id, "bankruptcy");
+  return null;
+}
+
+function chargeMonopolyPlayer(data: any, playerId: string, amount: number, creditorId: string | null, reason: string) {
+  const due = Math.max(0, Math.round(amount));
+  if (Number(data.cash[playerId] ?? 0) >= due) {
+    data.cash[playerId] -= due;
+    if (creditorId) data.cash[creditorId] = Number(data.cash[creditorId] ?? 0) + due;
+    return true;
+  }
+  data.pending = { type: "debt", playerId, amount: due, creditorId, reason };
+  monopolyMessage(data, reason + " · يجب تصفية أملاك أو إعلان الإفلاس");
+  return false;
+}
+
+function resolveMonopolyChance(data: any, active: Player) {
+  const card = Math.floor(Math.random() * 8);
+  if (card === 0) {
+    data.cash[active.id] += 300;
+    monopolyMessage(data, active.name + " حصل على مكافأة استثمار 300K");
+    return;
+  }
+  if (card === 1) {
+    if (chargeMonopolyPlayer(data, active.id, 180, null, active.name + " دفع رسوم تطوير 180K")) {
+      monopolyMessage(data, active.name + " دفع رسوم تطوير 180K");
+    }
+    return;
+  }
+  if (card === 2) {
+    data.positions[active.id] = 0;
+    data.cash[active.id] += MONOPOLY_START_BONUS;
+    monopolyMessage(data, active.name + " عاد إلى الانطلاق وربح " + MONOPOLY_START_BONUS + "K");
+    return;
+  }
+  if (card === 3) {
+    data.pending = { type: "travel", playerId: active.id, source: "chance" };
+    monopolyMessage(data, active.name + " ربح رحلة مجانية واختيار أي مدينة");
+    return;
+  }
+  if (card === 4) {
+    data.escapeCards[active.id] = Number(data.escapeCards[active.id] ?? 0) + 1;
+    monopolyMessage(data, active.name + " حصل على بطاقة خروج من الجزيرة");
+    return;
+  }
+  if (card === 5) {
+    data.positions[active.id] = MONOPOLY_ISLAND_INDEX;
+    data.jailTurns[active.id] = 3;
+    data.extraTurn = false;
+    monopolyMessage(data, active.name + " انتقل إلى الجزيرة لثلاث محاولات");
+    return;
+  }
+  if (card === 6) {
+    const owned = MONOPOLY_BOARD.some((_, index) => monopolyProperty(data, index)?.ownerId === active.id);
+    if (owned) {
+      data.pending = { type: "festival", playerId: active.id, source: "chance" };
+      monopolyMessage(data, active.name + " يستطيع اختيار مدينة لمهرجان الرسوم المضاعفة");
+    } else {
+      data.cash[active.id] += 120;
+      monopolyMessage(data, active.name + " استبدل المهرجان بمكافأة 120K");
+    }
+    return;
+  }
+  const maintenance = MONOPOLY_BOARD.reduce((sum, _, index) => {
+    const property = monopolyProperty(data, index);
+    return property?.ownerId === active.id ? sum + property.level * 35 : sum;
+  }, 0);
+  if (!maintenance) {
+    data.cash[active.id] += 80;
+    monopolyMessage(data, active.name + " ربح 80K لعدم وجود تكاليف صيانة");
+  } else if (chargeMonopolyPlayer(data, active.id, maintenance, null, active.name + " عليه صيانة " + maintenance + "K")) {
+    monopolyMessage(data, active.name + " دفع صيانة أملاكه " + maintenance + "K");
+  }
+}
+
+function resolveMonopolyLanding(data: any, active: Player, players: Player[], position: number) {
+  const space = MONOPOLY_BOARD[position];
+  data.pending = null;
+  if (!space) return;
+
+  if (monopolyOwnable(position)) {
+    const property = monopolyProperty(data, position);
+    if (!property) {
+      data.pending = { type: "buy", playerId: active.id, spaceIndex: position };
+      monopolyMessage(data, active.name + " وصل إلى " + space.name + " ويستطيع الاستثمار فيها");
+      return;
+    }
+    if (property.ownerId === active.id) {
+      if (space.kind === "city" && property.level < 4) {
+        data.pending = { type: "upgrade", playerId: active.id, spaceIndex: position, currentLevel: property.level };
+        monopolyMessage(data, active.name + " عاد إلى " + space.name + " ويمكنه تطويرها");
+      } else {
+        monopolyMessage(data, active.name + " زار " + space.name + " المملوكة له");
+      }
+      return;
+    }
+
+    const toll = monopolyToll(data, position);
+    const owner = players.find((player) => player.id === property.ownerId);
+    const paid = chargeMonopolyPlayer(data, active.id, toll, property.ownerId, active.name + " عليه " + toll + "K رسوم زيارة " + space.name);
+    if (!paid) return;
+    monopolyMessage(data, active.name + " دفع " + toll + "K إلى " + (owner?.name ?? "صاحب " + space.name));
+    const takeoverCost = Math.round(property.invested * 1.7 + toll);
+    if (property.level < 4 && Number(data.cash[active.id] ?? 0) >= takeoverCost) {
+      data.pending = { type: "takeover", playerId: active.id, spaceIndex: position, ownerId: property.ownerId, cost: takeoverCost };
+    }
+    return;
+  }
+
+  if (space.kind === "chance") {
+    resolveMonopolyChance(data, active);
+    return;
+  }
+  if (space.kind === "island") {
+    data.jailTurns[active.id] = 3;
+    data.extraTurn = false;
+    monopolyMessage(data, active.name + " علق في الجزيرة ولديه ثلاث محاولات للخروج");
+    return;
+  }
+  if (space.kind === "travel") {
+    data.pending = { type: "travel", playerId: active.id, source: "board" };
+    monopolyMessage(data, active.name + " وصل إلى جولة المملكة ويختار وجهته");
+    return;
+  }
+  if (space.kind === "festival") {
+    const owned = MONOPOLY_BOARD.some((_, index) => monopolyProperty(data, index)?.ownerId === active.id);
+    if (owned) {
+      data.pending = { type: "festival", playerId: active.id, source: "board" };
+      monopolyMessage(data, active.name + " يختار موقعًا لمضاعفة رسومه");
+    } else {
+      data.cash[active.id] += 120;
+      monopolyMessage(data, active.name + " حصل على دعم مهرجان 120K");
+    }
+    return;
+  }
+  monopolyMessage(data, active.name + " وصل إلى الانطلاق");
+}
+
 function reduceMonopoly(state: RoomState, action: RoomAction, players: Player[]): RoomState {
   const data = copyData(state.data);
+  data.turnIndex = Math.max(0, Number(data.turnIndex ?? 0)) % Math.max(players.length, 1);
+  data.positions ??= Object.fromEntries(players.map((player) => [player.id, 0]));
+  data.cash ??= Object.fromEntries(players.map((player) => [player.id, MONOPOLY_STARTING_CASH]));
+  data.properties ??= {};
+  data.bankrupt ??= {};
+  data.jailTurns ??= {};
+  data.escapeCards ??= {};
+  data.actionLog ??= [];
+  players.forEach((player) => {
+    data.positions[player.id] ??= 0;
+    data.cash[player.id] ??= MONOPOLY_STARTING_CASH;
+    data.jailTurns[player.id] ??= 0;
+    data.escapeCards[player.id] ??= 0;
+  });
   const active = players[data.turnIndex];
   if (!active || active.id !== action.playerId || data.winnerId) return state;
 
-  if (action.type === "monopoly-roll" && !data.rolled) {
-    if ((data.jailTurns[active.id] ?? 0) > 0) {
-      data.jailTurns[active.id] -= 1;
-      data.rolled = true;
-      data.lastAction = `${active.name} أمضى دوره في التوقيف`;
-      return { ...state, data };
-    }
+  if (action.type === "monopoly-pay-jail" && !data.rolled && Number(data.jailTurns[active.id] ?? 0) > 0) {
+    if (Number(data.cash[active.id] ?? 0) < MONOPOLY_ISLAND_FEE) return state;
+    data.cash[active.id] -= MONOPOLY_ISLAND_FEE;
+    data.jailTurns[active.id] = 0;
+    monopolyMessage(data, active.name + " دفع " + MONOPOLY_ISLAND_FEE + "K وخرج من الجزيرة");
+    return { ...state, data };
+  }
+
+  if (action.type === "monopoly-use-pass" && !data.rolled && Number(data.jailTurns[active.id] ?? 0) > 0) {
+    if (Number(data.escapeCards[active.id] ?? 0) < 1) return state;
+    data.escapeCards[active.id] -= 1;
+    data.jailTurns[active.id] = 0;
+    monopolyMessage(data, active.name + " استخدم بطاقة الخروج من الجزيرة");
+    return { ...state, data };
+  }
+
+  if (action.type === "monopoly-roll" && !data.rolled && !data.pending) {
     const dice: [number, number] = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
-    const oldPosition = data.positions[active.id] ?? 0;
-    const rawPosition = oldPosition + dice[0] + dice[1];
-    const position = rawPosition % MONOPOLY_BOARD.length;
-    if (rawPosition >= MONOPOLY_BOARD.length) data.cash[active.id] += 200;
-    data.positions[active.id] = position;
+    const double = dice[0] === dice[1];
     data.dice = dice;
     data.rolled = true;
-    data.canBuy = false;
-    const space = MONOPOLY_BOARD[position];
-    if (space.kind === "property") {
-      const ownerId = data.properties[position];
-      if (!ownerId) data.canBuy = data.cash[active.id] >= space.price;
-      else if (ownerId !== active.id && !data.bankrupt[ownerId]) {
-        const payment = Math.min(data.cash[active.id], space.rent);
-        data.cash[active.id] -= payment;
-        data.cash[ownerId] += payment;
+
+    if (Number(data.jailTurns[active.id] ?? 0) > 0) {
+      if (double) {
+        data.jailTurns[active.id] = 0;
+        data.doublesStreak = 0;
+        data.extraTurn = false;
+        monopolyMessage(data, active.name + " رمى نردًا مزدوجًا وخرج من الجزيرة");
+      } else {
+        data.jailTurns[active.id] -= 1;
+        data.doublesStreak = 0;
+        data.extraTurn = false;
+        if (data.jailTurns[active.id] > 0) {
+          monopolyMessage(data, active.name + " لم يرمِ نردًا مزدوجًا وبقيت " + data.jailTurns[active.id] + " محاولة");
+          return { ...state, data };
+        }
+        if (!chargeMonopolyPlayer(data, active.id, MONOPOLY_ISLAND_FEE, null, active.name + " أكمل ثلاث محاولات وعليه رسوم خروج " + MONOPOLY_ISLAND_FEE + "K")) {
+          return { ...state, data };
+        }
+        monopolyMessage(data, active.name + " دفع رسوم الخروج بعد المحاولة الثالثة");
       }
-    } else if (space.kind === "tax") data.cash[active.id] -= space.rent;
-    else if (space.kind === "chance") {
-      const reward = Math.random() < .5 ? 100 : -75;
-      data.cash[active.id] += reward;
-      data.lastAction = reward > 0 ? `${active.name} ربح 100 من صندوق المجلس` : `${active.name} دفع 75 لصندوق المجلس`;
-    } else if (space.kind === "go-jail") {
-      data.positions[active.id] = 6;
-      data.jailTurns[active.id] = 1;
+    } else {
+      data.doublesStreak = double ? Number(data.doublesStreak ?? 0) + 1 : 0;
+      data.extraTurn = double;
+      if (data.doublesStreak >= 3) {
+        data.positions[active.id] = MONOPOLY_ISLAND_INDEX;
+        data.jailTurns[active.id] = 3;
+        data.doublesStreak = 0;
+        data.extraTurn = false;
+        monopolyMessage(data, active.name + " رمى نردًا مزدوجًا ثلاث مرات وانتقل إلى الجزيرة");
+        return { ...state, data };
+      }
     }
-    if (data.cash[active.id] < 0) {
-      data.bankrupt[active.id] = true;
-      Object.keys(data.properties).forEach((key) => { if (data.properties[key] === active.id) delete data.properties[key]; });
-      data.lastAction = `${active.name} خرج من السوق`;
-    } else if (!data.lastAction.includes(active.name)) data.lastAction = `${active.name} وصل إلى ${space.name}`;
-    const remaining = players.filter((player) => !data.bankrupt[player.id]);
-    if (remaining.length === 1) {
-      data.winnerId = remaining[0].id;
-      return { ...state, phase: "results", scores: { ...state.scores, [remaining[0].id]: scoreFor(state.scores, remaining[0].id) + 1 }, data };
+
+    const oldPosition = Number(data.positions[active.id] ?? 0);
+    const rawPosition = oldPosition + dice[0] + dice[1];
+    const position = rawPosition % MONOPOLY_BOARD.length;
+    if (rawPosition >= MONOPOLY_BOARD.length) {
+      data.cash[active.id] += MONOPOLY_START_BONUS;
+      monopolyMessage(data, active.name + " مر بالانطلاق وربح " + MONOPOLY_START_BONUS + "K");
     }
+    data.positions[active.id] = position;
+    resolveMonopolyLanding(data, active, players, position);
     return { ...state, data };
   }
-  if (action.type === "monopoly-buy" && data.rolled && data.canBuy) {
-    const position = data.positions[active.id];
-    const space = MONOPOLY_BOARD[position];
-    if (space.kind !== "property" || data.properties[position] || data.cash[active.id] < space.price) return state;
-    data.cash[active.id] -= space.price;
-    data.properties[position] = active.id;
-    data.canBuy = false;
-    data.lastAction = `${active.name} اشترى ${space.name}`;
+
+  if (action.type === "monopoly-buy" && data.rolled && data.pending?.type === "buy" && data.pending.playerId === active.id) {
+    const index = Number(data.pending.spaceIndex);
+    const space = MONOPOLY_BOARD[index];
+    const level = Math.max(1, Math.min(space?.kind === "tourism" ? 1 : 3, Number(action.value?.level ?? 1)));
+    const cost = monopolyStructureTotal(index, level);
+    if (!space || !monopolyOwnable(index) || monopolyProperty(data, index) || Number(data.cash[active.id] ?? 0) < cost) return state;
+    data.cash[active.id] -= cost;
+    data.properties[index] = { ownerId: active.id, level, invested: cost };
+    data.pending = null;
+    const buildLabel = level === 1 ? "فيلا" : level === 2 ? "مبنى" : "فندق";
+    monopolyMessage(data, active.name + " استثمر في " + space.name + " وبنى " + buildLabel);
+    return checkMonopolyWinner(state, data, players, active.id) ?? { ...state, data };
+  }
+
+  if (action.type === "monopoly-upgrade" && data.rolled && data.pending?.type === "upgrade" && data.pending.playerId === active.id) {
+    const index = Number(data.pending.spaceIndex);
+    const property = monopolyProperty(data, index);
+    const space = MONOPOLY_BOARD[index];
+    const targetLevel = Math.max(Number(property?.level ?? 1) + 1, Math.min(4, Number(action.value?.level ?? 2)));
+    const cost = monopolyUpgradeCost(index, Number(property?.level ?? 1), targetLevel);
+    if (!space || space.kind !== "city" || !property || property.ownerId !== active.id || property.level >= targetLevel || Number(data.cash[active.id] ?? 0) < cost) return state;
+    data.cash[active.id] -= cost;
+    data.properties[index] = { ...property, level: targetLevel, invested: property.invested + cost };
+    data.pending = null;
+    monopolyMessage(data, active.name + " طوّر " + space.name + (targetLevel === 4 ? " إلى مَعْلم " + (space.landmark ?? "") : " إلى المستوى " + targetLevel));
     return { ...state, data };
   }
-  if (action.type === "monopoly-end" && data.rolled) {
+
+  if (action.type === "monopoly-takeover" && data.rolled && data.pending?.type === "takeover" && data.pending.playerId === active.id) {
+    const index = Number(data.pending.spaceIndex);
+    const property = monopolyProperty(data, index);
+    const cost = Number(data.pending.cost ?? 0);
+    if (!property || property.ownerId === active.id || property.level >= 4 || Number(data.cash[active.id] ?? 0) < cost) return state;
+    data.cash[active.id] -= cost;
+    data.cash[property.ownerId] = Number(data.cash[property.ownerId] ?? 0) + cost;
+    data.properties[index] = { ...property, ownerId: active.id, invested: property.invested + cost };
+    data.pending = null;
+    monopolyMessage(data, active.name + " استحوذ على " + MONOPOLY_BOARD[index].name + " مقابل " + cost + "K");
+    return checkMonopolyWinner(state, data, players, active.id) ?? { ...state, data };
+  }
+
+  if (action.type === "monopoly-travel" && data.rolled && data.pending?.type === "travel" && data.pending.playerId === active.id) {
+    const index = Number(action.value?.spaceIndex);
+    if (!monopolyOwnable(index)) return state;
+    data.positions[active.id] = index;
+    data.pending = null;
+    monopolyMessage(data, active.name + " سافر إلى " + MONOPOLY_BOARD[index].name);
+    resolveMonopolyLanding(data, active, players, index);
+    return { ...state, data };
+  }
+
+  if (action.type === "monopoly-festival" && data.rolled && data.pending?.type === "festival" && data.pending.playerId === active.id) {
+    const index = Number(action.value?.spaceIndex);
+    if (monopolyProperty(data, index)?.ownerId !== active.id) return state;
+    data.festival = { spaceIndex: index, ownerId: active.id, untilTurn: Number(data.turnNumber ?? 1) + players.length };
+    data.pending = null;
+    monopolyMessage(data, "مهرجان " + MONOPOLY_BOARD[index].name + " يضاعف رسومها لدورة كاملة");
+    return { ...state, data };
+  }
+
+  if (action.type === "monopoly-decline" && data.rolled && data.pending?.playerId === active.id && data.pending.type !== "debt") {
+    const type = data.pending.type;
+    data.pending = null;
+    monopolyMessage(data, active.name + (type === "travel" ? " بقي في محطة السفر" : type === "festival" ? " تجاوز اختيار المهرجان" : " تجاوز فرصة الاستثمار"));
+    return { ...state, data };
+  }
+
+  if (action.type === "monopoly-sell") {
+    const index = Number(action.value?.spaceIndex);
+    const property = monopolyProperty(data, index);
+    if (!property || property.ownerId !== active.id) return state;
+    const value = Math.max(1, Math.round(property.invested * .7));
+    data.cash[active.id] += value;
+    delete data.properties[index];
+    monopolyMessage(data, active.name + " باع " + MONOPOLY_BOARD[index].name + " للبنك مقابل " + value + "K");
+    return { ...state, data };
+  }
+
+  if (action.type === "monopoly-pay-debt" && data.pending?.type === "debt" && data.pending.playerId === active.id) {
+    const amount = Number(data.pending.amount ?? 0);
+    if (Number(data.cash[active.id] ?? 0) < amount) return state;
+    data.cash[active.id] -= amount;
+    if (data.pending.creditorId) data.cash[data.pending.creditorId] = Number(data.cash[data.pending.creditorId] ?? 0) + amount;
+    const reason = String(data.pending.reason ?? "الالتزام");
+    data.pending = null;
+    monopolyMessage(data, active.name + " سدّد " + amount + "K عن " + reason);
+    return { ...state, data };
+  }
+
+  if (action.type === "monopoly-bankrupt" && data.pending?.type === "debt" && data.pending.playerId === active.id) {
+    const creditorId = data.pending.creditorId as string | null;
+    if (creditorId) data.cash[creditorId] = Number(data.cash[creditorId] ?? 0) + Number(data.cash[active.id] ?? 0);
+    data.cash[active.id] = 0;
+    Object.keys(data.properties).forEach((key) => {
+      const index = Number(key);
+      const property = monopolyProperty(data, index);
+      if (property?.ownerId !== active.id) return;
+      if (creditorId) data.properties[index] = { ...property, ownerId: creditorId };
+      else delete data.properties[index];
+    });
+    data.bankrupt[active.id] = true;
+    data.pending = null;
+    data.extraTurn = false;
+    monopolyMessage(data, active.name + " أعلن الإفلاس وخرج من الرحلة");
+    return checkMonopolyWinner(state, data, players, creditorId ?? undefined) ?? { ...state, data };
+  }
+
+  if (action.type === "monopoly-end" && data.rolled && !data.pending) {
+    if (data.extraTurn && !data.bankrupt[active.id]) {
+      data.extraTurn = false;
+      data.rolled = false;
+      data.dice = null;
+      data.turnNumber = Number(data.turnNumber ?? 1) + 1;
+      monopolyMessage(data, active.name + " حصل على رمية إضافية");
+      return { ...state, data };
+    }
     data.turnIndex = nextMonopolyPlayer(data.turnIndex, players, data.bankrupt);
     data.rolled = false;
-    data.canBuy = false;
     data.dice = null;
-    data.lastAction = `الدور عند ${players[data.turnIndex]?.name ?? "اللاعب التالي"}`;
+    data.doublesStreak = 0;
+    data.turnNumber = Number(data.turnNumber ?? 1) + 1;
+    if (data.festival && data.turnNumber > data.festival.untilTurn) data.festival = null;
+    monopolyMessage(data, "الدور عند " + (players[data.turnIndex]?.name ?? "اللاعب التالي"));
     return { ...state, data };
   }
   return state;
@@ -1666,8 +2048,60 @@ function chooseBotAction(state: RoomState, players: Player[]): RoomAction | null
   if (state.game === "monopoly") {
     const active = players[data.turnIndex];
     if (!active?.isBot) return null;
+    const pending = data.pending;
+    if (pending?.playerId === active.id) {
+      if (pending.type === "debt") {
+        if (Number(data.cash[active.id] ?? 0) >= Number(pending.amount ?? 0)) return { type: "monopoly-pay-debt", playerId: active.id };
+        const sellable = MONOPOLY_BOARD
+          .map((_, index) => ({ index, property: monopolyProperty(data, index) }))
+          .filter(({ property }) => property?.ownerId === active.id)
+          .sort((a, b) => Number(a.property?.invested ?? 0) - Number(b.property?.invested ?? 0));
+        if (sellable.length) return { type: "monopoly-sell", playerId: active.id, value: { spaceIndex: sellable[0].index } };
+        return { type: "monopoly-bankrupt", playerId: active.id };
+      }
+      if (pending.type === "buy") {
+        const index = Number(pending.spaceIndex);
+        const space = MONOPOLY_BOARD[index];
+        const reserve = botDifficulty(active) === "hard" ? 500 : botDifficulty(active) === "medium" ? 750 : 1000;
+        const affordable = [3, 2, 1].find((level) => monopolyStructureTotal(index, space.kind === "tourism" ? 1 : level) + reserve <= Number(data.cash[active.id] ?? 0));
+        return affordable ? { type: "monopoly-buy", playerId: active.id, value: { level: space.kind === "tourism" ? 1 : affordable } } : { type: "monopoly-decline", playerId: active.id };
+      }
+      if (pending.type === "upgrade") {
+        const index = Number(pending.spaceIndex);
+        const property = monopolyProperty(data, index);
+        const target = Math.min(4, Number(property?.level ?? 1) + 1);
+        const cost = monopolyUpgradeCost(index, Number(property?.level ?? 1), target);
+        return Number(data.cash[active.id] ?? 0) > cost + 650
+          ? { type: "monopoly-upgrade", playerId: active.id, value: { level: target } }
+          : { type: "monopoly-decline", playerId: active.id };
+      }
+      if (pending.type === "takeover") {
+        const take = botDifficulty(active) === "hard" && Number(data.cash[active.id] ?? 0) > Number(pending.cost ?? 0) + 600;
+        return { type: take ? "monopoly-takeover" : "monopoly-decline", playerId: active.id };
+      }
+      if (pending.type === "travel") {
+        const targets = MONOPOLY_BOARD
+          .map((space, index) => ({ space, index, property: monopolyProperty(data, index) }))
+          .filter(({ index }) => monopolyOwnable(index))
+          .sort((a, b) => {
+            const scoreA = !a.property ? a.space.price : a.property.ownerId === active.id ? -a.space.price : a.space.rent * 4;
+            const scoreB = !b.property ? b.space.price : b.property.ownerId === active.id ? -b.space.price : b.space.rent * 4;
+            return scoreB - scoreA;
+          });
+        return targets[0] ? { type: "monopoly-travel", playerId: active.id, value: { spaceIndex: targets[0].index } } : { type: "monopoly-decline", playerId: active.id };
+      }
+      if (pending.type === "festival") {
+        const owned = MONOPOLY_BOARD
+          .map((_, index) => ({ index, property: monopolyProperty(data, index), toll: monopolyToll(data, index) }))
+          .filter(({ property }) => property?.ownerId === active.id)
+          .sort((a, b) => b.toll - a.toll);
+        return owned[0] ? { type: "monopoly-festival", playerId: active.id, value: { spaceIndex: owned[0].index } } : { type: "monopoly-decline", playerId: active.id };
+      }
+    }
+    if (!data.rolled && Number(data.jailTurns?.[active.id] ?? 0) > 0 && Number(data.cash[active.id] ?? 0) > 1200) {
+      return { type: "monopoly-pay-jail", playerId: active.id };
+    }
     if (!data.rolled) return { type: "monopoly-roll", playerId: active.id };
-    if (data.canBuy) return { type: data.cash[active.id] > 250 ? "monopoly-buy" : "monopoly-end", playerId: active.id };
     return { type: "monopoly-end", playerId: active.id };
   }
   if (state.game === "trivia" && !data.revealed) {
@@ -2445,13 +2879,14 @@ function Lobby({
           </div>
           {!isHost && <span className="text-xs font-bold text-muted-foreground">الاختيار عند المضيف</span>}
         </div>
+
         <Link
           to="/game-previews"
           className="mb-5 flex items-center justify-between gap-4 rounded-2xl border border-gold-primary/30 bg-gold-primary/10 px-4 py-3 transition hover:border-gold-primary/60 hover:bg-gold-primary/15"
         >
           <span>
             <span className="block text-xs font-black text-gold-primary">تصاميم جديدة قيد الاعتماد</span>
-            <span className="mt-1 block text-sm font-black text-primary">شاهد معاينة الكِيرم وعقارات المملكة</span>
+            <span className="mt-1 block text-sm font-black text-primary">شاهد معاينة الكِيرم ورحلة المليونير</span>
           </span>
           <ChevronLeft className="size-5 shrink-0 text-gold-primary" />
         </Link>
@@ -2819,6 +3254,20 @@ const GAME_GUIDES: Partial<Record<GameKey, {
     ],
     notes: ["الفريقان متقابلان حول الطاولة.", "النوع المطلوب يظهر أعلى أوراقك عندما يحين دورك."],
   },
+  monopoly: {
+    goal: "احسم الرحلة بالاحتكار الخطي أو الثلاثي أو السياحي، أو كن آخر مستثمر بعد إفلاس المنافسين.",
+    steps: [
+      "ارمِ النرد وتحرك حول 24 محطة. النرد المزدوج يمنحك رمية إضافية، وثلاث رميات مزدوجة متتالية تنقلك إلى الجزيرة.",
+      "عند شراء المدينة اختر مستوى الاستثمار: فيلا أو مبنى أو فندق، ثم طوّرها لاحقًا إلى مَعْلم. المَعْلم يمنع الاستحواذ ويرفع الرسوم لأعلى مستوى.",
+      "عند زيارة ملك منافس تدفع الرسوم، وبعدها يمكنك الاستحواذ عليه إن لم يكن مَعْلمًا. امتلاك المجموعة كاملة يضاعف الرسوم.",
+      "جولة المملكة تسمح باختيار أي مدينة، والمهرجان يضاعف رسوم موقع تملكه لدورة، وبطاقات الفرص تغيّر المال أو الحركة.",
+      "إذا لم تكفِ السيولة لسداد دين، بع أملاكك للبنك بقيمة تصفية 70% أو أعلن الإفلاس؛ وتنتقل الأملاك للدائن.",
+    ],
+    notes: [
+      "المرور بالانطلاق يمنح 300K، والخروج من الجزيرة يكون بنرد مزدوج أو 150K أو بطاقة خروج.",
+      "الاحتكار الخطي: امتلاك جانب كامل. الثلاثي: إكمال ثلاث مجموعات. السياحي: امتلاك العلا ومكة والمدينة.",
+    ],
+  },
 };
 
 function GameGuideSheet({ game, onClose }: { game: GameKey; onClose: () => void }) {
@@ -2940,7 +3389,7 @@ function GameBoard({
   const meta = gameMeta(state.game);
   const GameIcon = meta.icon;
   const logoUrl = useSiteLogo();
-  const [gameMode, setGameMode] = useState(() => state.game === "uno");
+  const [gameMode, setGameMode] = useState(() => state.game === "uno" || state.game === "monopoly");
   const [portalReady, setPortalReady] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -2951,7 +3400,7 @@ function GameBoard({
 
   useEffect(() => setPortalReady(true), []);
 
-  const landscapeGameActive = gameMode && (state.game === "uno" || state.game === "saudi-deal");
+  const landscapeGameActive = gameMode && (state.game === "uno" || state.game === "saudi-deal" || state.game === "monopoly");
 
   useEffect(() => {
     if (!landscapeGameActive) return;
@@ -3044,7 +3493,7 @@ function GameBoard({
     } catch {
       // iOS browsers may reject the native API; the fixed 100dvh game shell remains active.
     }
-    if (state.game === "saudi-deal" || state.game === "uno") {
+    if (state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly") {
       const orientation = window.screen.orientation as unknown as { lock?: (value: string) => Promise<void> };
       try { await orientation?.lock?.("landscape"); } catch { /* iOS uses the rotate-device prompt below. */ }
     }
@@ -3052,7 +3501,7 @@ function GameBoard({
 
   const leaveGameMode = async () => {
     setGameMode(false);
-    if (state.game === "saudi-deal" || state.game === "uno") {
+    if (state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly") {
       const orientation = window.screen.orientation as unknown as { unlock?: () => void };
       try { orientation?.unlock?.(); } catch { /* The operating system owns orientation state. */ }
     }
@@ -3082,13 +3531,13 @@ function GameBoard({
         backgroundPosition: "center top",
       } : undefined}
     >
-      {gameMode && (state.game === "saudi-deal" || state.game === "uno") && (
+      {gameMode && (state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly") && (
         <div className="fixed inset-0 z-[10050] hidden flex-col items-center justify-center bg-[#021f19]/98 px-8 text-center text-white portrait:flex xl:hidden">
           <span className="flex size-20 items-center justify-center rounded-[26px] border border-[#e8c66f]/40 bg-[#0a5948] text-[#f0cf77] shadow-[0_0_40px_rgba(232,198,111,.2)]">
             <RotateCw className="size-10 animate-pulse" />
           </span>
           <h4 className="mt-6 text-2xl font-black text-[#f0cf77]">لف الجهاز للوضع الأفقي</h4>
-          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
+          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : state.game === "monopoly" ? "رحلة المليونير تظهر كطاولة كاملة على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
         </div>
       )}
       {showStartingDraw && (
@@ -3100,13 +3549,13 @@ function GameBoard({
           <span>يبدأ الجولة</span>
         </div>
       )}
-      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && state.game === "saudi-deal" && "bg-transparent")}>
+      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && (state.game === "saudi-deal" || state.game === "monopoly") && "bg-transparent")}>
         <div
           className={cn(
             "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
             gameMode && "relative mb-0 min-h-[82px] shrink-0 border-white/10 bg-[radial-gradient(circle_at_50%_0%,#0b5a48_0%,#052d26_58%,#031f1a_100%)] px-3 pb-2 text-white shadow-lg landscape:min-h-[58px] landscape:pb-1",
             gameMode && state.game === "saudi-deal" && "bg-none bg-[#032b24]/85 backdrop-blur-md",
-            gameMode && state.game === "uno" && "hidden",
+            gameMode && (state.game === "uno" || state.game === "monopoly") && "hidden",
           )}
           style={gameMode ? { paddingTop: "max(.5rem, env(safe-area-inset-top))" } : undefined}
         >
@@ -3151,7 +3600,7 @@ function GameBoard({
                   onClick={() => void enterGameMode()}
                   className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground shadow 2xl:hidden"
                 >
-                  <Maximize2 className="size-4" /> {state.game === "saudi-deal" || state.game === "uno" ? "اللعب أفقيًا" : "وضع اللعبة"}
+                  <Maximize2 className="size-4" /> {state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly" ? "اللعب أفقيًا" : "وضع اللعبة"}
                 </button>
                 {isHost && (
                   <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
@@ -3167,9 +3616,9 @@ function GameBoard({
           className={cn(
             gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_50%_12%,rgba(23,102,80,.32),transparent_42%),linear-gradient(#031d18,#021713)] px-2 py-2 sm:px-4",
             gameMode && state.game === "saudi-deal" && "bg-none bg-transparent",
-            gameMode && state.game === "uno" && "overflow-hidden bg-none bg-transparent !p-0",
+            gameMode && (state.game === "uno" || state.game === "monopoly") && "overflow-hidden bg-none bg-transparent !p-0",
           )}
-          style={gameMode && state.game !== "uno" ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
+          style={gameMode && state.game !== "uno" && state.game !== "monopoly" ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
         >
           {state.game === "uno" && (
             <UnoGameRoom
@@ -3183,6 +3632,18 @@ function GameBoard({
               onSettings={() => setShowSettings(true)}
               isHost={isHost}
               onFinish={() => void dispatch("finish")}
+            />
+          )}
+          {state.game === "monopoly" && (
+            <MillionaireGameRoom
+              state={state}
+              players={players}
+              me={me}
+              immersive={gameMode}
+              dispatch={dispatch}
+              onExit={() => void leaveGameMode()}
+              onGuide={() => setShowGuide(true)}
+              onSettings={() => setShowSettings(true)}
             />
           )}
           {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
