@@ -1100,39 +1100,6 @@ export type Database = {
         }
         Relationships: []
       }
-      phone_login_codes: {
-        Row: {
-          attempts: number
-          code_hash: string
-          consumed_at: string | null
-          created_at: string
-          expires_at: string
-          id: string
-          phone_key: string
-          user_id: string
-        }
-        Insert: {
-          attempts?: number
-          code_hash: string
-          consumed_at?: string | null
-          created_at?: string
-          expires_at: string
-          id?: string
-          phone_key: string
-          user_id: string
-        }
-        Update: {
-          attempts?: number
-          code_hash?: string
-          consumed_at?: string | null
-          created_at?: string
-          expires_at?: string
-          id?: string
-          phone_key?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       private_request_messages: {
         Row: {
           body: string
@@ -1676,7 +1643,6 @@ export type Database = {
         Returns: boolean
       }
       count_fcm_tokens: { Args: never; Returns: number }
-      find_member_by_login_phone: { Args: { _phone: string }; Returns: string }
       find_or_create_direct: { Args: { _other: string }; Returns: string }
       get_member_phone: { Args: { _user: string }; Returns: string }
       get_my_profile: {
@@ -1743,7 +1709,6 @@ export type Database = {
         Returns: undefined
       }
       normalize_section: { Args: { _s: string }; Returns: string }
-      phone_login_key: { Args: { _phone: string }; Returns: string }
       public_stats: { Args: never; Returns: Json }
       review_profile_change_request: {
         Args: { _approve: boolean; _id: string; _note?: string }
