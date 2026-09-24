@@ -70,6 +70,7 @@ import { sendFcmNotification } from "@/lib/fcm.functions";
 import { finalizePoll } from "@/lib/api/shura.functions";
 import { SuggestionsManager } from "@/components/admin/suggestions-manager";
 import { ProfileChangeRequests } from "@/components/admin/profile-change-requests";
+import { SystemBackup } from "@/components/admin/system-backup";
 import "@/admin-executive.css";
 
 
