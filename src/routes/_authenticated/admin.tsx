@@ -652,11 +652,12 @@ function AdminPage() {
     }
     if (isSiteChairman) allowedTabs.push("member_requests");
     if (canSeeTechTools) allowedTabs.push("bugs");
+    if (canBackup) allowedTabs.push("backup");
 
     if (allowedTabs.length > 0 && !allowedTabs.includes(tab)) {
       setTab(allowedTabs[0]);
     }
-  }, [isCouncilLeadership, isSiteChairman, canSeeTechTools, tab]);
+  }, [isCouncilLeadership, isSiteChairman, canSeeTechTools, canBackup, tab]);
 
   if (loading && !profile.name)
     return (
