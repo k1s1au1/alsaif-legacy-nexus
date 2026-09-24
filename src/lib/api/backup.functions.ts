@@ -83,6 +83,7 @@ export const createFullBackup = createServerFn({ method: "POST" })
       "@/integrations/supabase/client.server"
     );
     const supabase = await getSupabaseUserClient(token);
+    if (!supabase) throw new Error("تعذر الاتصال بقاعدة البيانات");
 
     const [{ data: chairman }, { data: technical }] = await Promise.all([
       supabase.rpc("is_chairman", { _u: userId }),
@@ -93,6 +94,7 @@ export const createFullBackup = createServerFn({ method: "POST" })
     }
 
     const supabaseAdmin = await getSupabaseAdmin();
+    if (!supabaseAdmin) throw new Error("تعذر الوصول إلى بيانات النظام");
     const { zipSync, strToU8 } = await import("fflate");
 
     const createdAt = new Date().toISOString();
