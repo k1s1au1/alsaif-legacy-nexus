@@ -1425,6 +1425,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_backups: {
+        Row: {
+          actor_id: string
+          bytes_size: number
+          created_at: string
+          details: Json
+          id: string
+          rows_count: number
+          scope: string
+          tables_count: number
+        }
+        Insert: {
+          actor_id: string
+          bytes_size?: number
+          created_at?: string
+          details?: Json
+          id?: string
+          rows_count?: number
+          scope?: string
+          tables_count?: number
+        }
+        Update: {
+          actor_id?: string
+          bytes_size?: number
+          created_at?: string
+          details?: Json
+          id?: string
+          rows_count?: number
+          scope?: string
+          tables_count?: number
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assignee_id: string | null
@@ -1666,6 +1699,7 @@ export type Database = {
         Args: { _section: string; _user: string }
         Returns: boolean
       }
+      can_run_full_backup: { Args: { _u: string }; Returns: boolean }
       can_user_send: {
         Args: { _conv: string; _user: string }
         Returns: boolean
@@ -1727,6 +1761,7 @@ export type Database = {
         Returns: boolean
       }
       is_council_leadership: { Args: { _u: string }; Returns: boolean }
+      is_family_member: { Args: { _u: string }; Returns: boolean }
       is_guest: { Args: { _user_id: string }; Returns: boolean }
       is_technical_admin: { Args: { _u: string }; Returns: boolean }
       is_vice_chairman: { Args: { _u: string }; Returns: boolean }
