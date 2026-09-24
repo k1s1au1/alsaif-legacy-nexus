@@ -37,6 +37,7 @@ import {
   CheckCircle2,
   MapPin,
   Inbox,
+  DatabaseBackup,
   Database,
   HardDrive,
   BellRing,
