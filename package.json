@@ -63,6 +63,7 @@
     "date-fns": "^4.4.0",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "fflate": "0.8.2",
     "firebase": "^12.15.0",
     "framer-motion": "^12.42.2",
     "input-otp": "^1.4.2",
