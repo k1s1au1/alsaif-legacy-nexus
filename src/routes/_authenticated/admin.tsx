@@ -104,6 +104,7 @@ type AdminTab =
   | "profile_changes"
   | "polls"
   | "bugs"
+  | "backup"
   | "master_archive"
   | "suggestions";
 
