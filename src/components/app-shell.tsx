@@ -378,9 +378,9 @@ function AppShellChrome({
 
   // Final stabilized user identity
   const safeUser = {
-    name: globalProfile?.realName || "أبو الوليد", // Abu Al-Waleed as final fallback if we know them
+    name: globalProfile?.realName || "عضو العائلة",
     role: globalProfile?.role || "عضو",
-    initial: (globalProfile?.realName || "أ")[0].toUpperCase(),
+    initial: (globalProfile?.realName || "ع")[0].toUpperCase(),
     avatarPath: globalProfile?.avatarPath,
   };
 
