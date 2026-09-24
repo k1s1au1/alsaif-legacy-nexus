@@ -37,6 +37,7 @@ import {
   CheckCircle2,
   MapPin,
   Inbox,
+  DatabaseBackup,
   Database,
   HardDrive,
   BellRing,
@@ -70,6 +71,7 @@ import { sendFcmNotification } from "@/lib/fcm.functions";
 import { finalizePoll } from "@/lib/api/shura.functions";
 import { SuggestionsManager } from "@/components/admin/suggestions-manager";
 import { ProfileChangeRequests } from "@/components/admin/profile-change-requests";
+import { SystemBackup } from "@/components/admin/system-backup";
 import "@/admin-executive.css";
 
 
@@ -104,6 +106,7 @@ type AdminTab =
   | "profile_changes"
   | "polls"
   | "bugs"
+  | "backup"
   | "master_archive"
   | "suggestions";
 
@@ -184,6 +187,8 @@ function AdminPage() {
   const isA = isCouncilLeadership || isTechnicalAdmin || sectionHeads.length > 0;
   const isPowerUser = isCouncilLeadership;
   const canSeeTechTools = isCouncilLeadership || isTechnicalAdmin;
+  // Full system backup: chairman and technical admin only (mirrors the server check).
+  const canBackup = isSiteChairman || isTechnicalAdmin;
 
 
   const [profile, setProfile] = useState({
@@ -648,11 +653,12 @@ function AdminPage() {
     }
     if (isSiteChairman) allowedTabs.push("member_requests");
     if (canSeeTechTools) allowedTabs.push("bugs");
+    if (canBackup) allowedTabs.push("backup");
 
     if (allowedTabs.length > 0 && !allowedTabs.includes(tab)) {
       setTab(allowedTabs[0]);
     }
-  }, [isCouncilLeadership, isSiteChairman, canSeeTechTools, tab]);
+  }, [isCouncilLeadership, isSiteChairman, canSeeTechTools, canBackup, tab]);
 
   if (loading && !profile.name)
     return (
@@ -760,6 +766,14 @@ function AdminPage() {
       description: "استقبال أفكار الأعضاء وفرز المقترحات التطويرية.",
       icon: Inbox,
       visible: isCouncilLeadership,
+    },
+    {
+      key: "backup",
+      label: "النسخ الاحتياطي",
+      shortLabel: "النسخ",
+      description: "تنزيل نسخة كاملة من كل بيانات الموقع والحسابات والمشاركات والملفات.",
+      icon: DatabaseBackup,
+      visible: canBackup,
     },
   ] as AdminSection[]).filter((section) => section.visible);
 
@@ -1136,6 +1150,8 @@ function AdminPage() {
                 </div>
               </section>
             )}
+
+            {tab === "backup" && canBackup && <SystemBackup />}
 
             {tab === "bugs" && canSeeTechTools && (
               <section className="animate-fade-up space-y-6">
