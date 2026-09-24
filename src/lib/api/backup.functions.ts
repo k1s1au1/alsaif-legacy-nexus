@@ -78,7 +78,11 @@ export type BackupResult = {
 export const createFullBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<BackupResult> => {
-    const { supabase, userId } = context;
+    const { userId, token } = context;
+    const { getSupabaseAdmin, getSupabaseUserClient } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const supabase = await getSupabaseUserClient(token);
 
     const [{ data: chairman }, { data: technical }] = await Promise.all([
       supabase.rpc("is_chairman", { _u: userId }),
@@ -88,7 +92,7 @@ export const createFullBackup = createServerFn({ method: "POST" })
       throw new Error("ليس لديك صلاحية تنفيذ النسخ الاحتياطي");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getSupabaseAdmin();
     const { zipSync, strToU8 } = await import("fflate");
 
     const createdAt = new Date().toISOString();
