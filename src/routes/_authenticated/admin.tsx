@@ -1151,6 +1151,8 @@ function AdminPage() {
               </section>
             )}
 
+            {tab === "backup" && canBackup && <SystemBackup />}
+
             {tab === "bugs" && canSeeTechTools && (
               <section className="animate-fade-up space-y-6">
                 <div className="space-y-1">
