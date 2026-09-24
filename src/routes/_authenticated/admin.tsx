@@ -766,6 +766,14 @@ function AdminPage() {
       icon: Inbox,
       visible: isCouncilLeadership,
     },
+    {
+      key: "backup",
+      label: "النسخ الاحتياطي",
+      shortLabel: "النسخ",
+      description: "تنزيل نسخة كاملة من كل بيانات الموقع والحسابات والمشاركات والملفات.",
+      icon: DatabaseBackup,
+      visible: canBackup,
+    },
   ] as AdminSection[]).filter((section) => section.visible);
 
   const activeAdminSection =
