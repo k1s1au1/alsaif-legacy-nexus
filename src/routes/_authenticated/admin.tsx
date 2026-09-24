@@ -186,6 +186,8 @@ function AdminPage() {
   const isA = isCouncilLeadership || isTechnicalAdmin || sectionHeads.length > 0;
   const isPowerUser = isCouncilLeadership;
   const canSeeTechTools = isCouncilLeadership || isTechnicalAdmin;
+  // Full system backup: chairman and technical admin only (mirrors the server check).
+  const canBackup = isSiteChairman || isTechnicalAdmin;
 
 
   const [profile, setProfile] = useState({
