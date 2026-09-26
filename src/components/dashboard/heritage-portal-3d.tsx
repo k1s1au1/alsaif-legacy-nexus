@@ -154,7 +154,7 @@ export function HeritagePortal3D({
       <div className="council-portal-model" aria-hidden="true">
         <div className="council-portal-model-visual">
           <img
-            className="council-portal-ground"
+            className="council-portal-ground council-portal-ground-back"
             src={councilSandyGround}
             alt=""
             draggable={false}
@@ -216,6 +216,14 @@ export function HeritagePortal3D({
               preserveAspectRatio="xMidYMid meet"
             />
           </svg>
+
+          <span className="council-portal-contact-shadow" />
+          <img
+            className="council-portal-ground council-portal-ground-front"
+            src={councilSandyGround}
+            alt=""
+            draggable={false}
+          />
 
           {welcomeIntro && <span className="council-portal-entry-light" />}
           <div className="council-tower-inscription">
