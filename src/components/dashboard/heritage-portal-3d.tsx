@@ -7,6 +7,10 @@ import {
 import councilSandyGround from "@/assets/council-sandy-ground-v1.webp";
 import { councilTowers } from "@/assets/najdi-council-towers-v1";
 import "./heritage-portal-3d.css";
+// Keep the approved dashboard composition after the legacy portal rules.
+// Import order is intentional: the live route injects component CSS after the
+// root stylesheets, so this final layer must travel with the component itself.
+import "@/dashboard-heritage-showcase.css";
 
 type HeritagePortal3DProps = {
   logoUrl?: string | null;
