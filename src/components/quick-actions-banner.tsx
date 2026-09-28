@@ -1,5 +1,5 @@
 import {
-  MessageCircle, Ticket, CalendarDays, ListChecks, Newspaper, Wallet,
+  MessageCircle, Plane, CalendarDays, ListChecks, Newspaper, Wallet,
   Archive, Users, Handshake, Lock, ChevronDown, ChevronUp, PartyPopper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ function QuickAction({ to, label, icon, color, description }: QuickActionProps) 
 const services = [
   { to: "/finance", label: "الصندوق المالي", description: "إدارة الموارد المالية للعائلة", icon: <Wallet /> },
   { to: "/tasks", label: "المهام", description: "إدارة ومتابعة المهام", icon: <ListChecks /> },
-  { to: "/trips", label: "الرحلات", description: "تنظيم الرحلات العائلية", icon: <Ticket /> },
+  { to: "/trips", label: "الرحلات", description: "تنظيم الرحلات العائلية", icon: <Plane /> },
   { to: "/meetings", label: "الاجتماعات", description: "جدولة اجتماعات العائلة", icon: <Users /> },
   { to: "/family-occasions", label: "مناسبات العائلة", description: "أفراح ومناسبات وذكريات العائلة", icon: <PartyPopper /> },
   { to: "/majlis", label: "الأخبار", description: "آخر أخبار العائلة", icon: <Newspaper /> },
@@ -49,9 +49,10 @@ export function QuickActionsBanner() {
   return (
     <>
       <style>{`
-        /* Hide the services banner entirely on desktop / wide screens */
+        /* Hide the legacy banner only when the full desktop dashboard exists.
+           Touch tablets in landscape keep this section. */
         @media (min-width: 1200px) {
-          .family-services-section { display: none !important; }
+          body:has(.desktop-rebuild-shell) .family-services-section { display: none !important; }
         }
 
         .family-service-icon-primary {
@@ -117,8 +118,8 @@ export function QuickActionsBanner() {
           </div>
 
           <div className="family-services-grid">
-            {visibleServices.map((service, index) => (
-              <QuickAction key={`${service.to}-${service.label}`} {...service} color={index % 2 === 0 ? "family-service-icon-primary" : "family-service-icon-gold"} />
+            {visibleServices.map((service) => (
+              <QuickAction key={`${service.to}-${service.label}`} {...service} />
             ))}
           </div>
 
