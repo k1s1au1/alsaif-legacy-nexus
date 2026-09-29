@@ -1,8 +1,8 @@
 /* Approved Najdi courtyard reference — gateway and family services only. */
 :root {
-  --reference-paper: color-mix(in srgb, var(--identity-tertiary, #f3e6c7) 80%, white);
-  --reference-paper-deep: color-mix(in srgb, var(--identity-tertiary, #f3e6c7) 88%, var(--gold-primary));
-  --reference-ink: color-mix(in srgb, var(--foreground) 76%, #4b2b18);
+  --reference-paper: oklch(0.965 0.025 82);
+  --reference-paper-deep: oklch(0.91 0.055 76);
+  --reference-ink: oklch(0.29 0.055 52);
   --reference-detail: color-mix(in srgb, var(--gold-primary) 76%, var(--primary));
   --reference-edge: color-mix(in srgb, var(--gold-primary) 64%, var(--primary));
 }
@@ -229,6 +229,7 @@ html body .desktop-overview-shell .heritage-pavilion-reference {
   position: absolute !important;
   z-index: 2 !important;
   bottom: -17px !important;
+  right: auto !important;
   left: 50% !important;
   display: inline-flex !important;
   min-width: clamp(145px, 15vw, 200px) !important;
@@ -254,7 +255,7 @@ html body .desktop-overview-shell .heritage-pavilion-reference {
   position: absolute !important;
   z-index: 4 !important;
   right: auto !important;
-  bottom: -8.7% !important;
+  bottom: 0 !important;
   left: 50% !important;
   width: min(23.5%, 320px) !important;
   height: auto !important;
@@ -649,8 +650,8 @@ html body .dashboard-page > .family-services-section .family-services-panel {
   }
 
   .heritage-pavilion-reference .council-portal-model {
-    bottom: -4.3% !important;
-    width: min(67%, 430px) !important;
+    bottom: 0 !important;
+    width: min(58%, 390px) !important;
   }
 
   .family-services-grid {
@@ -717,8 +718,8 @@ html body .dashboard-page > .family-services-section .family-services-panel {
   }
 
   .heritage-pavilion-reference .council-portal-model {
-    bottom: -5.2% !important;
-    width: min(50%, 400px) !important;
+    bottom: 0 !important;
+    width: min(43%, 350px) !important;
   }
 
   .family-service-card {
@@ -740,8 +741,8 @@ html body .dashboard-page > .family-services-section .family-services-panel {
   }
 
   .heritage-pavilion-reference .council-portal-model {
-    bottom: -1.5% !important;
-    width: min(21%, 260px) !important;
+    bottom: 0 !important;
+    width: min(18%, 225px) !important;
   }
 
   html body .dashboard-page > .family-services-section,
@@ -832,8 +833,8 @@ html body main .desktop-rebuild-shell .desktop-services-panel .desktop-service-c
   }
 
   .heritage-pavilion-reference .council-portal-model {
-    bottom: -4.8% !important;
-    width: min(69%, 292px) !important;
+    bottom: 0 !important;
+    width: min(58%, 244px) !important;
   }
 
   .family-services-heading h3 {
