@@ -77,7 +77,11 @@ html body .desktop-overview-shell .heritage-pavilion-reference {
   overflow: visible !important;
   border: 0 !important;
   border-radius: 0 !important;
-  background: transparent !important;
+  background-color: transparent !important;
+  background-image: url("./assets/najdi-courtyard-hero-v1.webp") !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: cover !important;
   box-shadow: none !important;
   contain: layout paint !important;
   color: var(--reference-ink) !important;
@@ -609,6 +613,13 @@ html body .dashboard-page > .family-services-section .family-services-panel {
     background-size: cover !important;
   }
 
+  html body .dashboard-page > .dashboard-portal-hero .heritage-pavilion-reference {
+    height: 100% !important;
+    background-image: url("./assets/najdi-courtyard-hero-portrait-v1.webp") !important;
+    background-position: center top !important;
+    background-size: cover !important;
+  }
+
   html body .dashboard-page > .family-services-section {
     margin-top: -28px !important;
     padding: 16px clamp(14px, 4vw, 28px) 18px !important;
@@ -741,6 +752,27 @@ html body .dashboard-page > .family-services-section .family-services-panel {
   .family-service-card,
   .desktop-services-panel .desktop-service-card {
     min-height: 70px !important;
+  }
+}
+
+/* Final high-specificity guard against legacy portal backgrounds and dimensions. */
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero,
+html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-portal-stage {
+  width: 100% !important;
+  max-width: none !important;
+  overflow: hidden !important;
+  background-image: url("./assets/najdi-courtyard-hero-v1.webp") !important;
+  background-position: center center !important;
+  background-size: cover !important;
+}
+
+@media (orientation: portrait) and (max-width: 969.98px) {
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero {
+    width: 100vw !important;
+    height: clamp(570px, 150vw, 810px) !important;
+    margin-inline: calc(50% - 50vw) !important;
+    background-image: url("./assets/najdi-courtyard-hero-portrait-v1.webp") !important;
+    background-position: center top !important;
   }
 }
 
