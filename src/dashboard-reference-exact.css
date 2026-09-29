@@ -920,3 +920,36 @@ html body main .desktop-rebuild-shell .desktop-services-panel .desktop-service-c
     transition: none !important;
   }
 }
+
+/* Final geometry lock: the live portal component must never exceed its scenic stage. */
+html body
+  .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero
+  .dashboard-portal-model.heritage-pavilion-reference,
+html body
+  .desktop-overview-shell
+  > .desktop-portal-stage
+  > .desktop-portal-model.heritage-pavilion-reference {
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+}
+
+@media (orientation: landscape) and (max-height: 820px) {
+  html body .heritage-pavilion-reference .council-portal-copy {
+    top: 2.5% !important;
+    width: min(34%, 390px) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 52% !important;
+    padding: 9px 24px 18px !important;
+  }
+
+  html body .heritage-pavilion-reference .council-portal-identity strong {
+    font-size: clamp(20px, 2.1vw, 29px) !important;
+  }
+
+  html body .heritage-pavilion-reference .council-portal-plaque {
+    min-height: 34px !important;
+  }
+}
