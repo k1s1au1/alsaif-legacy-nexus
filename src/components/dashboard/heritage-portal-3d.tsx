@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { councilTowers } from "@/assets/najdi-council-towers-v1";
 import "./heritage-portal-3d.css";
 // Keep the approved dashboard composition after the legacy portal rules.
@@ -24,7 +24,6 @@ export function HeritagePortal3D({
   className = "",
   welcomeIntro = false,
 }: HeritagePortal3DProps) {
-  const colorFilterId = `council-portal-colors-${useId().replace(/:/g, "")}`;
   const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
   const targetRef = useRef({ x: 0, y: 0 });
@@ -146,50 +145,10 @@ export function HeritagePortal3D({
             aria-hidden="true"
             focusable="false"
           >
-            <defs>
-              <filter
-                id={colorFilterId}
-                x="0%"
-                y="0%"
-                width="100%"
-                height="100%"
-                colorInterpolationFilters="sRGB"
-              >
-                {/* Tint cooler stone gently while retaining the warm brass pixels. */}
-                <feColorMatrix
-                  in="SourceGraphic"
-                  type="matrix"
-                  values="0 0 0 0 0
-                          0 0 0 0 0
-                          0 0 0 0 0
-                         -2 1 1 0 0.5"
-                  result="stone-mask"
-                />
-                <feFlood
-                  style={{ floodColor: "var(--council-portal-material)" }}
-                  floodOpacity="0.35"
-                  result="identity-tint"
-                />
-                <feComposite
-                  in="identity-tint"
-                  in2="stone-mask"
-                  operator="in"
-                  result="stone-tint"
-                />
-                <feBlend
-                  in="stone-tint"
-                  in2="SourceGraphic"
-                  mode="soft-light"
-                  result="harmonized-stone"
-                />
-                <feComposite in="harmonized-stone" in2="SourceGraphic" operator="atop" />
-              </filter>
-            </defs>
             <image
               href={councilTowers}
               width="1065"
               height="1477"
-              filter={`url(#${colorFilterId})`}
               preserveAspectRatio="xMidYMid meet"
             />
           </svg>

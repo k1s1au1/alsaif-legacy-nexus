@@ -19,6 +19,9 @@ function QuickAction({ to, label, icon, color, description }: QuickActionProps) 
         <span className="family-service-label font-black text-foreground">{label}</span>
         {description && <span className="family-service-description text-muted-foreground">{description}</span>}
       </div>
+      <span className="family-service-reference-arrow" aria-hidden="true">
+        <ChevronDown size={17} />
+      </span>
     </Link>
   );
 }

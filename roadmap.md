@@ -1,5 +1,6 @@
 # Roadmap
 
+- [x] Match the dashboard gateway and family-services area to the approved desktop/mobile references and verify all target viewports
 - [ ] Rebuild game-room entry, lobby, table shell, cards, and responsive layouts (entry and shared table foundation complete)
 - [x] Replace shared lottery with synchronized per-game starting-player draw
 - [x] Expand Saudi Deal action deck and rule flows

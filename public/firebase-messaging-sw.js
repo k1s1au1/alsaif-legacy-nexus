@@ -14,8 +14,8 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 // Bump the shell caches whenever the visual application shell changes. This
 // prevents installed/PWA clients from continuing to paint an older dashboard.
-const APP_CACHE = "alsaif-app-v4";
-const MEDIA_CACHE = "alsaif-media-v4";
+const APP_CACHE = "alsaif-app-v5";
+const MEDIA_CACHE = "alsaif-media-v5";
 const USER_ROUTE_CACHE_PREFIX = "alsaif-user-routes-v1:";
 const SESSION_META_CACHE = "alsaif-offline-session-v1";
 const ACTIVE_USER_KEY = "/__alsaif_active_offline_user__";
