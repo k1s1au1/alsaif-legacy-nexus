@@ -1,0 +1,785 @@
+/* Approved Najdi courtyard reference — gateway and family services only. */
+:root {
+  --reference-paper: color-mix(in srgb, var(--identity-tertiary, #f3e6c7) 80%, white);
+  --reference-paper-deep: color-mix(in srgb, var(--identity-tertiary, #f3e6c7) 88%, var(--gold-primary));
+  --reference-ink: color-mix(in srgb, var(--foreground) 76%, #4b2b18);
+  --reference-detail: color-mix(in srgb, var(--gold-primary) 76%, var(--primary));
+  --reference-edge: color-mix(in srgb, var(--gold-primary) 64%, var(--primary));
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Shared scenic stage. */
+html body .dashboard-page > .dashboard-portal-hero,
+html body .desktop-overview-shell > .desktop-portal-stage {
+  position: relative !important;
+  isolation: isolate !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-image: url("./assets/najdi-courtyard-hero-v1.webp") !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  box-shadow: none !important;
+}
+
+html body .dashboard-page > .dashboard-portal-hero::before,
+html body .desktop-overview-shell > .desktop-portal-stage::before,
+html body .desktop-overview-shell::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card,
+html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+html body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::before,
+html body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card::after,
+html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout::before,
+html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body .dashboard-page > .dashboard-portal-hero .heritage-pavilion-reference,
+html body .desktop-overview-shell .heritage-pavilion-reference {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  contain: layout paint !important;
+  color: var(--reference-ink) !important;
+}
+
+.heritage-pavilion-reference .council-portal-ambient,
+.heritage-pavilion-reference .council-portal-sheen,
+.heritage-pavilion-reference .council-portal-entry-light {
+  display: none !important;
+}
+
+/* Compact cut-corner paper welcome plaque. */
+.heritage-pavilion-reference .council-portal-copy {
+  position: absolute !important;
+  z-index: 8 !important;
+  top: 2.4% !important;
+  left: 50% !important;
+  display: flex !important;
+  width: min(35%, 450px) !important;
+  max-width: calc(100% - 32px) !important;
+  min-height: 148px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 15px 38px 23px !important;
+  border: 1px solid color-mix(in srgb, var(--reference-edge) 62%, transparent) !important;
+  border-radius: 3px !important;
+  color: var(--reference-ink) !important;
+  background:
+    linear-gradient(135deg, transparent 15px, var(--reference-paper) 0) top left,
+    linear-gradient(225deg, transparent 15px, var(--reference-paper) 0) top right,
+    linear-gradient(315deg, transparent 15px, var(--reference-paper) 0) bottom right,
+    linear-gradient(45deg, transparent 15px, var(--reference-paper) 0) bottom left !important;
+  background-repeat: no-repeat !important;
+  background-size: 51% 51% !important;
+  box-shadow:
+    0 9px 22px color-mix(in srgb, var(--primary) 18%, transparent),
+    inset 0 0 0 4px color-mix(in srgb, var(--reference-edge) 12%, transparent) !important;
+  text-align: center !important;
+  transform: translateX(-50%) !important;
+}
+
+.heritage-pavilion-reference .council-portal-copy::before,
+.heritage-pavilion-reference .council-portal-copy::after {
+  content: "◆  ◇  ◆";
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  color: color-mix(in srgb, var(--reference-detail) 24%, transparent);
+  font-size: 8px;
+  letter-spacing: 0;
+  pointer-events: none;
+}
+
+.heritage-pavilion-reference .council-portal-copy::after {
+  right: auto;
+  left: 10px;
+  transform: scaleX(-1);
+}
+
+.heritage-pavilion-reference .council-portal-greeting {
+  margin: 0 0 2px !important;
+  color: color-mix(in srgb, var(--reference-ink) 82%, var(--primary)) !important;
+  font-size: clamp(12px, 1.05vw, 17px) !important;
+  font-weight: 900 !important;
+  line-height: 1.25 !important;
+  text-shadow: none !important;
+}
+
+.heritage-pavilion-reference .council-portal-identity {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.heritage-pavilion-reference .council-portal-identity span {
+  margin: 0 !important;
+  color: var(--reference-ink) !important;
+  font-size: clamp(11px, 0.95vw, 15px) !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  text-shadow: none !important;
+}
+
+.heritage-pavilion-reference .council-portal-identity strong {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: 3px !important;
+  overflow: hidden !important;
+  color: var(--reference-ink) !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: currentColor !important;
+  font-size: clamp(21px, 2vw, 31px) !important;
+  font-weight: 950 !important;
+  line-height: 1.18 !important;
+  text-align: center !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  filter: none !important;
+  text-shadow: none !important;
+  animation: none !important;
+}
+
+.heritage-pavilion-reference .council-portal-identity::after {
+  content: "";
+  display: block;
+  width: 78%;
+  height: 7px;
+  margin-top: 5px;
+  background:
+    radial-gradient(circle, var(--reference-detail) 0 2px, transparent 2.5px) center/7px 7px no-repeat,
+    linear-gradient(90deg, transparent, var(--reference-detail) 14%, var(--reference-detail) 43%, transparent 43% 57%, var(--reference-detail) 57%, var(--reference-detail) 86%, transparent) center/100% 1px no-repeat;
+  opacity: 0.78;
+}
+
+.heritage-pavilion-reference .council-portal-message {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 3px 0 0 !important;
+  overflow: hidden !important;
+  color: color-mix(in srgb, var(--reference-ink) 88%, var(--primary)) !important;
+  font-size: clamp(10px, 0.86vw, 13px) !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+  text-align: center !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  text-shadow: none !important;
+  animation: none !important;
+}
+
+.heritage-pavilion-reference .council-portal-message::before,
+.heritage-pavilion-reference .council-portal-message::after {
+  content: none !important;
+  display: none !important;
+}
+
+.heritage-pavilion-reference .council-portal-plaque {
+  position: absolute !important;
+  z-index: 2 !important;
+  bottom: -17px !important;
+  left: 50% !important;
+  display: inline-flex !important;
+  min-width: clamp(145px, 15vw, 200px) !important;
+  min-height: 34px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 6px 24px !important;
+  border: 1px solid color-mix(in srgb, var(--reference-edge) 70%, transparent) !important;
+  border-radius: 11px !important;
+  color: var(--primary-foreground) !important;
+  background: color-mix(in srgb, var(--primary) 82%, #4b2b18) !important;
+  box-shadow: 0 5px 10px color-mix(in srgb, var(--primary) 26%, transparent) !important;
+  font-size: clamp(11px, 0.9vw, 14px) !important;
+  font-weight: 850 !important;
+  line-height: 1 !important;
+  text-shadow: none !important;
+  transform: translateX(-50%) !important;
+}
+
+/* Existing gateway model, untinted and grounded on the photographic floor. */
+.heritage-pavilion-reference .council-portal-model {
+  position: absolute !important;
+  z-index: 4 !important;
+  right: auto !important;
+  bottom: -8.7% !important;
+  left: 50% !important;
+  width: min(23.5%, 320px) !important;
+  height: auto !important;
+  aspect-ratio: 1065 / 1477 !important;
+  transform: translateX(-50%) !important;
+  pointer-events: none !important;
+}
+
+.heritage-pavilion-reference .council-portal-model-visual {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+  transition: filter 240ms ease !important;
+  animation: none !important;
+}
+
+.heritage-pavilion-reference .council-portal-towers {
+  position: relative !important;
+  z-index: 2 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  filter: saturate(1.03) contrast(1.02) !important;
+}
+
+.heritage-pavilion-reference .council-portal-contact-shadow {
+  position: absolute !important;
+  z-index: 1 !important;
+  top: 89.6% !important;
+  left: 50% !important;
+  display: block !important;
+  width: 68% !important;
+  height: 2.3% !important;
+  border-radius: 50% !important;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--primary) 28%, transparent), transparent 72%) !important;
+  filter: blur(3px) !important;
+  mix-blend-mode: multiply !important;
+  opacity: 0.42 !important;
+  transform: translateX(-50%) !important;
+}
+
+.heritage-pavilion-reference .council-tower-inscription-text {
+  letter-spacing: 0 !important;
+}
+
+/* Paper family-services surface shared by the live and desktop variants. */
+html body .dashboard-page > .family-services-section,
+html body .desktop-overview-shell > .desktop-services-panel {
+  position: relative !important;
+  z-index: 3 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 14px clamp(20px, 5vw, 72px) 18px !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--reference-ink) !important;
+  background:
+    radial-gradient(circle at 8px 8px, color-mix(in srgb, var(--reference-detail) 10%, transparent) 0 1px, transparent 1.5px) 0 0/16px 16px,
+    linear-gradient(180deg, var(--reference-paper), color-mix(in srgb, var(--reference-paper) 90%, var(--reference-paper-deep))) !important;
+  box-shadow: inset 0 1px color-mix(in srgb, var(--reference-edge) 24%, transparent) !important;
+}
+
+html body .dashboard-page > .family-services-section .family-services-panel {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.family-services-heading,
+.desktop-services-panel .desktop-section-head {
+  display: flex !important;
+  width: min(100%, 520px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 14px !important;
+  margin: 0 auto 13px !important;
+  text-align: center !important;
+}
+
+.family-services-heading::before,
+.family-services-heading::after,
+.desktop-services-panel .desktop-section-head::before,
+.desktop-services-panel .desktop-section-head::after {
+  content: "";
+  display: block;
+  width: min(22vw, 112px);
+  height: 7px;
+  flex: 1 1 auto;
+  background:
+    radial-gradient(circle, var(--reference-detail) 0 2px, transparent 2.5px) center/7px 7px no-repeat,
+    linear-gradient(90deg, transparent, var(--reference-detail)) left center/46% 1px no-repeat,
+    linear-gradient(90deg, var(--reference-detail), transparent) right center/46% 1px no-repeat;
+  opacity: 0.72;
+}
+
+.family-services-heading h3,
+.desktop-services-panel .desktop-section-head h2 {
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  color: var(--reference-ink) !important;
+  font-size: clamp(18px, 2vw, 25px) !important;
+  font-weight: 950 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+.family-services-heading .family-services-top-toggle,
+.desktop-services-panel .desktop-section-head > button,
+.desktop-services-panel .desktop-section-head p {
+  display: none !important;
+}
+
+.family-services-grid,
+.desktop-services-panel .desktop-services-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: clamp(8px, 1vw, 13px) !important;
+  width: 100% !important;
+  max-height: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.family-service-card,
+.desktop-services-panel .desktop-service-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 54px minmax(0, 1fr) 28px !important;
+  grid-template-rows: 1fr !important;
+  min-width: 0 !important;
+  min-height: 80px !important;
+  align-items: center !important;
+  justify-items: stretch !important;
+  gap: 11px !important;
+  padding: 10px 12px !important;
+  overflow: hidden !important;
+  border: 1px solid color-mix(in srgb, var(--reference-edge) 42%, transparent) !important;
+  border-radius: 7px !important;
+  color: var(--reference-ink) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--reference-paper) 96%, white), var(--reference-paper)) !important;
+  box-shadow:
+    0 5px 12px color-mix(in srgb, var(--reference-ink) 10%, transparent),
+    inset 0 0 0 3px color-mix(in srgb, var(--reference-edge) 8%, transparent) !important;
+  text-align: right !important;
+  transition: transform 180ms ease, border-color 180ms ease !important;
+}
+
+.family-service-card::before,
+.family-service-card::after,
+.desktop-services-panel .desktop-service-card::before,
+.desktop-services-panel .desktop-service-card::after {
+  content: "◆" !important;
+  position: absolute !important;
+  z-index: 0 !important;
+  right: 5px !important;
+  bottom: 2px !important;
+  display: block !important;
+  color: color-mix(in srgb, var(--reference-detail) 18%, transparent) !important;
+  background: none !important;
+  font-size: 9px !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.family-service-card::after,
+.desktop-services-panel .desktop-service-card::after {
+  right: auto !important;
+  left: 5px !important;
+}
+
+.family-service-card:hover,
+.family-service-card:focus-visible,
+.desktop-services-panel .desktop-service-card:hover,
+.desktop-services-panel .desktop-service-card:focus-visible {
+  border-color: var(--reference-edge) !important;
+  transform: translateY(-2px) !important;
+}
+
+.family-service-icon,
+.desktop-services-panel .desktop-service-icon {
+  position: relative !important;
+  z-index: 1 !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  width: 48px !important;
+  height: 54px !important;
+  min-width: 48px !important;
+  min-height: 54px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  border: 1px solid color-mix(in srgb, var(--reference-edge) 48%, transparent) !important;
+  border-radius: 50% 50% 9px 9px !important;
+  color: var(--primary) !important;
+  background: color-mix(in srgb, var(--reference-paper) 86%, white) !important;
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--reference-edge) 8%, transparent) !important;
+}
+
+.family-service-icon svg,
+.desktop-services-panel .desktop-service-icon svg {
+  width: 25px !important;
+  height: 25px !important;
+  color: currentColor !important;
+}
+
+.family-service-copy,
+.desktop-services-panel .desktop-service-card > strong {
+  position: relative !important;
+  z-index: 1 !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+}
+
+.family-service-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+}
+
+.family-service-label,
+.desktop-services-panel .desktop-service-card > strong {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  color: var(--reference-ink) !important;
+  font-size: clamp(13px, 1.25vw, 17px) !important;
+  font-weight: 950 !important;
+  line-height: 1.25 !important;
+  text-align: right !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.family-service-description,
+.desktop-services-panel .desktop-service-card > span {
+  display: none !important;
+}
+
+.family-service-reference-arrow,
+.desktop-service-reference-arrow {
+  position: relative !important;
+  z-index: 1 !important;
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  width: 27px !important;
+  height: 27px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  color: var(--primary-foreground) !important;
+  background: color-mix(in srgb, var(--primary) 82%, var(--reference-detail)) !important;
+  font-style: normal !important;
+}
+
+.family-service-reference-arrow svg {
+  transform: rotate(90deg);
+}
+
+.family-services-toggle,
+.desktop-services-panel .desktop-services-wide-toggle {
+  display: flex !important;
+  width: min(68%, 760px) !important;
+  min-height: 38px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  margin: 10px auto 0 !important;
+  padding: 6px 18px !important;
+  border: 1px solid color-mix(in srgb, var(--reference-edge) 38%, transparent) !important;
+  border-radius: 6px !important;
+  color: var(--reference-ink) !important;
+  background: color-mix(in srgb, var(--reference-paper) 92%, white) !important;
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--reference-edge) 7%, transparent) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+/* Wide landscape composition. */
+@media (orientation: landscape), (min-width: 970px) {
+  html body .dashboard-page > .dashboard-portal-hero,
+  html body .desktop-overview-shell > .desktop-portal-stage {
+    height: clamp(350px, 31.3vw, 520px) !important;
+    background-image: url("./assets/najdi-courtyard-hero-v1.webp") !important;
+  }
+
+  html body .desktop-overview-shell {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  html body .desktop-overview-shell > .desktop-portal-stage {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  html body .desktop-overview-shell > .desktop-services-panel {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+}
+
+/* Portrait phones and tablets use the dedicated portrait artwork without cropping the landscape file. */
+@media (orientation: portrait) and (max-width: 969.98px) {
+  html body .dashboard-page {
+    overflow: visible !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero,
+  html body .dashboard-page > .family-services-section {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-inline: calc(50% - 50vw) !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero {
+    height: clamp(570px, 150vw, 810px) !important;
+    margin-top: -28px !important;
+    padding: 0 !important;
+    background-image: url("./assets/najdi-courtyard-hero-portrait-v1.webp") !important;
+    background-position: center top !important;
+    background-size: cover !important;
+  }
+
+  html body .dashboard-page > .family-services-section {
+    margin-top: -28px !important;
+    padding: 16px clamp(14px, 4vw, 28px) 18px !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-copy {
+    top: 4.2% !important;
+    width: min(78%, 500px) !important;
+    min-height: 142px !important;
+    padding: 14px 25px 22px !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-greeting {
+    font-size: clamp(13px, 3.4vw, 19px) !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-identity span {
+    font-size: clamp(12px, 3.1vw, 17px) !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-identity strong {
+    font-size: clamp(24px, 6.7vw, 40px) !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-message {
+    font-size: clamp(10px, 2.7vw, 15px) !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-model {
+    bottom: -4.3% !important;
+    width: min(67%, 430px) !important;
+  }
+
+  .family-services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .family-services-grid > :nth-child(1) { order: 1 !important; }
+  .family-services-grid > :nth-child(4) { order: 2 !important; }
+  .family-services-grid > :nth-child(2) { order: 3 !important; }
+  .family-services-grid > :nth-child(3) { order: 4 !important; }
+  .family-services-grid > :nth-child(5) { order: 5 !important; }
+  .family-services-grid > :nth-child(6) { order: 6 !important; }
+  .family-services-grid > :nth-child(7) { order: 7 !important; }
+  .family-services-grid > :nth-child(8) { order: 8 !important; }
+  .family-services-grid > :nth-child(9) { order: 9 !important; }
+  .family-services-grid > :nth-child(10) { order: 10 !important; }
+  .family-services-grid > :nth-child(11) { order: 11 !important; }
+  .family-services-grid > :nth-child(12) { order: 12 !important; }
+
+  .family-service-card {
+    grid-template-columns: 45px minmax(0, 1fr) 25px !important;
+    min-height: 76px !important;
+    gap: 8px !important;
+    padding: 9px !important;
+  }
+
+  .family-service-icon {
+    width: 42px !important;
+    height: 49px !important;
+    min-width: 42px !important;
+    min-height: 49px !important;
+  }
+
+  .family-service-icon svg {
+    width: 23px !important;
+    height: 23px !important;
+  }
+
+  .family-service-label {
+    font-size: clamp(12px, 3.45vw, 18px) !important;
+  }
+
+  .family-service-reference-arrow {
+    width: 25px !important;
+    height: 25px !important;
+  }
+
+  .family-services-toggle {
+    width: 100% !important;
+    min-height: 42px !important;
+    margin-top: 11px !important;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 600px) and (max-width: 969.98px) {
+  html body .dashboard-page > .dashboard-portal-hero {
+    height: min(76vh, 790px) !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-copy {
+    top: 3.7% !important;
+    width: min(64%, 500px) !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-model {
+    bottom: -5.2% !important;
+    width: min(50%, 400px) !important;
+  }
+
+  .family-service-card {
+    min-height: 88px !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 820px) {
+  html body .dashboard-page > .dashboard-portal-hero,
+  html body .desktop-overview-shell > .desktop-portal-stage {
+    height: min(57vh, 445px) !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-copy {
+    top: 1.8% !important;
+    width: min(35%, 420px) !important;
+    min-height: 128px !important;
+    padding-block: 10px 19px !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-model {
+    bottom: -10.5% !important;
+    width: min(23%, 285px) !important;
+  }
+
+  html body .dashboard-page > .family-services-section,
+  html body .desktop-overview-shell > .desktop-services-panel {
+    padding-block: 11px 13px !important;
+  }
+
+  .family-service-card,
+  .desktop-services-panel .desktop-service-card {
+    min-height: 70px !important;
+  }
+}
+
+@media (max-width: 430px) and (orientation: portrait) {
+  html body .dashboard-page > .dashboard-portal-hero {
+    height: clamp(570px, 150vw, 646px) !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-copy {
+    top: 4% !important;
+    width: calc(100% - 54px) !important;
+    min-height: 136px !important;
+  }
+
+  .heritage-pavilion-reference .council-portal-model {
+    bottom: -4.8% !important;
+    width: min(69%, 292px) !important;
+  }
+
+  .family-services-heading h3 {
+    font-size: 18px !important;
+  }
+
+  .family-service-card {
+    grid-template-columns: 40px minmax(0, 1fr) 23px !important;
+    min-height: 70px !important;
+    gap: 6px !important;
+    padding: 8px 7px !important;
+  }
+
+  .family-service-icon {
+    width: 38px !important;
+    height: 45px !important;
+    min-width: 38px !important;
+    min-height: 45px !important;
+  }
+
+  .family-service-label {
+    font-size: 12px !important;
+  }
+
+  .family-service-reference-arrow {
+    width: 22px !important;
+    height: 22px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .family-service-card,
+  .desktop-services-panel .desktop-service-card,
+  .heritage-pavilion-reference {
+    animation: none !important;
+    transition: none !important;
+  }
+}
