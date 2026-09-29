@@ -766,6 +766,38 @@ html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-portal-
   background-size: cover !important;
 }
 
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero > .dashboard-portal-card,
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero > .dashboard-portal-card > .dashboard-portal-layout,
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero .heritage-pavilion-reference {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section,
+html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-services-panel {
+  background:
+    radial-gradient(circle at 8px 8px, color-mix(in srgb, var(--reference-detail) 10%, transparent) 0 1px, transparent 1.5px) 0 0/16px 16px,
+    linear-gradient(180deg, var(--reference-paper), color-mix(in srgb, var(--reference-paper) 90%, var(--reference-paper-deep))) !important;
+}
+
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 .family-service-card,
+html body main .desktop-rebuild-shell .desktop-services-panel .desktop-service-card {
+  min-height: 80px !important;
+  padding: 10px 12px !important;
+  border: 1px solid color-mix(in srgb, var(--reference-edge) 42%, transparent) !important;
+  border-radius: 7px !important;
+  color: var(--reference-ink) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--reference-paper) 96%, white), var(--reference-paper)) !important;
+}
+
 @media (orientation: portrait) and (max-width: 969.98px) {
   html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero {
     width: 100vw !important;
@@ -773,6 +805,18 @@ html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-portal-
     margin-inline: calc(50% - 50vw) !important;
     background-image: url("./assets/najdi-courtyard-hero-portrait-v1.webp") !important;
     background-position: center top !important;
+  }
+
+
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero .heritage-pavilion-reference {
+    background-image: url("./assets/najdi-courtyard-hero-portrait-v1.webp") !important;
+    background-position: center top !important;
+    background-size: cover !important;
+  }
+
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 .family-service-card {
+    min-height: 76px !important;
+    padding: 9px !important;
   }
 }
 
