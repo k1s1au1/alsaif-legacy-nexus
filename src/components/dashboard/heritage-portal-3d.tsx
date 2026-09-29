@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { councilTowers } from "@/assets/najdi-council-towers-v1";
 import "./heritage-portal-3d.css";
 // Keep the approved dashboard composition after the legacy portal rules.
@@ -24,7 +24,6 @@ export function HeritagePortal3D({
   className = "",
   welcomeIntro = false,
 }: HeritagePortal3DProps) {
-  useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
   const targetRef = useRef({ x: 0, y: 0 });
