@@ -5,6 +5,7 @@ import "./heritage-portal-3d.css";
 // Import order is intentional: the live route injects component CSS after the
 // root stylesheets, so this final layer must travel with the component itself.
 import "@/dashboard-heritage-showcase.css";
+import "@/dashboard-reference-exact.css";
 
 type HeritagePortal3DProps = {
   logoUrl?: string | null;
