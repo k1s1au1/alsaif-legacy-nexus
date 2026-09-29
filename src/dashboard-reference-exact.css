@@ -14,6 +14,7 @@ body {
 
 /* Shared scenic stage. */
 html body .dashboard-page > .dashboard-portal-hero,
+html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero,
 html body .desktop-overview-shell > .desktop-portal-stage {
   position: relative !important;
   isolation: isolate !important;
@@ -505,7 +506,7 @@ html body .dashboard-page > .family-services-section .family-services-panel {
 .desktop-service-reference-arrow {
   position: relative !important;
   z-index: 1 !important;
-  grid-column: 3 !important;
+  grid-column: 1 !important;
   grid-row: 1 !important;
   display: flex !important;
   width: 27px !important;
@@ -520,6 +521,17 @@ html body .dashboard-page > .family-services-section .family-services-panel {
 
 .family-service-reference-arrow svg {
   transform: rotate(90deg);
+}
+
+.family-service-card > .family-service-arrow,
+.family-service-card > svg.family-service-arrow,
+.desktop-service-card > .desktop-service-arrow {
+  display: none !important;
+}
+
+.family-service-icon,
+.desktop-services-panel .desktop-service-icon {
+  grid-column: 3 !important;
 }
 
 .family-services-toggle,
@@ -544,6 +556,7 @@ html body .dashboard-page > .family-services-section .family-services-panel {
 /* Wide landscape composition. */
 @media (orientation: landscape), (min-width: 970px) {
   html body .dashboard-page > .dashboard-portal-hero,
+  html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero,
   html body .desktop-overview-shell > .desktop-portal-stage {
     height: clamp(350px, 31.3vw, 520px) !important;
     background-image: url("./assets/najdi-courtyard-hero-v1.webp") !important;
@@ -716,8 +729,8 @@ html body .dashboard-page > .family-services-section .family-services-panel {
   }
 
   .heritage-pavilion-reference .council-portal-model {
-    bottom: -10.5% !important;
-    width: min(23%, 285px) !important;
+    bottom: -1.5% !important;
+    width: min(21%, 260px) !important;
   }
 
   html body .dashboard-page > .family-services-section,
