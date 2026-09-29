@@ -953,3 +953,79 @@ html body
     min-height: 34px !important;
   }
 }
+
+/* Extend the courtyard continuously from beneath the top bar to both content edges. */
+html body .dashboard-page,
+html body .desktop-rebuild-shell {
+  position: relative !important;
+  isolation: isolate !important;
+}
+
+html body .dashboard-page::before,
+html body .desktop-rebuild-shell::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: -1 !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: 0 !important;
+  height: calc(clamp(350px, 31.3vw, 520px) + 96px) !important;
+  pointer-events: none !important;
+  background: url("./assets/najdi-courtyard-hero-v1.webp") center top / cover no-repeat !important;
+}
+
+html body .dashboard-faith-strip {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+@media (min-width: 970px) {
+  html body main > div.p-4.md\:p-8.lg\:p-12:has(.desktop-rebuild-shell) {
+    padding-top: 0 !important;
+  }
+
+  html body .desktop-rebuild-shell {
+    width: auto !important;
+    margin-inline: calc(clamp(24px, 3vw, 48px) * -1) !important;
+  }
+
+  html body .desktop-rebuild-root {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  html body .desktop-rebuild-shell::before {
+    height: calc(clamp(350px, 31.3vw, 520px) + 104px) !important;
+  }
+
+  html body .desktop-rebuild-shell .dashboard-faith-strip {
+    margin-inline: clamp(24px, 3vw, 48px) !important;
+  }
+
+  html body .desktop-rebuild-shell .desktop-overview-shell > .desktop-portal-stage,
+  html body .desktop-rebuild-shell .desktop-overview-shell .desktop-portal-model.heritage-pavilion-reference {
+    background-image: none !important;
+  }
+}
+
+@media (max-width: 969.98px) {
+  html body main > div.p-4.md\:p-8.lg\:p-12:has(.dashboard-page) {
+    padding-top: 0 !important;
+  }
+
+  html body .dashboard-page::before {
+    width: 100vw !important;
+    height: calc(clamp(570px, 150vw, 810px) + 112px) !important;
+    margin-inline: calc(50% - 50vw) !important;
+    background-image: url("./assets/najdi-courtyard-hero-portrait-v1.webp") !important;
+  }
+
+  html body .dashboard-page > .dashboard-faith-strip {
+    margin-inline: 0 !important;
+  }
+
+  html body .dashboard-page > .dashboard-portal-hero,
+  html body .dashboard-page > .dashboard-portal-hero .heritage-pavilion-reference {
+    background-image: none !important;
+  }
+}
