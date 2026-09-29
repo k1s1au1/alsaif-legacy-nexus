@@ -264,6 +264,22 @@ html body .desktop-overview-shell .heritage-pavilion-reference {
   pointer-events: none !important;
 }
 
+html body
+  .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero
+  .dashboard-portal-model.heritage-pavilion-reference
+  .council-portal-model,
+html body
+  .desktop-overview-shell
+  .desktop-portal-model.heritage-pavilion-reference
+  .council-portal-model {
+  right: auto !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  width: min(23.5%, 320px) !important;
+  transform: translateX(-50%) !important;
+}
+
 .heritage-pavilion-reference .council-portal-model-visual {
   position: relative !important;
   width: 100% !important;
@@ -654,6 +670,15 @@ html body .dashboard-page > .family-services-section .family-services-panel {
     width: min(58%, 390px) !important;
   }
 
+  html body
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference
+    .council-portal-model {
+    bottom: 0 !important;
+    width: min(58%, 390px) !important;
+  }
+
   .family-services-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px !important;
@@ -741,6 +766,19 @@ html body .dashboard-page > .family-services-section .family-services-panel {
   }
 
   .heritage-pavilion-reference .council-portal-model {
+    bottom: 0 !important;
+    width: min(18%, 225px) !important;
+  }
+
+  html body
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference
+    .council-portal-model,
+  html body
+    .desktop-overview-shell
+    .desktop-portal-model.heritage-pavilion-reference
+    .council-portal-model {
     bottom: 0 !important;
     width: min(18%, 225px) !important;
   }
@@ -837,6 +875,15 @@ html body main .desktop-rebuild-shell .desktop-services-panel .desktop-service-c
     width: min(58%, 244px) !important;
   }
 
+  html body
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference
+    .council-portal-model {
+    bottom: 0 !important;
+    width: min(58%, 244px) !important;
+  }
+
   .family-services-heading h3 {
     font-size: 18px !important;
   }
@@ -871,5 +918,38 @@ html body main .desktop-rebuild-shell .desktop-services-panel .desktop-service-c
   .heritage-pavilion-reference {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* Final geometry lock: the live portal component must never exceed its scenic stage. */
+html body
+  .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero
+  .dashboard-portal-model.heritage-pavilion-reference,
+html body
+  .desktop-overview-shell
+  > .desktop-portal-stage
+  > .desktop-portal-model.heritage-pavilion-reference {
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+}
+
+@media (orientation: landscape) and (max-height: 820px) {
+  html body .heritage-pavilion-reference .council-portal-copy {
+    top: 2.5% !important;
+    width: min(34%, 390px) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 52% !important;
+    padding: 9px 24px 18px !important;
+  }
+
+  html body .heritage-pavilion-reference .council-portal-identity strong {
+    font-size: clamp(20px, 2.1vw, 29px) !important;
+  }
+
+  html body .heritage-pavilion-reference .council-portal-plaque {
+    min-height: 34px !important;
   }
 }
