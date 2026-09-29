@@ -1,54 +1,58 @@
 /*
- * Approved dashboard composition — 2026-09-28
- *
- * The header and mobile bottom navigation intentionally stay untouched.
- * This file is loaded last so the welcome courtyard and Family Services use
- * one predictable responsive system instead of accumulating breakpoint fixes.
+ * Approved dashboard composition — exact reference pass, 2026-09-29.
+ * Header and mobile bottom navigation intentionally stay untouched.
  */
-
 :root {
-  --dashboard-heritage-ink: color-mix(
+  --heritage-ink: color-mix(
     in srgb,
-    var(--identity-header, var(--nav-bg, var(--primary))) 86%,
-    #160f0a
+    var(--identity-header, var(--nav-bg, var(--primary))) 84%,
+    #241207
   );
-  --dashboard-heritage-accent: color-mix(
+  --heritage-ink-deep: color-mix(
     in srgb,
-    var(--gold-primary, #b78b3d) 78%,
-    var(--identity-tertiary, #f0dfb8)
+    var(--identity-header, var(--nav-bg, var(--primary))) 68%,
+    #1b0d06
   );
-  --dashboard-heritage-paper: color-mix(
+  --heritage-gold: color-mix(
     in srgb,
-    var(--identity-soft, var(--card)) 82%,
-    #fff 18%
+    var(--gold-primary, #b98a42) 82%,
+    var(--identity-tertiary, #efdbad)
   );
-  --dashboard-heritage-paper-strong: color-mix(
-    in srgb,
-    var(--identity-soft, var(--card)) 66%,
-    #fff 34%
-  );
-  --dashboard-heritage-line: color-mix(
-    in srgb,
-    var(--dashboard-heritage-accent) 42%,
-    transparent
-  );
+  --heritage-paper: color-mix(in srgb, var(--identity-soft, #f7ead4) 42%, #fff6e5 58%);
+  --heritage-paper-strong: color-mix(in srgb, var(--identity-soft, #f7ead4) 30%, #fffaf0 70%);
+  --heritage-line: color-mix(in srgb, var(--heritage-gold) 56%, transparent);
 }
 
-/* Shared live courtyard treatment. The image provides depth; identity tokens
-   tint the atmosphere while copy, services and navigation remain real UI. */
+/* No artificial sand: the gate stands on the photographed courtyard floor. */
+html body .heritage-pavilion-reference .council-portal-ground {
+  display: none !important;
+}
+
 html body .heritage-pavilion-reference {
-  background-color: var(--council-portal-background) !important;
+  position: relative !important;
+  isolation: isolate !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: var(--heritage-paper) !important;
   background-image:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--identity-header, var(--primary)) 16%, transparent),
-      color-mix(in srgb, var(--identity-header, var(--primary)) 28%, transparent)
+      color-mix(in srgb, var(--identity-header, var(--primary)) 7%, transparent),
+      color-mix(in srgb, var(--identity-header, var(--primary)) 12%, transparent)
     ),
     url("./assets/najdi-courtyard-hero-v1.webp") !important;
-  background-position: center center !important;
+  background-position: center !important;
   background-repeat: no-repeat !important;
-  background-size: cover !important;
+  background-size: 100% 100% !important;
   background-blend-mode: soft-light, normal !important;
+  color: var(--heritage-ink) !important;
+  contain: layout paint !important;
 }
 
 html body .heritage-pavilion-reference .council-portal-ambient,
@@ -56,133 +60,380 @@ html body .heritage-pavilion-reference .council-portal-sheen {
   display: none !important;
 }
 
-/* The greeting becomes a centered architectural plaque on every device. */
+/* Architectural greeting plaque. */
 html body .heritage-pavilion-reference .council-portal-copy {
-  box-sizing: border-box;
-  padding: clamp(16px, 2vw, 25px) clamp(20px, 3vw, 42px) clamp(19px, 2.4vw, 30px);
-  border: 1px solid var(--dashboard-heritage-line);
-  border-radius: 22px 22px 38px 38px;
+  position: absolute !important;
+  z-index: 4 !important;
+  top: 2.2% !important;
+  left: 50% !important;
+  display: flex !important;
+  width: min(29%, 480px) !important;
+  max-width: 480px !important;
+  box-sizing: border-box !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 17px 34px 18px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--heritage-ink) !important;
+  filter: none !important;
+  transform: translateX(-50%) !important;
+  text-align: center !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-copy::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 0 !important;
+  inset: 0 0 25px !important;
+  border: 1px solid var(--heritage-line) !important;
   background:
-    linear-gradient(135deg, color-mix(in srgb, #fff 28%, transparent), transparent 58%),
-    var(--dashboard-heritage-paper);
+    radial-gradient(
+      circle at 15% 18%,
+      color-mix(in srgb, var(--heritage-gold) 7%, transparent),
+      transparent 25%
+    ),
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--heritage-gold) 4%, transparent) 0 1px,
+      transparent 1px 12px
+    ),
+    linear-gradient(145deg, color-mix(in srgb, #fff 58%, transparent), transparent 56%),
+    var(--heritage-paper) !important;
   box-shadow:
-    0 20px 42px color-mix(in srgb, var(--dashboard-heritage-ink) 24%, transparent),
-    inset 0 0 0 5px color-mix(in srgb, var(--dashboard-heritage-accent) 10%, transparent),
-    inset 0 1px color-mix(in srgb, #fff 78%, transparent);
-  color: var(--dashboard-heritage-ink);
+    0 18px 40px color-mix(in srgb, var(--heritage-ink-deep) 22%, transparent),
+    inset 0 0 0 5px color-mix(in srgb, #fff 32%, transparent) !important;
+  clip-path: polygon(
+    10% 0,
+    90% 0,
+    90% 3%,
+    95% 3%,
+    95% 10%,
+    98% 10%,
+    98% 18%,
+    100% 18%,
+    100% 82%,
+    98% 82%,
+    98% 90%,
+    95% 90%,
+    95% 97%,
+    90% 97%,
+    90% 100%,
+    10% 100%,
+    10% 97%,
+    5% 97%,
+    5% 90%,
+    2% 90%,
+    2% 82%,
+    0 82%,
+    0 18%,
+    2% 18%,
+    2% 10%,
+    5% 10%,
+    5% 3%,
+    10% 3%
+  ) !important;
+  pointer-events: none !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-copy::after {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  inset: 8px 10px 33px !important;
+  border: 1px solid color-mix(in srgb, var(--heritage-gold) 26%, transparent) !important;
+  clip-path: polygon(
+    9% 0,
+    91% 0,
+    91% 4%,
+    96% 4%,
+    96% 14%,
+    100% 14%,
+    100% 86%,
+    96% 86%,
+    96% 96%,
+    91% 96%,
+    91% 100%,
+    9% 100%,
+    9% 96%,
+    4% 96%,
+    4% 86%,
+    0 86%,
+    0 14%,
+    4% 14%,
+    4% 4%,
+    9% 4%
+  ) !important;
+  pointer-events: none !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-copy > * {
+  position: relative !important;
+  z-index: 2 !important;
 }
 
 html body .heritage-pavilion-reference .council-portal-greeting,
 html body .heritage-pavilion-reference .council-portal-identity span,
 html body .heritage-pavilion-reference .council-portal-message {
-  color: var(--dashboard-heritage-ink) !important;
+  color: var(--heritage-ink) !important;
   text-shadow: none !important;
 }
 
+html body .heritage-pavilion-reference .council-portal-greeting {
+  margin: 0 0 2px !important;
+  font-size: clamp(14px, 1.02vw, 17px) !important;
+  font-weight: 900 !important;
+  line-height: 1.3 !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-identity {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-identity span {
+  margin: 0 !important;
+  font-size: clamp(13px, 0.9vw, 15px) !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+}
+
 html body .heritage-pavilion-reference .council-portal-identity strong {
-  color: var(--dashboard-heritage-ink) !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  color: var(--heritage-ink-deep) !important;
   background: none !important;
   -webkit-background-clip: border-box !important;
   background-clip: border-box !important;
   -webkit-text-fill-color: currentColor !important;
+  font-size: clamp(29px, 2.2vw, 37px) !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.12 !important;
+  text-align: center !important;
+  text-shadow: 0 2px 0 color-mix(in srgb, #fff 70%, transparent) !important;
   filter: none !important;
-  text-shadow: 0 2px 0 color-mix(in srgb, #fff 72%, transparent) !important;
+  animation: none !important;
+  white-space: normal !important;
+  text-wrap: balance !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-identity::after {
+  content: "◆" !important;
+  display: grid !important;
+  width: min(82%, 310px) !important;
+  height: 14px !important;
+  place-items: center !important;
+  margin: 4px auto 2px !important;
+  color: var(--heritage-gold) !important;
+  background: linear-gradient(
+      90deg,
+      transparent 0 3%,
+      var(--heritage-gold) 3% 45%,
+      transparent 45% 55%,
+      var(--heritage-gold) 55% 97%,
+      transparent 97%
+    )
+    center / 100% 1px no-repeat !important;
+  font-family: ui-serif, serif !important;
+  font-size: 8px !important;
+  line-height: 1 !important;
 }
 
 html body .heritage-pavilion-reference .council-portal-message {
-  position: relative;
-  width: min(100%, 540px);
-  max-width: 100%;
-  padding-top: 12px;
-  border-top: 1px solid var(--dashboard-heritage-line);
+  display: -webkit-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  font-size: clamp(12px, 0.82vw, 14px) !important;
+  font-weight: 800 !important;
+  line-height: 1.45 !important;
+  text-align: center !important;
+  text-wrap: balance !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-message::before,
+html body .heritage-pavilion-reference .council-portal-message::after {
+  content: none !important;
+  display: none !important;
 }
 
 html body .heritage-pavilion-reference .council-portal-plaque {
-  border-color: color-mix(in srgb, var(--dashboard-heritage-accent) 76%, transparent) !important;
+  display: inline-flex !important;
+  min-width: 178px !important;
+  min-height: 39px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 9px 0 -9px !important;
+  padding: 6px 24px !important;
+  overflow: hidden !important;
+  border: 1px solid color-mix(in srgb, var(--heritage-gold) 82%, #fff) !important;
+  border-radius: 13px !important;
+  color: color-mix(in srgb, var(--heritage-paper) 88%, #fff) !important;
   background:
-    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent),
-    var(--dashboard-heritage-ink) !important;
-  color: color-mix(in srgb, var(--identity-tertiary, #f5e7c5) 88%, #fff) !important;
+    linear-gradient(180deg, color-mix(in srgb, #fff 11%, transparent), transparent),
+    var(--heritage-ink-deep) !important;
   box-shadow:
-    0 10px 20px color-mix(in srgb, var(--dashboard-heritage-ink) 35%, transparent),
+    0 9px 18px color-mix(in srgb, var(--heritage-ink-deep) 36%, transparent),
     inset 0 1px color-mix(in srgb, #fff 20%, transparent) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
   text-shadow: none !important;
+  transform: translateY(6px) !important;
+  white-space: nowrap !important;
 }
 
-/* Shared Family Services surface. */
+/* Gate and subtle contact shadow. */
+html body .heritage-pavilion-reference .council-portal-model {
+  position: absolute !important;
+  z-index: 2 !important;
+  right: 50% !important;
+  bottom: -27% !important;
+  width: clamp(300px, 22vw, 365px) !important;
+  aspect-ratio: 1065 / 1477 !important;
+  pointer-events: none !important;
+  transform: translateX(50%) !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-model-visual {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: translate3d(var(--portal-x), var(--portal-y), 0) !important;
+  transform-origin: 50% 72% !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-towers {
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: contain !important;
+}
+
+html body .heritage-pavilion-reference .council-portal-contact-shadow {
+  position: absolute !important;
+  z-index: 0 !important;
+  top: 82.1% !important;
+  left: 50% !important;
+  display: block !important;
+  width: 65% !important;
+  height: 2.8% !important;
+  border-radius: 50% !important;
+  background: radial-gradient(ellipse, rgba(38, 20, 9, 0.36), transparent 70%) !important;
+  filter: blur(5px) !important;
+  mix-blend-mode: multiply !important;
+  opacity: 0.55 !important;
+  transform: translateX(-50%) !important;
+}
+
+/* Shared Family Services paper. */
 html body .family-services-section,
 html body .desktop-overview-shell > .desktop-services-panel {
-  color: var(--dashboard-heritage-ink) !important;
+  position: relative !important;
+  color: var(--heritage-ink) !important;
   background:
-    radial-gradient(circle at 10% 12%, color-mix(in srgb, var(--dashboard-heritage-accent) 10%, transparent), transparent 26%),
-    linear-gradient(145deg, color-mix(in srgb, #fff 24%, transparent), transparent 58%),
-    var(--dashboard-heritage-paper) !important;
+    radial-gradient(
+      circle at 12% 18%,
+      color-mix(in srgb, var(--heritage-gold) 9%, transparent),
+      transparent 26%
+    ),
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--heritage-gold) 3%, transparent) 0 1px,
+      transparent 1px 14px
+    ),
+    linear-gradient(145deg, color-mix(in srgb, #fff 34%, transparent), transparent 58%),
+    var(--heritage-paper) !important;
 }
 
 html body .family-services-heading h3,
-html body .desktop-overview-shell .desktop-services-panel .desktop-section-head h2 {
-  color: var(--dashboard-heritage-ink) !important;
+html body .desktop-overview-shell .desktop-section-head h2 {
+  color: var(--heritage-ink-deep) !important;
 }
 
 html body .family-services-top-toggle,
-html body .desktop-overview-shell .desktop-services-panel .desktop-section-head > button {
-  color: color-mix(in srgb, var(--dashboard-heritage-accent) 74%, var(--dashboard-heritage-ink)) !important;
+html body .desktop-overview-shell .desktop-section-head > button {
+  color: color-mix(in srgb, var(--heritage-gold) 75%, var(--heritage-ink)) !important;
 }
 
 html body .family-service-card,
 html body .desktop-overview-shell .desktop-service-card {
-  position: relative;
-  isolation: isolate;
-  border: 1px solid var(--dashboard-heritage-line) !important;
-  color: var(--dashboard-heritage-ink) !important;
+  position: relative !important;
+  isolation: isolate !important;
+  min-width: 0 !important;
+  border: 1px solid var(--heritage-line) !important;
+  color: var(--heritage-ink-deep) !important;
   background:
-    linear-gradient(145deg, color-mix(in srgb, #fff 52%, transparent), transparent 64%),
-    var(--dashboard-heritage-paper-strong) !important;
+    radial-gradient(
+      circle at 85% 18%,
+      color-mix(in srgb, var(--heritage-gold) 6%, transparent),
+      transparent 24%
+    ),
+    linear-gradient(145deg, color-mix(in srgb, #fff 58%, transparent), transparent 66%),
+    var(--heritage-paper-strong) !important;
   box-shadow:
-    0 14px 28px color-mix(in srgb, var(--dashboard-heritage-ink) 12%, transparent),
+    0 12px 24px color-mix(in srgb, var(--heritage-ink-deep) 13%, transparent),
     inset 0 1px color-mix(in srgb, #fff 80%, transparent) !important;
 }
 
 html body .family-service-card::before,
 html body .desktop-overview-shell .desktop-service-card::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 8px;
-  border: 1px solid color-mix(in srgb, var(--dashboard-heritage-accent) 14%, transparent);
-  border-radius: inherit;
-  pointer-events: none;
+  content: "" !important;
+  position: absolute !important;
+  z-index: -1 !important;
+  inset: 7px !important;
+  border: 1px solid color-mix(in srgb, var(--heritage-gold) 17%, transparent) !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
 }
 
 html body .family-service-card::after,
 html body .desktop-overview-shell .desktop-service-card::after {
-  content: "‹";
-  display: grid;
-  place-items: center;
-  width: 29px;
-  height: 29px;
-  border: 1px solid color-mix(in srgb, var(--dashboard-heritage-accent) 44%, transparent);
-  border-radius: 999px;
-  color: var(--dashboard-heritage-paper-strong);
-  background: var(--dashboard-heritage-ink);
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 18px;
-  font-weight: 900;
-  line-height: 1;
+  content: "‹" !important;
+  display: grid !important;
+  width: 28px !important;
+  height: 28px !important;
+  place-items: center !important;
+  border: 1px solid color-mix(in srgb, var(--heritage-gold) 55%, transparent) !important;
+  border-radius: 999px !important;
+  color: var(--heritage-paper-strong) !important;
+  background: var(--heritage-ink-deep) !important;
+  font-family: ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
 }
 
 html body .family-service-icon,
 html body .desktop-overview-shell .desktop-service-icon {
-  border: 2px solid color-mix(in srgb, var(--dashboard-heritage-accent) 60%, transparent) !important;
-  border-radius: 0 !important;
-  color: var(--dashboard-heritage-ink) !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid color-mix(in srgb, var(--heritage-gold) 48%, transparent) !important;
+  border-radius: 48% 48% 13px 13px / 36% 36% 13px 13px !important;
+  color: var(--heritage-ink-deep) !important;
   background:
-    linear-gradient(145deg, color-mix(in srgb, #fff 44%, transparent), transparent),
-    color-mix(in srgb, var(--dashboard-heritage-paper) 72%, var(--dashboard-heritage-accent) 28%) !important;
-  clip-path: polygon(29% 0, 71% 0, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0 71%, 0 29%);
+    linear-gradient(145deg, color-mix(in srgb, #fff 50%, transparent), transparent),
+    color-mix(in srgb, var(--heritage-paper) 78%, var(--heritage-gold) 22%) !important;
+  clip-path: none !important;
   box-shadow:
-    0 8px 16px color-mix(in srgb, var(--dashboard-heritage-ink) 12%, transparent),
-    inset 0 0 0 4px color-mix(in srgb, #fff 22%, transparent) !important;
+    0 7px 15px color-mix(in srgb, var(--heritage-ink-deep) 12%, transparent),
+    inset 0 0 0 4px color-mix(in srgb, #fff 23%, transparent) !important;
 }
 
 html body .family-service-icon svg,
@@ -194,92 +445,125 @@ html body .desktop-overview-shell .desktop-service-icon svg {
 
 html body .family-service-label,
 html body .desktop-overview-shell .desktop-service-card strong {
-  color: var(--dashboard-heritage-ink) !important;
+  color: var(--heritage-ink-deep) !important;
 }
 
 html body .family-service-description,
 html body .desktop-overview-shell .desktop-service-card span {
-  color: color-mix(in srgb, var(--dashboard-heritage-ink) 62%, var(--muted-foreground)) !important;
+  color: color-mix(in srgb, var(--heritage-ink) 61%, var(--muted-foreground)) !important;
 }
 
 html body .family-services-toggle,
 html body .desktop-overview-shell .desktop-services-wide-toggle {
-  border: 1px solid var(--dashboard-heritage-line) !important;
-  color: var(--dashboard-heritage-ink) !important;
+  border: 1px solid var(--heritage-line) !important;
+  color: var(--heritage-ink-deep) !important;
   background:
-    linear-gradient(145deg, color-mix(in srgb, #fff 36%, transparent), transparent),
-    color-mix(in srgb, var(--dashboard-heritage-paper-strong) 90%, var(--dashboard-heritage-accent) 10%) !important;
+    linear-gradient(145deg, color-mix(in srgb, #fff 40%, transparent), transparent),
+    color-mix(in srgb, var(--heritage-paper-strong) 90%, var(--heritage-gold) 10%) !important;
   box-shadow:
-    0 10px 22px color-mix(in srgb, var(--dashboard-heritage-ink) 10%, transparent),
+    0 9px 20px color-mix(in srgb, var(--heritage-ink-deep) 10%, transparent),
     inset 0 1px color-mix(in srgb, #fff 76%, transparent) !important;
 }
 
-/* Phones: plaque, gate, services — a single clear vertical story. */
+/* Phones: accepted portrait reference. */
 @media (max-width: 599.98px) {
   html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero {
+    position: relative !important;
+    isolation: isolate !important;
     width: 100vw !important;
     max-width: none !important;
-    margin-inline: calc(50% - 50vw) !important;
+    margin: 0 calc(50% - 50vw) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: var(--heritage-paper) !important;
   }
 
   html body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card,
   html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: 0 !important;
     border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   html body .dashboard-page .heritage-pavilion-reference {
-    height: clamp(570px, 152vw, 690px) !important;
+    height: 100vw !important;
+    min-height: 420px !important;
+    max-height: 560px !important;
+    margin: 0 !important;
     background-image:
       linear-gradient(
         180deg,
-        color-mix(in srgb, var(--identity-header, var(--primary)) 12%, transparent),
-        color-mix(in srgb, var(--identity-header, var(--primary)) 24%, transparent)
+        color-mix(in srgb, var(--identity-header, var(--primary)) 5%, transparent),
+        color-mix(in srgb, var(--identity-header, var(--primary)) 10%, transparent)
       ),
       url("./assets/najdi-courtyard-hero-portrait-v1.webp") !important;
-    background-position: center center !important;
+    background-position: center !important;
+    background-size: 100% 100% !important;
   }
 
   html body .dashboard-page .heritage-pavilion-reference .council-portal-copy {
-    top: 4.5% !important;
+    top: 5.4% !important;
     left: 50% !important;
-    width: calc(100% - 36px) !important;
-    max-width: 520px !important;
-    padding: 15px 18px 19px !important;
+    width: min(66%, 340px) !important;
+    max-width: 340px !important;
+    padding: 14px 19px 15px !important;
     transform: translateX(-50%) !important;
   }
 
+  html body .dashboard-page .heritage-pavilion-reference .council-portal-copy::before {
+    inset-bottom: 22px !important;
+  }
+  html body .dashboard-page .heritage-pavilion-reference .council-portal-copy::after {
+    inset: 7px 8px 29px !important;
+  }
+
   html body .dashboard-page .heritage-pavilion-reference .council-portal-greeting {
-    margin-bottom: 3px !important;
-    font-size: clamp(13px, 3.8vw, 16px) !important;
+    margin-bottom: 2px !important;
+    font-size: clamp(12px, 3.45vw, 15px) !important;
   }
 
   html body .dashboard-page .heritage-pavilion-reference .council-portal-identity span {
-    margin-bottom: 0 !important;
-    font-size: clamp(13px, 3.8vw, 16px) !important;
+    font-size: clamp(12px, 3.35vw, 14px) !important;
   }
 
   html body .dashboard-page .heritage-pavilion-reference .council-portal-identity strong {
-    font-size: clamp(27px, 8.1vw, 38px) !important;
+    font-size: clamp(23px, 6.8vw, 31px) !important;
     line-height: 1.12 !important;
   }
 
+  html body .dashboard-page .heritage-pavilion-reference .council-portal-identity::after {
+    width: 88% !important;
+    height: 12px !important;
+    margin: 3px auto 1px !important;
+    font-size: 7px !important;
+  }
+
   html body .dashboard-page .heritage-pavilion-reference .council-portal-message {
-    margin-top: 9px !important;
-    padding-top: 9px !important;
-    font-size: clamp(12px, 3.25vw, 14px) !important;
+    font-size: clamp(10px, 2.85vw, 13px) !important;
+    line-height: 1.4 !important;
   }
 
   html body .dashboard-page .heritage-pavilion-reference .council-portal-plaque {
-    min-width: 150px !important;
-    min-height: 36px !important;
-    margin-top: 10px !important;
-    font-size: 13px !important;
+    min-width: 140px !important;
+    min-height: 35px !important;
+    margin: 7px 0 -8px !important;
+    padding: 5px 18px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+    transform: translateY(5px) !important;
   }
 
   html body .dashboard-page .heritage-pavilion-reference .council-portal-model {
     right: 50% !important;
-    bottom: -7.5% !important;
-    width: min(83%, 350px) !important;
+    bottom: -11% !important;
+    width: min(52%, 270px) !important;
     transform: translateX(50%) !important;
   }
 
@@ -287,343 +571,349 @@ html body .desktop-overview-shell .desktop-services-wide-toggle {
     width: 100vw !important;
     max-width: none !important;
     margin: 0 calc(50% - 50vw) !important;
-    padding: 25px 14px calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 21px 15px calc(108px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow: hidden !important;
+    border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
   }
 
   html body .dashboard-page .family-services-panel {
     padding: 0 !important;
+    border: 0 !important;
     background: transparent !important;
+    box-shadow: none !important;
   }
 
   html body .dashboard-page .family-services-heading {
-    position: relative;
+    position: relative !important;
+    display: flex !important;
+    min-height: 38px !important;
+    align-items: center !important;
     justify-content: center !important;
-    min-height: 42px;
-    margin: 0 0 18px !important;
+    margin: 0 0 15px !important;
   }
 
   html body .dashboard-page .family-services-heading h3 {
-    color: var(--dashboard-heritage-ink) !important;
-    font-size: clamp(20px, 6vw, 25px) !important;
+    position: relative !important;
+    margin: 0 !important;
+    padding-inline: 46px !important;
+    font-size: clamp(19px, 5.5vw, 24px) !important;
     font-weight: 950 !important;
   }
 
+  html body .dashboard-page .family-services-heading h3::before,
+  html body .dashboard-page .family-services-heading h3::after {
+    content: "" !important;
+    position: absolute !important;
+    top: 50% !important;
+    width: 35px !important;
+    height: 1px !important;
+    background: var(--heritage-gold) !important;
+  }
+  html body .dashboard-page .family-services-heading h3::before {
+    right: 2px !important;
+  }
+  html body .dashboard-page .family-services-heading h3::after {
+    left: 2px !important;
+  }
   html body .dashboard-page .family-services-top-toggle {
-    position: absolute;
-    inset-inline-start: 2px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 12px !important;
+    display: none !important;
   }
 
   html body .dashboard-page .family-services-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 11px !important;
+    gap: 10px !important;
   }
 
   html body .dashboard-page .family-services-section .family-service-card {
     display: grid !important;
     min-width: 0 !important;
-    min-height: 132px !important;
-    grid-template-columns: 27px minmax(0, 1fr) 50px !important;
+    min-height: 96px !important;
+    grid-template-columns: 28px minmax(0, 1fr) 56px !important;
     grid-template-rows: auto !important;
-    gap: 3px 10px !important;
+    gap: 7px !important;
     align-content: center !important;
     align-items: center !important;
+    justify-content: stretch !important;
     justify-items: stretch !important;
-    padding: 14px 12px !important;
-    border-radius: 22px !important;
+    padding: 12px 10px !important;
+    border-radius: 19px !important;
     text-align: right !important;
   }
 
   html body .dashboard-page .family-service-card::after {
-    grid-column: 1;
-    grid-row: 1;
-    justify-self: center;
-    align-self: center;
-    width: 27px;
-    height: 27px;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    justify-self: center !important;
+    align-self: center !important;
+    width: 27px !important;
+    height: 27px !important;
   }
 
   html body .dashboard-page .family-service-icon {
-    grid-column: 3;
-    grid-row: 1;
-    width: 50px !important;
-    height: 50px !important;
-    min-width: 50px !important;
-    min-height: 50px !important;
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    width: 54px !important;
+    height: 62px !important;
+    min-width: 54px !important;
+    min-height: 62px !important;
     margin: 0 !important;
   }
-
   html body .dashboard-page .family-service-icon svg {
-    width: 24px !important;
-    height: 24px !important;
+    width: 25px !important;
+    height: 25px !important;
   }
 
   html body .dashboard-page .family-service-copy {
-    grid-column: 2;
-    grid-row: 1;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    min-width: 0 !important;
     align-items: flex-start !important;
+    gap: 0 !important;
     text-align: right !important;
   }
 
   html body .dashboard-page .family-service-label {
-    font-size: clamp(13px, 3.75vw, 15px) !important;
+    width: 100% !important;
+    font-size: clamp(12px, 3.45vw, 15px) !important;
+    font-weight: 950 !important;
     line-height: 1.3 !important;
+    text-align: right !important;
     white-space: normal !important;
   }
-
   html body .dashboard-page .family-service-description {
-    display: -webkit-box !important;
-    overflow: hidden !important;
-    font-size: clamp(10px, 2.75vw, 12px) !important;
-    line-height: 1.45 !important;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    display: none !important;
   }
 
   html body .dashboard-page .family-services-toggle {
-    min-height: 52px !important;
-    margin: 14px 0 0 !important;
-    border-radius: 16px !important;
+    display: flex !important;
+    width: 100% !important;
+    min-height: 49px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin: 12px 0 0 !important;
+    border-radius: 15px !important;
     font-size: 13px !important;
-    font-weight: 900 !important;
+    font-weight: 950 !important;
   }
 }
 
-/* Tablets retain the same hierarchy with roomier plaque and cards. */
+/* Tablets. */
 @media (min-width: 600px) and (max-width: 1199.98px) {
+  html body .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero {
+    width: 100vw !important;
+    max-width: none !important;
+    margin: 0 calc(50% - 50vw) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  html body .dashboard-page > .dashboard-portal-hero > .dashboard-portal-card,
+  html body .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout {
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
   html body .dashboard-page .heritage-pavilion-reference {
-    height: clamp(560px, 78vw, 720px) !important;
+    height: min(100vw, 760px) !important;
+    min-height: 560px !important;
     background-image:
       linear-gradient(
         180deg,
-        color-mix(in srgb, var(--identity-header, var(--primary)) 12%, transparent),
-        color-mix(in srgb, var(--identity-header, var(--primary)) 24%, transparent)
+        color-mix(in srgb, var(--identity-header, var(--primary)) 5%, transparent),
+        color-mix(in srgb, var(--identity-header, var(--primary)) 10%, transparent)
       ),
       url("./assets/najdi-courtyard-hero-portrait-v1.webp") !important;
+    background-size: 100% 100% !important;
   }
-
   html body .dashboard-page .heritage-pavilion-reference .council-portal-copy {
-    top: 4% !important;
+    top: 4.5% !important;
     left: 50% !important;
-    width: min(76%, 620px) !important;
+    width: min(62%, 470px) !important;
+    max-width: 470px !important;
+    padding: 18px 34px 19px !important;
     transform: translateX(-50%) !important;
   }
-
   html body .dashboard-page .heritage-pavilion-reference .council-portal-identity strong {
-    font-size: clamp(38px, 6vw, 54px) !important;
+    font-size: clamp(31px, 5vw, 43px) !important;
   }
-
   html body .dashboard-page .heritage-pavilion-reference .council-portal-model {
     right: 50% !important;
-    bottom: -9% !important;
-    width: min(46%, 390px) !important;
+    bottom: -13% !important;
+    width: min(43%, 330px) !important;
     transform: translateX(50%) !important;
   }
-
   html body .dashboard-page > .family-services-section {
-    padding: 30px clamp(20px, 3.2vw, 40px) 34px !important;
-    border-radius: 28px !important;
+    width: 100vw !important;
+    max-width: none !important;
+    margin: 0 calc(50% - 50vw) !important;
+    padding: 28px clamp(22px, 3vw, 36px) 34px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
-
+  html body .dashboard-page .family-services-heading {
+    justify-content: center !important;
+    margin-bottom: 20px !important;
+  }
   html body .dashboard-page .family-services-heading h3 {
-    color: var(--dashboard-heritage-ink) !important;
+    font-size: clamp(22px, 3vw, 28px) !important;
+    font-weight: 950 !important;
   }
-
+  html body .dashboard-page .family-services-top-toggle {
+    position: absolute !important;
+    inset-inline-start: clamp(22px, 3vw, 36px) !important;
+  }
   html body .dashboard-page .family-services-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 15px !important;
+    gap: 14px !important;
   }
-
   html body .dashboard-page .family-services-section .family-service-card {
     display: grid !important;
-    min-height: 122px !important;
-    grid-template-columns: 31px minmax(0, 1fr) 62px !important;
-    grid-template-rows: auto auto !important;
-    gap: 4px 15px !important;
-    align-content: center !important;
+    min-height: 116px !important;
+    grid-template-columns: 30px minmax(0, 1fr) 66px !important;
+    grid-template-rows: auto !important;
+    gap: 12px !important;
     align-items: center !important;
-    padding: 18px 20px !important;
+    padding: 16px 18px !important;
     border-radius: 22px !important;
     text-align: right !important;
   }
-
   html body .dashboard-page .family-service-card::after {
-    grid-column: 1;
-    grid-row: 1 / 3;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
   }
-
   html body .dashboard-page .family-service-icon {
-    grid-column: 3;
-    grid-row: 1 / 3;
-    width: 60px !important;
-    height: 60px !important;
-    min-width: 60px !important;
-    min-height: 60px !important;
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    width: 64px !important;
+    height: 72px !important;
+    min-width: 64px !important;
+    min-height: 72px !important;
     margin: 0 !important;
   }
-
   html body .dashboard-page .family-service-copy {
-    grid-column: 2;
-    grid-row: 1 / 3;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
     align-items: flex-start !important;
     text-align: right !important;
   }
-
   html body .dashboard-page .family-service-label {
-    font-size: clamp(15px, 1.9vw, 18px) !important;
+    font-size: clamp(15px, 2vw, 18px) !important;
   }
-
   html body .dashboard-page .family-service-description {
     font-size: clamp(11px, 1.25vw, 13px) !important;
   }
 }
 
-/* Wide touch tablets use the landscape courtyard without switching to the
-   desktop dashboard shell. */
-@media (min-width: 970px) and (max-width: 1600px) and (orientation: landscape) and (any-pointer: coarse) {
-  html[data-dashboard-tablet-landscape="true"] body .dashboard-page .heritage-pavilion-reference {
-    height: clamp(500px, 48vw, 650px) !important;
+@media (min-width: 900px) and (max-width: 1199.98px) and (orientation: landscape) {
+  html body .dashboard-page .heritage-pavilion-reference {
+    height: clamp(490px, 52vw, 610px) !important;
+    min-height: 0 !important;
     background-image:
       linear-gradient(
         180deg,
-        color-mix(in srgb, var(--identity-header, var(--primary)) 14%, transparent),
-        color-mix(in srgb, var(--identity-header, var(--primary)) 26%, transparent)
+        color-mix(in srgb, var(--identity-header, var(--primary)) 6%, transparent),
+        color-mix(in srgb, var(--identity-header, var(--primary)) 11%, transparent)
       ),
       url("./assets/najdi-courtyard-hero-v1.webp") !important;
   }
-
-  html[data-dashboard-tablet-landscape="true"] body .dashboard-page .heritage-pavilion-reference .council-portal-copy {
-    width: min(58%, 650px) !important;
+  html body .dashboard-page .heritage-pavilion-reference .council-portal-copy {
+    top: 2.5% !important;
+    width: min(38%, 455px) !important;
   }
-
-  html[data-dashboard-tablet-landscape="true"] body .dashboard-page .heritage-pavilion-reference .council-portal-model {
-    width: min(34%, 420px) !important;
+  html body .dashboard-page .heritage-pavilion-reference .council-portal-model {
+    bottom: -25% !important;
+    width: min(30%, 350px) !important;
   }
-
-  html[data-dashboard-tablet-landscape="true"] body .dashboard-page .family-services-grid {
+  html body .dashboard-page .family-services-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
-
-  html[data-dashboard-tablet-landscape="true"] body .dashboard-page .family-services-section .family-service-card {
-    min-height: 142px !important;
-    grid-template-columns: 29px minmax(0, 1fr) 58px !important;
-    grid-template-rows: auto !important;
-    padding: 17px !important;
+  html body .dashboard-page .family-services-section .family-service-card {
+    min-height: 112px !important;
+    grid-template-columns: 27px minmax(0, 1fr) 58px !important;
+    padding: 14px !important;
   }
-
-  html[data-dashboard-tablet-landscape="true"] body .dashboard-page .family-service-card::after {
-    grid-column: 1;
-    grid-row: 1;
-    justify-self: center;
-  }
-
-  html[data-dashboard-tablet-landscape="true"] body .dashboard-page .family-service-icon {
-    grid-column: 3;
-    grid-row: 1;
-  }
-
-  html[data-dashboard-tablet-landscape="true"] body .dashboard-page .family-service-copy {
-    grid-column: 2;
-    grid-row: 1;
+  html body .dashboard-page .family-service-icon {
+    width: 58px !important;
+    height: 66px !important;
+    min-width: 58px !important;
+    min-height: 66px !important;
   }
 }
 
-/* Desktop: faith strip -> one full-width architectural hero -> independent
-   services gallery. No side-by-side split, no cards beside the gate. */
+/* Desktop reference. */
 @media (min-width: 1200px) {
   html body .desktop-rebuild-root {
-    max-width: 1480px !important;
+    width: min(calc(100% - 56px), 1800px) !important;
+    max-width: 1800px !important;
+    margin-inline: auto !important;
   }
-
   html body .desktop-overview-shell {
     display: flex !important;
+    width: 100% !important;
     min-height: 0 !important;
     flex-direction: column !important;
     gap: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
-    border: 1px solid var(--dashboard-heritage-line) !important;
-    border-radius: 30px !important;
-    color: var(--dashboard-heritage-ink) !important;
-    background: var(--dashboard-heritage-paper) !important;
-    box-shadow: 0 24px 56px color-mix(in srgb, var(--dashboard-heritage-ink) 16%, transparent) !important;
+    border: 1px solid var(--heritage-line) !important;
+    border-radius: 27px !important;
+    color: var(--heritage-ink) !important;
+    background: var(--heritage-paper) !important;
+    box-shadow: 0 24px 56px color-mix(in srgb, var(--heritage-ink-deep) 16%, transparent) !important;
   }
-
   html body .desktop-overview-shell::after {
-    display: none !important;
     content: none !important;
+    display: none !important;
   }
-
   html body .desktop-overview-shell > .desktop-portal-stage {
     position: relative !important;
     z-index: 1 !important;
+    display: block !important;
     width: 100% !important;
     min-height: 0 !important;
     overflow: hidden !important;
-    border-radius: 29px 29px 0 0 !important;
+    border-radius: 26px 26px 0 0 !important;
     background: transparent !important;
   }
-
   html body .desktop-overview-shell .desktop-portal-model.heritage-pavilion-reference {
     width: 100% !important;
     max-width: none !important;
-    height: clamp(540px, 38vw, 650px) !important;
+    height: clamp(510px, 32vw, 590px) !important;
+    margin: 0 !important;
     background-image:
       linear-gradient(
         180deg,
-        color-mix(in srgb, var(--identity-header, var(--primary)) 12%, transparent),
-        color-mix(in srgb, var(--identity-header, var(--primary)) 26%, transparent)
+        color-mix(in srgb, var(--identity-header, var(--primary)) 6%, transparent),
+        color-mix(in srgb, var(--identity-header, var(--primary)) 11%, transparent)
       ),
       url("./assets/najdi-courtyard-hero-v1.webp") !important;
+    background-size: 100% 100% !important;
   }
-
   html body .desktop-overview-shell .desktop-portal-model .council-portal-copy {
-    top: 3.5% !important;
+    top: 2.2% !important;
     left: 50% !important;
-    width: min(58%, 680px) !important;
-    max-width: 680px !important;
+    width: min(29%, 480px) !important;
+    max-width: 480px !important;
     transform: translateX(-50%) !important;
   }
-
-  html body .desktop-overview-shell .desktop-portal-model .council-portal-greeting {
-    margin-bottom: 4px !important;
-    font-size: clamp(16px, 1.22vw, 20px) !important;
-  }
-
-  html body .desktop-overview-shell .desktop-portal-model .council-portal-identity span {
-    font-size: clamp(15px, 1.12vw, 19px) !important;
-  }
-
-  html body .desktop-overview-shell .desktop-portal-model .council-portal-identity strong {
-    font-size: clamp(36px, 3.1vw, 52px) !important;
-  }
-
-  html body .desktop-overview-shell .desktop-portal-model .council-portal-message {
-    margin-top: 12px !important;
-    padding-top: 10px !important;
-    font-size: clamp(13px, 1vw, 16px) !important;
-  }
-
-  html body .desktop-overview-shell .desktop-portal-model .council-portal-plaque {
-    min-width: 190px !important;
-    min-height: 40px !important;
-    margin-top: 12px !important;
-    font-size: 14px !important;
-  }
-
   html body .desktop-overview-shell .desktop-portal-model .council-portal-model {
     right: 50% !important;
-    bottom: -12% !important;
-    width: clamp(285px, 24vw, 380px) !important;
+    bottom: -27% !important;
+    width: clamp(300px, 22vw, 365px) !important;
     transform: translateX(50%) !important;
   }
-
   html body .desktop-overview-shell > .desktop-services-panel {
     position: relative !important;
     z-index: 2 !important;
@@ -631,134 +921,136 @@ html body .desktop-overview-shell .desktop-services-wide-toggle {
     width: 100% !important;
     min-height: 0 !important;
     flex-direction: column !important;
-    padding: 30px clamp(28px, 3.4vw, 54px) 34px !important;
-    border-top: 1px solid var(--dashboard-heritage-line) !important;
+    padding: 26px clamp(30px, 3.4vw, 58px) 31px !important;
+    border-top: 1px solid var(--heritage-line) !important;
   }
-
   html body .desktop-overview-shell .desktop-services-panel .desktop-section-head {
+    display: flex !important;
     justify-content: center !important;
-    margin-bottom: 24px !important;
+    margin: 0 0 19px !important;
     text-align: center !important;
   }
-
   html body .desktop-overview-shell .desktop-services-panel .desktop-section-head > div {
-    position: relative;
-    min-width: min(100%, 380px);
+    position: relative !important;
+    min-width: min(100%, 360px) !important;
   }
-
   html body .desktop-overview-shell .desktop-services-panel .desktop-section-head > div::before,
   html body .desktop-overview-shell .desktop-services-panel .desktop-section-head > div::after {
-    content: "";
-    position: absolute;
-    top: 17px;
-    width: 72px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--dashboard-heritage-accent));
+    content: "" !important;
+    position: absolute !important;
+    top: 16px !important;
+    width: 68px !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, var(--heritage-gold)) !important;
   }
-
   html body .desktop-overview-shell .desktop-services-panel .desktop-section-head > div::before {
-    right: -92px;
+    right: -88px !important;
   }
-
   html body .desktop-overview-shell .desktop-services-panel .desktop-section-head > div::after {
-    left: -92px;
-    transform: scaleX(-1);
+    left: -88px !important;
+    transform: scaleX(-1) !important;
   }
-
   html body .desktop-overview-shell .desktop-services-panel .desktop-section-head h2 {
-    font-size: clamp(22px, 1.9vw, 29px) !important;
+    margin: 0 !important;
+    font-size: clamp(21px, 1.65vw, 27px) !important;
+    font-weight: 950 !important;
   }
-
   html body .desktop-overview-shell .desktop-services-panel .desktop-section-head p {
-    color: color-mix(in srgb, var(--dashboard-heritage-ink) 58%, var(--muted-foreground)) !important;
-    font-size: 13px !important;
+    margin: 3px 0 0 !important;
+    color: color-mix(in srgb, var(--heritage-ink) 58%, var(--muted-foreground)) !important;
+    font-size: 12px !important;
   }
-
   html body .desktop-overview-shell .desktop-services-panel .desktop-section-head > button {
     display: none !important;
   }
-
   html body .desktop-overview-shell .desktop-services-grid {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: clamp(13px, 1.35vw, 20px) !important;
+    gap: clamp(12px, 1.25vw, 19px) !important;
     max-height: none !important;
     overflow: visible !important;
     padding: 0 !important;
   }
-
   html body .desktop-overview-shell .desktop-service-card {
     display: grid !important;
     min-width: 0 !important;
-    min-height: 116px !important;
-    grid-template-columns: 29px minmax(0, 1fr) 68px !important;
+    min-height: 104px !important;
+    grid-template-columns: 29px minmax(0, 1fr) 62px !important;
     grid-template-rows: auto auto !important;
-    gap: 4px 13px !important;
+    gap: 3px 12px !important;
     align-content: center !important;
     align-items: center !important;
-    padding: 20px 18px !important;
-    border-radius: 20px !important;
-    transition: transform 180ms ease, box-shadow 180ms ease !important;
+    padding: 16px !important;
+    border-radius: 19px !important;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease !important;
   }
-
   html body .desktop-overview-shell .desktop-service-card:hover {
     transform: translateY(-3px) !important;
     box-shadow:
-      0 20px 34px color-mix(in srgb, var(--dashboard-heritage-ink) 17%, transparent),
+      0 19px 32px color-mix(in srgb, var(--heritage-ink-deep) 17%, transparent),
       inset 0 1px color-mix(in srgb, #fff 80%, transparent) !important;
   }
-
   html body .desktop-overview-shell .desktop-service-card::after {
-    grid-column: 1;
-    grid-row: 1 / 3;
+    grid-column: 1 !important;
+    grid-row: 1 / 3 !important;
   }
-
   html body .desktop-overview-shell .desktop-service-icon {
     grid-column: 3 !important;
     grid-row: 1 / 3 !important;
-    width: 64px !important;
-    height: 64px !important;
+    width: 60px !important;
+    height: 68px !important;
+    min-width: 60px !important;
+    min-height: 68px !important;
   }
-
   html body .desktop-overview-shell .desktop-service-icon svg {
-    width: 28px !important;
-    height: 28px !important;
+    width: 27px !important;
+    height: 27px !important;
   }
-
   html body .desktop-overview-shell .desktop-service-card strong,
   html body .desktop-overview-shell .desktop-service-card span {
     grid-column: 2 !important;
     min-width: 0 !important;
     text-align: right !important;
   }
-
   html body .desktop-overview-shell .desktop-service-card strong {
     align-self: end !important;
-    font-size: clamp(14px, 1.02vw, 17px) !important;
+    font-size: clamp(14px, 0.94vw, 16px) !important;
+    font-weight: 950 !important;
     line-height: 1.35 !important;
     white-space: normal !important;
   }
-
   html body .desktop-overview-shell .desktop-service-card span {
     align-self: start !important;
-    margin-top: 2px !important;
-    font-size: clamp(11px, 0.76vw, 13px) !important;
-    line-height: 1.45 !important;
+    margin-top: 1px !important;
+    font-size: clamp(10px, 0.72vw, 12px) !important;
+    line-height: 1.42 !important;
     white-space: normal !important;
   }
-
   html body .desktop-overview-shell .desktop-services-wide-toggle {
-    width: min(760px, 100%) !important;
-    min-height: 50px !important;
-    margin: 18px auto 0 !important;
-    border-radius: 16px !important;
+    display: flex !important;
+    width: min(720px, 100%) !important;
+    min-height: 47px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin: 16px auto 0 !important;
+    border-radius: 15px !important;
     font-size: 13px !important;
+    font-weight: 950 !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html body .heritage-pavilion-reference,
+  html body .heritage-pavilion-reference *,
   html body .family-service-card,
   html body .desktop-service-card {
+    animation: none !important;
     transition: none !important;
+  }
+  html body .heritage-pavilion-reference .council-portal-model-visual {
+    transform: none !important;
   }
 }

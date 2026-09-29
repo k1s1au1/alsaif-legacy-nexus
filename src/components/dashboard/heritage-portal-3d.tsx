@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
-import councilSandyGround from "@/assets/council-sandy-ground-v1.webp";
+import { useEffect, useId, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { councilTowers } from "@/assets/najdi-council-towers-v1";
 import "./heritage-portal-3d.css";
 // Keep the approved dashboard composition after the legacy portal rules.
@@ -21,8 +15,7 @@ type HeritagePortal3DProps = {
   welcomeIntro?: boolean;
 };
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export function HeritagePortal3D({
   greeting,
@@ -67,15 +60,9 @@ export function HeritagePortal3D({
 
     root.style.setProperty("--portal-x", `${(current.x * 7).toFixed(2)}px`);
     root.style.setProperty("--portal-y", `${(current.y * 5).toFixed(2)}px`);
-    root.style.setProperty(
-      "--portal-light-x",
-      `${(72 + current.x * 12).toFixed(1)}%`,
-    );
+    root.style.setProperty("--portal-light-x", `${(72 + current.x * 12).toFixed(1)}%`);
 
-    if (
-      Math.abs(target.x - current.x) < 0.001 &&
-      Math.abs(target.y - current.y) < 0.001
-    ) {
+    if (Math.abs(target.x - current.x) < 0.001 && Math.abs(target.y - current.y) < 0.001) {
       frameRef.current = null;
       return;
     }
@@ -116,11 +103,7 @@ export function HeritagePortal3D({
   return (
     <div
       ref={rootRef}
-      className={[
-        "heritage-portal-3d",
-        "heritage-pavilion-reference",
-        className,
-      ]
+      className={["heritage-portal-3d", "heritage-pavilion-reference", className]
         .filter(Boolean)
         .join(" ")}
       data-interacting="false"
@@ -157,12 +140,6 @@ export function HeritagePortal3D({
 
       <div className="council-portal-model" aria-hidden="true">
         <div className="council-portal-model-visual">
-          <img
-            className="council-portal-ground council-portal-ground-back"
-            src={councilSandyGround}
-            alt=""
-            draggable={false}
-          />
           <svg
             className="council-portal-towers"
             viewBox="0 0 1065 1477"
@@ -205,11 +182,7 @@ export function HeritagePortal3D({
                   mode="soft-light"
                   result="harmonized-stone"
                 />
-                <feComposite
-                  in="harmonized-stone"
-                  in2="SourceGraphic"
-                  operator="atop"
-                />
+                <feComposite in="harmonized-stone" in2="SourceGraphic" operator="atop" />
               </filter>
             </defs>
             <image
@@ -222,20 +195,10 @@ export function HeritagePortal3D({
           </svg>
 
           <span className="council-portal-contact-shadow" />
-          <img
-            className="council-portal-ground council-portal-ground-front"
-            src={councilSandyGround}
-            alt=""
-            draggable={false}
-          />
 
           {welcomeIntro && <span className="council-portal-entry-light" />}
           <div className="council-tower-inscription">
-            <strong
-              className="council-tower-inscription-text"
-              lang="ar"
-              dir="rtl"
-            >
+            <strong className="council-tower-inscription-text" lang="ar" dir="rtl">
               مجلس السيف
             </strong>
             <bdi className="council-tower-year" dir="rtl">

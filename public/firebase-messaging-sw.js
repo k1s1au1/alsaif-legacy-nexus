@@ -12,8 +12,10 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-const APP_CACHE = "alsaif-app-v3";
-const MEDIA_CACHE = "alsaif-media-v3";
+// Bump the shell caches whenever the visual application shell changes. This
+// prevents installed/PWA clients from continuing to paint an older dashboard.
+const APP_CACHE = "alsaif-app-v4";
+const MEDIA_CACHE = "alsaif-media-v4";
 const USER_ROUTE_CACHE_PREFIX = "alsaif-user-routes-v1:";
 const SESSION_META_CACHE = "alsaif-offline-session-v1";
 const ACTIVE_USER_KEY = "/__alsaif_active_offline_user__";
@@ -95,7 +97,9 @@ async function clearOfflineCaches() {
 async function trimCache(cacheName, limit) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
-  await Promise.all(keys.slice(0, Math.max(0, keys.length - limit)).map((key) => cache.delete(key)));
+  await Promise.all(
+    keys.slice(0, Math.max(0, keys.length - limit)).map((key) => cache.delete(key)),
+  );
 }
 
 async function putIfCacheable(cacheName, request, response) {
@@ -133,20 +137,22 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     Promise.all([
-      caches.keys().then((names) =>
-        Promise.all(
-          names
-            .filter(
-              (name) =>
-                name.startsWith("alsaif-") &&
-                name !== APP_CACHE &&
-                name !== MEDIA_CACHE &&
-                name !== SESSION_META_CACHE &&
-                !name.startsWith(USER_ROUTE_CACHE_PREFIX),
-            )
-            .map((name) => caches.delete(name)),
+      caches
+        .keys()
+        .then((names) =>
+          Promise.all(
+            names
+              .filter(
+                (name) =>
+                  name.startsWith("alsaif-") &&
+                  name !== APP_CACHE &&
+                  name !== MEDIA_CACHE &&
+                  name !== SESSION_META_CACHE &&
+                  !name.startsWith(USER_ROUTE_CACHE_PREFIX),
+              )
+              .map((name) => caches.delete(name)),
+          ),
         ),
-      ),
       self.clients.claim(),
     ]),
   );
