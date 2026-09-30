@@ -115,7 +115,6 @@ export function HeritagePortal3D({
         message,
         "مجلس السيف",
         "تأسس عام ١٤٤٨ هجري",
-        "بوابة السيف",
       ].join(". ")}
       onPointerMove={handlePointerMove}
       onPointerLeave={resetParallax}
@@ -134,8 +133,6 @@ export function HeritagePortal3D({
         <p className="council-portal-message" key={message}>
           {message}
         </p>
-
-        <span className="council-portal-plaque">بوابة السيف</span>
       </div>
 
       <div className="council-portal-model" aria-hidden="true">

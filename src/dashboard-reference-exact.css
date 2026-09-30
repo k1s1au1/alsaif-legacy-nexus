@@ -1040,3 +1040,250 @@ html body .dashboard-faith-strip {
     margin-inline: calc(50% - 50vw) !important;
   }
 }
+
+/* Keep the photograph, greeting and model in one responsive scenic frame. */
+html body .dashboard-page > .dashboard-portal-hero,
+html body .desktop-overview-shell > .desktop-portal-stage {
+  --courtyard-height: clamp(400px, 34vw, 680px);
+  --courtyard-image-position: center 75%;
+  --courtyard-model-height: 70%;
+  --courtyard-floor-gap: 14%;
+  --courtyard-copy-width: min(42%, 500px);
+}
+
+html body .dashboard-page::before,
+html body .desktop-rebuild-shell::before {
+  content: none !important;
+  display: none !important;
+}
+
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero,
+html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-portal-stage {
+  height: var(--courtyard-height) !important;
+  min-height: 0 !important;
+  margin-block: 0 !important;
+  background: none !important;
+}
+
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero .heritage-pavilion-reference,
+html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-portal-stage > .desktop-portal-model.heritage-pavilion-reference {
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  container-type: size;
+  background-image: url("./assets/najdi-courtyard-hero-v1.webp") !important;
+  background-position: var(--courtyard-image-position) !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+}
+
+html body main .dashboard-page .heritage-pavilion-reference .council-portal-copy,
+html body main .desktop-rebuild-shell .heritage-pavilion-reference .council-portal-copy {
+  top: 3.5% !important;
+  right: auto !important;
+  left: 50% !important;
+  width: var(--courtyard-copy-width) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 10px 24px 12px !important;
+  transform: translateX(-50%) !important;
+}
+
+html body main :is(.dashboard-page, .desktop-rebuild-shell) .heritage-pavilion-reference .council-portal-greeting {
+  font-size: clamp(12px, 2.4cqh, 17px) !important;
+}
+
+html body main :is(.dashboard-page, .desktop-rebuild-shell) .heritage-pavilion-reference .council-portal-identity span {
+  font-size: clamp(10px, 2.2cqh, 14px) !important;
+}
+
+html body main :is(.dashboard-page, .desktop-rebuild-shell) .heritage-pavilion-reference .council-portal-identity strong {
+  font-size: clamp(22px, 4.8cqh, 32px) !important;
+}
+
+html body main :is(.dashboard-page, .desktop-rebuild-shell) .heritage-pavilion-reference .council-portal-message {
+  font-size: clamp(10px, 2cqh, 13px) !important;
+}
+
+/* The raster's visible base is at 1228 / 1477; align that base, not its transparent canvas. */
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference .council-portal-model,
+html body main .desktop-rebuild-shell .desktop-overview-shell .desktop-portal-model.heritage-pavilion-reference .council-portal-model {
+  top: auto !important;
+  right: auto !important;
+  bottom: var(--courtyard-floor-gap) !important;
+  left: 50% !important;
+  width: auto !important;
+  height: var(--courtyard-model-height) !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: 1065 / 1477 !important;
+  transform: translate(-50%, 16.8585%) !important;
+}
+
+html body main :is(.dashboard-page, .desktop-rebuild-shell) .heritage-pavilion-reference .council-portal-contact-shadow {
+  top: 83.1415% !important;
+  width: 86% !important;
+  height: 3% !important;
+  transform: translate(-50%, -40%) !important;
+}
+
+/* One centered title and one pair of ornaments, in both services variants. */
+html body main .dashboard-page .family-services-heading,
+html body main .desktop-rebuild-shell .desktop-overview-shell .desktop-services-panel .desktop-section-head {
+  display: grid !important;
+  grid-template-columns: minmax(24px, 1fr) auto minmax(24px, 1fr) !important;
+  width: min(100%, 560px) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  margin: 0 auto 16px !important;
+  text-align: center !important;
+}
+
+html body main .dashboard-page .family-services-heading h3,
+html body main .desktop-rebuild-shell .desktop-services-panel .desktop-section-head > div {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  justify-self: center !important;
+  text-align: center !important;
+}
+
+html body main .desktop-rebuild-shell .desktop-services-panel .desktop-section-head h2 {
+  text-align: center !important;
+}
+
+html body main .dashboard-page .family-services-heading::before,
+html body main .desktop-rebuild-shell .desktop-services-panel .desktop-section-head::before {
+  position: static !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+}
+
+html body main .dashboard-page .family-services-heading::after,
+html body main .desktop-rebuild-shell .desktop-services-panel .desktop-section-head::after {
+  position: static !important;
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+}
+
+html body main .dashboard-page .family-services-heading h3::before,
+html body main .dashboard-page .family-services-heading h3::after,
+html body main .desktop-rebuild-shell .desktop-services-panel .desktop-section-head > div::before,
+html body main .desktop-rebuild-shell .desktop-services-panel .desktop-section-head > div::after,
+html body main .desktop-rebuild-shell .desktop-services-panel .desktop-section-head > button,
+html body main .desktop-rebuild-shell .desktop-services-panel .desktop-section-head p {
+  content: none !important;
+  display: none !important;
+}
+
+/* Reset old decorative arrows before placing the real icon and arrow in separate columns. */
+html body main .dashboard-page .family-services-section .family-service-card::before,
+html body main .dashboard-page .family-services-section .family-service-card::after,
+html body main .desktop-rebuild-shell .desktop-overview-shell .desktop-services-panel .desktop-service-card::before,
+html body main .desktop-rebuild-shell .desktop-overview-shell .desktop-services-panel .desktop-service-card::after,
+html body main .dashboard-page .family-service-icon::before,
+html body main .dashboard-page .family-service-icon::after,
+html body main .desktop-rebuild-shell .desktop-service-icon::before,
+html body main .desktop-rebuild-shell .desktop-service-icon::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body main .dashboard-page .family-services-section .family-service-card,
+html body main .desktop-rebuild-shell .desktop-overview-shell .desktop-services-panel .desktop-service-card {
+  --service-icon-size: 56px;
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) var(--service-icon-size) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-height: 88px !important;
+  padding: 12px 14px !important;
+}
+
+html body main .dashboard-page .family-service-icon,
+html body main .desktop-rebuild-shell .desktop-overview-shell .desktop-service-icon {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  width: var(--service-icon-size) !important;
+  height: var(--service-icon-size) !important;
+  min-width: var(--service-icon-size) !important;
+  min-height: var(--service-icon-size) !important;
+  aspect-ratio: 1 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  transform: none !important;
+  clip-path: none !important;
+}
+
+html body main .dashboard-page .family-service-copy,
+html body main .desktop-rebuild-shell .desktop-service-card > strong {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+}
+
+html body main .dashboard-page .family-service-reference-arrow,
+html body main .desktop-rebuild-shell .desktop-service-reference-arrow {
+  position: static !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 26px !important;
+  height: 26px !important;
+  justify-self: center !important;
+  transform: none !important;
+}
+
+@media (orientation: portrait) and (max-width: 969.98px) {
+  html body .dashboard-page > .dashboard-portal-hero {
+    --courtyard-height: clamp(520px, 148vw, 820px);
+    --courtyard-image-position: center 85%;
+    --courtyard-copy-width: min(84%, 500px);
+  }
+
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > section.dashboard-hero.dashboard-portal-hero .heritage-pavilion-reference {
+    background-image: url("./assets/najdi-courtyard-hero-portrait-v1.webp") !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 620px) {
+  html body .dashboard-page > .dashboard-portal-hero,
+  html body .desktop-overview-shell > .desktop-portal-stage {
+    --courtyard-height: clamp(320px, 66dvh, 430px);
+    --courtyard-model-height: 62%;
+    --courtyard-copy-width: min(48%, 420px);
+  }
+}
+
+@media (max-width: 969.98px) {
+  html body main .dashboard-page .family-services-section .family-service-card {
+    --service-icon-size: 44px;
+    grid-template-columns: 22px minmax(0, 1fr) var(--service-icon-size) !important;
+    gap: 8px !important;
+    min-height: 78px !important;
+    padding: 9px !important;
+  }
+
+  html body main .dashboard-page .family-service-reference-arrow {
+    width: 22px !important;
+    height: 22px !important;
+  }
+}
+
+@media (max-width: 430px) and (orientation: portrait) {
+  html body main .dashboard-page .family-services-section .family-service-card {
+    --service-icon-size: 38px;
+    grid-template-columns: 20px minmax(0, 1fr) var(--service-icon-size) !important;
+    gap: 6px !important;
+    min-height: 74px !important;
+    padding: 8px !important;
+  }
+
+  html body main .dashboard-page .family-service-reference-arrow {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
