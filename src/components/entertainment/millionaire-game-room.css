@@ -1,20 +1,26 @@
 .millionaire-game {
-  --millionaire-gold: #f1cd68;
-  --millionaire-deep: #071f19;
-  --millionaire-cream: #fff7dc;
+  --millionaire-gold: var(--identity-accent, var(--gold-primary, #e8be58));
+  --millionaire-base: var(--identity-header, var(--nav-bg, var(--primary, #075746)));
+  --millionaire-panel: color-mix(in srgb, var(--millionaire-base) 76%, #00150f 24%);
+  --millionaire-deep: color-mix(in srgb, var(--millionaire-base) 34%, #00110c 66%);
+  --millionaire-ink: #18342d;
+  --millionaire-cream: #fff8dc;
   position: relative;
   isolation: isolate;
   width: 100%;
-  min-height: 680px;
+  min-height: 720px;
   overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 36%, transparent);
   border-radius: 30px;
   color: var(--millionaire-cream);
   background:
-    linear-gradient(90deg, rgba(7, 24, 20, 0.82), rgba(9, 50, 38, 0.58) 45%, rgba(7, 24, 20, 0.82)),
-    url("/assets/games/saudi-deal-majlis-bg.webp") center/cover;
+    radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--millionaire-base) 58%, transparent), transparent 32%),
+    linear-gradient(125deg, color-mix(in srgb, var(--millionaire-deep) 93%, #000), var(--millionaire-panel) 48%, color-mix(in srgb, var(--millionaire-deep) 94%, #000));
   box-shadow:
-    inset 0 0 0 1px rgba(241, 205, 104, 0.24),
-    0 28px 70px rgba(0, 0, 0, 0.34);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+    inset 0 -80px 120px rgba(0, 0, 0, 0.32),
+    0 28px 70px rgba(0, 0, 0, 0.32);
+  container-type: inline-size;
 }
 
 .millionaire-game.is-immersive {
@@ -28,6 +34,7 @@
   height: 100dvh;
   min-height: 0;
   max-height: 100dvh;
+  border: 0;
   border-radius: 0;
 }
 
@@ -39,134 +46,186 @@
   position: absolute;
   inset: 0;
   z-index: -1;
+  overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(circle at 50% 48%, rgba(20, 137, 91, 0.32), transparent 35%),
-    linear-gradient(90deg, rgba(244, 209, 108, 0.035) 1px, transparent 1px) 0 0/54px 54px,
-    linear-gradient(rgba(244, 209, 108, 0.03) 1px, transparent 1px) 0 0/54px 54px,
-    radial-gradient(ellipse at 50% 100%, transparent 20%, rgba(0, 0, 0, 0.68) 88%);
+    linear-gradient(90deg, color-mix(in srgb, var(--millionaire-gold) 6%, transparent) 1px, transparent 1px) 0 0 / 58px 58px,
+    linear-gradient(color-mix(in srgb, var(--millionaire-gold) 5%, transparent) 1px, transparent 1px) 0 0 / 58px 58px,
+    radial-gradient(ellipse at 50% 50%, transparent 16%, rgba(0, 0, 0, 0.42) 78%);
+}
+
+.millionaire-game__atmosphere::before,
+.millionaire-game__atmosphere::after {
+  content: "";
+  position: absolute;
+  width: 30vw;
+  height: 76vh;
+  opacity: 0.14;
+  filter: blur(1px);
+  background:
+    linear-gradient(70deg, transparent 43%, color-mix(in srgb, var(--millionaire-gold) 30%, transparent) 44% 46%, transparent 47%) 0 0 / 80px 70px,
+    radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--millionaire-gold) 24%, transparent), transparent 69%);
+}
+
+.millionaire-game__atmosphere::before {
+  left: -4vw;
+  bottom: -18vh;
+  transform: skewX(-9deg);
+}
+
+.millionaire-game__atmosphere::after {
+  right: -4vw;
+  bottom: -18vh;
+  transform: scaleX(-1) skewX(-9deg);
 }
 
 .millionaire-game__brand {
   position: absolute;
-  z-index: 35;
+  z-index: 42;
   top: max(13px, env(safe-area-inset-top));
   left: 50%;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   transform: translateX(-50%);
   text-align: right;
-  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.75);
+  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.72);
 }
 
 .millionaire-game__brand-mark {
   display: grid;
-  width: 43px;
-  height: 43px;
+  width: 48px;
+  height: 48px;
   place-items: center;
-  border: 1px solid rgba(241, 205, 104, 0.58);
-  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 62%, transparent);
+  border-radius: 15px;
   color: var(--millionaire-gold);
-  background: linear-gradient(145deg, rgba(11, 97, 71, 0.96), rgba(2, 44, 35, 0.97));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--millionaire-base) 88%, white 12%), var(--millionaire-deep));
   box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.24),
-    inset 0 0 20px rgba(241, 205, 104, 0.1);
+    0 10px 30px rgba(0, 0, 0, 0.34),
+    inset 0 0 22px color-mix(in srgb, var(--millionaire-gold) 12%, transparent);
 }
 
 .millionaire-game__brand-mark svg {
-  width: 23px;
+  width: 25px;
 }
-.millionaire-game__brand small {
-  display: block;
-  font-size: 9px;
-  font-weight: 900;
-  color: rgba(255, 247, 220, 0.58);
-}
+
+.millionaire-game__brand small,
 .millionaire-game__brand strong {
   display: block;
+}
+
+.millionaire-game__brand small {
+  color: rgba(255, 248, 220, 0.56);
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.millionaire-game__brand strong {
   white-space: nowrap;
   color: var(--millionaire-gold);
-  font-size: clamp(17px, 1.45vw, 24px);
+  font-size: clamp(18px, 1.55vw, 27px);
   font-weight: 1000;
 }
 
 .millionaire-game__round {
   position: absolute;
-  z-index: 34;
-  top: max(70px, calc(env(safe-area-inset-top) + 58px));
+  z-index: 41;
+  top: max(72px, calc(env(safe-area-inset-top) + 60px));
   left: 50%;
   display: flex;
-  min-width: 210px;
+  min-width: 235px;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 14px;
   transform: translateX(-50%);
-  border: 1px solid rgba(241, 205, 104, 0.22);
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 25%, transparent);
   border-radius: 999px;
-  padding: 5px 13px;
-  background: rgba(2, 31, 25, 0.72);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(12px);
+  padding: 6px 8px 6px 14px;
+  background: color-mix(in srgb, var(--millionaire-deep) 82%, transparent);
+  box-shadow: 0 9px 28px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(14px);
+}
+
+.millionaire-game__round > span {
+  min-width: 92px;
+}
+
+.millionaire-game__round small,
+.millionaire-game__round strong {
+  display: block;
 }
 
 .millionaire-game__round small {
-  color: rgba(255, 247, 220, 0.52);
-  font-size: 9px;
-  font-weight: 800;
+  color: rgba(255, 247, 218, 0.5);
+  font-size: 8px;
+  font-weight: 900;
 }
+
 .millionaire-game__round strong {
-  color: #f5d579;
+  color: #f7d873;
   font-size: 11px;
   font-weight: 1000;
 }
 
+.millionaire-game__round time {
+  min-width: 58px;
+  border-radius: 999px;
+  padding: 5px 8px;
+  direction: ltr;
+  color: #13372d;
+  background: var(--millionaire-gold);
+  box-shadow: 0 0 17px color-mix(in srgb, var(--millionaire-gold) 27%, transparent);
+  font-size: 11px;
+  font-weight: 1000;
+  text-align: center;
+}
+
 .millionaire-game__tools {
   position: absolute;
-  z-index: 48;
+  z-index: 55;
   top: 50%;
-  right: max(13px, env(safe-area-inset-right));
+  right: max(14px, env(safe-area-inset-right));
   display: grid;
-  gap: 7px;
+  gap: 8px;
   transform: translateY(-50%);
 }
 
 .millionaire-game__tools button {
   display: grid;
-  width: 45px;
-  height: 45px;
+  width: 47px;
+  height: 47px;
   place-items: center;
-  border: 1px solid rgba(241, 205, 104, 0.44);
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 45%, transparent);
   border-radius: 15px;
-  color: #f6d879;
-  background: linear-gradient(145deg, rgba(5, 83, 62, 0.97), rgba(2, 33, 27, 0.98));
+  color: #f5d576;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--millionaire-base) 88%, black 12%), var(--millionaire-deep));
   box-shadow:
-    0 9px 24px rgba(0, 0, 0, 0.3),
-    inset 0 0 18px rgba(241, 205, 104, 0.07);
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    filter 0.18s ease;
+    0 10px 25px rgba(0, 0, 0, 0.34),
+    inset 0 0 18px color-mix(in srgb, var(--millionaire-gold) 8%, transparent);
+  transition: transform 0.18s ease, border-color 0.18s ease, filter 0.18s ease;
 }
 
 .millionaire-game__tools button:hover {
-  transform: translateX(-3px);
-  border-color: #f0ce6c;
-  filter: brightness(1.13);
+  transform: translateX(-3px) scale(1.03);
+  border-color: var(--millionaire-gold);
+  filter: brightness(1.12);
 }
+
 .millionaire-game__tools button svg {
   width: 20px;
 }
+
 .millionaire-game__tools .millionaire-game__chat {
   margin-top: 7px;
-  color: #fff2c5;
-  background: linear-gradient(145deg, #bb8422, #6d470b);
+  color: #fff3ca;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--millionaire-gold) 76%, #6a4306), #70490b);
 }
 
 .millionaire-game__players {
   position: absolute;
   inset: 0;
-  z-index: 30;
+  z-index: 35;
   pointer-events: none;
 }
 
@@ -174,72 +233,74 @@
   --player-color: #52df72;
   position: absolute;
   display: flex;
-  width: clamp(172px, 18vw, 285px);
-  min-height: 76px;
+  width: clamp(215px, 20vw, 320px);
+  min-height: 86px;
   align-items: center;
   gap: 10px;
-  padding: 8px 38px 8px 12px;
-  border: 2px solid color-mix(in srgb, var(--player-color) 76%, white 8%);
-  border-radius: 21px;
-  color: #fff8df;
-  background: linear-gradient(120deg, rgba(2, 20, 16, 0.96), rgba(4, 54, 42, 0.91));
+  padding: 10px 42px 10px 15px;
+  border: 2px solid color-mix(in srgb, var(--player-color) 78%, white 8%);
+  border-radius: 22px;
+  color: #fff9e7;
+  background:
+    linear-gradient(120deg, rgba(1, 16, 12, 0.96), color-mix(in srgb, var(--millionaire-panel) 89%, transparent));
   box-shadow:
-    0 12px 35px rgba(0, 0, 0, 0.4),
-    inset 0 0 24px color-mix(in srgb, var(--player-color) 10%, transparent);
-  opacity: 0.8;
-  transition:
-    opacity 0.22s ease,
-    filter 0.22s ease,
-    transform 0.22s ease,
-    box-shadow 0.22s ease;
+    0 14px 36px rgba(0, 0, 0, 0.42),
+    inset 0 0 28px color-mix(in srgb, var(--player-color) 9%, transparent);
+  opacity: 0.78;
+  transition: opacity 0.22s ease, filter 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
 }
 
 .millionaire-player.is-active {
   opacity: 1;
-  filter: saturate(1.1);
   box-shadow:
-    0 0 7px var(--player-color),
-    0 0 26px color-mix(in srgb, var(--player-color) 55%, transparent),
-    inset 0 0 24px color-mix(in srgb, var(--player-color) 16%, transparent);
+    0 0 8px var(--player-color),
+    0 0 28px color-mix(in srgb, var(--player-color) 46%, transparent),
+    inset 0 0 25px color-mix(in srgb, var(--player-color) 14%, transparent);
   animation: millionaireActive 1.8s ease-in-out infinite;
 }
 
 .millionaire-player.is-bankrupt {
-  opacity: 0.38;
+  opacity: 0.36;
   filter: grayscale(1);
 }
+
 .millionaire-player--1 {
-  top: max(17px, env(safe-area-inset-top));
-  left: max(17px, env(safe-area-inset-left));
+  top: max(20px, env(safe-area-inset-top));
+  left: max(20px, env(safe-area-inset-left));
 }
+
 .millionaire-player--2 {
-  top: max(17px, env(safe-area-inset-top));
-  right: max(72px, calc(env(safe-area-inset-right) + 56px));
+  top: max(20px, env(safe-area-inset-top));
+  right: max(80px, calc(env(safe-area-inset-right) + 64px));
 }
+
 .millionaire-player--3 {
-  bottom: max(17px, env(safe-area-inset-bottom));
-  left: max(17px, env(safe-area-inset-left));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: max(20px, env(safe-area-inset-left));
 }
+
 .millionaire-player--4 {
-  right: max(72px, calc(env(safe-area-inset-right) + 56px));
-  bottom: max(17px, env(safe-area-inset-bottom));
+  right: max(80px, calc(env(safe-area-inset-right) + 64px));
+  bottom: max(20px, env(safe-area-inset-bottom));
 }
 
 .millionaire-player__portrait {
   position: absolute;
   top: 50%;
-  right: -27px;
+  right: -30px;
   display: grid;
-  width: 61px;
-  height: 61px;
+  width: 66px;
+  height: 66px;
   place-items: center;
   overflow: hidden;
   transform: translateY(-50%);
   border: 4px solid var(--player-color);
   border-radius: 50%;
-  color: #14372e;
-  background: #fff0c8;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  color: #16352c;
+  background: linear-gradient(145deg, #fff5d2, #dcc791);
+  box-shadow:
+    0 7px 19px rgba(0, 0, 0, 0.38),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.75);
   font-size: 22px;
   font-weight: 1000;
 }
@@ -249,78 +310,103 @@
   height: 100%;
   object-fit: cover;
 }
+
 .millionaire-player__copy {
   min-width: 0;
   flex: 1;
 }
-.millionaire-player__copy p {
+
+.millionaire-player__copy > p {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0;
+  margin: 0 0 5px;
 }
-.millionaire-player__copy p svg {
+
+.millionaire-player__copy > p svg {
   width: 15px;
   color: #efca63;
-  fill: rgba(239, 202, 99, 0.22);
+  fill: rgba(239, 202, 99, 0.2);
 }
-.millionaire-player__copy p strong {
+
+.millionaire-player__copy > p strong {
+  max-width: 118px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: clamp(14px, 1.18vw, 20px);
+  font-size: clamp(14px, 1.15vw, 19px);
   font-weight: 1000;
 }
-.millionaire-player__copy p em {
+
+.millionaire-player__copy > p em {
   border-radius: 999px;
   padding: 2px 6px;
-  color: #06251e;
+  color: #07221b;
   background: var(--player-color);
   font-size: 8px;
   font-style: normal;
   font-weight: 1000;
 }
-.millionaire-player__copy > span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 3px;
-  color: #fff0bd;
-  font-size: clamp(12px, 1vw, 17px);
-  font-weight: 1000;
+
+.millionaire-player__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
 }
-.millionaire-player__copy > span svg {
-  width: 15px;
-  color: #9fdca9;
+
+.millionaire-player__stats > span {
+  min-width: 0;
+  border-radius: 9px;
+  padding: 3px 7px;
+  background: rgba(255, 255, 255, 0.055);
 }
-.millionaire-player__copy > small {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 1px;
-  color: rgba(255, 255, 255, 0.47);
-  font-size: 8px;
+
+.millionaire-player__stats small {
+  display: block;
+  color: rgba(255, 247, 219, 0.46);
+  font-size: 7px;
   font-weight: 800;
 }
-.millionaire-player__copy > small svg {
+
+.millionaire-player__stats strong {
+  display: block;
+  overflow: hidden;
+  color: #fff0bd;
+  font-size: clamp(10px, 0.9vw, 14px);
+  font-weight: 1000;
+}
+
+.millionaire-player__owned {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 7px;
+  font-weight: 800;
+}
+
+.millionaire-player__owned svg {
   width: 10px;
 }
-.millionaire-player > b {
+
+.millionaire-player__rank {
   position: absolute;
   top: 50%;
-  left: -17px;
+  left: -19px;
   display: grid;
-  width: 35px;
-  height: 35px;
+  width: 39px;
+  height: 39px;
   place-items: center;
   transform: translateY(-50%);
-  border: 3px solid #171b17;
+  border: 3px solid #161c18;
   border-radius: 50%;
   color: #fff;
   background: var(--player-color);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.32);
-  font-size: 16px;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.34);
+  font-size: 18px;
 }
+
 .millionaire-player > mark {
   position: absolute;
   inset: 0;
@@ -328,20 +414,20 @@
   place-items: center;
   border-radius: inherit;
   color: #fff;
-  background: rgba(65, 18, 18, 0.78);
+  background: rgba(65, 18, 18, 0.82);
   font-size: 14px;
   font-weight: 1000;
 }
 
 .millionaire-board-scene {
   position: absolute;
-  z-index: 5;
-  top: 50%;
+  z-index: 8;
+  top: 51%;
   left: 50%;
-  width: min(62vw, 82dvh, 880px);
+  width: min(58vw, 82dvh, 980px);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
-  perspective: 1500px;
+  perspective: 1600px;
   pointer-events: none;
 }
 
@@ -350,24 +436,20 @@
   inset: 2%;
   display: grid;
   grid-template: repeat(7, 1fr) / repeat(7, 1fr);
-  transform: rotateX(54deg) rotateZ(45deg);
+  transform: rotateX(53deg) rotateZ(45deg);
   transform-style: preserve-3d;
-  border: clamp(7px, 0.8vw, 13px) solid #9b6925;
-  border-radius: 5%;
+  border: clamp(8px, 0.85vw, 15px) solid #8f5b21;
+  border-radius: 5.5%;
   background:
-    radial-gradient(circle at 50% 50%, rgba(241, 205, 104, 0.15), transparent 33%),
-    repeating-radial-gradient(
-      circle at 50% 50%,
-      transparent 0 15%,
-      rgba(241, 205, 104, 0.12) 15.3% 15.7%,
-      transparent 16% 21%
-    ),
-    linear-gradient(145deg, #08705a, #023b31 65%, #03251f);
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--millionaire-gold) 16%, transparent), transparent 31%),
+    repeating-radial-gradient(circle at 50% 50%, transparent 0 15%, color-mix(in srgb, var(--millionaire-gold) 11%, transparent) 15.2% 15.7%, transparent 16% 21%),
+    linear-gradient(145deg, color-mix(in srgb, var(--millionaire-base) 96%, #0b8f68), var(--millionaire-deep) 72%);
   box-shadow:
-    0 46px 44px rgba(0, 0, 0, 0.58),
-    0 0 0 5px #dfb14e,
+    0 48px 48px rgba(0, 0, 0, 0.62),
+    0 0 0 5px #d5a53f,
+    0 0 0 7px #684110,
     inset 0 0 0 2px rgba(255, 237, 174, 0.62),
-    inset 0 0 78px rgba(0, 0, 0, 0.36);
+    inset 0 0 90px rgba(0, 0, 0, 0.34);
   pointer-events: auto;
 }
 
@@ -375,32 +457,33 @@
   position: absolute;
   inset: -3%;
   z-index: -1;
-  transform: translateZ(-16px);
+  transform: translateZ(-20px);
   border-radius: 6%;
-  background: linear-gradient(135deg, #f3d982, #714612 34%, #c5943d 68%, #4d2d0a);
-  box-shadow: 0 30px 38px rgba(0, 0, 0, 0.55);
+  background: linear-gradient(135deg, #f2d783, #70430d 32%, #c28e32 66%, #482805);
+  box-shadow: 0 34px 40px rgba(0, 0, 0, 0.58);
 }
 
 .millionaire-board__map {
   position: absolute;
-  inset: 25%;
+  inset: 24%;
   z-index: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   transform: translateZ(2px) rotateZ(-45deg);
-  color: rgba(241, 205, 104, 0.15);
+  color: color-mix(in srgb, var(--millionaire-gold) 14%, transparent);
   pointer-events: none;
 }
 
 .millionaire-board__map svg {
-  width: 18%;
+  width: 20%;
   height: auto;
 }
+
 .millionaire-board__map span {
   margin-top: 3px;
-  font-size: clamp(12px, 1.5vw, 23px);
+  font-size: clamp(12px, 1.45vw, 24px);
   font-weight: 1000;
 }
 
@@ -413,172 +496,262 @@
   min-width: 0;
   place-items: center;
   overflow: visible;
-  border: 1px solid rgba(91, 58, 13, 0.54);
+  border: 1px solid rgba(83, 52, 12, 0.48);
   padding: 0;
-  color: #172e27;
-  background: linear-gradient(150deg, #fffdf4, #e1dccb);
+  color: var(--millionaire-ink);
+  background: linear-gradient(150deg, #fffef5, #ded7c3);
   box-shadow:
-    inset 0 0 13px rgba(87, 58, 13, 0.13),
-    0 1px 0 #f5d675;
+    inset 0 0 14px rgba(87, 58, 13, 0.14),
+    0 1px 0 #f6db82;
   text-align: center;
   transform-style: preserve-3d;
   cursor: pointer;
+  transition: filter 0.18s ease, box-shadow 0.18s ease;
 }
 
 .millionaire-space:hover {
-  filter: brightness(1.06);
+  z-index: 9;
+  filter: brightness(1.08);
 }
+
 .millionaire-space.is-current {
-  z-index: 5;
+  z-index: 8;
   box-shadow:
-    inset 0 0 0 3px #fff4af,
-    0 0 18px #f4d267;
+    inset 0 0 0 3px #fff1a7,
+    0 0 23px #f3ce5c;
 }
+
 .millionaire-space.is-festival::after {
   content: "";
   position: absolute;
   inset: 4%;
-  border: 3px solid #ffc84c;
+  border: 3px solid #ffca43;
   border-radius: 7px;
-  box-shadow: 0 0 13px #ffc84c;
+  box-shadow: 0 0 14px #ffc63a;
   animation: millionaireFestival 1.4s ease-in-out infinite;
 }
+
 .millionaire-space__band {
   position: absolute;
   inset: 0 0 auto;
-  height: 18%;
+  height: 19%;
   background: var(--space-color);
-  box-shadow: inset 0 -1px rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 -1px rgba(255, 255, 255, 0.46);
 }
+
 .millionaire-space__content {
+  position: absolute;
+  z-index: 5;
+  right: 4%;
+  bottom: 6%;
   display: flex;
-  width: 112%;
+  width: 92%;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 1px;
-  transform: translateZ(4px) rotateZ(-45deg);
+  gap: 0;
+  transform: translateZ(7px) rotateZ(-45deg);
 }
+
 .millionaire-space__icon {
   display: grid;
-  width: 23%;
+  width: 25%;
   aspect-ratio: 1;
   place-items: center;
   border-radius: 6px;
-  color: color-mix(in srgb, var(--space-color) 74%, #132a23);
+  color: color-mix(in srgb, var(--space-color) 72%, #132a23);
   background: color-mix(in srgb, var(--space-color) 14%, #fff);
 }
+
 .millionaire-space__icon svg {
   width: 70%;
 }
+
 .millionaire-space__content > strong {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: clamp(5px, 0.5vw, 9px);
+  font-size: clamp(5px, 0.48vw, 9px);
   font-weight: 1000;
 }
+
 .millionaire-space__content > small {
-  font-size: clamp(4px, 0.4vw, 7px);
+  font-size: clamp(4px, 0.39vw, 7px);
   font-weight: 1000;
-  opacity: 0.63;
+  opacity: 0.62;
 }
+
 .millionaire-space--start,
 .millionaire-space--island,
 .millionaire-space--travel,
 .millionaire-space--festival {
   border-radius: 10%;
+  background: linear-gradient(150deg, #fff9de, #d7c89e);
 }
+
 .millionaire-space--chance {
-  background: linear-gradient(150deg, #fff8ff, #ded5e4);
+  background: linear-gradient(150deg, #fff8ff, #ded2e6);
 }
+
 .millionaire-space--tourism {
-  background: linear-gradient(150deg, #fff7e9, #dfd3bc);
+  background: linear-gradient(150deg, #fff7e9, #dfd0b7);
 }
+
 .millionaire-space__owner {
   position: absolute;
   top: 4%;
   right: 4%;
+  z-index: 12;
   width: 14%;
   aspect-ratio: 1;
-  transform: translateZ(8px);
+  transform: translateZ(14px);
   border: 2px solid #fff;
   border-radius: 50%;
   background: var(--owner-color);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.4);
 }
 
-.millionaire-mini-buildings {
+.millionaire-city-model {
+  --model-color: #bd8734;
   position: absolute;
-  z-index: 7;
-  right: 16%;
-  bottom: 5%;
-  display: flex;
-  align-items: flex-end;
-  gap: 1px;
-  transform: translateZ(16px) rotateZ(-45deg);
+  z-index: 8;
+  top: -16%;
+  left: 4%;
+  width: 74%;
+  height: 74%;
+  transform: translateZ(14px) rotateZ(-45deg);
+  transform-origin: center bottom;
+  opacity: 0.54;
+  pointer-events: none;
 }
 
-.millionaire-mini-buildings i {
+.millionaire-city-model.is-owned {
+  opacity: 1;
+  filter: drop-shadow(0 5px 4px rgba(0, 0, 0, 0.38));
+}
+
+.millionaire-city-model__plot {
+  position: absolute;
+  right: 8%;
+  bottom: 2%;
+  width: 82%;
+  height: 26%;
+  transform: skewX(-34deg);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--model-color) 42%, transparent);
+  box-shadow: 0 4px 7px rgba(0, 0, 0, 0.28);
+}
+
+.millionaire-city-model__building {
+  position: absolute;
+  bottom: 15%;
   display: block;
-  width: clamp(4px, 0.45vw, 8px);
-  height: clamp(8px, 0.9vw, 15px);
-  border: 1px solid rgba(255, 250, 220, 0.75);
+  border: 1px solid color-mix(in srgb, var(--model-color) 70%, #fff2bd 30%);
   border-radius: 2px 2px 0 0;
-  background: linear-gradient(90deg, var(--owner-color, #d9a742), #f6d26f);
-  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.34);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 3px, rgba(255, 241, 174, 0.48) 3px 4px),
+    linear-gradient(90deg, color-mix(in srgb, var(--model-color) 72%, #13251f), color-mix(in srgb, var(--model-color) 56%, #f1ce68));
+  box-shadow:
+    inset -4px 0 6px rgba(0, 0, 0, 0.18),
+    3px 3px 4px rgba(0, 0, 0, 0.28);
 }
 
-.millionaire-mini-buildings i:nth-child(2) {
-  height: clamp(11px, 1.2vw, 20px);
+.millionaire-city-model__building::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: -4px;
+  height: 5px;
+  border-radius: 2px 2px 0 0;
+  background: color-mix(in srgb, var(--model-color) 76%, #f9db7b);
 }
-.millionaire-mini-buildings i:nth-child(3) {
-  height: clamp(14px, 1.5vw, 25px);
+
+.millionaire-city-model__building--1 {
+  right: 13%;
+  width: 21%;
+  height: 38%;
 }
-.millionaire-mini-buildings i:nth-child(4) {
-  height: clamp(19px, 2vw, 34px);
-  width: clamp(7px, 0.7vw, 12px);
+
+.millionaire-city-model__building--2 {
+  right: 36%;
+  width: 22%;
+  height: 55%;
 }
-.millionaire-mini-buildings.is-landmark i:not(:last-child) {
-  opacity: 0.25;
+
+.millionaire-city-model__building--3 {
+  right: 60%;
+  width: 18%;
+  height: 44%;
+}
+
+.millionaire-city-model__building--4 {
+  right: 35%;
+  width: 27%;
+  height: 79%;
+  clip-path: polygon(12% 12%, 31% 12%, 31% 0, 48% 0, 48% 12%, 66% 12%, 66% 0, 84% 0, 84% 12%, 100% 12%, 100% 100%, 0 100%, 0 12%);
+}
+
+.millionaire-city-model.is-landmark .millionaire-city-model__building:not(.millionaire-city-model__building--4) {
+  opacity: 0.42;
+}
+
+.millionaire-city-model em {
+  position: absolute;
+  right: 8%;
+  bottom: -5%;
+  left: 8%;
+  overflow: hidden;
+  color: #49370e;
+  font-size: clamp(3px, 0.32vw, 6px);
+  font-style: normal;
+  font-weight: 1000;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .millionaire-space__tokens {
   position: absolute;
-  z-index: 12;
-  left: 8%;
-  bottom: 8%;
+  z-index: 18;
+  left: 4%;
+  bottom: 5%;
   display: flex;
-  transform: translateZ(28px) rotateZ(-45deg);
+  transform: translateZ(38px) rotateZ(-45deg);
 }
 
 .millionaire-space__tokens i {
   --token-color: #52df72;
   display: grid;
-  width: clamp(13px, 1.25vw, 22px);
+  width: clamp(15px, 1.35vw, 24px);
   aspect-ratio: 1;
   place-items: center;
   margin-right: -5px;
   border: 2px solid #fff6cf;
   border-radius: 50%;
   color: #fff;
-  background: var(--token-color);
-  box-shadow: 0 4px 7px rgba(0, 0, 0, 0.45);
-  font-size: clamp(6px, 0.48vw, 9px);
+  background: radial-gradient(circle at 35% 25%, #fff, var(--token-color) 26%, color-mix(in srgb, var(--token-color) 68%, black));
+  box-shadow:
+    0 5px 8px rgba(0, 0, 0, 0.48),
+    0 0 11px color-mix(in srgb, var(--token-color) 55%, transparent);
+  font-size: clamp(6px, 0.5vw, 10px);
   font-style: normal;
   font-weight: 1000;
-  animation: millionaireTokenLand 0.48s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: millionaireTokenLand 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.millionaire-space__tokens i.is-moving {
+  animation: millionaireTokenMove 0.15s ease-in-out;
 }
 
 .millionaire-game__center {
   position: absolute;
-  z-index: 16;
+  z-index: 20;
   top: 50%;
   left: 50%;
   display: flex;
-  width: clamp(200px, 22vw, 345px);
-  min-height: clamp(155px, 23vh, 278px);
+  width: clamp(195px, 21vw, 345px);
+  min-height: clamp(165px, 24vh, 285px);
   align-items: center;
   justify-content: center;
   flex-direction: column;
@@ -590,59 +763,84 @@
 
 .millionaire-game__crest {
   display: grid;
-  width: clamp(29px, 3vw, 48px);
+  width: clamp(31px, 3.1vw, 50px);
   aspect-ratio: 1;
   place-items: center;
-  border: 1px solid rgba(241, 205, 104, 0.62);
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 65%, transparent);
   border-radius: 50%;
   color: var(--millionaire-gold);
-  background: rgba(3, 58, 46, 0.84);
-  box-shadow: 0 0 24px rgba(241, 205, 104, 0.22);
+  background: color-mix(in srgb, var(--millionaire-base) 82%, transparent);
+  box-shadow: 0 0 25px color-mix(in srgb, var(--millionaire-gold) 22%, transparent);
 }
+
 .millionaire-game__crest svg {
-  width: 52%;
+  width: 53%;
 }
+
 .millionaire-game__center > p {
-  margin: 3px 0 -5px;
-  color: #dcb95a;
-  font-size: clamp(9px, 0.9vw, 14px);
+  margin: 3px 0 -6px;
+  color: color-mix(in srgb, var(--millionaire-gold) 85%, white 15%);
+  font-size: clamp(8px, 0.85vw, 14px);
   font-weight: 1000;
 }
+
 .millionaire-game__center > h2 {
   margin: 0;
-  color: #f4d477;
-  font-size: clamp(25px, 3.1vw, 50px);
+  color: #f5d476;
+  font-size: clamp(25px, 3vw, 50px);
   font-weight: 1000;
   letter-spacing: -0.04em;
 }
+
+.millionaire-game__center-stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  color: rgba(255, 246, 215, 0.55);
+  font-size: clamp(6px, 0.52vw, 9px);
+  font-weight: 900;
+}
+
+.millionaire-game__center-stats i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--millionaire-gold);
+}
+
 .millionaire-dice {
   display: flex;
   gap: clamp(7px, 1vw, 14px);
-  margin: clamp(3px, 0.7vh, 8px) 0;
+  margin: clamp(4px, 0.8vh, 9px) 0;
   direction: ltr;
 }
+
 .millionaire-dice span {
   display: grid;
-  width: clamp(30px, 3.5vw, 54px);
+  width: clamp(31px, 3.5vw, 56px);
   aspect-ratio: 1;
   place-items: center;
   border: 2px solid #d9b759;
   border-radius: 20%;
-  color: #192f28;
-  background: linear-gradient(145deg, #fffef8, #e6dcc1);
+  color: #172f27;
+  background: linear-gradient(145deg, #fffef7, #e6dcc0);
   box-shadow:
-    0 7px 14px rgba(0, 0, 0, 0.35),
-    inset 0 0 6px #fff;
-  font-size: clamp(27px, 3.3vw, 52px);
+    0 8px 15px rgba(0, 0, 0, 0.38),
+    inset 0 0 7px #fff;
+  font-size: clamp(28px, 3.3vw, 53px);
   line-height: 1;
   text-shadow: none;
 }
+
 .millionaire-dice.is-rolling span:first-child {
   animation: millionaireDice 0.52s cubic-bezier(0.4, 0.05, 0.2, 1) infinite;
 }
+
 .millionaire-dice.is-rolling span:last-child {
   animation: millionaireDice 0.52s 0.12s cubic-bezier(0.4, 0.05, 0.2, 1) infinite reverse;
 }
+
 .millionaire-game__roll,
 .millionaire-game__end,
 .millionaire-game__jail-actions,
@@ -652,80 +850,84 @@
 
 .millionaire-game__roll,
 .millionaire-game__end {
-  min-width: clamp(140px, 14vw, 225px);
-  min-height: clamp(38px, 5vh, 58px);
-  border: 2px solid #f4d576;
+  min-width: clamp(142px, 14vw, 230px);
+  min-height: clamp(38px, 5vh, 59px);
+  border: 2px solid var(--millionaire-gold);
   border-radius: 999px;
   color: #fff9dc;
-  background: radial-gradient(circle at 50% 10%, #24bd7e, #08704f 52%, #034535);
+  background: radial-gradient(circle at 50% 5%, color-mix(in srgb, var(--millionaire-base) 70%, #24c88d), var(--millionaire-base) 54%, var(--millionaire-deep));
   box-shadow:
-    0 0 0 6px rgba(241, 205, 104, 0.13),
-    0 0 24px rgba(30, 203, 126, 0.31),
+    0 0 0 6px color-mix(in srgb, var(--millionaire-gold) 12%, transparent),
+    0 0 25px color-mix(in srgb, var(--millionaire-base) 55%, transparent),
     inset 0 2px 7px rgba(255, 255, 255, 0.22);
-  font-size: clamp(13px, 1.25vw, 20px);
+  font-size: clamp(13px, 1.2vw, 20px);
   font-weight: 1000;
-  transition:
-    transform 0.18s ease,
-    filter 0.18s ease;
+  transition: transform 0.18s ease, filter 0.18s ease;
 }
 
 .millionaire-game__end {
-  background: linear-gradient(145deg, #a9771e, #63400b);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--millionaire-gold) 74%, #8c5d0d), #5f3c08);
 }
+
 .millionaire-game__roll:hover:not(:disabled),
 .millionaire-game__end:hover {
   transform: translateY(-2px) scale(1.025);
   filter: brightness(1.08);
 }
+
 .millionaire-game__roll:disabled {
   cursor: default;
   opacity: 0.5;
   filter: grayscale(0.35);
 }
+
 .millionaire-game__waiting {
-  border: 1px solid rgba(241, 205, 104, 0.35);
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 34%, transparent);
   border-radius: 999px;
   padding: 9px 17px;
   color: rgba(255, 246, 213, 0.78);
-  background: rgba(1, 27, 22, 0.8);
+  background: color-mix(in srgb, var(--millionaire-deep) 82%, transparent);
   font-size: 11px;
   font-weight: 900;
 }
+
 .millionaire-game__jail-actions {
   display: flex;
   gap: 5px;
   margin-bottom: 5px;
 }
+
 .millionaire-game__jail-actions button {
-  border: 1px solid rgba(241, 205, 104, 0.4);
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 42%, transparent);
   border-radius: 999px;
   padding: 4px 8px;
   color: #f7d978;
-  background: rgba(2, 42, 34, 0.9);
+  background: color-mix(in srgb, var(--millionaire-deep) 88%, transparent);
   font-size: 8px;
   font-weight: 1000;
 }
+
 .millionaire-game__jail-actions button:disabled {
   opacity: 0.45;
 }
 
 .millionaire-game__property-card {
   position: absolute;
-  z-index: 32;
+  z-index: 52;
   left: 50%;
-  bottom: max(13px, env(safe-area-inset-bottom));
+  bottom: max(17px, env(safe-area-inset-bottom));
   display: flex;
-  min-width: min(330px, 34vw);
+  min-width: min(350px, 34vw);
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   transform: translateX(-50%);
-  border: 1px solid rgba(241, 205, 104, 0.28);
-  border-radius: 17px;
-  padding: 7px 34px 7px 11px;
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 33%, transparent);
+  border-radius: 18px;
+  padding: 8px 36px 8px 12px;
   color: #fff5d3;
-  background: rgba(1, 25, 21, 0.84);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--millionaire-deep) 88%, transparent);
+  box-shadow: 0 13px 36px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(15px);
 }
 
 .millionaire-game__property-card > button {
@@ -733,44 +935,53 @@
   top: 50%;
   right: 7px;
   display: grid;
-  width: 23px;
-  height: 23px;
+  width: 24px;
+  height: 24px;
   place-items: center;
   transform: translateY(-50%);
   border: 0;
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.08);
 }
+
 .millionaire-game__property-card > button svg {
   width: 12px;
 }
+
 .millionaire-game__property-card > span {
   --space-color: #cf9b3a;
   display: grid;
-  width: 40px;
+  width: 42px;
   aspect-ratio: 1;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 13px;
   color: #102a23;
   background: var(--space-color);
 }
+
 .millionaire-game__property-card > span svg {
-  width: 20px;
+  width: 21px;
 }
-.millionaire-game__property-card small {
+
+.millionaire-game__property-card small,
+.millionaire-game__property-card strong {
   display: block;
+}
+
+.millionaire-game__property-card small {
   color: rgba(255, 244, 204, 0.52);
   font-size: 8px;
   font-weight: 800;
 }
+
 .millionaire-game__property-card strong {
-  display: block;
   color: #f1cf70;
   font-size: 13px;
   font-weight: 1000;
 }
+
 .millionaire-game__property-card p {
   margin: 1px 0 0;
   color: rgba(255, 255, 255, 0.62);
@@ -780,19 +991,19 @@
 
 .millionaire-game__ticker {
   position: absolute;
-  z-index: 33;
-  top: max(105px, calc(env(safe-area-inset-top) + 92px));
+  z-index: 41;
+  top: max(114px, calc(env(safe-area-inset-top) + 100px));
   left: 50%;
   display: flex;
-  max-width: 42vw;
+  max-width: 43vw;
   align-items: center;
   gap: 7px;
   transform: translateX(-50%);
-  border: 1px solid rgba(241, 205, 104, 0.16);
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 17%, transparent);
   border-radius: 999px;
   padding: 5px 11px;
-  color: rgba(255, 248, 224, 0.7);
-  background: rgba(1, 28, 23, 0.67);
+  color: rgba(255, 248, 224, 0.68);
+  background: color-mix(in srgb, var(--millionaire-deep) 69%, transparent);
   backdrop-filter: blur(10px);
   font-size: 9px;
 }
@@ -801,12 +1012,14 @@
   white-space: nowrap;
   color: #f1ce6c;
 }
+
 .millionaire-game__ticker p {
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .millionaire-game__status-dot {
   width: 7px;
   height: 7px;
@@ -816,54 +1029,83 @@
   box-shadow: 0 0 10px #48da6b;
 }
 
+.millionaire-mini-buildings {
+  display: flex;
+  min-height: 34px;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+}
+
+.millionaire-mini-buildings i {
+  --owner-color: var(--millionaire-base);
+  display: block;
+  width: 7px;
+  height: 16px;
+  border: 1px solid rgba(255, 250, 220, 0.78);
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(90deg, var(--owner-color), #f3cf68);
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.millionaire-mini-buildings i:nth-child(2) { height: 21px; }
+.millionaire-mini-buildings i:nth-child(3) { height: 27px; }
+.millionaire-mini-buildings i:nth-child(4) { width: 11px; height: 34px; }
+.millionaire-mini-buildings.is-landmark i:not(:last-child) { opacity: 0.32; }
+
 .millionaire-decision {
   position: absolute;
-  z-index: 70;
+  z-index: 80;
   left: 50%;
-  bottom: max(17px, env(safe-area-inset-bottom));
-  width: min(620px, 58vw);
-  max-height: min(66dvh, 560px);
+  bottom: max(18px, env(safe-area-inset-bottom));
+  width: min(650px, 60vw);
+  max-height: min(70dvh, 590px);
   overflow-y: auto;
   transform: translateX(-50%);
-  border: 1px solid rgba(241, 205, 104, 0.55);
-  border-radius: 26px;
-  padding: 15px;
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 61%, transparent);
+  border-radius: 27px;
+  padding: 16px;
   color: #163b31;
-  background: linear-gradient(150deg, rgba(255, 251, 237, 0.98), rgba(232, 220, 186, 0.98));
+  background: linear-gradient(150deg, rgba(255, 252, 239, 0.99), rgba(232, 218, 181, 0.99));
   box-shadow:
-    0 22px 70px rgba(0, 0, 0, 0.58),
-    0 0 0 7px rgba(241, 205, 104, 0.09);
+    0 25px 78px rgba(0, 0, 0, 0.62),
+    0 0 0 7px color-mix(in srgb, var(--millionaire-gold) 9%, transparent);
   scrollbar-width: thin;
 }
 
 .millionaire-decision__head {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
 }
+
 .millionaire-decision__head > span {
   display: grid;
-  width: 43px;
+  width: 46px;
   aspect-ratio: 1;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 14px;
   color: #f3d272;
-  background: #075846;
+  background: var(--millionaire-base);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--millionaire-base) 24%, transparent);
 }
+
 .millionaire-decision__head > span svg {
-  width: 21px;
+  width: 22px;
 }
+
 .millionaire-decision__head small {
   display: block;
   color: #986c24;
   font-size: 9px;
   font-weight: 900;
 }
+
 .millionaire-decision__head strong {
   display: block;
   color: #173c32;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 1000;
 }
 
@@ -871,52 +1113,33 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin-top: 13px;
+  margin-top: 14px;
 }
+
 .millionaire-decision__levels > button {
-  position: relative;
   display: flex;
-  min-height: 82px;
+  min-height: 91px;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   border: 1px solid rgba(16, 76, 61, 0.15);
-  border-radius: 17px;
+  border-radius: 18px;
   color: #173c32;
-  background: rgba(255, 255, 255, 0.66);
-  box-shadow: 0 6px 17px rgba(42, 35, 16, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 7px 18px rgba(42, 35, 16, 0.08);
+  transition: transform 0.16s ease, border-color 0.16s ease;
 }
+
 .millionaire-decision__levels > button:hover {
-  border-color: #a77821;
   transform: translateY(-2px);
+  border-color: #a77821;
 }
-.millionaire-decision__levels .millionaire-mini-buildings {
-  position: relative;
-  right: auto;
-  bottom: auto;
-  min-height: 34px;
-  margin-bottom: 4px;
-  transform: none;
-}
-.millionaire-decision__levels .millionaire-mini-buildings i {
-  --owner-color: #137259;
-  width: 7px;
-  height: 16px;
-}
-.millionaire-decision__levels .millionaire-mini-buildings i:nth-child(2) {
-  height: 21px;
-}
-.millionaire-decision__levels .millionaire-mini-buildings i:nth-child(3) {
-  height: 27px;
-}
-.millionaire-decision__levels .millionaire-mini-buildings i:nth-child(4) {
-  width: 11px;
-  height: 34px;
-}
+
 .millionaire-decision__levels strong {
   font-size: 12px;
   font-weight: 1000;
 }
+
 .millionaire-decision__levels small {
   margin-top: 2px;
   color: #a2742b;
@@ -925,26 +1148,28 @@
 }
 
 .millionaire-decision__confirm {
-  margin-top: 13px;
-  border-radius: 17px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.55);
+  margin-top: 14px;
+  border-radius: 18px;
+  padding: 13px;
+  background: rgba(255, 255, 255, 0.58);
   text-align: center;
 }
+
 .millionaire-decision__confirm p {
   margin: 0 0 9px;
   color: rgba(23, 60, 50, 0.66);
   font-size: 11px;
   font-weight: 800;
 }
+
 .millionaire-decision__confirm button,
 .millionaire-decision__debt .is-pay {
-  min-height: 40px;
+  min-height: 41px;
   width: 100%;
   border: 0;
   border-radius: 13px;
   color: #fff7dc;
-  background: linear-gradient(145deg, #0b7559, #064739);
+  background: linear-gradient(145deg, var(--millionaire-base), var(--millionaire-deep));
   font-size: 12px;
   font-weight: 1000;
 }
@@ -953,10 +1178,11 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 7px;
-  max-height: 245px;
+  max-height: 255px;
   overflow-y: auto;
-  margin-top: 12px;
+  margin-top: 13px;
 }
+
 .millionaire-decision__destinations button {
   display: flex;
   min-width: 0;
@@ -966,15 +1192,17 @@
   border-radius: 13px;
   padding: 8px;
   color: #173c32;
-  background: rgba(255, 255, 255, 0.61);
+  background: rgba(255, 255, 255, 0.63);
   text-align: right;
 }
+
 .millionaire-decision__destinations button > i {
   width: 8px;
   height: 32px;
   flex: 0 0 auto;
   border-radius: 5px;
 }
+
 .millionaire-decision__destinations button > span {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -982,6 +1210,7 @@
   font-size: 11px;
   font-weight: 1000;
 }
+
 .millionaire-decision__destinations small {
   display: block;
   color: rgba(23, 60, 50, 0.5);
@@ -991,6 +1220,7 @@
 .millionaire-decision__debt {
   margin-top: 12px;
 }
+
 .millionaire-decision__debt > p {
   margin: 0 0 8px;
   border-radius: 12px;
@@ -998,6 +1228,7 @@
   background: rgba(129, 40, 40, 0.08);
   font-size: 11px;
 }
+
 .millionaire-decision__debt > div {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1006,6 +1237,7 @@
   overflow-y: auto;
   margin-top: 8px;
 }
+
 .millionaire-decision__debt > div button {
   display: flex;
   justify-content: space-between;
@@ -1013,13 +1245,15 @@
   border-radius: 11px;
   padding: 7px 9px;
   color: #173c32;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.62);
   font-size: 10px;
   font-weight: 900;
 }
+
 .millionaire-decision__debt > div small {
   color: #177157;
 }
+
 .millionaire-decision__debt .is-bankrupt {
   width: 100%;
   margin-top: 8px;
@@ -1031,6 +1265,7 @@
   font-size: 10px;
   font-weight: 1000;
 }
+
 .millionaire-decision__decline {
   width: 100%;
   margin-top: 9px;
@@ -1038,7 +1273,7 @@
   border-radius: 12px;
   padding: 7px;
   color: rgba(23, 60, 50, 0.62);
-  background: rgba(255, 255, 255, 0.36);
+  background: rgba(255, 255, 255, 0.4);
   font-size: 10px;
   font-weight: 1000;
 }
@@ -1046,25 +1281,25 @@
 .millionaire-assets {
   position: absolute;
   inset: 0;
-  z-index: 85;
+  z-index: 90;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(0, 15, 12, 0.72);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 15, 12, 0.74);
+  backdrop-filter: blur(9px);
 }
 
 .millionaire-assets > div {
-  width: min(650px, 88vw);
-  max-height: min(82dvh, 680px);
+  width: min(680px, 89vw);
+  max-height: min(84dvh, 700px);
   overflow-y: auto;
-  border: 1px solid rgba(241, 205, 104, 0.44);
-  border-radius: 27px;
-  padding: 17px;
+  border: 1px solid color-mix(in srgb, var(--millionaire-gold) 46%, transparent);
+  border-radius: 28px;
+  padding: 18px;
   color: #173c32;
-  background: linear-gradient(150deg, #fffbee, #e9ddc1);
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(150deg, #fffbee, #e9dcc0);
+  box-shadow: 0 26px 84px rgba(0, 0, 0, 0.62);
 }
 
 .millionaire-assets header {
@@ -1072,26 +1307,33 @@
   align-items: center;
   gap: 10px;
 }
+
 .millionaire-assets header > span {
   display: grid;
-  width: 45px;
+  width: 46px;
   aspect-ratio: 1;
   place-items: center;
   border-radius: 14px;
   color: #f4d474;
-  background: #075846;
+  background: var(--millionaire-base);
 }
-.millionaire-assets header small {
+
+.millionaire-assets header small,
+.millionaire-assets header strong {
   display: block;
+}
+
+.millionaire-assets header small {
   color: #9a702a;
   font-size: 9px;
   font-weight: 900;
 }
+
 .millionaire-assets header strong {
-  display: block;
   font-size: 19px;
   font-weight: 1000;
 }
+
 .millionaire-assets header button {
   display: grid;
   width: 35px;
@@ -1103,15 +1345,18 @@
   color: #173c32;
   background: rgba(12, 73, 59, 0.08);
 }
+
 .millionaire-assets header button svg {
   width: 17px;
 }
+
 .millionaire-assets__summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-top: 14px;
 }
+
 .millionaire-assets__summary p {
   display: flex;
   align-items: center;
@@ -1119,29 +1364,34 @@
   margin: 0;
   border-radius: 14px;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.64);
 }
+
 .millionaire-assets__summary p > svg {
   width: 20px;
-  color: #087058;
+  color: var(--millionaire-base);
 }
+
 .millionaire-assets__summary span {
   color: rgba(23, 60, 50, 0.56);
   font-size: 8px;
   font-weight: 800;
 }
+
 .millionaire-assets__summary strong {
   display: block;
   color: #173c32;
   font-size: 13px;
   font-weight: 1000;
 }
+
 .millionaire-assets section {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 7px;
   margin-top: 12px;
 }
+
 .millionaire-assets article {
   display: flex;
   min-width: 0;
@@ -1150,42 +1400,40 @@
   border: 1px solid rgba(20, 70, 58, 0.11);
   border-radius: 15px;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.52);
+  background: rgba(255, 255, 255, 0.54);
 }
+
 .millionaire-assets article > i {
   width: 8px;
   height: 41px;
   flex: 0 0 auto;
   border-radius: 5px;
 }
+
 .millionaire-assets article > span {
   min-width: 0;
   flex: 1;
 }
-.millionaire-assets article > span strong {
+
+.millionaire-assets article > span strong,
+.millionaire-assets article > span small {
   display: block;
+}
+
+.millionaire-assets article > span strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
   font-weight: 1000;
 }
+
 .millionaire-assets article > span small {
-  display: block;
   color: rgba(23, 60, 50, 0.52);
   font-size: 8px;
   font-weight: 800;
 }
-.millionaire-assets article .millionaire-mini-buildings {
-  position: relative;
-  right: auto;
-  bottom: auto;
-  flex: 0 0 auto;
-  transform: none;
-}
-.millionaire-assets article .millionaire-mini-buildings i {
-  --owner-color: #137259;
-}
+
 .millionaire-assets article > button {
   display: flex;
   align-items: center;
@@ -1198,123 +1446,114 @@
   font-size: 8px;
   font-weight: 1000;
 }
+
 .millionaire-assets article > button svg {
   width: 11px;
 }
+
 .millionaire-assets article > button:disabled {
   opacity: 0.35;
 }
+
 .millionaire-assets__empty {
-  grid-column: 1/-1;
+  grid-column: 1 / -1;
   margin: 0;
   border-radius: 15px;
   padding: 28px;
   color: rgba(23, 60, 50, 0.48);
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.44);
   text-align: center;
   font-size: 12px;
   font-weight: 900;
 }
+
 .millionaire-game__portrait-lock {
   display: none;
 }
 
 @keyframes millionaireActive {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
 @keyframes millionaireDice {
-  0% {
-    transform: rotate(0deg) scale(1);
-  }
-  50% {
-    transform: rotate(160deg) scale(0.82);
-  }
-  100% {
-    transform: rotate(360deg) scale(1);
-  }
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(160deg) scale(0.8); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
 @keyframes millionaireTokenLand {
-  0% {
-    transform: translateY(-28px) scale(0.7);
-    opacity: 0;
-  }
-  70% {
-    transform: translateY(3px) scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
+  0% { transform: translateY(-23px) scale(0.7); opacity: 0; }
+  70% { transform: translateY(3px) scale(1.12); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes millionaireTokenMove {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-15px) scale(1.15); }
+  100% { transform: translateY(0) scale(1); }
 }
 
 @keyframes millionaireFestival {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 1;
-  }
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
-@media (max-width: 1180px) {
-  .millionaire-game__brand {
-    top: max(9px, env(safe-area-inset-top));
-  }
+@media (max-width: 1180px) and (orientation: landscape) {
   .millionaire-game__brand-mark {
-    width: 37px;
-    height: 37px;
-    border-radius: 11px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
   }
+
   .millionaire-game__round {
-    top: max(55px, calc(env(safe-area-inset-top) + 45px));
-    min-width: 180px;
+    top: max(60px, calc(env(safe-area-inset-top) + 49px));
+    min-width: 205px;
   }
+
   .millionaire-game__ticker {
-    top: max(86px, calc(env(safe-area-inset-top) + 76px));
-    max-width: 48vw;
+    top: max(100px, calc(env(safe-area-inset-top) + 88px));
+    max-width: 47vw;
   }
+
   .millionaire-player {
-    width: clamp(155px, 21vw, 218px);
-    min-height: 62px;
-    padding-right: 31px;
+    width: clamp(174px, 22vw, 235px);
+    min-height: 70px;
+    padding-right: 35px;
   }
+
   .millionaire-player__portrait {
-    right: -23px;
-    width: 51px;
-    height: 51px;
+    right: -25px;
+    width: 55px;
+    height: 55px;
     border-width: 3px;
   }
-  .millionaire-player > b {
-    left: -13px;
-    width: 29px;
-    height: 29px;
+
+  .millionaire-player__rank {
+    left: -14px;
+    width: 31px;
+    height: 31px;
     border-width: 2px;
     font-size: 13px;
   }
+
   .millionaire-player--2,
   .millionaire-player--4 {
-    right: max(65px, calc(env(safe-area-inset-right) + 51px));
+    right: max(66px, calc(env(safe-area-inset-right) + 52px));
   }
+
+  .millionaire-board-scene {
+    width: min(60vw, 82dvh, 760px);
+  }
+
   .millionaire-game__tools button {
-    width: 39px;
-    height: 39px;
+    width: 40px;
+    height: 40px;
     border-radius: 12px;
   }
+
   .millionaire-game__tools button svg {
     width: 17px;
-  }
-  .millionaire-game__property-card {
-    min-width: min(280px, 36vw);
   }
 }
 
@@ -1323,226 +1562,325 @@
     top: max(4px, env(safe-area-inset-top));
     gap: 5px;
   }
+
   .millionaire-game__brand-mark {
     width: 29px;
     height: 29px;
     border-radius: 8px;
   }
+
   .millionaire-game__brand-mark svg {
     width: 16px;
   }
+
   .millionaire-game__brand small {
     display: none;
   }
+
   .millionaire-game__brand strong {
     font-size: 13px;
   }
+
   .millionaire-game__round {
-    top: max(39px, calc(env(safe-area-inset-top) + 32px));
-    min-width: 150px;
-    gap: 5px;
-    padding: 3px 8px;
+    top: max(37px, calc(env(safe-area-inset-top) + 31px));
+    min-width: 145px;
+    gap: 6px;
+    padding: 3px 5px 3px 8px;
   }
+
+  .millionaire-game__round > span {
+    min-width: 65px;
+  }
+
   .millionaire-game__round small,
   .millionaire-game__round strong {
+    font-size: 6px;
+  }
+
+  .millionaire-game__round time {
+    min-width: 42px;
+    padding: 3px 5px;
     font-size: 7px;
   }
+
   .millionaire-game__ticker {
-    top: max(63px, calc(env(safe-area-inset-top) + 54px));
-    max-width: 45vw;
-    padding: 3px 8px;
-    font-size: 7px;
+    display: none;
   }
+
   .millionaire-board-scene {
-    width: min(58vw, 86dvh);
-    transform: translate(-50%, -48%);
+    top: 51%;
+    width: min(58vw, 91dvh);
   }
+
   .millionaire-player {
-    width: clamp(126px, 18vw, 168px);
-    min-height: 45px;
-    gap: 5px;
+    width: clamp(127px, 19vw, 160px);
+    min-height: 48px;
+    gap: 4px;
     padding: 4px 25px 4px 7px;
     border-width: 1px;
     border-radius: 13px;
   }
+
   .millionaire-player--1 {
     top: max(6px, env(safe-area-inset-top));
     left: max(7px, env(safe-area-inset-left));
   }
+
   .millionaire-player--2 {
     top: max(6px, env(safe-area-inset-top));
-    right: max(48px, calc(env(safe-area-inset-right) + 39px));
+    right: max(46px, calc(env(safe-area-inset-right) + 38px));
   }
+
   .millionaire-player--3 {
     bottom: max(7px, env(safe-area-inset-bottom));
     left: max(7px, env(safe-area-inset-left));
   }
+
   .millionaire-player--4 {
-    right: max(48px, calc(env(safe-area-inset-right) + 39px));
+    right: max(46px, calc(env(safe-area-inset-right) + 38px));
     bottom: max(7px, env(safe-area-inset-bottom));
   }
+
   .millionaire-player__portrait {
     right: -17px;
-    width: 36px;
-    height: 36px;
+    width: 37px;
+    height: 37px;
     border-width: 2px;
     font-size: 13px;
   }
-  .millionaire-player__copy p {
+
+  .millionaire-player__copy > p {
     gap: 3px;
+    margin-bottom: 1px;
   }
-  .millionaire-player__copy p strong {
-    font-size: 10px;
+
+  .millionaire-player__copy > p strong {
+    max-width: 72px;
+    font-size: 9px;
   }
-  .millionaire-player__copy p svg {
-    width: 10px;
+
+  .millionaire-player__copy > p svg {
+    width: 9px;
   }
-  .millionaire-player__copy p em {
+
+  .millionaire-player__copy > p em {
     padding: 1px 3px;
     font-size: 5px;
   }
-  .millionaire-player__copy > span {
-    margin-top: 0;
+
+  .millionaire-player__stats {
     gap: 2px;
-    font-size: 8px;
   }
-  .millionaire-player__copy > span svg {
-    width: 9px;
+
+  .millionaire-player__stats > span {
+    padding: 1px 3px;
   }
-  .millionaire-player__copy > small {
+
+  .millionaire-player__stats small {
+    font-size: 4px;
+  }
+
+  .millionaire-player__stats strong {
+    font-size: 7px;
+  }
+
+  .millionaire-player__owned {
     display: none;
   }
-  .millionaire-player > b {
+
+  .millionaire-player__rank {
     left: -10px;
     width: 21px;
     height: 21px;
     font-size: 8px;
   }
+
   .millionaire-game__tools {
     right: max(5px, env(safe-area-inset-right));
     gap: 4px;
   }
+
   .millionaire-game__tools button {
-    width: 31px;
-    height: 31px;
+    width: 30px;
+    height: 30px;
     border-radius: 9px;
   }
+
   .millionaire-game__tools button svg {
     width: 14px;
   }
+
   .millionaire-game__tools .millionaire-game__chat {
     margin-top: 2px;
   }
+
   .millionaire-game__center {
-    width: 170px;
-    min-height: 140px;
+    width: 155px;
+    min-height: 135px;
     transform: translate(-50%, -44%);
   }
-  .millionaire-game__center > h2 {
-    font-size: 22px;
-  }
-  .millionaire-game__center > p {
-    font-size: 7px;
-  }
+
   .millionaire-game__crest {
-    width: 25px;
+    width: 24px;
   }
+
+  .millionaire-game__center > p {
+    margin-bottom: -4px;
+    font-size: 6px;
+  }
+
+  .millionaire-game__center > h2 {
+    font-size: 20px;
+  }
+
+  .millionaire-game__center-stats {
+    gap: 4px;
+    font-size: 5px;
+  }
+
   .millionaire-dice {
+    gap: 5px;
     margin: 1px 0 3px;
   }
+
   .millionaire-dice span {
-    width: 28px;
+    width: 27px;
     border-width: 1px;
     border-radius: 7px;
-    font-size: 25px;
+    font-size: 24px;
   }
+
   .millionaire-game__roll,
   .millionaire-game__end {
-    min-width: 115px;
-    min-height: 29px;
+    min-width: 108px;
+    min-height: 28px;
     border-width: 1px;
-    font-size: 9px;
+    font-size: 8px;
   }
+
   .millionaire-game__jail-actions {
-    margin: 0 0 3px;
+    margin: 0 0 2px;
   }
+
   .millionaire-game__jail-actions button {
     padding: 2px 5px;
     font-size: 6px;
   }
+
   .millionaire-game__property-card {
-    left: 50%;
-    bottom: max(4px, env(safe-area-inset-bottom));
+    bottom: max(5px, env(safe-area-inset-bottom));
     min-width: 205px;
     max-width: 31vw;
     gap: 5px;
     border-radius: 10px;
     padding: 3px 25px 3px 6px;
   }
+
   .millionaire-game__property-card > span {
     width: 27px;
     border-radius: 7px;
   }
+
   .millionaire-game__property-card > span svg {
     width: 14px;
   }
+
   .millionaire-game__property-card small,
   .millionaire-game__property-card p {
     font-size: 5px;
   }
+
   .millionaire-game__property-card strong {
     font-size: 9px;
   }
+
+  .millionaire-city-model {
+    top: -11%;
+  }
+
+  .millionaire-city-model em {
+    display: none;
+  }
+
   .millionaire-decision {
     bottom: max(6px, env(safe-area-inset-bottom));
-    width: min(560px, 62vw);
-    max-height: 72dvh;
+    width: min(560px, 65vw);
+    max-height: 76dvh;
     border-radius: 18px;
     padding: 9px;
   }
+
   .millionaire-decision__head > span {
     width: 32px;
     border-radius: 9px;
   }
+
   .millionaire-decision__head > span svg {
     width: 16px;
   }
+
   .millionaire-decision__head small {
     font-size: 6px;
   }
+
   .millionaire-decision__head strong {
     font-size: 13px;
   }
+
   .millionaire-decision__levels {
     gap: 5px;
     margin-top: 7px;
   }
+
   .millionaire-decision__levels > button {
     min-height: 58px;
     border-radius: 11px;
   }
+
   .millionaire-decision__levels .millionaire-mini-buildings {
     min-height: 25px;
-    margin-bottom: 1px;
   }
+
   .millionaire-decision__levels strong {
     font-size: 8px;
   }
+
   .millionaire-decision__levels small {
     font-size: 7px;
   }
+
   .millionaire-decision__decline {
     margin-top: 5px;
     padding: 4px;
     font-size: 7px;
   }
+
   .millionaire-decision__destinations {
     grid-template-columns: repeat(4, 1fr);
     max-height: 130px;
     margin-top: 6px;
   }
+
   .millionaire-decision__destinations button {
     padding: 4px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 440px) {
+  .millionaire-board-scene {
+    width: min(57vw, 89dvh);
+  }
+
+  .millionaire-space__content > strong {
+    font-size: 4px;
+  }
+
+  .millionaire-space__content > small {
+    display: none;
+  }
+
+  .millionaire-game__property-card {
+    display: none;
   }
 }
 
@@ -1550,53 +1888,53 @@
   .millionaire-game__portrait-lock {
     position: absolute;
     inset: 0;
-    z-index: 100;
+    z-index: 120;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
     padding: 34px;
     color: #fff8df;
-    background: radial-gradient(circle at 50% 35%, #0c624f, #021f1a 68%);
+    background:
+      radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--millionaire-base) 82%, #15916c), var(--millionaire-deep) 69%);
     text-align: center;
   }
+
   .millionaire-game__portrait-lock > span {
     display: grid;
     width: 82px;
     aspect-ratio: 1;
     place-items: center;
-    border: 1px solid rgba(241, 205, 104, 0.45);
+    border: 1px solid color-mix(in srgb, var(--millionaire-gold) 47%, transparent);
     border-radius: 27px;
-    color: #f0cf77;
+    color: var(--millionaire-gold);
     background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 0 36px rgba(241, 205, 104, 0.14);
+    box-shadow: 0 0 36px color-mix(in srgb, var(--millionaire-gold) 15%, transparent);
   }
+
   .millionaire-game__portrait-lock svg {
     width: 39px;
     animation: millionaireRotate 1.8s ease-in-out infinite;
   }
+
   .millionaire-game__portrait-lock strong {
     margin-top: 22px;
-    color: #f0cf77;
+    color: var(--millionaire-gold);
     font-size: 25px;
   }
+
   .millionaire-game__portrait-lock p {
     max-width: 360px;
     margin: 10px 0 0;
-    color: rgba(255, 255, 255, 0.63);
+    color: rgba(255, 255, 255, 0.65);
     font-size: 14px;
     line-height: 1.9;
   }
 }
 
 @keyframes millionaireRotate {
-  0%,
-  100% {
-    transform: rotate(-22deg);
-  }
-  50% {
-    transform: rotate(68deg);
-  }
+  0%, 100% { transform: rotate(-22deg); }
+  50% { transform: rotate(68deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {

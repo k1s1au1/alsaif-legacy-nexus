@@ -1,4 +1,11 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   BookOpen,
   Building2,
@@ -379,6 +386,49 @@ function MiniBuildings({ level, landmark }: { level: number; landmark?: boolean 
   );
 }
 
+function CityModel({
+  space,
+  level,
+  ownerColor,
+}: {
+  space: MillionaireSpace;
+  level: number;
+  ownerColor: string;
+}) {
+  const visibleLevel = Math.max(1, Math.min(level || 1, 4));
+  return (
+    <span
+      className={cn(
+        "millionaire-city-model",
+        level > 0 && "is-owned",
+        level >= 4 && "is-landmark",
+      )}
+      style={{ "--model-color": ownerColor } as CSSProperties}
+      aria-hidden="true"
+    >
+      <span className="millionaire-city-model__plot" />
+      <i className="millionaire-city-model__building millionaire-city-model__building--1" />
+      {visibleLevel >= 2 && (
+        <i className="millionaire-city-model__building millionaire-city-model__building--2" />
+      )}
+      {visibleLevel >= 3 && (
+        <i className="millionaire-city-model__building millionaire-city-model__building--3" />
+      )}
+      {visibleLevel >= 4 && (
+        <i className="millionaire-city-model__building millionaire-city-model__building--4" />
+      )}
+      {level > 0 && <em>{space.landmark}</em>}
+    </span>
+  );
+}
+
+function playerInvestment(data: MillionaireData, playerId: string) {
+  return MILLIONAIRE_BOARD.reduce((total, _, index) => {
+    const property = propertyAt(data, index);
+    return property?.ownerId === playerId ? total + Number(property.invested ?? 0) : total;
+  }, 0);
+}
+
 export function MillionaireGameRoom({
   state,
   players,
@@ -393,6 +443,13 @@ export function MillionaireGameRoom({
   const [rolling, setRolling] = useState(false);
   const [selectedSpace, setSelectedSpace] = useState<number | null>(null);
   const [showAssets, setShowAssets] = useState(false);
+  const [turnSeconds, setTurnSeconds] = useState(45);
+  const [movingPlayers, setMovingPlayers] = useState<Record<string, boolean>>({});
+  const [visualPositions, setVisualPositions] = useState<Record<string, number>>(() =>
+    Object.fromEntries(players.map((player) => [player.id, Number(data.positions?.[player.id] ?? 0)])),
+  );
+  const visualPositionsRef = useRef(visualPositions);
+  const movementTimers = useRef<number[]>([]);
   const activeIndex = Number(data.turnIndex ?? 0) % Math.max(players.length, 1);
   const activePlayer = players[activeIndex];
   const isMyTurn = activePlayer?.id === me.id && !data.bankrupt?.[me.id];
@@ -416,6 +473,70 @@ export function MillionaireGameRoom({
   const inspectSpace = MILLIONAIRE_BOARD[inspectIndex] ?? currentSpace;
   const inspectProperty = propertyAt(data, inspectIndex);
   const inspectOwner = players.find((player) => player.id === inspectProperty?.ownerId);
+  const positionSignature = players
+    .map((player) => `${player.id}:${Number(data.positions?.[player.id] ?? 0)}`)
+    .join("|");
+  const rankings = useMemo(
+    () =>
+      [...players]
+        .map((player) => ({
+          id: player.id,
+          wealth: Number(data.cash?.[player.id] ?? 5000) + playerInvestment(data, player.id),
+        }))
+        .sort((a, b) => b.wealth - a.wealth),
+    [players, data.cash, data.properties],
+  );
+
+  useEffect(() => {
+    setTurnSeconds(45);
+    const timer = window.setInterval(() => {
+      setTurnSeconds((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [activePlayer?.id, data.turnNumber]);
+
+  useEffect(() => {
+    movementTimers.current.forEach((timer) => window.clearTimeout(timer));
+    movementTimers.current = [];
+
+    players.forEach((player) => {
+      const target = Number(data.positions?.[player.id] ?? 0);
+      const start = Number(visualPositionsRef.current[player.id] ?? target);
+      if (start === target) return;
+
+      const distance = (target - start + MILLIONAIRE_BOARD.length) % MILLIONAIRE_BOARD.length;
+      const shouldAnimate = distance > 0 && distance <= 12 && player.id === activePlayer?.id;
+      if (!shouldAnimate) {
+        setVisualPositions((positions) => {
+          const next = { ...positions, [player.id]: target };
+          visualPositionsRef.current = next;
+          return next;
+        });
+        return;
+      }
+
+      setMovingPlayers((moving) => ({ ...moving, [player.id]: true }));
+      for (let step = 1; step <= distance; step += 1) {
+        const timer = window.setTimeout(() => {
+          const nextPosition = (start + step) % MILLIONAIRE_BOARD.length;
+          setVisualPositions((positions) => {
+            const next = { ...positions, [player.id]: nextPosition };
+            visualPositionsRef.current = next;
+            return next;
+          });
+          if (step === distance) {
+            setMovingPlayers((moving) => ({ ...moving, [player.id]: false }));
+          }
+        }, step * 145);
+        movementTimers.current.push(timer);
+      }
+    });
+
+    return () => {
+      movementTimers.current.forEach((timer) => window.clearTimeout(timer));
+      movementTimers.current = [];
+    };
+  }, [positionSignature]);
 
   const rollDice = async () => {
     if (!isMyTurn || data.rolled || rolling || pending) return;
@@ -467,10 +588,13 @@ export function MillionaireGameRoom({
       </header>
 
       <div className="millionaire-game__round">
-        <small>الجولة {Number(data.turnNumber ?? 1)}</small>
-        <strong>
-          {isMyTurn ? "دورك الآن" : "دور " + firstName(activePlayer?.name ?? "اللاعب")}
-        </strong>
+        <span>
+          <small>الجولة {Number(data.turnNumber ?? 1)}</small>
+          <strong>
+            {isMyTurn ? "دورك الآن" : "دور " + firstName(activePlayer?.name ?? "اللاعب")}
+          </strong>
+        </span>
+        <time dateTime={`PT${turnSeconds}S`}>00:{String(turnSeconds).padStart(2, "0")}</time>
       </div>
 
       <nav className="millionaire-game__tools" aria-label="أدوات اللعبة">
@@ -498,6 +622,9 @@ export function MillionaireGameRoom({
           const ownedCount = MILLIONAIRE_BOARD.filter(
             (_, propertyIndex) => propertyAt(data, propertyIndex)?.ownerId === player.id,
           ).length;
+          const cash = Number(data.cash?.[player.id] ?? 5000);
+          const totalWealth = cash + playerInvestment(data, player.id);
+          const rank = Math.max(1, rankings.findIndex((item) => item.id === player.id) + 1);
           return (
             <article
               key={player.id}
@@ -519,15 +646,22 @@ export function MillionaireGameRoom({
                   <strong>{firstName(player.name)}</strong>
                   {player.id === me.id && <em>أنت</em>}
                 </p>
-                <span>
-                  <CircleDollarSign /> {formatCash(data.cash?.[player.id] ?? 5000)}
-                </span>
-                <small>
+                <div className="millionaire-player__stats">
+                  <span>
+                    <small>الكاش</small>
+                    <strong>{formatCash(cash)}</strong>
+                  </span>
+                  <span>
+                    <small>المجموع</small>
+                    <strong>{formatCash(totalWealth)}</strong>
+                  </span>
+                </div>
+                <small className="millionaire-player__owned">
                   <Landmark /> {ownedCount} أملاك{" "}
                   {Number(data.jailTurns?.[player.id] ?? 0) > 0 && "· في الجزيرة"}
                 </small>
               </div>
-              <b>{index + 1}</b>
+              <b className="millionaire-player__rank">{rank}</b>
               {bankrupt && <mark>مفلس</mark>}
             </article>
           );
@@ -547,7 +681,8 @@ export function MillionaireGameRoom({
             const ownerIndex = players.findIndex((player) => player.id === property?.ownerId);
             const occupants = players.filter(
               (player) =>
-                Number(data.positions?.[player.id] ?? 0) === index && !data.bankrupt?.[player.id],
+                Number(visualPositions[player.id] ?? data.positions?.[player.id] ?? 0) === index &&
+                !data.bankrupt?.[player.id],
             );
             const ownable = space.kind === "city" || space.kind === "tourism";
             return (
@@ -584,8 +719,14 @@ export function MillionaireGameRoom({
                       className="millionaire-space__owner"
                       title={"ملك " + (players[ownerIndex]?.name ?? "لاعب")}
                     />
-                    <MiniBuildings level={property.level} landmark={property.level >= 4} />
                   </>
+                )}
+                {ownable && (
+                  <CityModel
+                    space={space}
+                    level={property?.level ?? 0}
+                    ownerColor={ownerIndex >= 0 ? PLAYER_COLORS[ownerIndex] : space.color}
+                  />
                 )}
                 {occupants.length > 0 && (
                   <span
@@ -600,6 +741,7 @@ export function MillionaireGameRoom({
                       return (
                         <i
                           key={player.id}
+                          className={cn(movingPlayers[player.id] && "is-moving")}
                           style={
                             {
                               "--token-color": PLAYER_COLORS[playerIndex % PLAYER_COLORS.length],
@@ -623,6 +765,11 @@ export function MillionaireGameRoom({
           </div>
           <p>رحلة</p>
           <h2>المليونير</h2>
+          <div className="millionaire-game__center-stats">
+            <span>الجولة {Number(data.turnNumber ?? 1)}</span>
+            <i />
+            <span>{firstName(activePlayer?.name ?? "اللاعب")}</span>
+          </div>
           <div
             className={cn("millionaire-dice", rolling && "is-rolling")}
             aria-label={"النرد " + dice[0] + " و" + dice[1]}
@@ -682,7 +829,8 @@ export function MillionaireGameRoom({
         </div>
       </div>
 
-      <aside className="millionaire-game__property-card" aria-live="polite">
+      {selectedSpace !== null && (
+        <aside className="millionaire-game__property-card" aria-live="polite">
         <button
           type="button"
           aria-label="إغلاق تفاصيل المحطة"
@@ -710,7 +858,8 @@ export function MillionaireGameRoom({
             </p>
           )}
         </div>
-      </aside>
+        </aside>
+      )}
 
       <footer className="millionaire-game__ticker">
         <span className="millionaire-game__status-dot" />
