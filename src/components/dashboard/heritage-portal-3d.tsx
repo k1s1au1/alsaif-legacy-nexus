@@ -1,10 +1,12 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import councilSandyGround from "@/assets/council-sandy-ground-v1.webp";
 import { councilTowers } from "@/assets/najdi-council-towers-v1";
 import "./heritage-portal-3d.css";
-// Keep the approved dashboard composition after the legacy portal rules.
-// Import order is intentional: the live route injects component CSS after the
-// root stylesheets, so this final layer must travel with the component itself.
-import "@/dashboard-heritage-showcase.css";
 import "@/dashboard-reference-exact.css";
 
 type HeritagePortal3DProps = {
@@ -16,7 +18,8 @@ type HeritagePortal3DProps = {
   welcomeIntro?: boolean;
 };
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
 export function HeritagePortal3D({
   greeting,
@@ -25,6 +28,7 @@ export function HeritagePortal3D({
   className = "",
   welcomeIntro = false,
 }: HeritagePortal3DProps) {
+  const colorFilterId = `council-portal-colors-${useId().replace(/:/g, "")}`;
   const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
   const targetRef = useRef({ x: 0, y: 0 });
@@ -60,9 +64,15 @@ export function HeritagePortal3D({
 
     root.style.setProperty("--portal-x", `${(current.x * 7).toFixed(2)}px`);
     root.style.setProperty("--portal-y", `${(current.y * 5).toFixed(2)}px`);
-    root.style.setProperty("--portal-light-x", `${(72 + current.x * 12).toFixed(1)}%`);
+    root.style.setProperty(
+      "--portal-light-x",
+      `${(72 + current.x * 12).toFixed(1)}%`,
+    );
 
-    if (Math.abs(target.x - current.x) < 0.001 && Math.abs(target.y - current.y) < 0.001) {
+    if (
+      Math.abs(target.x - current.x) < 0.001 &&
+      Math.abs(target.y - current.y) < 0.001
+    ) {
       frameRef.current = null;
       return;
     }
@@ -103,7 +113,11 @@ export function HeritagePortal3D({
   return (
     <div
       ref={rootRef}
-      className={["heritage-portal-3d", "heritage-pavilion-reference", className]
+      className={[
+        "heritage-portal-3d",
+        "heritage-pavilion-reference",
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
       data-interacting="false"
@@ -137,25 +151,85 @@ export function HeritagePortal3D({
 
       <div className="council-portal-model" aria-hidden="true">
         <div className="council-portal-model-visual">
+          <img
+            className="council-portal-ground council-portal-ground-back"
+            src={councilSandyGround}
+            alt=""
+            draggable={false}
+          />
           <svg
             className="council-portal-towers"
             viewBox="0 0 1065 1477"
             aria-hidden="true"
             focusable="false"
           >
+            <defs>
+              <filter
+                id={colorFilterId}
+                x="0%"
+                y="0%"
+                width="100%"
+                height="100%"
+                colorInterpolationFilters="sRGB"
+              >
+                {/* Tint cooler stone gently while retaining the warm brass pixels. */}
+                <feColorMatrix
+                  in="SourceGraphic"
+                  type="matrix"
+                  values="0 0 0 0 0
+                          0 0 0 0 0
+                          0 0 0 0 0
+                         -2 1 1 0 0.5"
+                  result="stone-mask"
+                />
+                <feFlood
+                  style={{ floodColor: "var(--council-portal-material)" }}
+                  floodOpacity="0.35"
+                  result="identity-tint"
+                />
+                <feComposite
+                  in="identity-tint"
+                  in2="stone-mask"
+                  operator="in"
+                  result="stone-tint"
+                />
+                <feBlend
+                  in="stone-tint"
+                  in2="SourceGraphic"
+                  mode="soft-light"
+                  result="harmonized-stone"
+                />
+                <feComposite
+                  in="harmonized-stone"
+                  in2="SourceGraphic"
+                  operator="atop"
+                />
+              </filter>
+            </defs>
             <image
               href={councilTowers}
               width="1065"
               height="1477"
+              filter={`url(#${colorFilterId})`}
               preserveAspectRatio="xMidYMid meet"
             />
           </svg>
 
           <span className="council-portal-contact-shadow" />
+          <img
+            className="council-portal-ground council-portal-ground-front"
+            src={councilSandyGround}
+            alt=""
+            draggable={false}
+          />
 
           {welcomeIntro && <span className="council-portal-entry-light" />}
           <div className="council-tower-inscription">
-            <strong className="council-tower-inscription-text" lang="ar" dir="rtl">
+            <strong
+              className="council-tower-inscription-text"
+              lang="ar"
+              dir="rtl"
+            >
               مجلس السيف
             </strong>
             <bdi className="council-tower-year" dir="rtl">

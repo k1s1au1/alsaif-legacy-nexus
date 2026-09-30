@@ -491,9 +491,6 @@ export function DesktopDashboardExtras({
                     </div>
                     <strong>{item.label}</strong>
                     <span>{item.desc}</span>
-                    <i className="desktop-service-reference-arrow" aria-hidden="true">
-                      <ChevronLeft size={16} />
-                    </i>
                   </Link>
                 );
               })}
