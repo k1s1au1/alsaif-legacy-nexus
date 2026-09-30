@@ -234,7 +234,7 @@
   position: absolute;
   display: flex;
   width: clamp(215px, 20vw, 320px);
-  min-height: 86px;
+  min-height: 122px;
   align-items: center;
   gap: 10px;
   padding: 10px 42px 10px 15px;
@@ -246,7 +246,7 @@
   box-shadow:
     0 14px 36px rgba(0, 0, 0, 0.42),
     inset 0 0 28px color-mix(in srgb, var(--player-color) 9%, transparent);
-  opacity: 0.78;
+  opacity: 0.96;
   transition: opacity 0.22s ease, filter 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
 }
 
@@ -381,16 +381,21 @@
   align-items: center;
   gap: 3px;
   margin-top: 4px;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 7px;
+  border: 0;
+  padding: 3px 0;
+  color: #e8eddf;
+  background: transparent;
+  font-size: 11px;
   font-weight: 800;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .millionaire-player__owned svg {
   width: 10px;
 }
 
-.millionaire-player__rank {
+.millionaire-player__number {
   position: absolute;
   top: 50%;
   left: -19px;
@@ -406,6 +411,36 @@
   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.34);
   font-size: 18px;
 }
+
+.millionaire-player__location {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 7px;
+  padding: 4px 5px;
+  color: #fff7df;
+  background: color-mix(in srgb, var(--player-color) 13%, #08261e);
+  text-align: right;
+  font-size: 12px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.millionaire-player__location svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  color: var(--player-color);
+}
+
+.millionaire-player__location strong { color: var(--player-color); }
+.millionaire-player.is-focused { border-color: var(--player-color); }
+.millionaire-player__location:focus-visible,
+.millionaire-player__owned:focus-visible,
+.millionaire-token:focus-visible { outline: 2px solid #fff4c8; outline-offset: 4px; }
 
 .millionaire-player > mark {
   position: absolute;
@@ -521,6 +556,38 @@
     0 0 23px #f3ce5c;
 }
 
+.millionaire-space.is-owned {
+  border: 2px solid var(--owner-color);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--owner-color) 36%, #fffdf2), color-mix(in srgb, var(--owner-color) 58%, #c9c6ad));
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--owner-color) 70%, transparent);
+}
+
+.millionaire-space.is-focused-property {
+  box-shadow: inset 0 0 0 3px var(--owner-color), 0 0 12px color-mix(in srgb, var(--owner-color) 70%, transparent);
+}
+
+.millionaire-space.is-on-path {
+  outline: 3px solid #fff8d9;
+  outline-offset: -5px;
+}
+
+.millionaire-space.is-focused-position,
+.millionaire-space.is-destination {
+  z-index: 10;
+  outline: 4px solid #fffbe8;
+  outline-offset: -4px;
+  box-shadow: 0 0 20px var(--path-color, #fff5bd);
+}
+
+.millionaire-space__anchor {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
 .millionaire-space.is-festival::after {
   content: "";
   position: absolute;
@@ -568,6 +635,7 @@
 }
 
 .millionaire-space__content > strong {
+  display: none;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -577,6 +645,7 @@
 }
 
 .millionaire-space__content > small {
+  display: none;
   font-size: clamp(4px, 0.39vw, 7px);
   font-weight: 1000;
   opacity: 0.62;
@@ -600,17 +669,21 @@
 
 .millionaire-space__owner {
   position: absolute;
-  top: 4%;
-  right: 4%;
+  bottom: 0;
+  right: 0;
   z-index: 12;
-  width: 14%;
-  aspect-ratio: 1;
-  transform: translateZ(14px);
-  border: 2px solid #fff;
-  border-radius: 50%;
+  display: grid;
+  width: 100%;
+  height: 18%;
+  place-items: center;
+  border: 0;
+  color: #10271f;
   background: var(--owner-color);
-  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.4);
+  font-size: 11px;
+  font-weight: 900;
 }
+
+.millionaire-space.is-owned .millionaire-space__icon { display: none; }
 
 .millionaire-city-model {
   --model-color: #bd8734;
@@ -711,42 +784,194 @@
   white-space: nowrap;
 }
 
-.millionaire-space__tokens {
+.millionaire-board__overlays {
   position: absolute;
-  z-index: 18;
-  left: 4%;
-  bottom: 5%;
-  display: flex;
-  transform: translateZ(38px) rotateZ(-45deg);
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
 }
 
-.millionaire-space__tokens i {
+.millionaire-space-label {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  width: clamp(42px, 4.4vw, 74px);
+  align-items: center;
+  flex-direction: column;
+  gap: 1px;
+  transform: translate(-50%, 8px);
+  color: #10271f;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.millionaire-space-label > strong {
+  max-width: 100%;
+  border-radius: 3px;
+  padding: 1px 3px;
+  background: #fff6dd;
+  font-size: clamp(10px, 0.85vw, 13px);
+  font-weight: 900;
+}
+
+.millionaire-space-label > small {
+  max-width: 100%;
+  border-radius: 3px;
+  padding: 1px 4px;
+  color: #38483d;
+  background: #ece5ce;
+  font-size: clamp(9px, 0.65vw, 11px);
+  font-weight: 800;
+}
+
+.millionaire-space-label.is-owned > small {
+  color: #08261e;
+  background: var(--owner-color);
+  box-shadow: 0 1px 3px #061e1a80;
+}
+
+.millionaire-space-label.is-mine > small { border: 1px solid #fffadf; }
+
+.millionaire-route { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.millionaire-token-links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.millionaire-token-links line { stroke: var(--token-color); stroke-width: 3px; stroke-linecap: round; }
+.millionaire-route__line { fill: none; stroke: var(--path-color); stroke-width: 4px; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 1px 2px #061e1a); }
+.millionaire-route__jump { stroke: #fff4c8; stroke-width: 3px; stroke-dasharray: 5 5; }
+.millionaire-route__step circle { fill: #143d32; stroke: #fff4c8; stroke-width: 2px; }
+.millionaire-route__step text { fill: #fff4c8; font-size: 11px; font-weight: 900; }
+.millionaire-route__step.is-complete circle { fill: #fff4c8; }
+.millionaire-route__step.is-complete text { fill: #143d32; }
+
+.millionaire-token {
   --token-color: #52df72;
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  min-width: 42px;
+  align-items: center;
+  flex-direction: column;
+  transform: translate(-50%, -100%);
+  border: 0;
+  padding: 0 2px 7px;
+  color: #09261d;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: left 240ms ease, top 240ms ease;
+}
+
+.millionaire-token::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--token-color);
+  box-shadow: 2px 2px 2px #061e1a80;
+}
+
+.millionaire-token__pawn {
   display: grid;
-  width: clamp(15px, 1.35vw, 24px);
+  width: clamp(29px, 2.7vw, 42px);
   aspect-ratio: 1;
   place-items: center;
-  margin-right: -5px;
-  border: 2px solid #fff6cf;
-  border-radius: 50%;
-  color: #fff;
-  background: radial-gradient(circle at 35% 25%, #fff, var(--token-color) 26%, color-mix(in srgb, var(--token-color) 68%, black));
-  box-shadow:
-    0 5px 8px rgba(0, 0, 0, 0.48),
-    0 0 11px color-mix(in srgb, var(--token-color) 55%, transparent);
-  font-size: clamp(6px, 0.5vw, 10px);
-  font-style: normal;
+  border: 3px solid #fff7d7;
+  border-radius: 50% 50% 42% 42%;
+  background: radial-gradient(circle at 35% 20%, #fff9d0, var(--token-color) 55%);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--token-color) 65%, #071c16), 0 4px 12px #061e1a99;
+  font-size: clamp(14px, 1.3vw, 20px);
   font-weight: 1000;
-  animation: millionaireTokenLand 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.millionaire-space__tokens i.is-moving {
-  animation: millionaireTokenMove 0.15s ease-in-out;
+.millionaire-token > strong {
+  position: relative;
+  z-index: 1;
+  min-width: 38px;
+  max-width: 68px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+  border: 1px solid #fff7d7;
+  border-radius: 5px;
+  padding: 1px 4px;
+  background: var(--token-color);
+  font-size: clamp(10px, 0.8vw, 13px);
+  font-style: normal;
+  font-weight: 1000;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.millionaire-token.is-me,
+.millionaire-token.is-focused { z-index: 8; }
+.millionaire-token.is-focused .millionaire-token__pawn { box-shadow: 0 0 0 2px var(--token-color), 0 0 16px #fff4c8; }
+.millionaire-token.is-moving .millionaire-token__pawn { animation: millionairePawnHop 260ms ease-in-out infinite; }
+
+@keyframes millionairePawnHop {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
+}
+
+.millionaire-navigation {
+  position: absolute;
+  z-index: 40;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  left: 50%;
+  display: flex;
+  width: max-content;
+  max-width: min(43vw, 480px);
+  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+  transform: translateX(-50%);
+  border: 1px solid #9f8a4c;
+  border-radius: 13px;
+  padding: 7px 13px;
+  color: #fff4c8;
+  background: #07261ef2;
+  text-align: center;
+  font-size: 12px;
+}
+
+.millionaire-navigation__location { display: flex; align-items: center; gap: 5px; }
+.millionaire-navigation__location svg { width: 15px; height: 15px; color: var(--my-color); }
+.millionaire-navigation__location strong { color: var(--my-color); }
+.millionaire-navigation__journey p { margin: 0; font-weight: 900; }
+.millionaire-navigation__journey > span { display: block; margin-top: 2px; color: #e5dcc0; font-size: 11px; }
+
+.millionaire-assets__players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 12px 0;
+}
+.millionaire-assets__players button {
+  flex: 1;
+  border: 1px solid var(--player-color);
+  border-radius: 7px;
+  padding: 7px;
+  color: #fff4d6;
+  background: #123c30;
+  font-size: 12px;
+}
+.millionaire-assets__players button[aria-pressed="true"] { color: #08261e; background: var(--player-color); font-weight: 900; }
+.millionaire-assets__show-board {
+  display: block;
+  margin: 10px auto 0;
+  border: 1px solid #dfbd69;
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: #f5d684;
+  background: #123c30;
+  font-size: 12px;
 }
 
 .millionaire-game__center {
   position: absolute;
-  z-index: 20;
+  z-index: 40;
   top: 50%;
   left: 50%;
   display: flex;
@@ -915,7 +1140,7 @@
   position: absolute;
   z-index: 52;
   left: 50%;
-  bottom: max(17px, env(safe-area-inset-bottom));
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 82px));
   display: flex;
   min-width: min(350px, 34vw);
   align-items: center;
@@ -1529,7 +1754,7 @@
     border-width: 3px;
   }
 
-  .millionaire-player__rank {
+  .millionaire-player__number {
     left: -14px;
     width: 31px;
     height: 31px;
@@ -1688,7 +1913,7 @@
     display: none;
   }
 
-  .millionaire-player__rank {
+  .millionaire-player__number {
     left: -10px;
     width: 21px;
     height: 21px;
@@ -1768,7 +1993,7 @@
   }
 
   .millionaire-game__property-card {
-    bottom: max(5px, env(safe-area-inset-bottom));
+    bottom: max(68px, calc(env(safe-area-inset-bottom) + 63px));
     min-width: 205px;
     max-width: 31vw;
     gap: 5px;
@@ -1880,8 +2105,27 @@
   }
 
   .millionaire-game__property-card {
-    display: none;
+    display: flex;
   }
+}
+
+@media (orientation: landscape) and (max-height: 620px) {
+  .millionaire-board-scene { top: 49%; width: min(58vw, 84dvh); }
+  .millionaire-player { width: clamp(140px, 20vw, 180px); min-height: 83px; }
+  .millionaire-player__copy > p strong { font-size: 11px; }
+  .millionaire-player__copy > p em { font-size: 9px; }
+  .millionaire-player__stats small { font-size: 8px; }
+  .millionaire-player__stats strong { font-size: 10px; }
+  .millionaire-player__owned { margin-top: 1px; padding: 2px 0; font-size: 10px; }
+  .millionaire-player__location { margin-top: 3px; padding: 3px 4px; font-size: 11px; }
+  .millionaire-player__location svg { width: 12px; height: 12px; }
+  .millionaire-navigation { bottom: max(5px, env(safe-area-inset-bottom)); gap: 2px; max-width: 43vw; border-radius: 8px; padding: 4px 8px; font-size: 11px; }
+  .millionaire-navigation__journey > span { font-size: 10px; }
+  .millionaire-space-label > strong { font-size: 10px; padding: 1px 2px; }
+  .millionaire-space-label > small { font-size: 9px; }
+  .millionaire-game__property-card small { font-size: 10px; }
+  .millionaire-game__property-card strong { font-size: 11px; }
+  .millionaire-game__property-card p { display: none; }
 }
 
 @media (orientation: portrait) and (max-width: 1024px) {
@@ -1941,8 +2185,9 @@
   .millionaire-player.is-active,
   .millionaire-dice.is-rolling span,
   .millionaire-game__portrait-lock svg,
-  .millionaire-space__tokens i,
+  .millionaire-token__pawn,
   .millionaire-space.is-festival::after {
     animation: none !important;
   }
+  .millionaire-token { transition: none; }
 }

@@ -8,6 +8,14 @@ export type MillionairePlayer = {
 };
 
 export type MillionaireAction = { type: string; playerId: string; value?: any };
+export type MillionaireMovement = {
+  sequence: number;
+  playerId: string;
+  from: number;
+  to: number;
+  steps: number[];
+  source: "dice" | "travel" | "island";
+};
 export type MonopolyState = {
   phase: "lobby" | "playing" | "results";
   scores: Record<string, number>;
@@ -38,6 +46,7 @@ export function initialMonopolyData(players: Player[], starterIndex = 0) {
     jailTurns: {} as Record<string, number>,
     escapeCards: {} as Record<string, number>,
     dice: null as [number, number] | null,
+    movement: null as MillionaireMovement | null,
     rolled: false,
     doublesStreak: 0,
     extraTurn: false,
@@ -69,6 +78,23 @@ function advanceMonopolyTurn(data: any, players: Player[]) {
   data.turnNumber = Number(data.turnNumber ?? 1) + 1;
   if (data.festival && data.turnNumber > data.festival.untilTurn) data.festival = null;
   monopolyMessage(data, "الدور عند " + (players[data.turnIndex]?.name ?? "اللاعب التالي"));
+}
+
+function recordMonopolyMovement(
+  data: any,
+  playerId: string,
+  from: number,
+  steps: number[],
+  source: MillionaireMovement["source"],
+) {
+  data.movement = {
+    sequence: Number(data.movement?.sequence ?? 0) + 1,
+    playerId,
+    from,
+    to: Number(data.positions[playerId] ?? from),
+    steps,
+    source,
+  } satisfies MillionaireMovement;
 }
 
 type MonopolyPropertyState = {
@@ -385,10 +411,12 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
       data.doublesStreak = double ? Number(data.doublesStreak ?? 0) + 1 : 0;
       data.extraTurn = double;
       if (data.doublesStreak >= 3) {
+        const from = Number(data.positions[active.id] ?? 0);
         data.positions[active.id] = MONOPOLY_ISLAND_INDEX;
         data.jailTurns[active.id] = 3;
         data.doublesStreak = 0;
         data.extraTurn = false;
+        recordMonopolyMovement(data, active.id, from, [], "island");
         monopolyMessage(data, active.name + " رمى نردًا مزدوجًا ثلاث مرات وانتقل إلى الجزيرة");
         return { ...state, data };
       }
@@ -403,6 +431,13 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
     }
     data.positions[active.id] = position;
     resolveMonopolyLanding(data, active, players, position);
+    recordMonopolyMovement(
+      data,
+      active.id,
+      oldPosition,
+      Array.from({ length: dice[0] + dice[1] }, (_, step) => (oldPosition + step + 1) % MONOPOLY_BOARD.length),
+      "dice",
+    );
     return { ...state, data };
   }
 
@@ -452,10 +487,12 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
   if (action.type === "monopoly-travel" && data.rolled && data.pending?.type === "travel" && data.pending.playerId === active.id) {
     const index = Number(action.value?.spaceIndex);
     if (!monopolyOwnable(index)) return state;
+    const from = Number(data.positions[active.id] ?? 0);
     data.positions[active.id] = index;
     data.pending = null;
     monopolyMessage(data, active.name + " سافر إلى " + MONOPOLY_BOARD[index].name);
     resolveMonopolyLanding(data, active, players, index);
+    recordMonopolyMovement(data, active.id, from, [], "travel");
     return { ...state, data };
   }
 

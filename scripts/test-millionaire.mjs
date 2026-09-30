@@ -94,12 +94,37 @@ test("passing start awards the bonus and three doubles send the player to the is
   state.data.positions.p0 = 23;
   const passed = withDice([1, 1], () => apply(state, "monopoly-roll"));
   assert.equal(passed.data.cash.p0, 5300);
+  assert.deepEqual(passed.data.movement, { sequence: 1, playerId: "p0", from: 23, to: 1, steps: [0, 1], source: "dice" });
   const streak = fresh();
   streak.data.doublesStreak = 2;
   const island = withDice([2, 2], () => apply(streak, "monopoly-roll"));
   assert.equal(island.data.positions.p0, 6);
   assert.equal(island.data.jailTurns.p0, 3);
   assert.equal(island.data.extraTurn, false);
+  assert.deepEqual(island.data.movement.steps, [], "being sent to the island must not look like walking");
+  assert.equal(island.data.movement.source, "island");
+});
+
+test("the movement trace preserves dice steps before a chance card returns to the same square", () => {
+  const state = fresh();
+  const moved = withDice([1, 2, 2], () => apply(state, "monopoly-roll"));
+  assert.deepEqual(moved.data.movement, { sequence: 1, playerId: "p0", from: 0, to: 0, steps: [1, 2, 3], source: "dice" });
+  assert.equal(state.data.movement, null);
+  const ended = apply(moved, "monopoly-end");
+  assert.deepEqual(ended.data.movement, moved.data.movement, "all clients retain the completed route when the turn changes");
+  const next = withDice([1, 1], () => apply(ended, "monopoly-roll"));
+  assert.equal(next.data.movement.sequence, 2);
+  assert.equal(next.data.movement.playerId, "p1");
+});
+
+test("travel records a direct move without invented intermediate footsteps", () => {
+  const state = fresh();
+  state.data.positions.p0 = 12;
+  state.data.rolled = true;
+  state.data.pending = { type: "travel", playerId: "p0", source: "board" };
+  const travelled = apply(state, "monopoly-travel", { spaceIndex: 13 });
+  assert.deepEqual(travelled.data.movement, { sequence: 1, playerId: "p0", from: 12, to: 13, steps: [], source: "travel" });
+  assert.equal(travelled.data.pending.type, "buy");
 });
 
 test("selling an asset raises cash for debt repayment", () => {

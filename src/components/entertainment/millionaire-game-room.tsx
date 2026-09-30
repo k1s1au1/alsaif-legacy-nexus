@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import "./millionaire-game-room.css";
+import type { MillionaireMovement } from "./millionaire-engine";
 
 import { MILLIONAIRE_BOARD, type MillionaireSpace, type MillionaireSpaceKind } from "./millionaire-board";
 export { MILLIONAIRE_BOARD } from "./millionaire-board";
@@ -74,6 +76,7 @@ type MillionaireData = {
   jailTurns?: Record<string, number>;
   escapeCards?: Record<string, number>;
   dice?: [number, number] | null;
+  movement?: MillionaireMovement | null;
   rolled?: boolean;
   extraTurn?: boolean;
   pending?: PendingState | null;
@@ -127,6 +130,13 @@ const BOARD_PLACEMENTS = [
 
 function firstName(name: string) {
   return name.trim().split(/\s+/)[0] || "لاعب";
+}
+
+function playerLabel(player: PlayerLike, players: PlayerLike[]) {
+  const name = firstName(player.name);
+  return players.filter((item) => firstName(item.name) === name).length > 1
+    ? `${name} ${players.findIndex((item) => item.id === player.id) + 1}`
+    : name;
 }
 
 function formatCash(value: number) {
@@ -200,6 +210,7 @@ function CityModel({
   level: number;
   ownerColor: string;
 }) {
+  if (level <= 0) return null;
   const visibleLevel = Math.max(1, Math.min(level || 1, 4));
   return (
     <span
@@ -248,6 +259,8 @@ export function MillionaireGameRoom({
   const [rolling, setRolling] = useState(false);
   const [selectedSpace, setSelectedSpace] = useState<number | null>(null);
   const [showAssets, setShowAssets] = useState(false);
+  const [assetsPlayerId, setAssetsPlayerId] = useState(me.id);
+  const [focusedPlayerId, setFocusedPlayerId] = useState(me.id);
   const [turnSeconds, setTurnSeconds] = useState(45);
   const [movingPlayers, setMovingPlayers] = useState<Record<string, boolean>>({});
   const [visualPositions, setVisualPositions] = useState<Record<string, number>>(() =>
@@ -255,14 +268,20 @@ export function MillionaireGameRoom({
   );
   const visualPositionsRef = useRef(visualPositions);
   const movementTimers = useRef<number[]>([]);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const spaceAnchors = useRef<Array<HTMLSpanElement | null>>([]);
+  const [boardLayout, setBoardLayout] = useState({ width: 1, height: 1, points: [] as Array<{ x: number; y: number }> });
+  const [journey, setJourney] = useState<MillionaireMovement | null>(data.movement ?? null);
+  const [journeyStep, setJourneyStep] = useState(data.movement?.steps.length ?? 0);
+  const movementSignature = data.movement ? JSON.stringify(data.movement) : "";
+  const lastMovementSignature = useRef(movementSignature);
   const activeIndex = Number(data.turnIndex ?? 0) % Math.max(players.length, 1);
   const activePlayer = players[activeIndex];
+  const activePlayerLabel = activePlayer ? playerLabel(activePlayer, players) : "اللاعب";
   const isMyTurn = activePlayer?.id === me.id && !data.bankrupt?.[me.id];
   const dice = (data.dice ?? [1, 1]) as [number, number];
-  const currentPosition = Number(data.positions?.[activePlayer?.id] ?? 0);
+  const currentPosition = Number(visualPositions[activePlayer?.id] ?? data.positions?.[activePlayer?.id] ?? 0);
   const currentSpace = MILLIONAIRE_BOARD[currentPosition] ?? MILLIONAIRE_BOARD[0];
-  const currentProperty = propertyAt(data, currentPosition);
-  const currentOwner = players.find((player) => player.id === currentProperty?.ownerId);
   const displayPlayers = useMemo(() => players.slice(0, 4), [players]);
   const myProperties = MILLIONAIRE_BOARD.map((space, index) => ({
     space,
@@ -272,6 +291,7 @@ export function MillionaireGameRoom({
   const pending = data.pending ?? null;
   const pendingSpaceIndex = Number(pending?.spaceIndex ?? -1);
   const pendingForMe = isMyTurn && pending?.playerId === me.id;
+  const boardMoving = Object.values(movingPlayers).some(Boolean) || movementSignature !== lastMovementSignature.current;
   const jailTurns = Number(data.jailTurns?.[me.id] ?? 0);
   const isDebt = pendingForMe && pending?.type === "debt";
   const inspectIndex = selectedSpace ?? currentPosition;
@@ -281,16 +301,49 @@ export function MillionaireGameRoom({
   const positionSignature = players
     .map((player) => `${player.id}:${Number(data.positions?.[player.id] ?? 0)}`)
     .join("|");
-  const rankings = useMemo(
-    () =>
-      [...players]
-        .map((player) => ({
-          id: player.id,
-          wealth: Number(data.cash?.[player.id] ?? 5000) + playerInvestment(data, player.id),
-        }))
-        .sort((a, b) => b.wealth - a.wealth),
-    [players, data.cash, data.properties],
-  );
+  const assetsPlayer = players.find((player) => player.id === assetsPlayerId) ?? me;
+  const visibleAssets = MILLIONAIRE_BOARD.map((space, index) => ({ space, index, property: propertyAt(data, index) }))
+    .filter((item) => item.property?.ownerId === assetsPlayer.id);
+  const journeyPlayer = players.find((player) => player.id === journey?.playerId);
+  const journeyColor = PLAYER_COLORS[Math.max(0, players.findIndex((player) => player.id === journey?.playerId)) % PLAYER_COLORS.length];
+  const myPosition = Number(visualPositions[me.id] ?? data.positions?.[me.id] ?? 0);
+  const journeyRoute = journey ? [journey.from, ...journey.steps] : [];
+  const jumpFrom = journeyRoute[journeyRoute.length - 1];
+  const hasJump = Boolean(journey && jumpFrom !== journey.to);
+  const tokenPlacements = displayPlayers.flatMap((player, index) => {
+    if (data.bankrupt?.[player.id]) return [];
+    const position = Number(visualPositions[player.id] ?? data.positions?.[player.id] ?? 0);
+    const point = boardLayout.points[position];
+    if (!point) return [];
+    const occupants = displayPlayers.filter((item) => !data.bankrupt?.[item.id] && Number(visualPositions[item.id] ?? data.positions?.[item.id] ?? 0) === position);
+    const slot = occupants.findIndex((item) => item.id === player.id);
+    return [{
+      player, index, position, point, shared: occupants.length > 1,
+      x: point.x + (occupants.length > 1 ? slot % 2 === 0 ? -35 : 35 : 0),
+      y: point.y + (occupants.length > 1 ? Math.floor(slot / 2) * -(boardLayout.width > 500 ? 68 : 52) : 0),
+    }];
+  });
+
+  useLayoutEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    const measure = () => {
+      const bounds = scene.getBoundingClientRect();
+      setBoardLayout({
+        width: bounds.width || 1,
+        height: bounds.height || 1,
+        points: spaceAnchors.current.map((anchor) => {
+          const point = anchor?.getBoundingClientRect();
+          return { x: (point?.left ?? bounds.left) - bounds.left, y: (point?.top ?? bounds.top) - bounds.top };
+        }),
+      });
+    };
+    measure();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    observer?.observe(scene);
+    window.addEventListener("resize", measure);
+    return () => { observer?.disconnect(); window.removeEventListener("resize", measure); };
+  }, []);
 
   useEffect(() => {
     setTurnSeconds(45);
@@ -303,52 +356,57 @@ export function MillionaireGameRoom({
   useEffect(() => {
     movementTimers.current.forEach((timer) => window.clearTimeout(timer));
     movementTimers.current = [];
+    const movement = data.movement;
+    const isNewMovement = Boolean(movement && movementSignature !== lastMovementSignature.current);
+    lastMovementSignature.current = movementSignature;
+    setMovingPlayers({});
+    const positions = Object.fromEntries(players.map((player) => [player.id, Number(data.positions?.[player.id] ?? 0)]));
+    if (!isNewMovement || !movement) {
+      visualPositionsRef.current = positions;
+      setVisualPositions(positions);
+      if (!movement) { setJourney(null); setJourneyStep(0); }
+      return;
+    }
 
-    players.forEach((player) => {
-      const target = Number(data.positions?.[player.id] ?? 0);
-      const start = Number(visualPositionsRef.current[player.id] ?? target);
-      if (start === target) return;
-
-      const distance = (target - start + MILLIONAIRE_BOARD.length) % MILLIONAIRE_BOARD.length;
-      const shouldAnimate = distance > 0 && distance <= 12 && player.id === activePlayer?.id;
-      if (!shouldAnimate) {
-        setVisualPositions((positions) => {
-          const next = { ...positions, [player.id]: target };
-          visualPositionsRef.current = next;
-          return next;
-        });
-        return;
-      }
-
-      setMovingPlayers((moving) => ({ ...moving, [player.id]: true }));
-      for (let step = 1; step <= distance; step += 1) {
-        const timer = window.setTimeout(() => {
-          const nextPosition = (start + step) % MILLIONAIRE_BOARD.length;
-          setVisualPositions((positions) => {
-            const next = { ...positions, [player.id]: nextPosition };
-            visualPositionsRef.current = next;
-            return next;
-          });
-          if (step === distance) {
-            setMovingPlayers((moving) => ({ ...moving, [player.id]: false }));
-          }
-        }, step * 145);
-        movementTimers.current.push(timer);
-      }
+    setJourney(movement);
+    setJourneyStep(0);
+    positions[movement.playerId] = movement.from;
+    visualPositionsRef.current = positions;
+    setVisualPositions(positions);
+    const route = [...movement.steps];
+    if (route[route.length - 1] !== movement.to) route.push(movement.to);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (reducedMotion || route.length === 0) {
+      const next = { ...positions, [movement.playerId]: movement.to };
+      visualPositionsRef.current = next;
+      setVisualPositions(next);
+      setJourneyStep(movement.steps.length);
+      return;
+    }
+    setMovingPlayers({ [movement.playerId]: true });
+    route.forEach((position, index) => {
+      movementTimers.current.push(window.setTimeout(() => {
+        const next = { ...visualPositionsRef.current, [movement.playerId]: position };
+        visualPositionsRef.current = next;
+        setVisualPositions(next);
+        setJourneyStep(Math.min(index + 1, movement.steps.length));
+        if (index === route.length - 1) setMovingPlayers({});
+      }, (index + 1) * 260));
     });
 
     return () => {
       movementTimers.current.forEach((timer) => window.clearTimeout(timer));
       movementTimers.current = [];
     };
-  }, [positionSignature]);
+  }, [positionSignature, movementSignature]);
 
   const rollDice = async () => {
-    if (!isMyTurn || data.rolled || rolling || pending) return;
+    if (!isMyTurn || data.rolled || rolling || pending || boardMoving) return;
     setRolling(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 620));
-    await dispatch("monopoly-roll");
-    window.setTimeout(() => setRolling(false), 320);
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 620));
+      await dispatch("monopoly-roll");
+    } finally { setRolling(false); }
   };
 
   const levelOptions =
@@ -372,6 +430,7 @@ export function MillionaireGameRoom({
       className={cn("millionaire-game", immersive && "is-immersive")}
       dir="rtl"
       aria-label="رحلة المليونير"
+      data-moving={boardMoving}
     >
       <div className="millionaire-game__atmosphere" aria-hidden="true" />
       <div className="millionaire-game__portrait-lock">
@@ -396,7 +455,7 @@ export function MillionaireGameRoom({
         <span>
           <small>الجولة {Number(data.turnNumber ?? 1)}</small>
           <strong>
-            {isMyTurn ? "دورك الآن" : "دور " + firstName(activePlayer?.name ?? "اللاعب")}
+            {isMyTurn ? "دورك الآن" : "دور " + activePlayerLabel}
           </strong>
         </span>
         <time dateTime={`PT${turnSeconds}S`}>00:{String(turnSeconds).padStart(2, "0")}</time>
@@ -406,7 +465,7 @@ export function MillionaireGameRoom({
         <button type="button" onClick={onGuide} aria-label="طريقة اللعب">
           <BookOpen />
         </button>
-        <button type="button" onClick={() => setShowAssets(true)} aria-label="إدارة أملاكي">
+        <button type="button" onClick={() => { setAssetsPlayerId(me.id); setShowAssets(true); }} aria-label="إدارة أملاكي">
           <WalletCards />
         </button>
         <button type="button" onClick={onSettings} aria-label="إعدادات اللعب">
@@ -429,7 +488,7 @@ export function MillionaireGameRoom({
           ).length;
           const cash = Number(data.cash?.[player.id] ?? 5000);
           const totalWealth = cash + playerInvestment(data, player.id);
-          const rank = Math.max(1, rankings.findIndex((item) => item.id === player.id) + 1);
+          const position = Number(visualPositions[player.id] ?? data.positions?.[player.id] ?? 0);
           return (
             <article
               key={player.id}
@@ -438,9 +497,11 @@ export function MillionaireGameRoom({
                 "millionaire-player--" + (index + 1),
                 active && "is-active",
                 player.id === me.id && "is-me",
+                player.id === focusedPlayerId && "is-focused",
                 bankrupt && "is-bankrupt",
               )}
               style={{ "--player-color": PLAYER_COLORS[index] } as CSSProperties}
+              data-player-id={player.id}
             >
               <div className="millionaire-player__portrait">
                 <PlayerPortrait player={player} />
@@ -448,7 +509,7 @@ export function MillionaireGameRoom({
               <div className="millionaire-player__copy">
                 <p>
                   {player.isHost && <Crown aria-label="المضيف" />}
-                  <strong>{firstName(player.name)}</strong>
+                  <strong>{playerLabel(player, players)}</strong>
                   {player.id === me.id && <em>أنت</em>}
                 </p>
                 <div className="millionaire-player__stats">
@@ -461,19 +522,34 @@ export function MillionaireGameRoom({
                     <strong>{formatCash(totalWealth)}</strong>
                   </span>
                 </div>
-                <small className="millionaire-player__owned">
-                  <Landmark /> {ownedCount} أملاك{" "}
-                  {Number(data.jailTurns?.[player.id] ?? 0) > 0 && "· في الجزيرة"}
-                </small>
+                <button
+                  className="millionaire-player__location"
+                  type="button"
+                  disabled={bankrupt}
+                  onClick={() => { setFocusedPlayerId(player.id); setSelectedSpace(position); }}
+                  aria-label={"إظهار موقع " + playerLabel(player, players) + " في " + MILLIONAIRE_BOARD[position]?.name}
+                >
+                  <MapPin />
+                  <span>{player.id === me.id ? "موقعك: " : "الموقع: "}<strong>{MILLIONAIRE_BOARD[position]?.name}</strong></span>
+                </button>
+                <button
+                  className="millionaire-player__owned"
+                  type="button"
+                  onClick={() => { setAssetsPlayerId(player.id); setFocusedPlayerId(player.id); setShowAssets(true); }}
+                  aria-label={"عرض أملاك " + playerLabel(player, players)}
+                >
+                  <Landmark /> {ownedCount} أملاك · عرض
+                  {Number(data.jailTurns?.[player.id] ?? 0) > 0 && " · في الجزيرة"}
+                </button>
               </div>
-              <b className="millionaire-player__rank">{rank}</b>
+              <b className="millionaire-player__number" aria-label={"رقم القطعة " + (index + 1)}>{index + 1}</b>
               {bankrupt && <mark>مفلس</mark>}
             </article>
           );
         })}
       </div>
 
-      <div className="millionaire-board-scene">
+      <div className="millionaire-board-scene" ref={sceneRef}>
         <div className="millionaire-board" role="grid" aria-label="لوحة رحلة المليونير">
           <div className="millionaire-board__rim" aria-hidden="true" />
           <div className="millionaire-board__map" aria-hidden="true">
@@ -501,6 +577,13 @@ export function MillionaireGameRoom({
                   "millionaire-space--" + space.kind,
                   "millionaire-space--side-" + space.side,
                   index === currentPosition && "is-current",
+                  occupants.some((player) => player.id === focusedPlayerId) && "is-focused-position",
+                  property && "is-owned",
+                  property?.ownerId === me.id && "is-my-property",
+                  property?.ownerId === focusedPlayerId && "is-focused-property",
+                  journey?.steps.includes(index) && "is-on-path",
+                  journey?.from === index && "is-origin",
+                  journey?.to === index && "is-destination",
                   data.festival?.spaceIndex === index && "is-festival",
                 )}
                 style={
@@ -509,22 +592,24 @@ export function MillionaireGameRoom({
                     gridColumn: column,
                     "--space-color": space.color,
                     "--owner-color": ownerIndex >= 0 ? PLAYER_COLORS[ownerIndex] : "transparent",
+                    "--path-color": journeyColor,
                   } as CSSProperties
                 }
+                aria-label={space.name + ". " + (property ? "ملك " + (players[ownerIndex] ? playerLabel(players[ownerIndex], players) : "لاعب") : ownable ? "متاح للشراء" : "محطة خاصة") + (occupants.length ? ". يقف هنا " + occupants.map((player) => playerLabel(player, players)).join("، ") : "")}
+                data-space-index={index}
+                data-owner-id={property?.ownerId ?? ""}
               >
                 <i className="millionaire-space__band" aria-hidden="true" />
-                <span className="millionaire-space__content">
+                <span ref={(element) => { spaceAnchors.current[index] = element; }} className="millionaire-space__anchor" aria-hidden="true" />
+                <span className="millionaire-space__content" aria-hidden="true">
                   <span className="millionaire-space__icon">{spaceIcon(space.kind)}</span>
                   <strong>{space.name}</strong>
                   {ownable && <small>{formatCash(space.price)}</small>}
                 </span>
                 {property && (
-                  <>
-                    <span
-                      className="millionaire-space__owner"
-                      title={"ملك " + (players[ownerIndex]?.name ?? "لاعب")}
-                    />
-                  </>
+                  <span className="millionaire-space__owner" aria-hidden="true">
+                    {ownerIndex + 1}
+                  </span>
                 )}
                 {ownable && (
                   <CityModel
@@ -533,32 +618,57 @@ export function MillionaireGameRoom({
                     ownerColor={ownerIndex >= 0 ? PLAYER_COLORS[ownerIndex] : space.color}
                   />
                 )}
-                {occupants.length > 0 && (
-                  <span
-                    className="millionaire-space__tokens"
-                    aria-label={occupants.length + " لاعبين في " + space.name}
-                  >
-                    {occupants.map((player) => {
-                      const playerIndex = Math.max(
-                        0,
-                        players.findIndex((item) => item.id === player.id),
-                      );
-                      return (
-                        <i
-                          key={player.id}
-                          className={cn(movingPlayers[player.id] && "is-moving")}
-                          style={
-                            {
-                              "--token-color": PLAYER_COLORS[playerIndex % PLAYER_COLORS.length],
-                            } as CSSProperties
-                          }
-                        >
-                          {firstName(player.name).slice(0, 1)}
-                        </i>
-                      );
-                    })}
-                  </span>
-                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="millionaire-board__overlays">
+          <svg className="millionaire-token-links" viewBox={`0 0 ${boardLayout.width} ${boardLayout.height}`} aria-hidden="true">
+            {tokenPlacements.filter((item) => item.shared).map(({ player, index, point, x, y }) => <line key={player.id} x1={point.x} y1={point.y} x2={x} y2={y} style={{ "--token-color": PLAYER_COLORS[index] } as CSSProperties} />)}
+          </svg>
+          {journey && boardLayout.points.length === MILLIONAIRE_BOARD.length && (
+            <svg className="millionaire-route" viewBox={`0 0 ${boardLayout.width} ${boardLayout.height}`} aria-hidden="true">
+              <polyline className="millionaire-route__line" points={journeyRoute.map((index) => `${boardLayout.points[index].x},${boardLayout.points[index].y}`).join(" ")} style={{ "--path-color": journeyColor } as CSSProperties} />
+              {hasJump && <line className="millionaire-route__jump" x1={boardLayout.points[jumpFrom].x} y1={boardLayout.points[jumpFrom].y} x2={boardLayout.points[journey.to].x} y2={boardLayout.points[journey.to].y} />}
+              {journey.steps.map((index, step) => (
+                <g key={step} className={cn("millionaire-route__step", step < journeyStep && "is-complete")} transform={`translate(${boardLayout.points[index].x}, ${boardLayout.points[index].y})`}>
+                  <circle r="10" />
+                  <text textAnchor="middle" dominantBaseline="central">{step + 1}</text>
+                </g>
+              ))}
+            </svg>
+          )}
+
+          {MILLIONAIRE_BOARD.map((space, index) => {
+            const point = boardLayout.points[index];
+            if (!point) return null;
+            const property = propertyAt(data, index);
+            const ownerIndex = players.findIndex((player) => player.id === property?.ownerId);
+            const owner = players[ownerIndex];
+            const ownable = space.kind === "city" || space.kind === "tourism";
+            return (
+              <span key={index} className={cn("millionaire-space-label", property && "is-owned", property?.ownerId === me.id && "is-mine")} style={{ left: point.x, top: point.y, "--owner-color": PLAYER_COLORS[ownerIndex] } as CSSProperties} aria-hidden="true">
+                <strong>{space.name}</strong>
+                {ownable && <small>{owner ? owner.id === me.id ? "أرضك" : playerLabel(owner, players) : "للبيع"}</small>}
+              </span>
+            );
+          })}
+
+          {tokenPlacements.map(({ player, index, position, x, y }) => {
+            return (
+              <button
+                key={player.id}
+                type="button"
+                className={cn("millionaire-token", player.id === me.id && "is-me", player.id === focusedPlayerId && "is-focused", movingPlayers[player.id] && "is-moving")}
+                style={{ left: x, top: y, "--token-color": PLAYER_COLORS[index] } as CSSProperties}
+                onClick={() => { setFocusedPlayerId(player.id); setSelectedSpace(position); }}
+                aria-label={(player.id === me.id ? "قطعتك: " : "قطعة ") + playerLabel(player, players) + "، الموقع " + MILLIONAIRE_BOARD[position].name}
+                data-player-id={player.id}
+                data-position={position}
+              >
+                <span className="millionaire-token__pawn"><b>{index + 1}</b></span>
+                <strong>{player.id === me.id ? "أنت" : playerLabel(player, players)}</strong>
               </button>
             );
           })}
@@ -573,7 +683,7 @@ export function MillionaireGameRoom({
           <div className="millionaire-game__center-stats">
             <span>الجولة {Number(data.turnNumber ?? 1)}</span>
             <i />
-            <span>{firstName(activePlayer?.name ?? "اللاعب")}</span>
+            <span>{activePlayerLabel}</span>
           </div>
           <div
             className={cn("millionaire-dice", rolling && "is-rolling")}
@@ -604,7 +714,7 @@ export function MillionaireGameRoom({
               <button
                 type="button"
                 className="millionaire-game__roll"
-                disabled={!isMyTurn || rolling || Boolean(pending)}
+                disabled={!isMyTurn || rolling || Boolean(pending) || boardMoving}
                 onClick={() => void rollDice()}
               >
                 {rolling
@@ -620,19 +730,30 @@ export function MillionaireGameRoom({
             <button
               type="button"
               className="millionaire-game__end"
+              disabled={boardMoving}
               onClick={() => void dispatch("monopoly-end")}
             >
               {data.extraTurn ? "ارمِ مرة أخرى" : "إنهاء الدور"}
             </button>
           ) : (
             <div className="millionaire-game__waiting">
-              {pending
-                ? "بانتظار قرار " + firstName(activePlayer?.name ?? "اللاعب")
+              {boardMoving ? "يتحرك خانة بخانة…" : pending
+                ? "بانتظار قرار " + activePlayerLabel
                 : "يتم تنفيذ الحركة"}
             </div>
           )}
         </div>
       </div>
+
+      <aside className="millionaire-navigation" aria-label="الموقع ومسار الحركة">
+        <div className="millionaire-navigation__location" style={{ "--my-color": PLAYER_COLORS[Math.max(0, players.findIndex((player) => player.id === me.id))] } as CSSProperties}><MapPin /><span>موقعك الآن: <strong>{MILLIONAIRE_BOARD[myPosition]?.name}</strong></span></div>
+        {journey && journeyPlayer && (
+          <div className="millionaire-navigation__journey">
+            <p role="status">{movingPlayers[journey.playerId] ? playerLabel(journeyPlayer, players) + " يتحرك إلى " : "آخر حركة: " + playerLabel(journeyPlayer, players) + " وصل إلى "}{MILLIONAIRE_BOARD[journey.to]?.name}</p>
+            <span>{MILLIONAIRE_BOARD[journey.from]?.name} ← {MILLIONAIRE_BOARD[journey.to]?.name} · {journey.steps.length ? `${journeyStep} / ${journey.steps.length} خطوات${hasJump ? " · انتقال ببطاقة" : ""}` : journey.source === "travel" ? "سفر مباشر" : "انتقال إلى الجزيرة"}</span>
+          </div>
+        )}
+      </aside>
 
       {selectedSpace !== null && (
         <aside className="millionaire-game__property-card" aria-live="polite">
@@ -649,7 +770,7 @@ export function MillionaireGameRoom({
         <div>
           <small>
             {inspectOwner
-              ? "ملك " + firstName(inspectOwner.name)
+              ? inspectOwner.id === me.id ? "أرضك" : "ملك " + playerLabel(inspectOwner, players)
               : inspectSpace.kind === "city" || inspectSpace.kind === "tourism"
                 ? "متاح للشراء"
                 : "محطة خاصة"}
@@ -669,12 +790,12 @@ export function MillionaireGameRoom({
       <footer className="millionaire-game__ticker">
         <span className="millionaire-game__status-dot" />
         <strong>
-          {isMyTurn ? "دورك الآن" : "الدور عند " + firstName(activePlayer?.name ?? "اللاعب")}
+          {isMyTurn ? "دورك الآن" : "الدور عند " + activePlayerLabel}
         </strong>
         <p>{data.lastAction ?? "بدأت رحلة المليونير"}</p>
       </footer>
 
-      {pendingForMe && (
+      {pendingForMe && !boardMoving && !rolling && (
         <div
           className="millionaire-decision"
           role="dialog"
@@ -839,7 +960,7 @@ export function MillionaireGameRoom({
           className="millionaire-assets"
           role="dialog"
           aria-modal="true"
-          aria-label="إدارة أملاكي"
+          aria-label={assetsPlayer.id === me.id ? "إدارة أملاكي" : "أملاك " + playerLabel(assetsPlayer, players)}
           onClick={() => setShowAssets(false)}
         >
           <div onClick={(event) => event.stopPropagation()}>
@@ -849,37 +970,44 @@ export function MillionaireGameRoom({
               </span>
               <div>
                 <small>المحفظة</small>
-                <strong>أملاكي واستثماراتي</strong>
+                <strong>{assetsPlayer.id === me.id ? "أملاكي واستثماراتي" : "أملاك " + playerLabel(assetsPlayer, players)}</strong>
               </div>
-              <button type="button" onClick={() => setShowAssets(false)}>
+              <button type="button" aria-label="إغلاق الأملاك" onClick={() => setShowAssets(false)}>
                 <X />
               </button>
             </header>
+            <nav className="millionaire-assets__players" aria-label="أملاك اللاعبين">
+              {displayPlayers.map((player, index) => (
+                <button key={player.id} type="button" aria-pressed={assetsPlayer.id === player.id} style={{ "--player-color": PLAYER_COLORS[index] } as CSSProperties} onClick={() => setAssetsPlayerId(player.id)}>
+                  {index + 1} · {player.id === me.id ? "أنت" : playerLabel(player, players)}
+                </button>
+              ))}
+            </nav>
             <div className="millionaire-assets__summary">
               <p>
                 <CircleDollarSign />
                 <span>
-                  السيولة<strong>{formatCash(data.cash?.[me.id] ?? 0)}</strong>
+                  السيولة<strong>{formatCash(data.cash?.[assetsPlayer.id] ?? 0)}</strong>
                 </span>
               </p>
               <p>
                 <Building2 />
                 <span>
-                  عدد المواقع<strong>{myProperties.length}</strong>
+                  عدد المواقع<strong>{visibleAssets.length}</strong>
                 </span>
               </p>
               <p>
                 <TicketCheck />
                 <span>
-                  بطاقات الخروج<strong>{Number(data.escapeCards?.[me.id] ?? 0)}</strong>
+                  بطاقات الخروج<strong>{Number(data.escapeCards?.[assetsPlayer.id] ?? 0)}</strong>
                 </span>
               </p>
             </div>
             <section>
-              {myProperties.length ? (
-                myProperties.map(({ space, index, property }) => (
+              {visibleAssets.length ? (
+                visibleAssets.map(({ space, index, property }) => (
                   <article key={index}>
-                    <i style={{ background: space.color }} />
+                    <i style={{ background: PLAYER_COLORS[Math.max(0, players.findIndex((player) => player.id === assetsPlayer.id))] }} />
                     <span>
                       <strong>{space.name}</strong>
                       <small>
@@ -891,19 +1019,22 @@ export function MillionaireGameRoom({
                       level={property?.level ?? 1}
                       landmark={(property?.level ?? 1) >= 4}
                     />
-                    <button
+                    {assetsPlayer.id === me.id && <button
                       type="button"
-                      disabled={!isMyTurn || Boolean(pending)}
+                      disabled={!isMyTurn || Boolean(pending) || boardMoving}
                       onClick={() => void dispatch("monopoly-sell", { spaceIndex: index })}
                     >
                       <Hammer /> بيع
-                    </button>
+                    </button>}
                   </article>
                 ))
               ) : (
-                <p className="millionaire-assets__empty">لم تشترِ أي موقع بعد.</p>
+                <p className="millionaire-assets__empty">{assetsPlayer.id === me.id ? "لم تشترِ أي موقع بعد." : "لم يشترِ " + playerLabel(assetsPlayer, players) + " أي موقع بعد."}</p>
               )}
             </section>
+            <button className="millionaire-assets__show-board" type="button" onClick={() => { setFocusedPlayerId(assetsPlayer.id); setSelectedSpace(null); setShowAssets(false); }}>
+              {assetsPlayer.id === me.id ? "إظهار أملاكي على اللوح" : "إظهار أملاك " + playerLabel(assetsPlayer, players) + " على اللوح"}
+            </button>
           </div>
         </div>
       )}
