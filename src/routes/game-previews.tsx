@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Banknote, CircleHelp, Crown, Gem, MoveDiagonal, RotateCcw, Sparkles, Target, Users } from "lucide-react";
 import { useState } from "react";
-import { MillionaireGameRoom } from "@/components/entertainment/millionaire-game-room";
+import { MillionaireDemo } from "@/components/entertainment/millionaire-demo";
 import "./game-previews.css";
 
 export const Route = createFileRoute("/game-previews")({
@@ -39,45 +39,8 @@ const kingdomSpaces = [
 
 function GamePreviews() {
   const [activePreview, setActivePreview] = useState<PreviewId>("carrom");
-  if (new URLSearchParams(window.location.search).has("millionaire")) {
-    const players = [
-      { id: "p1", name: "خالد عبدالعزيز", avatarUrl: null, isHost: true },
-      { id: "p2", name: "سعود", avatarUrl: null, isBot: true },
-      { id: "p3", name: "نورة", avatarUrl: null, isBot: true },
-      { id: "p4", name: "فيصل", avatarUrl: null, isBot: true },
-    ];
-    return (
-      <MillionaireGameRoom
-        state={{
-          data: {
-            turnIndex: 0,
-            turnNumber: 7,
-            positions: { p1: 9, p2: 15, p3: 20, p4: 3 },
-            cash: { p1: 3480, p2: 4120, p3: 2750, p4: 3900 },
-            properties: {
-              1: { ownerId: "p1", level: 3, invested: 760 },
-              2: { ownerId: "p2", level: 2, invested: 610 },
-              7: { ownerId: "p3", level: 4, invested: 1100 },
-              9: { ownerId: "p1", level: 1, invested: 340 },
-              13: { ownerId: "p4", level: 2, invested: 780 },
-              15: { ownerId: "p2", level: 3, invested: 1010 },
-              20: { ownerId: "p3", level: 2, invested: 670 },
-              23: { ownerId: "p4", level: 4, invested: 1500 },
-            },
-            dice: [4, 2],
-            rolled: false,
-            lastAction: "خالد وصل إلى سكاكا ويستطيع الاستثمار فيها",
-          },
-        }}
-        players={players}
-        me={players[0]}
-        immersive
-        dispatch={async () => undefined}
-        onExit={() => undefined}
-        onGuide={() => undefined}
-        onSettings={() => undefined}
-      />
-    );
+  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("millionaire")) {
+    return <MillionaireDemo />;
   }
 
   return (

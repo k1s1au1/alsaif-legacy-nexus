@@ -1,0 +1,44 @@
+.millionaire-demo {
+  min-height: 100dvh;
+  font-family: "Tajawal", "IBM Plex Sans Arabic", system-ui, sans-serif;
+}
+
+.millionaire-demo__overlay {
+  position: fixed;
+  z-index: 10030;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  color: #fff3d4;
+  background: #00160fe0;
+  backdrop-filter: blur(9px);
+}
+
+.millionaire-demo__panel {
+  position: relative;
+  width: min(480px, 100%);
+  max-height: 85dvh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 32px;
+  border: 1px solid #c3a450;
+  border-radius: 24px;
+  background: #073b2e;
+  box-shadow: 0 24px 80px #0008;
+}
+
+.millionaire-demo__panel h1 { margin: 4px 0 20px; font-size: 24px; color: #f0cf7d; }
+.millionaire-demo__panel p { font-size: 15px; line-height: 1.8; color: #e0e7d9; }
+.millionaire-demo__panel button, .millionaire-demo__panel select { font-family: inherit; cursor: pointer; }
+.millionaire-demo__panel button:focus-visible, .millionaire-demo__panel select:focus-visible { outline: 3px solid #fff2b2; outline-offset: 4px; }
+.millionaire-demo__panel label { display: block; margin-bottom: 10px; }
+.millionaire-demo__panel select { width: 100%; margin-bottom: 12px; padding: 12px; color: #fff3d4; background: #00251b; border: 1px solid #b3984f; border-radius: 12px; font-size: 16px; }
+.millionaire-demo__panel button:not(.millionaire-demo__close) { display: flex; width: 100%; min-height: 48px; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; padding: 12px; border-radius: 12px; font-size: 15px; font-weight: 700; }
+.millionaire-demo__primary { color: #112c20; background: #edc96a; border: 0; }
+.millionaire-demo__secondary { color: #f0d593; background: #00251b; border: 1px solid #8d793f; }
+.millionaire-demo__close { position: absolute; top: 12px; left: 12px; display: grid; width: 36px; height: 36px; place-items: center; color: #f0d593; background: transparent; border: 0; border-radius: 8px; }
+.millionaire-demo__trophy { width: 48px; height: 48px; color: #edc96a; }
+
+@media (max-height: 500px) { .millionaire-demo__panel { padding: 22px; } }

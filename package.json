@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "test:member-posts": "node --test scripts/test-member-post-rotation.mjs",
     "test:account-entry": "node --test scripts/test-account-entry.mjs",
+    "test:millionaire": "node scripts/test-millionaire.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {
