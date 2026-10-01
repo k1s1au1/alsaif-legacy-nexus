@@ -1,6 +1,156 @@
-/*
- * Approved dashboard composition: the version before the Najdi courtyard photograph
- * (b1a51b0). The portal uses heritage-portal-3d.css; family services use their original
- * identity-coloured styles. Keep this final layer free of the retired photograph,
- * paper plaques and service-card overrides. Future approved scoped overrides belong here.
- */
+/* Approved terrain composition: layered relief, live welcome copy and the existing council model. */
+
+html body main .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout,
+html body main .desktop-overview-shell > .desktop-portal-stage {
+  container-type: inline-size;
+}
+
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene,
+html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-portal-stage > .desktop-portal-model.heritage-pavilion-reference.council-terrain-scene {
+  --terrain-height: clamp(340px, 35.7cqw, 720px);
+  --terrain-model-height: 104%;
+  --terrain-floor-gap: 16%;
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: var(--terrain-height) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  container-type: size;
+  isolation: isolate;
+  background: var(--council-portal-background) !important;
+}
+
+.council-terrain-definitions {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.council-terrain-art,
+.council-terrain-art > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+.council-terrain-art {
+  z-index: 0;
+}
+
+.council-terrain-art > img {
+  object-fit: cover;
+  object-position: center bottom;
+}
+
+html body main .council-terrain-scene .council-portal-ambient,
+html body main .council-terrain-scene .council-portal-sheen,
+html body main .desktop-overview-shell:has(.council-terrain-scene)::after {
+  display: none !important;
+}
+
+html body main .council-terrain-scene .council-portal-copy {
+  z-index: 4;
+  top: 43% !important;
+  right: auto !important;
+  left: 5.5% !important;
+  width: 53% !important;
+  max-width: none !important;
+  transform: translateY(-50%) !important;
+}
+
+html body main .council-terrain-scene .council-portal-greeting {
+  margin-bottom: clamp(6px, 0.75cqw, 14px) !important;
+  font-size: clamp(14px, 1.3cqw, 24px) !important;
+}
+
+html body main .council-terrain-scene .council-portal-identity span {
+  font-size: clamp(14px, 1.25cqw, 23px) !important;
+}
+
+html body main .council-terrain-scene .council-portal-identity strong {
+  display: block;
+  overflow: visible;
+  font-size: clamp(30px, 4.3cqw, 78px) !important;
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: unset;
+}
+
+html body main .council-terrain-scene .council-portal-message {
+  margin-top: clamp(10px, 1.2cqw, 22px) !important;
+  font-size: clamp(12px, 1.1cqw, 20px) !important;
+}
+
+/* Align the visible raster base (1228 / 1477), preserving its original aspect ratio and soil. */
+html body main .council-terrain-scene .council-portal-model {
+  z-index: 2;
+  top: auto !important;
+  right: 6.5% !important;
+  bottom: var(--terrain-floor-gap) !important;
+  left: auto !important;
+  width: auto !important;
+  height: var(--terrain-model-height) !important;
+  max-width: none !important;
+  aspect-ratio: 1065 / 1477;
+  transform: translateY(16.8585%) !important;
+}
+
+@media (max-width: 699px), (max-width: 969.98px) and (orientation: portrait) {
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-inline: calc(50% - 50vw) !important;
+  }
+
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene {
+    --terrain-height: clamp(560px, 155cqw, 740px);
+    --terrain-model-height: 64%;
+    --terrain-floor-gap: 14%;
+  }
+
+  html body main .council-terrain-scene .council-portal-copy {
+    top: 5% !important;
+    left: 6% !important;
+    width: 88% !important;
+    transform: none !important;
+  }
+
+  html body main .council-terrain-scene .council-portal-greeting {
+    font-size: clamp(14px, 3.7cqw, 19px) !important;
+  }
+
+  html body main .council-terrain-scene .council-portal-identity span {
+    font-size: clamp(14px, 3.7cqw, 20px) !important;
+  }
+
+  html body main .council-terrain-scene .council-portal-identity strong {
+    font-size: clamp(26px, 7.2cqw, 42px) !important;
+  }
+
+  html body main .council-terrain-scene .council-portal-message {
+    font-size: clamp(12px, 3.2cqw, 16px) !important;
+  }
+
+  html body main .council-terrain-scene .council-portal-model {
+    right: auto !important;
+    left: 50% !important;
+    transform: translate(-50%, 16.8585%) !important;
+  }
+}
+
+@media (min-width: 700px) and (max-width: 969.98px) and (orientation: portrait) {
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene {
+    --terrain-height: clamp(740px, 102cqw, 840px);
+    --terrain-model-height: 68%;
+  }
+}

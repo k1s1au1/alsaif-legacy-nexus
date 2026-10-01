@@ -5,6 +5,8 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import councilSandyGround from "@/assets/council-sandy-ground-v1.webp";
+import councilTerrainWide from "@/assets/council-terrain-wide-v1.webp";
+import councilTerrainPortrait from "@/assets/council-terrain-portrait-v1.webp";
 import { councilTowers } from "@/assets/najdi-council-towers-v1";
 import "./heritage-portal-3d.css";
 import "@/dashboard-reference-exact.css";
@@ -29,6 +31,7 @@ export function HeritagePortal3D({
   welcomeIntro = false,
 }: HeritagePortal3DProps) {
   const colorFilterId = `council-portal-colors-${useId().replace(/:/g, "")}`;
+  const terrainFilterId = `${colorFilterId}-terrain`;
   const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
   const targetRef = useRef({ x: 0, y: 0 });
@@ -116,6 +119,7 @@ export function HeritagePortal3D({
       className={[
         "heritage-portal-3d",
         "heritage-pavilion-reference",
+        "council-terrain-scene",
         className,
       ]
         .filter(Boolean)
@@ -133,6 +137,72 @@ export function HeritagePortal3D({
       onPointerMove={handlePointerMove}
       onPointerLeave={resetParallax}
     >
+      <svg
+        className="council-terrain-definitions"
+        width="0"
+        height="0"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <filter
+            id={terrainFilterId}
+            x="0%"
+            y="0%"
+            width="100%"
+            height="100%"
+            colorInterpolationFilters="sRGB"
+          >
+            {/* Keep the relief's light and texture while following the chosen identity. */}
+            <feFlood
+              style={{ floodColor: "var(--council-portal-background)" }}
+              result="terrain-identity"
+            />
+            <feBlend
+              in="SourceGraphic"
+              in2="terrain-identity"
+              mode="luminosity"
+              result="terrain-shading"
+            />
+            <feColorMatrix
+              in="SourceGraphic"
+              type="matrix"
+              values="0 0 0 0 0
+                      0 0 0 0 0
+                      0 0 0 0 0
+                      6 -5 -1 0 0"
+              result="terrain-contours"
+            />
+            <feFlood
+              style={{ floodColor: "var(--council-portal-accent)" }}
+              floodOpacity="0.8"
+              result="terrain-gold"
+            />
+            <feComposite
+              in="terrain-gold"
+              in2="terrain-contours"
+              operator="in"
+              result="terrain-lit-edges"
+            />
+            <feBlend in="terrain-lit-edges" in2="terrain-shading" mode="normal" />
+          </filter>
+        </defs>
+      </svg>
+      <picture className="council-terrain-art" aria-hidden="true">
+        <source
+          media="(max-width: 699px), (max-width: 969.98px) and (orientation: portrait)"
+          srcSet={councilTerrainPortrait}
+        />
+        <img
+          src={councilTerrainWide}
+          width="2098"
+          height="749"
+          alt=""
+          draggable={false}
+          decoding="async"
+          style={{ filter: `url(#${terrainFilterId})` }}
+        />
+      </picture>
       <span className="council-portal-ambient" aria-hidden="true" />
       <span className="council-portal-sheen" aria-hidden="true" />
 
