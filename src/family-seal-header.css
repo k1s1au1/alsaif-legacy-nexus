@@ -244,6 +244,12 @@
   .app-shell-main > .app-shell-header-wrap[data-family-seal="true"] {
     top: 12px !important;
   }
+
+  html body
+    main.app-shell-main:has(> .app-shell-header-wrap[data-family-seal="true"])
+    > div.app-shell-content.p-4.md\:p-8.lg\:p-12:has(> .dashboard-page) {
+    padding-top: 0 !important;
+  }
 }
 
 .family-seal-service-menu {
