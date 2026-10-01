@@ -1,0 +1,303 @@
+/* The legacy phone and portrait-tablet header is a separate render branch.
+   Every rule here targets the new seal or its explicitly marked wrapper. */
+.family-seal-header {
+  display: none;
+}
+
+@media (min-width: 970px) {
+  .app-shell-main > .app-shell-header-wrap[data-family-seal="true"] {
+    position: sticky !important;
+    top: 0 !important;
+    inset-inline: auto !important;
+    width: 100% !important;
+    padding: 16px clamp(24px, 3vw, 56px) 0 !important;
+    transform: none !important;
+    background: linear-gradient(180deg, var(--background) 70%, transparent) !important;
+    backdrop-filter: none !important;
+  }
+
+  .family-seal-header {
+    --seal-ink: var(--primary);
+    --seal-accent: var(--identity-accent, var(--gold-primary));
+    --seal-paper: color-mix(in srgb, var(--card) 94%, var(--identity-soft, var(--background)) 6%);
+    --seal-line: color-mix(in srgb, var(--seal-accent) 42%, var(--border));
+    --seal-hover: color-mix(in srgb, var(--seal-ink) 8%, var(--seal-paper));
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 122px minmax(0, 1fr) 48px;
+    gap: 10px;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    min-height: 144px;
+    color: var(--seal-ink);
+    font-family: inherit;
+    isolation: isolate;
+  }
+
+  .family-seal-utilities {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .family-seal-utility,
+  .family-seal-account > button,
+  .family-seal-notifications > button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 8px;
+    margin: 0;
+    border: 1px solid color-mix(in srgb, var(--seal-line) 60%, transparent);
+    border-radius: 50%;
+    background: var(--seal-paper);
+    color: var(--seal-ink);
+    box-shadow: 0 3px 8px color-mix(in srgb, var(--seal-ink) 9%, transparent);
+    cursor: pointer;
+  }
+
+  .family-seal-utility:hover,
+  .family-seal-utility[aria-current="page"],
+  .family-seal-account > button:hover,
+  .family-seal-notifications > button:hover {
+    background: var(--seal-hover);
+  }
+
+  .family-seal-utility svg,
+  .family-seal-notifications > button > svg {
+    color: var(--seal-ink) !important;
+    stroke: currentColor;
+  }
+
+  .family-seal-account > button {
+    max-width: 44px;
+    padding: 3px;
+    gap: 0;
+  }
+
+  .family-seal-account > button > span,
+  .family-seal-account > button > svg {
+    display: none;
+  }
+
+  .family-seal-account > button > div {
+    width: 34px;
+    height: 34px;
+    padding: 1px;
+  }
+
+  .family-seal-wing {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    position: relative;
+    min-width: 0;
+    height: 70px;
+    padding: 10px 16px;
+    gap: 5px;
+  }
+
+  .family-seal-wing::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--seal-paper);
+    border-block: 1px solid var(--seal-line);
+    clip-path: polygon(0 10%, 94% 0, 100% 25%, 100% 75%, 94% 100%, 0 90%);
+  }
+
+  .family-seal-wing-end::before {
+    transform: scaleX(-1);
+  }
+
+  .family-seal-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 9px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--seal-ink);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .family-seal-link svg {
+    flex: none;
+    color: inherit;
+    stroke: currentColor;
+  }
+
+  .family-seal-link:hover,
+  .family-seal-link[aria-current="page"],
+  .family-seal-link[data-active="true"],
+  .family-seal-link[data-state="open"] {
+    background: var(--seal-hover);
+    color: var(--seal-ink);
+  }
+
+  .family-seal-link[aria-current="page"]::after,
+  .family-seal-link[data-active="true"]::after {
+    content: "";
+    position: absolute;
+    bottom: 1px;
+    width: 22px;
+    height: 2px;
+    background: var(--seal-accent);
+  }
+
+  .family-seal-medallion {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 122px;
+    height: 122px;
+    min-width: 0;
+    padding: 12px 8px;
+    gap: 6px;
+    border: 1px solid var(--seal-line);
+    border-radius: 50%;
+    background: var(--seal-paper);
+    color: var(--seal-ink);
+    box-shadow: 0 8px 15px color-mix(in srgb, var(--seal-ink) 10%, transparent);
+  }
+
+  .family-seal-logo {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    overflow: hidden;
+    border: 1px solid var(--seal-line);
+    border-radius: 50%;
+    background: var(--background);
+    color: var(--seal-ink);
+  }
+
+  .family-seal-logo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 3px;
+  }
+
+  .family-seal-title {
+    color: var(--seal-ink);
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .family-seal-caption {
+    max-width: 94px;
+    color: var(--seal-ink);
+    font-size: 11px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 970px) and (max-width: 1199.98px) {
+  .family-seal-header {
+    grid-template-columns: 44px minmax(0, 1fr) 112px minmax(0, 1fr) 44px;
+    gap: 7px;
+  }
+
+  .family-seal-wing {
+    padding-inline: 8px;
+  }
+
+  .family-seal-medallion {
+    width: 112px;
+    height: 112px;
+    padding: 10px 5px;
+    gap: 5px;
+  }
+}
+
+.family-seal-service-menu {
+  width: min(720px, calc(100vw - 32px));
+  padding: 12px;
+  border: 1px solid
+    color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 40%, var(--border));
+  border-radius: 24px;
+  background: var(--card);
+  color: var(--primary);
+  text-align: right;
+}
+
+.family-seal-service-heading {
+  padding: 12px 16px;
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.family-seal-service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.family-seal-service-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 70px;
+  padding: 12px;
+  border-radius: 14px;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.family-seal-service-item:focus,
+.family-seal-service-item[data-active="true"] {
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+  color: var(--primary);
+}
+
+.family-seal-service-item > svg {
+  flex: none;
+  color: var(--primary);
+  stroke: currentColor;
+}
+
+.family-seal-service-item > div {
+  min-width: 0;
+}
+
+.family-seal-service-item span {
+  display: block;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.family-seal-service-item small {
+  display: block;
+  margin-top: 4px;
+  color: color-mix(in srgb, var(--primary) 75%, var(--foreground));
+  font-size: 10px;
+}

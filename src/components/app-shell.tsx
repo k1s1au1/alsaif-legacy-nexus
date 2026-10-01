@@ -47,6 +47,8 @@ import { useFcm } from "@/hooks/use-fcm";
 import { useAppPermissions } from "@/hooks/use-app-permissions";
 import { DynamicIsland } from "@/components/dynamic-island";
 import { LiveClock } from "@/components/dashboard/live-clock";
+import { FamilySealHeader, type FamilySealService } from "@/components/family-seal-header";
+import { isFamilySealViewport } from "@/lib/family-header-viewport";
 import { BiometricGate } from "@/components/biometric-gate";
 import { useProfile } from "@/hooks/use-dashboard-data";
 import { useUserRole } from "@/hooks/use-user-role";
@@ -262,6 +264,7 @@ function AppShellChrome({
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showMoreHub, setShowMoreHub] = useState(false);
   const [isTabletPortrait, setIsTabletPortrait] = useState(false);
+  const [useFamilySealHeader, setUseFamilySealHeader] = useState(false);
 
   useEffect(() => {
     const syncTabletPortrait = () => {
@@ -277,6 +280,7 @@ function AppShellChrome({
           viewportWidth <= 1600 &&
           viewportHeight > viewportWidth,
       );
+      setUseFamilySealHeader(isFamilySealViewport(viewportWidth, viewportHeight, isTouchDevice));
     };
 
     syncTabletPortrait();
@@ -391,6 +395,22 @@ function AppShellChrome({
     roleAccess.isTechnicalAdmin ||
     roleAccess.sectionHeads.length > 0;
   const isGuest = globalProfile?.role === "ضيف المجلس";
+  const familySealServices: FamilySealService[] = [];
+  const sealServiceKeys = new Set([
+    ...desktopServiceItems.map((service) => service.id),
+    ...bottomNavKeys.filter((key) => !["dashboard", "calendar", "admin", "settings", "profile"].includes(key)),
+  ]);
+  for (const key of sealServiceKeys) {
+    const def = NAV_REGISTRY.find((item) => item.id === key);
+    if (!def || (def.adminOnly && !isAdmin)) continue;
+    if (isGuest && !["dashboard", "profile", "settings", "members"].includes(def.id) && !allowedSections.includes(def.id)) continue;
+    const service = desktopServiceItems.find((item) => item.id === key);
+    familySealServices.push({
+      ...def,
+      label: service?.label || def.label,
+      description: service?.description,
+    });
+  }
 
   return (
     <BiometricGate>
@@ -501,6 +521,7 @@ function AppShellChrome({
       >
         <motion.div
           initial={false}
+          data-family-seal={useFamilySealHeader ? "true" : undefined}
           animate={{
             y: 0,
             scale:
@@ -510,6 +531,25 @@ function AppShellChrome({
             "app-shell-header-wrap z-[80] fixed top-4 inset-x-0 px-4 md:sticky md:top-0 md:inset-x-0 md:px-0 flex justify-center",
           )}
         >
+          {useFamilySealHeader ? (
+            <FamilySealHeader
+              logo={dynamicLogo}
+              title={title}
+              path={path}
+              isAdmin={isAdmin}
+              services={familySealServices}
+              onOpenMenu={() => setSidebarOpen(true)}
+              account={
+                <UserDropdown
+                  safeUser={safeUser}
+                  connectionState={myPresenceState}
+                  signOut={signOut}
+                  logo={dynamicLogo}
+                />
+              }
+              notifications={<NotificationsBell />}
+            />
+          ) : (
           <header
             onClick={() => headerCompact && setHeaderCompact(false)}
             className={cn(
@@ -826,6 +866,7 @@ function AppShellChrome({
               </div>
             )}
           </header>
+          )}
         </motion.div>
 
         <div
