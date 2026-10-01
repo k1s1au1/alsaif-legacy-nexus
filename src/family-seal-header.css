@@ -240,6 +240,12 @@
   }
 }
 
+@media (min-width: 970px) and (max-width: 1600px) and (orientation: landscape) and (pointer: coarse) {
+  .app-shell-main > .app-shell-header-wrap[data-family-seal="true"] {
+    top: 12px !important;
+  }
+}
+
 .family-seal-service-menu {
   width: min(720px, calc(100vw - 32px));
   padding: 12px;
