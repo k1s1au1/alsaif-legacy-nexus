@@ -91,7 +91,7 @@ html body main .council-terrain-scene .council-portal-message {
   font-size: clamp(12px, 1.1cqw, 20px) !important;
 }
 
-/* Align the visible raster base (1228 / 1477), preserving its original aspect ratio and soil. */
+/* Align the visible raster base (1228 / 1477), preserving its original aspect ratio. */
 html body main .council-terrain-scene .council-portal-model {
   z-index: 2;
   top: auto !important;
@@ -105,6 +105,53 @@ html body main .council-terrain-scene .council-portal-model {
   transform: translateY(16.8585%) !important;
 }
 
+/* A feathered terrain-coloured footprint grounds the towers without a sand island. */
+html body main .council-terrain-scene .council-portal-ground {
+  top: 79.2% !important;
+  width: 112% !important;
+}
+
+html body main .council-terrain-scene .council-portal-ground-back {
+  opacity: 0.54;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 38%, transparent 78%);
+  mask-image: radial-gradient(ellipse at center, #000 38%, transparent 78%);
+}
+
+html body main .council-terrain-scene .council-portal-ground-front {
+  opacity: 0.38;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 38%, #000 67%, transparent);
+  mask-image: linear-gradient(to bottom, transparent 38%, #000 67%, transparent);
+}
+
+html body main .council-terrain-scene .council-portal-contact-shadow {
+  z-index: 0;
+  top: 82%;
+  width: 92%;
+  height: 3%;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--council-portal-shadow) 90%, black) 12%,
+    color-mix(in srgb, var(--council-portal-shadow) 65%, transparent) 48%,
+    transparent 78%
+  );
+  filter: blur(0.6cqw);
+  opacity: 0.84;
+}
+
+@media (hover: hover) and (pointer: fine), (min-width: 1200px) {
+  html body main .council-terrain-scene {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  html body main .council-terrain-scene .council-portal-model-visual {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
 @media (max-width: 699px), (max-width: 969.98px) and (orientation: portrait) {
   html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero {
     width: 100vw !important;
@@ -113,9 +160,13 @@ html body main .council-terrain-scene .council-portal-model {
   }
 
   html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene {
-    --terrain-height: clamp(560px, 155cqw, 740px);
-    --terrain-model-height: 64%;
-    --terrain-floor-gap: 14%;
+    --terrain-height: clamp(500px, 136cqw, 660px);
+    --terrain-model-height: 60%;
+    --terrain-floor-gap: 12%;
+  }
+
+  html body main .council-terrain-scene .council-terrain-art > img {
+    object-fit: fill;
   }
 
   html body main .council-terrain-scene .council-portal-copy {
@@ -142,15 +193,15 @@ html body main .council-terrain-scene .council-portal-model {
   }
 
   html body main .council-terrain-scene .council-portal-model {
-    right: auto !important;
-    left: 50% !important;
-    transform: translate(-50%, 16.8585%) !important;
+    right: 9% !important;
+    left: auto !important;
+    transform: translateY(16.8585%) !important;
   }
 }
 
 @media (min-width: 700px) and (max-width: 969.98px) and (orientation: portrait) {
   html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene {
     --terrain-height: clamp(740px, 102cqw, 840px);
-    --terrain-model-height: 68%;
+    --terrain-model-height: 62%;
   }
 }

@@ -1,12 +1,7 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useId } from "react";
 import councilSandyGround from "@/assets/council-sandy-ground-v1.webp";
 import councilTerrainWide from "@/assets/council-terrain-wide-v1.webp";
-import councilTerrainPortrait from "@/assets/council-terrain-portrait-v1.webp";
+import councilTerrainPortrait from "@/assets/council-terrain-portrait-v2.webp";
 import { councilTowers } from "@/assets/najdi-council-towers-v1";
 import "./heritage-portal-3d.css";
 import "@/dashboard-reference-exact.css";
@@ -20,9 +15,6 @@ type HeritagePortal3DProps = {
   welcomeIntro?: boolean;
 };
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
-
 export function HeritagePortal3D({
   greeting,
   name,
@@ -32,90 +24,10 @@ export function HeritagePortal3D({
 }: HeritagePortal3DProps) {
   const colorFilterId = `council-portal-colors-${useId().replace(/:/g, "")}`;
   const terrainFilterId = `${colorFilterId}-terrain`;
-  const rootRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<number | null>(null);
-  const targetRef = useRef({ x: 0, y: 0 });
-  const currentRef = useRef({ x: 0, y: 0 });
-  const reducedMotionRef = useRef(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncPreference = () => {
-      reducedMotionRef.current = media.matches;
-    };
-
-    syncPreference();
-    media.addEventListener?.("change", syncPreference);
-
-    return () => {
-      media.removeEventListener?.("change", syncPreference);
-      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-    };
-  }, []);
-
-  const renderParallax = () => {
-    const root = rootRef.current;
-    if (!root) {
-      frameRef.current = null;
-      return;
-    }
-
-    const current = currentRef.current;
-    const target = targetRef.current;
-    current.x += (target.x - current.x) * 0.1;
-    current.y += (target.y - current.y) * 0.1;
-
-    root.style.setProperty("--portal-x", `${(current.x * 7).toFixed(2)}px`);
-    root.style.setProperty("--portal-y", `${(current.y * 5).toFixed(2)}px`);
-    root.style.setProperty(
-      "--portal-light-x",
-      `${(72 + current.x * 12).toFixed(1)}%`,
-    );
-
-    if (
-      Math.abs(target.x - current.x) < 0.001 &&
-      Math.abs(target.y - current.y) < 0.001
-    ) {
-      frameRef.current = null;
-      return;
-    }
-
-    frameRef.current = requestAnimationFrame(renderParallax);
-  };
-
-  const scheduleParallax = () => {
-    if (frameRef.current === null) {
-      frameRef.current = requestAnimationFrame(renderParallax);
-    }
-  };
-
-  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (
-      welcomeIntro ||
-      reducedMotionRef.current ||
-      (event.pointerType !== "mouse" && event.pointerType !== "pen")
-    ) {
-      return;
-    }
-
-    const bounds = event.currentTarget.getBoundingClientRect();
-    targetRef.current = {
-      x: clamp(((event.clientX - bounds.left) / bounds.width - 0.5) * 2, -1, 1),
-      y: clamp(((event.clientY - bounds.top) / bounds.height - 0.5) * 2, -1, 1),
-    };
-    event.currentTarget.dataset.interacting = "true";
-    scheduleParallax();
-  };
-
-  const resetParallax = () => {
-    targetRef.current = { x: 0, y: 0 };
-    if (rootRef.current) rootRef.current.dataset.interacting = "false";
-    scheduleParallax();
-  };
+  const groundFilterId = `${colorFilterId}-ground`;
 
   return (
     <div
-      ref={rootRef}
       className={[
         "heritage-portal-3d",
         "heritage-pavilion-reference",
@@ -124,7 +36,6 @@ export function HeritagePortal3D({
       ]
         .filter(Boolean)
         .join(" ")}
-      data-interacting="false"
       dir="rtl"
       role="img"
       aria-label={[
@@ -134,8 +45,6 @@ export function HeritagePortal3D({
         "مجلس السيف",
         "تأسس عام ١٤٤٨ هجري",
       ].join(". ")}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={resetParallax}
     >
       <svg
         className="council-terrain-definitions"
@@ -186,6 +95,32 @@ export function HeritagePortal3D({
             />
             <feBlend in="terrain-lit-edges" in2="terrain-shading" mode="normal" />
           </filter>
+          <filter
+            id={groundFilterId}
+            x="0%"
+            y="0%"
+            width="100%"
+            height="100%"
+            colorInterpolationFilters="sRGB"
+          >
+            {/* Retain the soil grain and alpha while matching the dark terrain. */}
+            <feComponentTransfer in="SourceGraphic" result="ground-shade">
+              <feFuncR type="linear" slope="0.46" />
+              <feFuncG type="linear" slope="0.46" />
+              <feFuncB type="linear" slope="0.46" />
+            </feComponentTransfer>
+            <feFlood
+              style={{ floodColor: "var(--council-portal-background)" }}
+              result="ground-identity"
+            />
+            <feBlend
+              in="ground-shade"
+              in2="ground-identity"
+              mode="luminosity"
+              result="ground-surface"
+            />
+            <feComposite in="ground-surface" in2="SourceAlpha" operator="in" />
+          </filter>
         </defs>
       </svg>
       <picture className="council-terrain-art" aria-hidden="true">
@@ -226,6 +161,7 @@ export function HeritagePortal3D({
             src={councilSandyGround}
             alt=""
             draggable={false}
+            style={{ filter: `url(#${groundFilterId})` }}
           />
           <svg
             className="council-portal-towers"
@@ -291,6 +227,7 @@ export function HeritagePortal3D({
             src={councilSandyGround}
             alt=""
             draggable={false}
+            style={{ filter: `url(#${groundFilterId})` }}
           />
 
           {welcomeIntro && <span className="council-portal-entry-light" />}
