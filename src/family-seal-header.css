@@ -165,20 +165,22 @@
   }
 
   .family-seal-medallion {
+    position: relative;
+    z-index: 2;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 122px;
     height: 122px;
     min-width: 0;
-    padding: 8px 7px;
-    gap: 3px;
-    border: 1px solid var(--seal-line);
-    border-radius: 50%;
-    background: var(--seal-paper);
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: var(--seal-ink);
-    box-shadow: 0 8px 15px color-mix(in srgb, var(--seal-ink) 10%, transparent);
+    box-shadow: none;
+    transform: translateY(-2px);
   }
 
   .family-seal-logo {
@@ -186,13 +188,16 @@
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 60px;
-    height: 60px;
+    width: 112px;
+    height: 112px;
     overflow: hidden;
     border: 1px solid var(--seal-line);
     border-radius: 50%;
-    background: var(--background);
+    background: var(--seal-paper);
     color: var(--seal-ink);
+    box-shadow:
+      0 8px 18px color-mix(in srgb, var(--seal-ink) 13%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--seal-accent) 10%, transparent);
   }
 
   .family-seal-logo img {
@@ -200,22 +205,31 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    padding: 3px;
+    padding: 2px;
   }
 
   .family-seal-title {
+    position: absolute;
+    top: 114px;
+    left: 50%;
+    width: max-content;
+    transform: translateX(-50%);
     color: var(--seal-ink);
     font-size: 13px;
     font-weight: 800;
-    line-height: 1.2;
+    line-height: 1.15;
     white-space: nowrap;
   }
 
   .family-seal-caption {
+    position: absolute;
+    top: 132px;
+    left: 50%;
     max-width: 94px;
+    transform: translateX(-50%);
     color: var(--seal-ink);
     font-size: 9.5px;
-    line-height: 1.3;
+    line-height: 1.2;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -235,20 +249,20 @@
   .family-seal-medallion {
     width: 112px;
     height: 112px;
-    padding: 7px 5px;
-    gap: 2px;
   }
 
   .family-seal-logo {
-    width: 54px;
-    height: 54px;
+    width: 100px;
+    height: 100px;
   }
 
   .family-seal-title {
+    top: 102px;
     font-size: 12px;
   }
 
   .family-seal-caption {
+    top: 118px;
     font-size: 9px;
   }
 }
