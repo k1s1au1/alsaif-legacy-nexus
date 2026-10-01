@@ -18,10 +18,11 @@ import mobileTabletTripCardCss from "../mobile-tablet-trip-card.css?url";
 import mobileTabletTaskCardCss from "../mobile-tablet-task-card.css?url";
 import dashboardNewsEditorialCss from "../dashboard-news-editorial.css?url";
 import mobileFamilyServicesDockFixCss from "../mobile-family-services-dock-fix.css?url";
+import themePersonalizationCss from "../theme-personalization.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
-import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
+import { applyThemePreference, parseThemePreference } from "@/lib/theme-preferences";
 import { APP_FONT_STYLESHEET_URL, restoreAppTypography } from "@/lib/typography";
 import { DesktopSidebarQuickAccess } from "@/components/desktop-sidebar-quick-access";
 import { DeviceOrientationGuard } from "@/components/device-orientation-guard";
@@ -31,28 +32,27 @@ import { OfflineStatus } from "@/components/offline-status";
 
 function NotFoundComponent(){return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><h1 className="text-7xl font-bold text-gold-primary">404</h1><h2 className="mt-4 text-xl font-semibold text-foreground">الصفحة غير موجودة</h2><p className="mt-2 text-sm text-muted-foreground">الصفحة التي تبحث عنها غير موجودة أو تم نقلها.</p><div className="mt-6"><Link to="/" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90">الرئيسية</Link></div></div></div>}
 function ErrorComponent({error,reset}:{error:unknown;reset:()=>void}){const normalizedError=error instanceof Error?error:new Error(String(error));console.error(normalizedError);const router=useRouter();useEffect(()=>{reportLovableError(normalizedError,{boundary:"tanstack_root_error_component"})},[normalizedError]);return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><h1 className="text-xl font-semibold tracking-tight text-foreground">حدث خطأ غير متوقع</h1><p className="mt-2 text-sm text-muted-foreground">يمكنك المحاولة مرة أخرى أو العودة للصفحة الرئيسية.</p><div className="mt-6 flex flex-wrap justify-center gap-2"><button onClick={()=>{router.invalidate();reset()}} className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">إعادة المحاولة</button><a href="/" className="inline-flex items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent">الرئيسية</a></div></div></div>}
-export const Route=createRootRouteWithContext<{queryClient:QueryClient}>()({head:()=>({meta:[{charSet:"utf-8"},{name:"viewport",content:"width=device-width, initial-scale=1, viewport-fit=cover"},{title:"السيف — Alsaif"},{name:"description",content:"السيف — منصة العائلة الخاصة للتواصل والتنظيم وحفظ الإرث. Private family & community headquarters."},{name:"theme-color",content:"#0F5A3A"},{property:"og:title",content:"السيف — Alsaif"},{property:"og:description",content:"نصل العائلة، نحفظ الإرث، نبني المجتمع."},{property:"og:type",content:"website"},{name:"apple-mobile-web-app-capable",content:"yes"},{name:"apple-mobile-web-app-status-bar-style",content:"black-translucent"},{name:"apple-mobile-web-app-title",content:"السيف"}],links:[{rel:"stylesheet",href:appCss},{rel:"stylesheet",href:mobileTabletHeroCss},{rel:"stylesheet",href:mobileTabletFloatingHeaderCss},{rel:"stylesheet",href:mobileTabletHubRedesignCss},{rel:"stylesheet",href:mobileTabletHeritageFixCss},{rel:"stylesheet",href:mobileTabletIdentityTonesCss},{rel:"stylesheet",href:mobileTabletHeroReferenceFixCss},{rel:"stylesheet",href:desktopDashboardCss},{rel:"stylesheet",href:tabletDashboardPolishCss},{rel:"stylesheet",href:desktopSidebarCss},{rel:"stylesheet",href:dashboardPortalCss},{rel:"stylesheet",href:dashboardCardsIconsCss},{rel:"stylesheet",href:ipadShellCss},{rel:"stylesheet",href:mobileTabletTripCardCss},{rel:"stylesheet",href:mobileTabletTaskCardCss},{rel:"stylesheet",href:dashboardNewsEditorialCss},{rel:"stylesheet",href:mobileFamilyServicesDockFixCss},{rel:"manifest",href:"/manifest.json"},{rel:"apple-touch-icon",href:"/logo-home.png"},{rel:"preconnect",href:"https://fonts.googleapis.com"},{rel:"preconnect",href:"https://fonts.gstatic.com",crossOrigin:""},{rel:"stylesheet",href:APP_FONT_STYLESHEET_URL}]}),shellComponent:RootShell,component:RootComponent,notFoundComponent:NotFoundComponent,errorComponent:ErrorComponent});
+export const Route=createRootRouteWithContext<{queryClient:QueryClient}>()({head:()=>({meta:[{charSet:"utf-8"},{name:"viewport",content:"width=device-width, initial-scale=1, viewport-fit=cover"},{title:"السيف — Alsaif"},{name:"description",content:"السيف — منصة العائلة الخاصة للتواصل والتنظيم وحفظ الإرث. Private family & community headquarters."},{name:"theme-color",content:"#0F5A3A"},{property:"og:title",content:"السيف — Alsaif"},{property:"og:description",content:"نصل العائلة، نحفظ الإرث، نبني المجتمع."},{property:"og:type",content:"website"},{name:"apple-mobile-web-app-capable",content:"yes"},{name:"apple-mobile-web-app-status-bar-style",content:"black-translucent"},{name:"apple-mobile-web-app-title",content:"السيف"}],links:[{rel:"stylesheet",href:appCss},{rel:"stylesheet",href:mobileTabletHeroCss},{rel:"stylesheet",href:mobileTabletFloatingHeaderCss},{rel:"stylesheet",href:mobileTabletHubRedesignCss},{rel:"stylesheet",href:mobileTabletHeritageFixCss},{rel:"stylesheet",href:mobileTabletIdentityTonesCss},{rel:"stylesheet",href:mobileTabletHeroReferenceFixCss},{rel:"stylesheet",href:desktopDashboardCss},{rel:"stylesheet",href:tabletDashboardPolishCss},{rel:"stylesheet",href:desktopSidebarCss},{rel:"stylesheet",href:dashboardPortalCss},{rel:"stylesheet",href:dashboardCardsIconsCss},{rel:"stylesheet",href:ipadShellCss},{rel:"stylesheet",href:mobileTabletTripCardCss},{rel:"stylesheet",href:mobileTabletTaskCardCss},{rel:"stylesheet",href:dashboardNewsEditorialCss},{rel:"stylesheet",href:mobileFamilyServicesDockFixCss},{rel:"stylesheet",href:themePersonalizationCss},{rel:"manifest",href:"/manifest.json"},{rel:"apple-touch-icon",href:"/logo-home.png"},{rel:"preconnect",href:"https://fonts.googleapis.com"},{rel:"preconnect",href:"https://fonts.gstatic.com",crossOrigin:""},{rel:"stylesheet",href:APP_FONT_STYLESHEET_URL}]}),shellComponent:RootShell,component:RootComponent,notFoundComponent:NotFoundComponent,errorComponent:ErrorComponent});
 function RootComponent(){return <Outlet/>}
 function RootShell({children}:Readonly<{children:ReactNode}>){
   const queryClient=new QueryClient({defaultOptions:{queries:{networkMode:"offlineFirst",refetchOnReconnect:true,retry:1}}});
   useEffect(()=>{
     restoreAppTypography();
-    const applyById=(id:string|null)=>{
-      const theme=THEME_COLORS.find(t=>t.id===id)||THEME_COLORS[0];
-      applyThemeColors(theme);
+    const applyStoredPreference=(value:string|null)=>{
+      applyThemePreference(parseThemePreference(value));
     };
     // Apply the saved identity color immediately (same key the settings page writes)
-    const localId=localStorage.getItem("app-theme-color-id")||localStorage.getItem("theme-color");
-    applyById(localId);
+    const localPreference=localStorage.getItem("app-theme-color-id")||localStorage.getItem("theme-color");
+    applyStoredPreference(localPreference);
     // Then sync from the profile so the choice follows the user across devices
     const syncTheme=async()=>{
       try{
         const{data:{user}}=await supabase.auth.getUser();
         if(!user)return;
         const{data}=await supabase.from("profiles").select("theme_color").eq("id",user.id).maybeSingle();
-        if(data?.theme_color&&data.theme_color!==localId){
+        if(data?.theme_color&&data.theme_color!==localPreference){
           localStorage.setItem("app-theme-color-id",data.theme_color);
-          applyById(data.theme_color);
+          applyStoredPreference(data.theme_color);
         }
       }catch(e){console.warn("Theme sync failed",e)}
     };

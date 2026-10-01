@@ -1,0 +1,45 @@
+/* Advanced color preferences only. Preset identities keep their existing styling. */
+html[data-theme-color-mode="custom"] .text-primary {
+  color: var(--identity-text) !important;
+}
+
+html[data-theme-color-mode="custom"] .family-seal-header {
+  --seal-ink: var(--identity-text) !important;
+}
+
+html[data-theme-color-mode="custom"] .family-seal-header svg,
+html[data-theme-color-mode="custom"] .settings-page .settings-section-nav svg,
+html[data-theme-color-mode="custom"] .settings-page .settings-identity-card svg,
+html[data-theme-color-mode="custom"] .desktop-sidebar-quick-access svg {
+  color: var(--identity-icon) !important;
+}
+
+html[data-theme-color-mode="custom"] .app-shell-header svg,
+html[data-theme-color-mode="custom"] .app-shell-bottom-dock svg,
+html[data-theme-color-mode="custom"] .integrated-hub .hub-tabs svg {
+  color: var(--identity-icon-on-nav) !important;
+}
+
+html[data-theme-color-mode="custom"] .app-shell-header :where(.text-white, .text-primary),
+html[data-theme-color-mode="custom"] .app-shell-bottom-dock :where(a, button, span),
+html[data-theme-color-mode="custom"] .integrated-hub .hub-tabs button {
+  color: var(--identity-text-on-nav) !important;
+}
+
+html[data-theme-color-mode="custom"] .family-service-icon {
+  color: var(--primary-foreground) !important;
+  background: var(--identity-icon) !important;
+}
+
+html[data-theme-color-mode="custom"] .family-service-label,
+html[data-theme-color-mode="custom"] .settings-nav-title span,
+html[data-theme-color-mode="custom"] .settings-section-nav button:not(.is-active),
+html[data-theme-color-mode="custom"] .settings-page .settings-panel h3,
+html[data-theme-color-mode="custom"] .settings-page .settings-panel h4 {
+  color: var(--identity-text) !important;
+}
+
+html[data-theme-color-mode="custom"] .desktop-sidebar-quick-access-icon {
+  color: var(--primary-foreground) !important;
+  background: var(--identity-icon) !important;
+}

@@ -9,7 +9,11 @@ import { useProfile } from "@/hooks/use-dashboard-data";
 import { useTermsReady } from "@/components/terms-gate";
 import entrancePortrait from "@/assets/council-entry-portrait-v2.webp";
 import entranceLandscape from "@/assets/council-entry-landscape-v2.webp";
-import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
+import {
+  applyThemePreference,
+  parseThemePreference,
+  serializeThemePreference,
+} from "@/lib/theme-preferences";
 import { consumeLoginWelcome, readLoginWelcome } from "@/lib/login-welcome";
 import "./login-welcome.css";
 
@@ -38,11 +42,11 @@ export function LoginWelcome({ user }: { user: User }) {
           .eq("id", user.id)
           .maybeSingle();
         if (!active) return;
-        const identity = THEME_COLORS.find((color) => color.id === data?.theme_color);
-        if (identity) {
-          applyThemeColors(identity);
+        if (data?.theme_color) {
+          const preference = parseThemePreference(data.theme_color);
+          applyThemePreference(preference);
           try {
-            localStorage.setItem("app-theme-color-id", identity.id);
+            localStorage.setItem("app-theme-color-id", serializeThemePreference(preference));
           } catch {
             // The current identity still applies without browser storage.
           }
@@ -133,17 +137,24 @@ export function LoginWelcome({ user }: { user: User }) {
   if (artReady === "failed") return <BriefLoginWelcome />;
 
   return (
-    <Dialog.Root open={visible} onOpenChange={(open) => {
-      if (!open) {
-        dismissed.current = true;
-        setVisible(false);
-      }
-    }}>
+    <Dialog.Root
+      open={visible}
+      onOpenChange={(open) => {
+        if (!open) {
+          dismissed.current = true;
+          setVisible(false);
+        }
+      }}
+    >
       <Dialog.Portal>
         <Dialog.Content className="login-welcome-intro" dir="rtl">
           <Dialog.Title className="sr-only">أهلًا بك في مجلس السيف</Dialog.Title>
-          <Dialog.Description className="sr-only">تفتح بوابة المجلس لتعبر منها إلى الرئيسية.</Dialog.Description>
-          <Dialog.Close className="login-welcome-skip" type="button">تخطي</Dialog.Close>
+          <Dialog.Description className="sr-only">
+            تفتح بوابة المجلس لتعبر منها إلى الرئيسية.
+          </Dialog.Description>
+          <Dialog.Close className="login-welcome-skip" type="button">
+            تخطي
+          </Dialog.Close>
           <CouncilEntryScene />
         </Dialog.Content>
       </Dialog.Portal>
@@ -165,8 +176,12 @@ function CouncilEntryScene() {
             <img src={entrancePortrait} alt="" />
           </picture>
           <div className="council-entry-gate">
-            <span className="council-entry-door council-entry-door-left"><span /></span>
-            <span className="council-entry-door council-entry-door-right"><span /></span>
+            <span className="council-entry-door council-entry-door-left">
+              <span />
+            </span>
+            <span className="council-entry-door council-entry-door-right">
+              <span />
+            </span>
             <span className="council-entry-door-seam" />
           </div>
         </div>

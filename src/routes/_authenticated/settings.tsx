@@ -17,7 +17,6 @@ import {
   Plus,
   Minus,
   ImagePlus,
-  Star,
   Fingerprint,
   Accessibility,
 } from "lucide-react";
@@ -27,21 +26,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { BiometricAuth } from "@/lib/native-bridge";
 import { setupPushNotifications } from "@/lib/pushNotifications";
-import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
+import { THEME_COLORS } from "@/lib/themes";
+import {
+  applyThemePreference,
+  getThemePreferenceBaseId,
+  parseThemePreference,
+  serializeThemePreference,
+  type ThemePreference,
+} from "@/lib/theme-preferences";
 import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
 import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { APP_FONTS as FONTS, applyAppFont } from "@/lib/typography";
+import { ThemeCustomizationDialog } from "@/components/theme-customization-dialog";
 import "@/settings-responsive.css";
 
-
-
 type SettingsSectionId =
-  | "appearance"
-  | "accessibility"
-  | "typography"
-  | "notifications"
-  | "security"
-  | "brand";
+  "appearance" | "accessibility" | "typography" | "notifications" | "security" | "brand";
 
 const SETTINGS_SECTIONS: {
   id: SettingsSectionId;
@@ -70,7 +70,13 @@ function SettingsPage() {
   const [font, setFont] = useState("Tajawal");
   const [fontStyle, setFontStyle] = useState<"modern" | "royal">("modern");
   const [fontScale, setFontScale] = useState(1);
-  const [themeColor, setThemeColor] = useState("emerald");
+  const [themePreference, setThemePreference] = useState<ThemePreference>(() =>
+    parseThemePreference(
+      typeof window === "undefined"
+        ? null
+        : localStorage.getItem("app-theme-color-id") || localStorage.getItem("theme-color"),
+    ),
+  );
   const [isNative, setIsNative] = useState(() => Capacitor.isNativePlatform());
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
@@ -164,12 +170,11 @@ function SettingsPage() {
       applyFontStyle(savedStyle);
     }
 
-    const savedColor = localStorage.getItem("app-theme-color-id");
-    if (savedColor) {
-      setThemeColor(savedColor);
-      const colorObj = THEME_COLORS.find((c) => c.id === savedColor);
-      if (colorObj) applyThemeColors(colorObj);
-    }
+    const savedColor =
+      localStorage.getItem("app-theme-color-id") || localStorage.getItem("theme-color");
+    const savedPreference = parseThemePreference(savedColor);
+    setThemePreference(savedPreference);
+    applyThemePreference(savedPreference);
 
     const win = window as any;
     if (win.Capacitor?.isNativePlatform()) {
@@ -184,9 +189,10 @@ function SettingsPage() {
       (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
     root.classList.toggle("dark", isDark);
 
-    const savedColor = localStorage.getItem("app-theme-color-id") || "emerald";
-    const colorObj = THEME_COLORS.find((c) => c.id === savedColor);
-    if (colorObj) applyThemeColors(colorObj);
+    const savedPreference = parseThemePreference(
+      localStorage.getItem("app-theme-color-id") || localStorage.getItem("theme-color"),
+    );
+    applyThemePreference(savedPreference);
   };
 
   const applyFont = (fontFamily: string) => {
@@ -229,13 +235,17 @@ function SettingsPage() {
     setShowFontPicker(false);
   };
 
-  const handleThemeColorChange = (colorId: string) => {
-    const selected = THEME_COLORS.find((c) => c.id === colorId);
-    if (!selected) return;
-    setThemeColor(colorId);
-    localStorage.setItem("app-theme-color-id", colorId);
-    applyThemeColors(selected);
-    toast.success(`تم تفعيل ${selected.name}`);
+  const handleThemePreferenceChange = (nextPreference: ThemePreference) => {
+    const storedPreference = serializeThemePreference(nextPreference);
+    const baseTheme =
+      THEME_COLORS.find((color) => color.id === getThemePreferenceBaseId(nextPreference)) ||
+      THEME_COLORS[0];
+    setThemePreference(nextPreference);
+    localStorage.setItem("app-theme-color-id", storedPreference);
+    applyThemePreference(nextPreference);
+    toast.success(
+      nextPreference.mode === "custom" ? "تم حفظ تخصيص ألوانك" : `تم تفعيل ${baseTheme.name}`,
+    );
     setShowColorPicker(false);
     // Persist to the profile so the choice syncs across devices/sessions
     void (async () => {
@@ -244,7 +254,10 @@ function SettingsPage() {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          await supabase.from("profiles").update({ theme_color: colorId }).eq("id", user.id);
+          await supabase
+            .from("profiles")
+            .update({ theme_color: storedPreference })
+            .eq("id", user.id);
         }
       } catch {
         // Local choice already applied; profile sync is best-effort
@@ -321,7 +334,12 @@ function SettingsPage() {
     }
   };
 
-  const currentThemeObj = THEME_COLORS.find((c) => c.id === themeColor) || THEME_COLORS[0];
+  const currentThemeObj =
+    THEME_COLORS.find((c) => c.id === getThemePreferenceBaseId(themePreference)) || THEME_COLORS[0];
+  const currentThemeLabel =
+    themePreference.mode === "custom"
+      ? `تخصيص شخصي · أساس ${currentThemeObj.name}`
+      : currentThemeObj.name;
   const currentFontObj = FONTS.find((f) => f.id === font) || FONTS[0];
   const visibleSettingsSections = SETTINGS_SECTIONS.filter(
     (section) => (!section.nativeOnly || isNative) && (!section.adminOnly || canCustomizeBg),
@@ -338,7 +356,11 @@ function SettingsPage() {
     if (!activeSectionIsAvailable) {
       setActiveSection("appearance");
       if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#appearance`);
+        window.history.replaceState(
+          null,
+          "",
+          `${window.location.pathname}${window.location.search}#appearance`,
+        );
       }
     }
   }, [activeSection, isNative, canCustomizeBg]);
@@ -393,7 +415,8 @@ function SettingsPage() {
           );
         }
 
-        const { isSupported, getMessaging, getToken, deleteToken } = await import("firebase/messaging");
+        const { isSupported, getMessaging, getToken, deleteToken } =
+          await import("firebase/messaging");
         const { initializeApp, getApps } = await import("firebase/app");
         const { FIREBASE_CONFIG, FCM_VAPID_KEY } = await import("@/lib/fcm-config");
 
@@ -418,10 +441,12 @@ function SettingsPage() {
         if (token) {
           const { data: auth } = await supabase.auth.getUser();
           if (auth.user) {
-            const { error: tokenError } = await supabase.from("push_tokens").upsert(
-              { user_id: auth.user.id, token, platform: "web", is_active: true },
-              { onConflict: "user_id,token" }
-            );
+            const { error: tokenError } = await supabase
+              .from("push_tokens")
+              .upsert(
+                { user_id: auth.user.id, token, platform: "web", is_active: true },
+                { onConflict: "user_id,token" },
+              );
             if (tokenError) throw new Error(`تعذر حفظ تسجيل الجهاز: ${tokenError.message}`);
           }
         }
@@ -474,12 +499,12 @@ function SettingsPage() {
               <i
                 aria-hidden="true"
                 style={{
-                  background: `linear-gradient(135deg, ${currentThemeObj.primary}, ${currentThemeObj.secondary})`,
+                  backgroundColor: currentThemeObj.primary,
                 }}
               />
               <span>
                 <small>الهوية الحالية</small>
-                <b>{currentThemeObj.name}</b>
+                <b>{currentThemeLabel}</b>
               </span>
             </div>
           </div>
@@ -519,459 +544,488 @@ function SettingsPage() {
           </nav>
 
           <div className="settings-sections">
-        {activeSection === "appearance" && (
-        <section
-          id="appearance"
-          role="tabpanel"
-          aria-labelledby="settings-tab-appearance"
-          tabIndex={0}
-          className="settings-panel space-y-6 animate-fade-up"
-        >
-          <div className="flex items-center gap-4">
-            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-              مظهر المنصة
-            </h3>
-            <div className="h-px flex-1 bg-border/60" />
-          </div>
-
-          <div className="settings-theme-grid grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ThemeCard
-              active={darkMode === "light"}
-              onClick={() => handleThemeChange("light")}
-              label="فاتح"
-              icon={<Sun />}
-            />
-            <ThemeCard
-              active={darkMode === "dark"}
-              onClick={() => handleThemeChange("dark")}
-              label="داكن"
-              icon={<Moon />}
-            />
-            <ThemeCard
-              active={darkMode === "system"}
-              onClick={() => handleThemeChange("system")}
-              label="تلقائي"
-              icon={<Smartphone />}
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowColorPicker(true)}
-            className="settings-identity-card w-full card-surface p-5 flex items-center justify-between gap-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-xl"
-          >
-            <div className="flex items-center gap-4 min-w-0">
-              <div
-                className="size-12 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-lg"
-                style={{ background: `linear-gradient(135deg, ${currentThemeObj.primary}, ${currentThemeObj.secondary})` }}
+            {activeSection === "appearance" && (
+              <section
+                id="appearance"
+                role="tabpanel"
+                aria-labelledby="settings-tab-appearance"
+                tabIndex={0}
+                className="settings-panel space-y-6 animate-fade-up"
               >
-                <Palette className="size-6" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-black text-primary">ألوان الهوية</p>
-                <p className="text-xs text-muted-foreground mt-1 truncate">{currentThemeObj.name}</p>
-              </div>
-            </div>
-            <span className="btn-gold px-5 py-3 rounded-xl font-black text-xs shrink-0">تغيير</span>
-          </button>
-        </section>
-        )}
-
-        {activeSection === "accessibility" && (
-        <section
-          id="accessibility"
-          role="tabpanel"
-          aria-labelledby="settings-tab-accessibility"
-          tabIndex={0}
-          className="settings-panel space-y-6 animate-fade-up"
-        >
-          <div className="flex items-center gap-4">
-            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-              سهولة الاستخدام
-            </h3>
-            <div className="h-px flex-1 bg-border/60" />
-          </div>
-
-          <div className="settings-switch-card card-surface p-6 md:p-8 space-y-7">
-            <div className="flex items-center justify-between gap-5">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="size-14 shrink-0 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
-                  <Accessibility className="size-7" />
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
+                    مظهر المنصة
+                  </h3>
+                  <div className="h-px flex-1 bg-border/60" />
                 </div>
-                <div className="min-w-0">
-                  <h4 className="text-lg md:text-xl font-black text-primary">الوضع المبسّط</h4>
-                  <p className="mt-1 text-xs md:text-sm leading-relaxed font-bold text-muted-foreground">
-                    واجهة رئيسية أوضح بخط أكبر وأزرار أسهل وأهم الخدمات فقط.
-                  </p>
-                </div>
-              </div>
 
-              <button
-                type="button"
-                role="switch"
-                aria-checked={simpleMode}
-                aria-label={simpleMode ? "إيقاف الوضع المبسّط" : "تفعيل الوضع المبسّط"}
-                onClick={() => {
-                  const enabled = !simpleMode;
-                  setSimpleMode(enabled);
-                  toast.success(enabled ? "تم تفعيل الوضع المبسّط" : "تم الرجوع إلى الوضع العادي");
-                }}
-                className={cn(
-                  "relative h-9 w-16 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-primary/15",
-                  simpleMode ? "bg-primary" : "bg-muted",
-                )}
-              >
-                <span
-                  className={cn(
-                    "absolute top-1 right-1 size-7 rounded-full bg-white shadow-md transition-transform duration-300",
-                    simpleMode ? "-translate-x-7" : "translate-x-0",
-                  )}
-                />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-border/50 pt-6">
-              {[
-                "خطوط أكبر وأكثر وضوحًا",
-                "أزرار واسعة وسهلة اللمس",
-                "أربع خدمات أساسية فقط",
-              ].map((feature) => (
-                <div
-                  key={feature}
-                  className="min-h-20 flex items-center gap-3 rounded-2xl bg-primary/5 border border-primary/10 p-4"
-                >
-                  <span className="size-8 shrink-0 rounded-full bg-primary text-white flex items-center justify-center">
-                    <Check className="size-4" strokeWidth={3} />
-                  </span>
-                  <b className="text-sm leading-relaxed text-primary">{feature}</b>
-                </div>
-              ))}
-            </div>
-
-            <p className="text-xs font-bold leading-relaxed text-muted-foreground">
-              يتغير ترتيب الصفحة الرئيسية فقط، وتبقى بقية الصفحات والهيدر وشريط التنقل كما هي.
-            </p>
-          </div>
-        </section>
-        )}
-
-        {activeSection === "typography" && (
-        <section
-          id="typography"
-          role="tabpanel"
-          aria-labelledby="settings-tab-typography"
-          tabIndex={0}
-          className="settings-panel space-y-6 animate-fade-up"
-        >
-          <div className="flex items-center gap-4">
-            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-              النمط والخطوط
-            </h3>
-            <div className="h-px flex-1 bg-border/60" />
-          </div>
-
-          <div className="settings-control-card card-surface p-8 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-gold-primary/10 flex items-center justify-center text-gold-primary">
-                    <Type className="size-5" />
-                  </div>
-                  <h4 className="text-lg font-black text-primary">نمط الكتابة العام</h4>
-                </div>
-                <div className="flex gap-2 p-1 bg-muted/40 rounded-2xl border border-border/40">
-                  <button
-                    onClick={() => handleFontStyleChange("modern")}
-                    className={cn(
-                      "flex-1 py-3 rounded-xl font-black text-xs transition-all",
-                      fontStyle === "modern"
-                        ? "bg-primary text-white shadow-lg"
-                        : "text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    عصري
-                  </button>
-                  <button
-                    onClick={() => handleFontStyleChange("royal")}
-                    className={cn(
-                      "flex-1 py-3 rounded-xl font-black text-xs transition-all",
-                      fontStyle === "royal"
-                        ? "bg-gold-primary text-white shadow-lg"
-                        : "text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    ملكي (مخطوطة)
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                      <Languages className="size-5" />
-                    </div>
-                    <h4 className="text-lg font-black text-primary">اختيار الخط المخصص</h4>
-                  </div>
-                  <button
-                    onClick={() => setShowFontPicker(true)}
-                    className="text-[10px] font-black text-gold-primary uppercase tracking-widest hover:underline"
-                  >
-                    تغيير
-                  </button>
-                </div>
-                <div className="p-4 rounded-2xl bg-muted/30 border border-border/60">
-                  <p className="text-sm font-bold text-primary">{currentFontObj.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{currentFontObj.desc}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-6 border-t border-border/40">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                    <Type className="size-5" />
-                  </div>
-                  <div className="text-right">
-                    <h4 className="text-lg font-black text-primary">تكبير الخطوط</h4>
-                    <p className="text-[10px] text-muted-foreground font-bold">
-                      تحكم في حجم نصوص المنصة بالكامل
-                    </p>
-                  </div>
-                </div>
-                <div className="px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-primary font-black text-xs">
-                  {Math.round(fontScale * 100)}%
-                </div>
-              </div>
-
-              <div className="flex items-center gap-6">
-                <button
-                  onClick={() => handleFontScaleChange(Math.max(0.8, fontScale - 0.05))}
-                  className="size-12 rounded-2xl bg-muted flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90"
-                >
-                  <Minus size={20} strokeWidth={3} />
-                </button>
-
-                <div className="flex-1 px-2">
-                  <input
-                    type="range"
-                    min="0.8"
-                    max="1.5"
-                    step="0.05"
-                    value={fontScale}
-                    onChange={(e) => handleFontScaleChange(parseFloat(e.target.value))}
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                <div className="settings-theme-grid grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <ThemeCard
+                    active={darkMode === "light"}
+                    onClick={() => handleThemeChange("light")}
+                    label="فاتح"
+                    icon={<Sun />}
                   />
-                  <div className="flex justify-between mt-2 px-1 text-[11px] font-black text-muted-foreground uppercase tracking-widest">
-                    <span>افتراضي</span>
-                    <span>كبير</span>
-                    <span>ضخم</span>
-                  </div>
+                  <ThemeCard
+                    active={darkMode === "dark"}
+                    onClick={() => handleThemeChange("dark")}
+                    label="داكن"
+                    icon={<Moon />}
+                  />
+                  <ThemeCard
+                    active={darkMode === "system"}
+                    onClick={() => handleThemeChange("system")}
+                    label="تلقائي"
+                    icon={<Smartphone />}
+                  />
                 </div>
 
                 <button
-                  onClick={() => handleFontScaleChange(Math.min(1.5, fontScale + 0.05))}
-                  className="size-12 rounded-2xl bg-primary flex items-center justify-center text-white hover:brightness-110 transition-all active:scale-90 shadow-lg shadow-primary/20"
+                  type="button"
+                  onClick={() => setShowColorPicker(true)}
+                  className="settings-identity-card w-full card-surface p-5 flex items-center justify-between gap-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-xl"
                 >
-                  <Plus size={20} strokeWidth={3} />
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div
+                      className="size-12 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-lg"
+                      style={{
+                        backgroundColor: currentThemeObj.primary,
+                        color: currentThemeObj.foreground,
+                      }}
+                    >
+                      <Palette className="size-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-black text-primary">ألوان الموقع</p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                        {currentThemeLabel}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="btn-gold px-5 py-3 rounded-xl font-black text-xs shrink-0">
+                    تخصيص
+                  </span>
                 </button>
-              </div>
-            </div>
-          </div>
+              </section>
+            )}
 
-          <div className="settings-single-grid grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="settings-shortcuts-card card-surface p-8 space-y-6 group">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-                    شريط التنقل
-                  </p>
-                  <h4 className="text-xl font-black text-primary">تخصيص الاختصارات</h4>
-                </div>
-                <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-lg">
-                  <Smartphone className="size-7" />
-                </div>
-              </div>
-              <button
-                onClick={() => setShowNavPicker(true)}
-                className="w-full btn-gold py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-sm shadow-2xl shadow-gold-primary/20"
+            {activeSection === "accessibility" && (
+              <section
+                id="accessibility"
+                role="tabpanel"
+                aria-labelledby="settings-tab-accessibility"
+                tabIndex={0}
+                className="settings-panel space-y-6 animate-fade-up"
               >
-                <Palette className="size-5" /> تخصيص الشريط السفلي
-              </button>
-            </div>
-          </div>
-        </section>
-        )}
-
-
-        {isNative && activeSection === "security" && (
-          <section
-            id="security"
-            role="tabpanel"
-            aria-labelledby="settings-tab-security"
-            tabIndex={0}
-            className="settings-panel space-y-6 animate-fade-up"
-          >
-            <div className="flex items-center gap-4">
-              <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-                حماية التطبيق
-              </h3>
-              <div className="h-px flex-1 bg-border/60" />
-            </div>
-
-            <div className="settings-switch-card card-surface p-6 flex items-center justify-between gap-5">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="size-12 shrink-0 rounded-2xl bg-gold-primary/10 text-gold-primary flex items-center justify-center">
-                  <Fingerprint className="size-6" />
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
+                    سهولة الاستخدام
+                  </h3>
+                  <div className="h-px flex-1 bg-border/60" />
                 </div>
-                <div className="min-w-0">
-                  <h4 className="text-base font-black text-primary">القفل بالبصمة أو رمز الجهاز</h4>
-                  <p className="mt-1 text-[11px] leading-relaxed font-bold text-muted-foreground">
-                    {biometricsAvailable
-                      ? "يطلب تأكيد هويتك عند فتح التطبيق أو العودة إليه."
-                      : "فعّل البصمة أو رمز قفل الشاشة من إعدادات جهازك أولاً."}
+
+                <div className="settings-switch-card card-surface p-6 md:p-8 space-y-7">
+                  <div className="flex items-center justify-between gap-5">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="size-14 shrink-0 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
+                        <Accessibility className="size-7" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-lg md:text-xl font-black text-primary">
+                          الوضع المبسّط
+                        </h4>
+                        <p className="mt-1 text-xs md:text-sm leading-relaxed font-bold text-muted-foreground">
+                          واجهة رئيسية أوضح بخط أكبر وأزرار أسهل وأهم الخدمات فقط.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={simpleMode}
+                      aria-label={simpleMode ? "إيقاف الوضع المبسّط" : "تفعيل الوضع المبسّط"}
+                      onClick={() => {
+                        const enabled = !simpleMode;
+                        setSimpleMode(enabled);
+                        toast.success(
+                          enabled ? "تم تفعيل الوضع المبسّط" : "تم الرجوع إلى الوضع العادي",
+                        );
+                      }}
+                      className={cn(
+                        "relative h-9 w-16 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-primary/15",
+                        simpleMode ? "bg-primary" : "bg-muted",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "absolute top-1 right-1 size-7 rounded-full bg-white shadow-md transition-transform duration-300",
+                          simpleMode ? "-translate-x-7" : "translate-x-0",
+                        )}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-border/50 pt-6">
+                    {[
+                      "خطوط أكبر وأكثر وضوحًا",
+                      "أزرار واسعة وسهلة اللمس",
+                      "أربع خدمات أساسية فقط",
+                    ].map((feature) => (
+                      <div
+                        key={feature}
+                        className="min-h-20 flex items-center gap-3 rounded-2xl bg-primary/5 border border-primary/10 p-4"
+                      >
+                        <span className="size-8 shrink-0 rounded-full bg-primary text-white flex items-center justify-center">
+                          <Check className="size-4" strokeWidth={3} />
+                        </span>
+                        <b className="text-sm leading-relaxed text-primary">{feature}</b>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-bold leading-relaxed text-muted-foreground">
+                    يتغير ترتيب الصفحة الرئيسية فقط، وتبقى بقية الصفحات والهيدر وشريط التنقل كما هي.
                   </p>
                 </div>
-              </div>
+              </section>
+            )}
 
-              <button
-                type="button"
-                role="switch"
-                aria-checked={biometricEnabled}
-                onClick={handleBiometricChange}
-                disabled={!biometricsAvailable}
-                className={cn(
-                  "relative h-8 w-14 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-45",
-                  biometricEnabled ? "bg-primary" : "bg-muted",
-                )}
+            {activeSection === "typography" && (
+              <section
+                id="typography"
+                role="tabpanel"
+                aria-labelledby="settings-tab-typography"
+                tabIndex={0}
+                className="settings-panel space-y-6 animate-fade-up"
               >
-                <span
-                  className={cn(
-                    "absolute top-1 right-1 size-6 rounded-full bg-white shadow-md transition-transform duration-300",
-                    biometricEnabled ? "-translate-x-6" : "translate-x-0",
-                  )}
-                />
-              </button>
-            </div>
-          </section>
-        )}
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
+                    النمط والخطوط
+                  </h3>
+                  <div className="h-px flex-1 bg-border/60" />
+                </div>
 
-        {activeSection === "notifications" && (
-        <div
-          id="notifications"
-          role="tabpanel"
-          aria-labelledby="settings-tab-notifications"
-          tabIndex={0}
-          className="settings-tab-panel"
-        >
-        <NotificationPreferencesSection />
+                <div className="settings-control-card card-surface p-8 space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-xl bg-gold-primary/10 flex items-center justify-center text-gold-primary">
+                          <Type className="size-5" />
+                        </div>
+                        <h4 className="text-lg font-black text-primary">نمط الكتابة العام</h4>
+                      </div>
+                      <div className="flex gap-2 p-1 bg-muted/40 rounded-2xl border border-border/40">
+                        <button
+                          onClick={() => handleFontStyleChange("modern")}
+                          className={cn(
+                            "flex-1 py-3 rounded-xl font-black text-xs transition-all",
+                            fontStyle === "modern"
+                              ? "bg-primary text-white shadow-lg"
+                              : "text-muted-foreground hover:bg-muted",
+                          )}
+                        >
+                          عصري
+                        </button>
+                        <button
+                          onClick={() => handleFontStyleChange("royal")}
+                          className={cn(
+                            "flex-1 py-3 rounded-xl font-black text-xs transition-all",
+                            fontStyle === "royal"
+                              ? "bg-gold-primary text-white shadow-lg"
+                              : "text-muted-foreground hover:bg-muted",
+                          )}
+                        >
+                          ملكي (مخطوطة)
+                        </button>
+                      </div>
+                    </div>
 
-        <section className="settings-panel settings-panel--notification-test space-y-6 animate-fade-up">
-          <div className="flex items-center gap-4">
-            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-              تجربة الإشعارات ({isNative ? "تطبيق الجوال" : "المتصفح"})
-            </h3>
-            <div className="h-px flex-1 bg-border/60" />
-          </div>
-          <div className="settings-notification-test-card card-surface p-8 space-y-4">
-            <p className="text-sm font-bold text-muted-foreground">
-              إذا لم تكن الإشعارات تصلك، يمكنك محاولة إعادة طلب الإذن يدوياً من هنا.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={handleDeviceLinking}
-                className="flex-1 btn-gold py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-sm shadow-xl"
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                            <Languages className="size-5" />
+                          </div>
+                          <h4 className="text-lg font-black text-primary">اختيار الخط المخصص</h4>
+                        </div>
+                        <button
+                          onClick={() => setShowFontPicker(true)}
+                          className="text-[10px] font-black text-gold-primary uppercase tracking-widest hover:underline"
+                        >
+                          تغيير
+                        </button>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-muted/30 border border-border/60">
+                        <p className="text-sm font-bold text-primary">{currentFontObj.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{currentFontObj.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-border/40">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                          <Type className="size-5" />
+                        </div>
+                        <div className="text-right">
+                          <h4 className="text-lg font-black text-primary">تكبير الخطوط</h4>
+                          <p className="text-[10px] text-muted-foreground font-bold">
+                            تحكم في حجم نصوص المنصة بالكامل
+                          </p>
+                        </div>
+                      </div>
+                      <div className="px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-primary font-black text-xs">
+                        {Math.round(fontScale * 100)}%
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <button
+                        onClick={() => handleFontScaleChange(Math.max(0.8, fontScale - 0.05))}
+                        className="size-12 rounded-2xl bg-muted flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90"
+                      >
+                        <Minus size={20} strokeWidth={3} />
+                      </button>
+
+                      <div className="flex-1 px-2">
+                        <input
+                          type="range"
+                          min="0.8"
+                          max="1.5"
+                          step="0.05"
+                          value={fontScale}
+                          onChange={(e) => handleFontScaleChange(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                        <div className="flex justify-between mt-2 px-1 text-[11px] font-black text-muted-foreground uppercase tracking-widest">
+                          <span>افتراضي</span>
+                          <span>كبير</span>
+                          <span>ضخم</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleFontScaleChange(Math.min(1.5, fontScale + 0.05))}
+                        className="size-12 rounded-2xl bg-primary flex items-center justify-center text-white hover:brightness-110 transition-all active:scale-90 shadow-lg shadow-primary/20"
+                      >
+                        <Plus size={20} strokeWidth={3} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="settings-single-grid grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="settings-shortcuts-card card-surface p-8 space-y-6 group">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
+                          شريط التنقل
+                        </p>
+                        <h4 className="text-xl font-black text-primary">تخصيص الاختصارات</h4>
+                      </div>
+                      <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-lg">
+                        <Smartphone className="size-7" />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowNavPicker(true)}
+                      className="w-full btn-gold py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-sm shadow-2xl shadow-gold-primary/20"
+                    >
+                      <Palette className="size-5" /> تخصيص الشريط السفلي
+                    </button>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {isNative && activeSection === "security" && (
+              <section
+                id="security"
+                role="tabpanel"
+                aria-labelledby="settings-tab-security"
+                tabIndex={0}
+                className="settings-panel space-y-6 animate-fade-up"
               >
-                {isNative ? <Smartphone className="size-5" /> : <Bell className="size-5" />}
-                {isNative ? "إعادة ربط الجوال" : "تفعيل إشعارات المتصفح"}
-              </button>
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
+                    حماية التطبيق
+                  </h3>
+                  <div className="h-px flex-1 bg-border/60" />
+                </div>
 
-              <button
-                onClick={async () => {
-                  const tId = toast.loading("جاري إرسال إشعار تجريبي لجهازك...");
-                  try {
-                    const { data: auth } = await supabase.auth.getUser();
-                    const { data: result, error } = await supabase.functions.invoke("send-push", {
-                      body: {
-                        title: "🔔 تجربة الإشعارات",
-                        body: "هذا إشعار تجريبي من مجلس السيف الرقمي ✨",
-                        user_ids: [auth.user?.id],
-                      }
-                    });
-                    toast.dismiss(tId);
+                <div className="settings-switch-card card-surface p-6 flex items-center justify-between gap-5">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="size-12 shrink-0 rounded-2xl bg-gold-primary/10 text-gold-primary flex items-center justify-center">
+                      <Fingerprint className="size-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-base font-black text-primary">
+                        القفل بالبصمة أو رمز الجهاز
+                      </h4>
+                      <p className="mt-1 text-[11px] leading-relaxed font-bold text-muted-foreground">
+                        {biometricsAvailable
+                          ? "يطلب تأكيد هويتك عند فتح التطبيق أو العودة إليه."
+                          : "فعّل البصمة أو رمز قفل الشاشة من إعدادات جهازك أولاً."}
+                      </p>
+                    </div>
+                  </div>
 
-                    if (error) {
-                      throw new Error(error.message || "فشل الاتصال بالخادم (Edge Function). تأكد من رفع الوظائف البرمجية للمشروع.");
-                    }
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={biometricEnabled}
+                    onClick={handleBiometricChange}
+                    disabled={!biometricsAvailable}
+                    className={cn(
+                      "relative h-8 w-14 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-45",
+                      biometricEnabled ? "bg-primary" : "bg-muted",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-1 right-1 size-6 rounded-full bg-white shadow-md transition-transform duration-300",
+                        biometricEnabled ? "-translate-x-6" : "translate-x-0",
+                      )}
+                    />
+                  </button>
+                </div>
+              </section>
+            )}
 
-                    if (result?.success) {
-                      if (result.sent > 0) {
-                        toast.success("تم قبول الإشعار وإرساله إلى جهازك.");
-                      } else {
-                        toast.error("فشل الإرسال: " + (result.msg || "لم يتم العثور على أجهزة مسجلة لهذا الحساب."));
-                      }
-                    } else {
-                      toast.error("خطأ تقني: " + (result?.error || "فشل إرسال الإشعار. تأكد من إعداد FCM_SERVICE_ACCOUNT في Supabase Dashboard."));
-                    }
-                  } catch (e: any) {
-                    toast.dismiss(tId);
-                    toast.error("خطأ تقني: " + e.message);
-                  }
-                }}
-                className="settings-secondary-action px-8 py-4 rounded-2xl font-black text-sm transition-all"
+            {activeSection === "notifications" && (
+              <div
+                id="notifications"
+                role="tabpanel"
+                aria-labelledby="settings-tab-notifications"
+                tabIndex={0}
+                className="settings-tab-panel"
               >
-                إرسال تجربة
-              </button>
-            </div>
-          </div>
-        </section>
-        </div>
-        )}
+                <NotificationPreferencesSection />
 
-        {canCustomizeBg && activeSection === "brand" && (
-          <section
-            id="brand"
-            role="tabpanel"
-            aria-labelledby="settings-tab-brand"
-            tabIndex={0}
-            className="settings-panel space-y-6 animate-fade-up"
-          >
-            <div className="flex items-center gap-4">
-              <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
-                خلفيات الواجهة
-              </h3>
-              <div className="h-px flex-1 bg-border/60" />
-            </div>
-            <div className="settings-admin-card card-surface p-8 space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="size-12 rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary">
-                  <ImagePlus className="size-6" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-black text-primary">تخصيص الخلفيات</h4>
-                  <p className="text-xs font-bold text-muted-foreground opacity-60">
-                    متاح للمسؤولين التقنيين ورئيس المجلس فقط.
-                  </p>
-                </div>
+                <section className="settings-panel settings-panel--notification-test space-y-6 animate-fade-up">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
+                      تجربة الإشعارات ({isNative ? "تطبيق الجوال" : "المتصفح"})
+                    </h3>
+                    <div className="h-px flex-1 bg-border/60" />
+                  </div>
+                  <div className="settings-notification-test-card card-surface p-8 space-y-4">
+                    <p className="text-sm font-bold text-muted-foreground">
+                      إذا لم تكن الإشعارات تصلك، يمكنك محاولة إعادة طلب الإذن يدوياً من هنا.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={handleDeviceLinking}
+                        className="flex-1 btn-gold py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-sm shadow-xl"
+                      >
+                        {isNative ? <Smartphone className="size-5" /> : <Bell className="size-5" />}
+                        {isNative ? "إعادة ربط الجوال" : "تفعيل إشعارات المتصفح"}
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          const tId = toast.loading("جاري إرسال إشعار تجريبي لجهازك...");
+                          try {
+                            const { data: auth } = await supabase.auth.getUser();
+                            const { data: result, error } = await supabase.functions.invoke(
+                              "send-push",
+                              {
+                                body: {
+                                  title: "🔔 تجربة الإشعارات",
+                                  body: "هذا إشعار تجريبي من مجلس السيف الرقمي ✨",
+                                  user_ids: [auth.user?.id],
+                                },
+                              },
+                            );
+                            toast.dismiss(tId);
+
+                            if (error) {
+                              throw new Error(
+                                error.message ||
+                                  "فشل الاتصال بالخادم (Edge Function). تأكد من رفع الوظائف البرمجية للمشروع.",
+                              );
+                            }
+
+                            if (result?.success) {
+                              if (result.sent > 0) {
+                                toast.success("تم قبول الإشعار وإرساله إلى جهازك.");
+                              } else {
+                                toast.error(
+                                  "فشل الإرسال: " +
+                                    (result.msg || "لم يتم العثور على أجهزة مسجلة لهذا الحساب."),
+                                );
+                              }
+                            } else {
+                              toast.error(
+                                "خطأ تقني: " +
+                                  (result?.error ||
+                                    "فشل إرسال الإشعار. تأكد من إعداد FCM_SERVICE_ACCOUNT في Supabase Dashboard."),
+                              );
+                            }
+                          } catch (e: any) {
+                            toast.dismiss(tId);
+                            toast.error("خطأ تقني: " + e.message);
+                          }
+                        }}
+                        className="settings-secondary-action px-8 py-4 rounded-2xl font-black text-sm transition-all"
+                      >
+                        إرسال تجربة
+                      </button>
+                    </div>
+                  </div>
+                </section>
               </div>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50">
-                    شعار المنصة
-                  </p>
-                  <BackgroundUploader inline settingKey="site_logo" label="تحديث الشعار الرسمي" />
+            )}
+
+            {canCustomizeBg && activeSection === "brand" && (
+              <section
+                id="brand"
+                role="tabpanel"
+                aria-labelledby="settings-tab-brand"
+                tabIndex={0}
+                className="settings-panel space-y-6 animate-fade-up"
+              >
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
+                    خلفيات الواجهة
+                  </h3>
+                  <div className="h-px flex-1 bg-border/60" />
                 </div>
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50">
-                    خلفية صفحة الدخول
-                  </p>
-                  <BackgroundUploader inline settingKey="auth_bg" label="تغيير خلفية الترحيب" />
+                <div className="settings-admin-card card-surface p-8 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="size-12 rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary">
+                      <ImagePlus className="size-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black text-primary">تخصيص الخلفيات</h4>
+                      <p className="text-xs font-bold text-muted-foreground opacity-60">
+                        متاح للمسؤولين التقنيين ورئيس المجلس فقط.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-50">
+                        شعار المنصة
+                      </p>
+                      <BackgroundUploader
+                        inline
+                        settingKey="site_logo"
+                        label="تحديث الشعار الرسمي"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-50">
+                        خلفية صفحة الدخول
+                      </p>
+                      <BackgroundUploader inline settingKey="auth_bg" label="تغيير خلفية الترحيب" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </section>
-        )}
+              </section>
+            )}
           </div>
         </div>
       </div>
@@ -990,8 +1044,12 @@ function SettingsPage() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-2xl font-black text-primary tracking-tight">تخصيص شريط التنقل</h3>
-                  <p className="text-xs font-bold text-muted-foreground mt-1">اختر 3 أيقونات تفضلها للشريط السفلي</p>
+                  <h3 className="text-2xl font-black text-primary tracking-tight">
+                    تخصيص شريط التنقل
+                  </h3>
+                  <p className="text-xs font-bold text-muted-foreground mt-1">
+                    اختر 3 أيقونات تفضلها للشريط السفلي
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowNavPicker(false)}
@@ -1001,7 +1059,7 @@ function SettingsPage() {
                 </button>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[55vh] overflow-y-auto pr-2 custom-scrollbar">
-                {NAV_REGISTRY.filter(n => !n.adminOnly || isAdmin).map((n) => (
+                {NAV_REGISTRY.filter((n) => !n.adminOnly || isAdmin).map((n) => (
                   <button
                     key={n.id}
                     onClick={() => handleNavToggle(n.id)}
@@ -1012,10 +1070,14 @@ function SettingsPage() {
                         : "border-transparent bg-muted/30 hover:bg-muted/50",
                     )}
                   >
-                    <div className={cn(
-                      "size-10 rounded-xl flex items-center justify-center transition-all",
-                      bottomNavKeys.includes(n.id) ? "bg-primary text-white" : "bg-card text-muted-foreground"
-                    )}>
+                    <div
+                      className={cn(
+                        "size-10 rounded-xl flex items-center justify-center transition-all",
+                        bottomNavKeys.includes(n.id)
+                          ? "bg-primary text-white"
+                          : "bg-card text-muted-foreground",
+                      )}
+                    >
                       <n.icon size={20} />
                     </div>
                     <span className="font-black text-[11px] text-primary">{n.label}</span>
@@ -1040,66 +1102,11 @@ function SettingsPage() {
 
       <AnimatePresence>
         {showColorPicker && (
-          <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-            dir="rtl"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="settings-modal card-surface w-full max-w-lg p-8 space-y-8 shadow-2xl rounded-[48px]"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-black text-primary tracking-tight">
-                  ألوان الهوية الفاخرة
-                </h3>
-                <button
-                  onClick={() => setShowColorPicker(false)}
-                  className="size-10 rounded-full bg-muted flex items-center justify-center transition-transform hover:rotate-90"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                {THEME_COLORS.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleThemeColorChange(c.id)}
-                    className={cn(
-                      "p-5 rounded-[32px] border-2 transition-all text-right flex items-center gap-4 group relative",
-                      themeColor === c.id
-                        ? "border-primary bg-primary/5 shadow-inner"
-                        : "border-transparent bg-muted/30 hover:bg-muted/50",
-                    )}
-                  >
-                    <div
-                      className="size-12 rounded-2xl shadow-lg shrink-0 group-hover:scale-110 transition-transform"
-                      style={{
-                        background: `linear-gradient(135deg, ${c.primary}, ${c.secondary})`,
-                      }}
-                    />
-                    <div className="flex-1">
-                      <span className="font-black text-sm block text-primary">{c.name}</span>
-                      {c.isPrimary && (
-                        <span className="text-[11px] font-black text-gold-primary uppercase tracking-widest mt-0.5">
-                          الهوية الأساسية
-                        </span>
-                      )}
-                    </div>
-                    {c.isPrimary && (
-                      <Star className="absolute top-4 left-4 size-4 text-gold-primary fill-gold-primary" />
-                    )}
-                    {themeColor === c.id && (
-                      <div className="absolute top-1/2 left-4 -translate-y-1/2 size-6 rounded-full bg-primary flex items-center justify-center text-white">
-                        <Check size={14} strokeWidth={4} />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </div>
+          <ThemeCustomizationDialog
+            preference={themePreference}
+            onClose={() => setShowColorPicker(false)}
+            onSave={handleThemePreferenceChange}
+          />
         )}
       </AnimatePresence>
 
@@ -1176,7 +1183,6 @@ function ThemeCard({ active, label, icon, onClick }: any) {
   );
 }
 
-
 const NOTIF_OPTIONS: {
   key: "meetings" | "entertainment" | "tasks" | "chat" | "news";
   label: string;
@@ -1232,9 +1238,7 @@ function NotificationPreferencesSection() {
   };
 
   return (
-    <section
-      className="settings-panel settings-panel--notifications space-y-6 animate-fade-up"
-    >
+    <section className="settings-panel settings-panel--notifications space-y-6 animate-fade-up">
       <div className="flex items-center gap-4">
         <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">
           إعدادات الإشعارات
@@ -1283,4 +1287,3 @@ function NotificationPreferencesSection() {
     </section>
   );
 }
-
