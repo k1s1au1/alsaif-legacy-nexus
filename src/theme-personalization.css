@@ -1,3 +1,5 @@
+@import "./mobile-curved-navigation.css";
+
 /* Advanced color preferences only. Preset identities keep their existing styling. */
 html[data-theme-color-mode="custom"] .text-primary {
   color: var(--identity-text) !important;

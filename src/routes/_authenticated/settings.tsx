@@ -34,7 +34,12 @@ import {
   serializeThemePreference,
   type ThemePreference,
 } from "@/lib/theme-preferences";
-import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
+import {
+  NAV_REGISTRY,
+  NavItemKey,
+  DEFAULT_NAV_KEYS,
+  normalizeBottomNavKeys,
+} from "@/lib/navigation-registry";
 import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { APP_FONTS as FONTS, applyAppFont } from "@/lib/typography";
 import { ThemeCustomizationDialog } from "@/components/theme-customization-dialog";
@@ -81,12 +86,13 @@ function SettingsPage() {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [showNavPicker, setShowNavPicker] = useState(false);
+  const [navSlotToEdit, setNavSlotToEdit] = useState<1 | 2>(1);
   const [bottomNavKeys, setBottomNavKeys] = useState<NavItemKey[]>(() => {
     if (typeof window !== "undefined") {
       const cached = localStorage.getItem("bottom_nav_prefs");
       if (cached) {
         try {
-          return JSON.parse(cached);
+          return normalizeBottomNavKeys(JSON.parse(cached));
         } catch {
           return DEFAULT_NAV_KEYS;
         }
@@ -126,7 +132,7 @@ function SettingsPage() {
         .maybeSingle();
 
       if (profile?.bottom_nav_prefs && Array.isArray(profile.bottom_nav_prefs)) {
-        const keys = profile.bottom_nav_prefs as NavItemKey[];
+        const keys = normalizeBottomNavKeys(profile.bottom_nav_prefs);
         setBottomNavKeys(keys);
         localStorage.setItem("bottom_nav_prefs", JSON.stringify(keys));
       }
@@ -304,15 +310,18 @@ function SettingsPage() {
     );
   };
 
-  const handleNavToggle = async (key: NavItemKey) => {
-    let next = [...bottomNavKeys];
-    if (next.includes(key)) {
-      if (next.length <= 1) return toast.error("يجب اختيار عنصر واحد على الأقل");
-      next = next.filter((k) => k !== key);
-    } else {
-      if (next.length >= 3) return toast.error("يمكنك اختيار 3 عناصر كحد أقصى");
-      next.push(key);
+  const handleNavChoice = async (key: NavItemKey) => {
+    if (key === "dashboard") return;
+
+    const previous = normalizeBottomNavKeys(bottomNavKeys);
+    const next = [...previous];
+    const otherSlot = navSlotToEdit === 1 ? 2 : 1;
+
+    if (next[navSlotToEdit] === key) return;
+    if (next[otherSlot] === key) {
+      next[otherSlot] = next[navSlotToEdit];
     }
+    next[navSlotToEdit] = key;
     setBottomNavKeys(next);
 
     const { data: auth } = await supabase.auth.getUser();
@@ -324,12 +333,13 @@ function SettingsPage() {
 
       if (error) {
         console.error("Nav preference update error:", error);
+        setBottomNavKeys(previous);
         toast.error(`تعذر حفظ التفضيلات: ${error.message}`);
       } else {
         localStorage.setItem("bottom_nav_prefs", JSON.stringify(next));
         // Force immediate refresh of the AppShell nav
         queryClient.invalidateQueries({ queryKey: ["profile"] });
-        toast.success("تم تحديث شريط التنقل");
+        toast.success(navSlotToEdit === 1 ? "تم تحديث الخانة الثانية" : "تم تحديث الخانة الرابعة");
       }
     }
   };
@@ -1048,7 +1058,7 @@ function SettingsPage() {
                     تخصيص شريط التنقل
                   </h3>
                   <p className="text-xs font-bold text-muted-foreground mt-1">
-                    اختر 3 أيقونات تفضلها للشريط السفلي
+                    الرئيسية وخدمات العائلة والمزيد ثابتة دائماً؛ خصّص الخانتين الثانية والرابعة فقط
                   </p>
                 </div>
                 <button
@@ -1058,36 +1068,95 @@ function SettingsPage() {
                   <X size={20} />
                 </button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[55vh] overflow-y-auto pr-2 custom-scrollbar">
-                {NAV_REGISTRY.filter((n) => !n.adminOnly || isAdmin).map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => handleNavToggle(n.id)}
-                    className={cn(
-                      "p-4 rounded-[28px] border-2 transition-all flex flex-col items-center gap-3 group relative",
-                      bottomNavKeys.includes(n.id)
-                        ? "border-primary bg-primary/5 shadow-inner"
-                        : "border-transparent bg-muted/30 hover:bg-muted/50",
-                    )}
-                  >
-                    <div
+              <div className="grid grid-cols-5 gap-2 rounded-[26px] border border-primary/10 bg-primary/[0.04] p-3 text-center">
+                {["الرئيسية", bottomNavKeys[1], "خدمات العائلة", bottomNavKeys[2], "المزيد"].map(
+                  (item, index) => {
+                    const def = NAV_REGISTRY.find((entry) => entry.id === item);
+                    const fixed = index === 0 || index === 2 || index === 4;
+                    return (
+                      <div
+                        key={`${item}-${index}`}
+                        className={cn(
+                          "flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-3",
+                          fixed
+                            ? "bg-primary text-white"
+                            : "bg-card text-primary ring-1 ring-primary/10",
+                        )}
+                      >
+                        <span className="truncate text-[9px] font-black">{def?.label || item}</span>
+                        <small className="text-[8px] font-bold opacity-70">
+                          {fixed ? "ثابت" : index === 1 ? "الخانة ٢" : "الخانة ٤"}
+                        </small>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {([1, 2] as const).map((slot) => {
+                  const def = NAV_REGISTRY.find((entry) => entry.id === bottomNavKeys[slot]);
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setNavSlotToEdit(slot)}
                       className={cn(
-                        "size-10 rounded-xl flex items-center justify-center transition-all",
-                        bottomNavKeys.includes(n.id)
-                          ? "bg-primary text-white"
-                          : "bg-card text-muted-foreground",
+                        "rounded-2xl border-2 p-4 text-right transition-all",
+                        navSlotToEdit === slot
+                          ? "border-primary bg-primary/10 shadow-inner"
+                          : "border-border bg-card hover:border-primary/30",
                       )}
                     >
-                      <n.icon size={20} />
-                    </div>
-                    <span className="font-black text-[11px] text-primary">{n.label}</span>
-                    {bottomNavKeys.includes(n.id) && (
-                      <div className="absolute top-2 left-2 size-5 rounded-full bg-primary flex items-center justify-center text-white">
-                        <Check size={10} strokeWidth={4} />
-                      </div>
-                    )}
-                  </button>
-                ))}
+                      <small className="block text-[9px] font-black text-muted-foreground">
+                        {slot === 1 ? "الخانة الثانية" : "الخانة الرابعة"}
+                      </small>
+                      <b className="mt-1 block text-sm text-primary">{def?.label}</b>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[42vh] overflow-y-auto pr-2 custom-scrollbar">
+                {NAV_REGISTRY.filter((n) => n.id !== "dashboard" && (!n.adminOnly || isAdmin)).map(
+                  (n) => {
+                    const selectedSlot =
+                      bottomNavKeys[1] === n.id ? 1 : bottomNavKeys[2] === n.id ? 2 : null;
+                    return (
+                      <button
+                        key={n.id}
+                        onClick={() => handleNavChoice(n.id)}
+                        aria-pressed={selectedSlot !== null}
+                        className={cn(
+                          "p-4 rounded-[28px] border-2 transition-all flex flex-col items-center gap-3 group relative",
+                          selectedSlot
+                            ? "border-primary bg-primary/5 shadow-inner"
+                            : "border-transparent bg-muted/30 hover:bg-muted/50",
+                          selectedSlot === navSlotToEdit && "ring-4 ring-primary/10",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "size-10 rounded-xl flex items-center justify-center transition-all",
+                            selectedSlot
+                              ? "bg-primary text-white"
+                              : "bg-card text-muted-foreground",
+                          )}
+                        >
+                          <n.icon size={20} />
+                        </div>
+                        <span className="font-black text-[11px] text-primary">{n.label}</span>
+                        {selectedSlot && (
+                          <div className="absolute top-2 left-2 size-5 rounded-full bg-primary flex items-center justify-center text-white">
+                            <span className="text-[10px] font-black">
+                              {selectedSlot === 1 ? "٢" : "٤"}
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  },
+                )}
               </div>
               <button
                 onClick={() => setShowNavPicker(false)}

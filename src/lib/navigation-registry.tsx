@@ -64,4 +64,29 @@ export const NAV_REGISTRY: NavItemDef[] = [
   { id: "family-tree", to: "/family-tree", label: "نسب وأثر", icon: LineageLegacyIcon },
 ];
 
-export const DEFAULT_NAV_KEYS: NavItemKey[] = ["dashboard", "news", "chat"];
+/**
+ * Stored bottom-nav preferences keep the dashboard key first for backwards
+ * compatibility. Only indexes 1 and 2 are user configurable; the rendered
+ * dock always inserts Family Services in the middle and More at the end.
+ */
+export const DEFAULT_NAV_KEYS: NavItemKey[] = ["dashboard", "chat", "finance"];
+
+const NAV_ITEM_KEYS = new Set<NavItemKey>(NAV_REGISTRY.map((item) => item.id));
+const DEFAULT_CUSTOM_NAV_KEYS: NavItemKey[] = DEFAULT_NAV_KEYS.slice(1);
+
+export function normalizeBottomNavKeys(value: unknown): NavItemKey[] {
+  const requested = Array.isArray(value)
+    ? value.filter(
+        (key): key is NavItemKey => typeof key === "string" && NAV_ITEM_KEYS.has(key as NavItemKey),
+      )
+    : [];
+
+  const customKeys: NavItemKey[] = [];
+  for (const key of [...requested, ...DEFAULT_CUSTOM_NAV_KEYS]) {
+    if (key === "dashboard" || customKeys.includes(key)) continue;
+    customKeys.push(key);
+    if (customKeys.length === 2) break;
+  }
+
+  return ["dashboard", ...customKeys];
+}

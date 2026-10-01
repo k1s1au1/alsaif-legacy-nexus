@@ -52,7 +52,7 @@ import { isFamilySealViewport } from "@/lib/family-header-viewport";
 import { BiometricGate } from "@/components/biometric-gate";
 import { useProfile } from "@/hooks/use-dashboard-data";
 import { useUserRole } from "@/hooks/use-user-role";
-import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS } from "@/lib/navigation-registry";
+import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS, normalizeBottomNavKeys } from "@/lib/navigation-registry";
 import {
   DropdownMenu,
   DropdownMenuArrow,
@@ -108,8 +108,10 @@ function BottomNavItem({
     return (
       <button
         onClick={onClick}
+        aria-pressed={active}
         className={cn(
-          "flex flex-col items-center gap-1 transition-all duration-300",
+          "app-shell-dock-item flex flex-col items-center gap-1 transition-all duration-300",
+          active && "is-active",
           active ? "text-gold-primary" : "text-white/40",
         )}
       >
@@ -121,8 +123,10 @@ function BottomNavItem({
   return (
     <Link
       to={to}
+      aria-current={active ? "page" : undefined}
       className={cn(
-        "flex flex-col items-center gap-1 transition-all duration-300",
+        "app-shell-dock-item flex flex-col items-center gap-1 transition-all duration-300",
+        active && "is-active",
         active ? "text-gold-primary" : "text-white/40",
       )}
     >
@@ -389,12 +393,50 @@ function AppShellChrome({
   };
 
   const allowedSections = globalProfile?.allowedSections || [];
-  const bottomNavKeys = globalProfile?.bottomNavPrefs || DEFAULT_NAV_KEYS;
+  const bottomNavKeys = normalizeBottomNavKeys(globalProfile?.bottomNavPrefs || DEFAULT_NAV_KEYS);
   const isAdmin =
     roleAccess.isCouncilLeadership ||
     roleAccess.isTechnicalAdmin ||
     roleAccess.sectionHeads.length > 0;
   const isGuest = globalProfile?.role === "ضيف المجلس";
+  const canShowDockItem = (def: (typeof NAV_REGISTRY)[number]) => {
+    if (def.adminOnly && !isAdmin) return false;
+    if (!isGuest) return true;
+    const publicKeys = ["dashboard", "profile", "settings", "members"];
+    return publicKeys.includes(def.id) || allowedSections.includes(def.id);
+  };
+  const usedDockKeys = new Set<NavItemKey>();
+  const fallbackDockKeys: NavItemKey[] = [
+    "chat",
+    "finance",
+    "news",
+    "members",
+    "calendar",
+    "tasks",
+    "profile",
+    "settings",
+  ];
+  const customDockItems = bottomNavKeys.slice(1, 3).map((preferredKey, slotIndex) => {
+    const candidates = [preferredKey, DEFAULT_NAV_KEYS[slotIndex + 1], ...fallbackDockKeys];
+    const def = candidates
+      .map((key) => NAV_REGISTRY.find((item) => item.id === key))
+      .find((item) => item && !usedDockKeys.has(item.id) && canShowDockItem(item));
+    if (def) usedDockKeys.add(def.id);
+    return def;
+  });
+  const firstCustomDockItem = customDockItems[0];
+  const secondCustomDockItem = customDockItems[1];
+  const FirstCustomDockIcon = firstCustomDockItem?.icon;
+  const SecondCustomDockIcon = secondCustomDockItem?.icon;
+  const customDockPaths = new Set(customDockItems.flatMap((item) => (item ? [item.to] : [])));
+  const familyServicePathActive = desktopServiceItems.some(
+    (service) => NAV_REGISTRY.find((item) => item.id === service.id)?.to === path,
+  );
+  const familyServicesDockActive =
+    showQuickActions || (familyServicePathActive && !customDockPaths.has(path));
+  const moreDockActive =
+    showMoreHub ||
+    (path !== "/dashboard" && !customDockPaths.has(path) && !familyServicePathActive);
   const familySealServices: FamilySealService[] = [];
   const sealServiceKeys = new Set([
     ...desktopServiceItems.map((service) => service.id),
@@ -879,88 +921,92 @@ function AppShellChrome({
         </div>
 
         {/* MODERN FLOATING MOBILE BOTTOM DOCK */}
-        <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: "spring", damping: 30, stiffness: 300 }}
-          className={cn(
-            "app-shell-bottom-dock fixed bottom-8 inset-x-6 z-[70] flex justify-center",
-            !isTabletPortrait && "md:hidden",
-            isTabletPortrait && "app-shell-bottom-dock-tablet-portrait",
-          )}
-        >
-          <nav className="h-16 w-full max-w-sm bg-[var(--nav-bg)]/95 border border-white/10 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center justify-around px-4 backdrop-blur-2xl relative overflow-hidden transition-all duration-500">
-            {/* Subtle Sheen Effect */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
-
-            {bottomNavKeys.slice(0, 2).map((key) => {
-              const def = NAV_REGISTRY.find((n) => n.id === key);
-              if (!def || (def.adminOnly && !isAdmin)) return null;
-
-              if (isGuest) {
-                const publicKeys = ["dashboard", "profile", "settings", "members"];
-                if (!publicKeys.includes(def.id) && !allowedSections.includes(def.id)) return null;
-              }
-
-              return (
-                <BottomNavItem
-                  key={def.id}
-                  to={def.to}
-                  label={def.label}
-                  icon={<def.icon size={20} />}
-                  active={path === def.to}
-                />
-              );
-            })}
-
-            {/* Use a regular dock action so global surface colors cannot mask it. */}
-            <button
-              type="button"
-              aria-expanded={showQuickActions}
-              onClick={() => setShowQuickActions(true)}
-              className={cn(
-                "app-shell-dock-services relative flex flex-col items-center justify-center gap-1 bg-transparent transition-all duration-300",
-                showQuickActions ? "text-gold-primary" : "text-white/40",
-              )}
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className={cn(
+              "app-shell-bottom-dock fixed bottom-8 inset-x-6 z-[70] flex justify-center",
+              !isTabletPortrait && "md:hidden",
+              isTabletPortrait && "app-shell-bottom-dock-tablet-portrait",
+            )}
+          >
+            <nav
+              className="app-shell-curved-dock h-16 w-full max-w-sm bg-[var(--nav-bg)]/95 border border-white/10 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center justify-around px-4 relative overflow-hidden transition-all duration-500"
+              aria-label="شريط التنقل السفلي"
             >
-              <LayoutGrid size={20} strokeWidth={2} aria-hidden="true" />
-              <span className="text-[11px] font-black whitespace-nowrap">خدمات العائلة</span>
-            </button>
+              <svg
+                className="app-shell-dock-curve"
+                viewBox="0 0 1000 82"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <path d="M -20 72 Q 500 -18 1020 72" />
+              </svg>
 
-            {bottomNavKeys.slice(2, 3).map((key) => {
-              const def = NAV_REGISTRY.find((n) => n.id === key);
-              if (!def || (def.adminOnly && !isAdmin)) return null;
+              <BottomNavItem
+                to="/dashboard"
+                label="الرئيسية"
+                icon={<Home size={20} />}
+                active={path === "/dashboard"}
+              />
 
-              if (isGuest) {
-                const publicKeys = ["dashboard", "profile", "settings", "members"];
-                if (!publicKeys.includes(def.id) && !allowedSections.includes(def.id)) return null;
-              }
+              <span className="app-shell-dock-separator" aria-hidden="true" />
 
-              return (
+              {firstCustomDockItem && FirstCustomDockIcon && (
                 <BottomNavItem
-                  key={def.id}
-                  to={def.to}
-                  label={def.label}
-                  icon={<def.icon size={20} />}
-                  active={path === def.to}
+                  to={firstCustomDockItem.to}
+                  label={firstCustomDockItem.label}
+                  icon={<FirstCustomDockIcon size={20} />}
+                  active={path === firstCustomDockItem.to}
                 />
-              );
-            })}
-
-            <button
-              onClick={() => setShowMoreHub(true)}
-              className={cn(
-                "flex flex-col items-center gap-1 transition-all duration-300",
-                showMoreHub ? "text-gold-primary" : "text-white/40",
               )}
-            >
-              <MoreHorizontal size={20} />
-              <span className="text-[11px] font-black uppercase">المزيد</span>
-            </button>
-          </nav>
-        </motion.div>
 
-        {/* MOBILE MORE HUB OVERLAY (REPLACES SIDEBAR) */}
+              <span className="app-shell-dock-separator" aria-hidden="true" />
+
+              <button
+                type="button"
+                aria-expanded={showQuickActions}
+                onClick={() => setShowQuickActions(true)}
+                className={cn(
+                  "app-shell-dock-item app-shell-dock-services relative flex flex-col items-center justify-center gap-1 bg-transparent transition-all duration-300",
+                  familyServicesDockActive && "is-active",
+                  familyServicesDockActive ? "text-gold-primary" : "text-white/40",
+                )}
+              >
+                <LayoutGrid size={20} strokeWidth={2} aria-hidden="true" />
+                <span className="text-[11px] font-black whitespace-nowrap">خدمات العائلة</span>
+              </button>
+
+              <span className="app-shell-dock-separator" aria-hidden="true" />
+
+              {secondCustomDockItem && SecondCustomDockIcon && (
+                <BottomNavItem
+                  to={secondCustomDockItem.to}
+                  label={secondCustomDockItem.label}
+                  icon={<SecondCustomDockIcon size={20} />}
+                  active={path === secondCustomDockItem.to}
+                />
+              )}
+
+              <span className="app-shell-dock-separator" aria-hidden="true" />
+
+              <button
+                onClick={() => setShowMoreHub(true)}
+                aria-expanded={showMoreHub}
+                className={cn(
+                  "app-shell-dock-item flex flex-col items-center gap-1 transition-all duration-300",
+                  moreDockActive && "is-active",
+                  moreDockActive ? "text-gold-primary" : "text-white/40",
+                )}
+              >
+                <MoreHorizontal size={20} />
+                <span className="text-[11px] font-black uppercase">المزيد</span>
+              </button>
+            </nav>
+          </motion.div>
+
+          {/* MOBILE MORE HUB OVERLAY (REPLACES SIDEBAR) */}
         <AnimatePresence>
           {showMoreHub && (
             <motion.div

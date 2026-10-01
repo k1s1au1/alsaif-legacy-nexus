@@ -1,0 +1,273 @@
+/* Mobile + portrait tablet navigation: the approved curved identity horizon.
+   Desktop and landscape tablet navigation are intentionally untouched. */
+@media (max-width: 767.98px),
+  (min-width: 768px) and (max-width: 1600px) and (orientation: portrait) {
+  html body main > .app-shell-bottom-dock {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: stretch !important;
+    pointer-events: none !important;
+  }
+
+  html body main > .app-shell-bottom-dock > nav.app-shell-curved-dock {
+    --dock-line: var(--identity-tertiary, var(--gold-primary));
+    --dock-active: var(--identity-accent, var(--gold-primary));
+    --dock-ink: var(--identity-text-on-nav, #f7f1e3);
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns:
+      minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr) 1px
+      minmax(0, 1fr) 1px minmax(0, 1fr) !important;
+    align-items: end !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    padding: 30px max(8px, env(safe-area-inset-right, 0px))
+      calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)) !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: color-mix(in srgb, var(--nav-bg, var(--primary)) 96%, #000 4%) !important;
+    box-shadow: 0 -18px 36px -32px rgba(0, 0, 0, 0.85) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    pointer-events: auto !important;
+    isolation: isolate !important;
+  }
+
+  html body main > .app-shell-bottom-dock > nav.app-shell-curved-dock > .app-shell-dock-curve {
+    position: absolute !important;
+    z-index: 0 !important;
+    top: -25px !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 76px !important;
+    overflow: visible !important;
+    pointer-events: none !important;
+  }
+
+  html body main > .app-shell-bottom-dock > nav.app-shell-curved-dock > .app-shell-dock-curve path {
+    fill: none !important;
+    stroke: color-mix(in srgb, var(--dock-line) 78%, transparent) !important;
+    stroke-width: 2 !important;
+    vector-effect: non-scaling-stroke !important;
+  }
+
+  html body main > .app-shell-bottom-dock > nav.app-shell-curved-dock > .app-shell-dock-item {
+    position: relative !important;
+    z-index: 2 !important;
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 50px !important;
+    margin: 0 !important;
+    padding: 3px 2px 0 !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 3px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: color-mix(in srgb, var(--dock-ink) 68%, transparent) !important;
+    font-family: inherit !important;
+    transform: none !important;
+  }
+
+  html body main > .app-shell-bottom-dock > nav.app-shell-curved-dock > .app-shell-dock-item > svg {
+    width: 21px !important;
+    height: 21px !important;
+    flex: 0 0 auto !important;
+    color: inherit !important;
+    stroke-width: 2 !important;
+  }
+
+  html
+    body
+    main
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item
+    > span {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    color: inherit !important;
+    font-size: clamp(8px, 2.55vw, 10.5px) !important;
+    font-weight: 850 !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0 !important;
+    text-overflow: ellipsis !important;
+    text-transform: none !important;
+    white-space: nowrap !important;
+  }
+
+  html
+    body
+    main
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item.is-active {
+    color: var(--dock-active) !important;
+  }
+
+  html
+    body
+    main
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item.is-active
+    > svg {
+    width: 24px !important;
+    height: 24px !important;
+    stroke-width: 2.65 !important;
+    filter: drop-shadow(
+      0 4px 9px color-mix(in srgb, var(--dock-active) 38%, transparent)
+    ) !important;
+  }
+
+  html
+    body
+    main
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item.is-active::before,
+  html
+    body
+    main
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item.is-active::after {
+    content: "" !important;
+    position: absolute !important;
+    top: -10px !important;
+    width: 5px !important;
+    height: 5px !important;
+    border-radius: 999px !important;
+    background: var(--dock-line) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--nav-bg, var(--primary)) 88%, transparent) !important;
+  }
+
+  html
+    body
+    main
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item.is-active::before {
+    right: calc(50% - 10px) !important;
+  }
+
+  html
+    body
+    main
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item.is-active::after {
+    left: calc(50% - 10px) !important;
+  }
+
+  html body main > .app-shell-bottom-dock > nav.app-shell-curved-dock > .app-shell-dock-separator {
+    position: relative !important;
+    z-index: 2 !important;
+    align-self: end !important;
+    width: 1px !important;
+    height: 25px !important;
+    margin-bottom: 14px !important;
+    background: color-mix(in srgb, var(--dock-line) 54%, transparent) !important;
+    box-shadow: 0 0 8px color-mix(in srgb, var(--dock-line) 12%, transparent) !important;
+  }
+
+  html
+    body
+    main
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item:focus-visible {
+    outline: 2px solid var(--dock-line) !important;
+    outline-offset: 2px !important;
+    border-radius: 13px !important;
+    background: color-mix(in srgb, var(--dock-line) 10%, transparent) !important;
+    box-shadow: none !important;
+  }
+
+  html body main > .app-shell-content {
+    padding-bottom: calc(9rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1600px) and (orientation: portrait) {
+  html body main[data-tablet-portrait="true"] > .app-shell-bottom-dock > nav.app-shell-curved-dock {
+    height: calc(110px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 38px clamp(42px, 7vw, 112px) calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html
+    body
+    main[data-tablet-portrait="true"]
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-curve {
+    top: -31px !important;
+    height: 92px !important;
+  }
+
+  html
+    body
+    main[data-tablet-portrait="true"]
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item {
+    min-height: 58px !important;
+    gap: 5px !important;
+  }
+
+  html
+    body
+    main[data-tablet-portrait="true"]
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item
+    > svg {
+    width: 27px !important;
+    height: 27px !important;
+  }
+
+  html
+    body
+    main[data-tablet-portrait="true"]
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item.is-active
+    > svg {
+    width: 31px !important;
+    height: 31px !important;
+  }
+
+  html
+    body
+    main[data-tablet-portrait="true"]
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-item
+    > span {
+    font-size: 12px !important;
+  }
+
+  html
+    body
+    main[data-tablet-portrait="true"]
+    > .app-shell-bottom-dock
+    > nav.app-shell-curved-dock
+    > .app-shell-dock-separator {
+    height: 30px !important;
+    margin-bottom: 15px !important;
+  }
+
+  html body main[data-tablet-portrait="true"] > .app-shell-content {
+    padding-bottom: calc(11rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
