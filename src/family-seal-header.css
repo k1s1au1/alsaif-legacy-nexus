@@ -34,6 +34,10 @@
     isolation: isolate;
   }
 
+  .app-shell-main > .app-shell-header-wrap[data-family-seal="true"] > .family-seal-header {
+    pointer-events: auto !important;
+  }
+
   .family-seal-utilities {
     display: flex;
     flex-direction: column;
