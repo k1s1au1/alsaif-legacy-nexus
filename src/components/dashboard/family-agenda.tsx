@@ -1,4 +1,5 @@
 import { listOccasions } from "@/lib/api/occasions";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   CalendarDays,
@@ -12,10 +13,11 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { useUserRole } from "@/hooks/use-user-role";
 import { MemberPostsPreview } from "./member-posts-preview";
+import { QuickCreateDialog, type QuickCreateTarget } from "./quick-create-dialog";
 import "./family-agenda.css";
 
 type FamilyAgendaProps = {
@@ -38,15 +40,7 @@ type AgendaItem = {
   icon: LucideIcon;
 };
 
-const WEEK_DAYS = [
-  "السبت",
-  "الأحد",
-  "الاثنين",
-  "الثلاثاء",
-  "الأربعاء",
-  "الخميس",
-  "الجمعة",
-];
+const WEEK_DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
@@ -76,12 +70,14 @@ export function FamilyAgenda({
   occasions: suppliedOccasions,
   className = "",
 }: FamilyAgendaProps) {
+  const queryClient = useQueryClient();
   const activeDayKey = useDayBoundaryKey();
   const today = useMemo(() => new Date(), [activeDayKey]);
   const [monthCursor, setMonthCursor] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
   const [loadedOccasions, setLoadedOccasions] = useState<any[]>([]);
+  const [quickCreateTarget, setQuickCreateTarget] = useState<QuickCreateTarget | null>(null);
   const actionsId = `family-agenda-actions-${useId().replace(/:/g, "")}`;
 
   const {
@@ -91,8 +87,24 @@ export function FamilyAgenda({
     isManager,
     isChairman,
     sectionHeads,
+    canCreateOfficialOccasion,
     isLoading: rolesLoading,
   } = useUserRole();
+
+  const readUpcomingOccasions = useCallback(async () => {
+    const rows = await listOccasions({
+      userId: null,
+      canManageOccasions: false,
+    });
+    const todayKey = dateKey(new Date());
+    return (rows || [])
+      .filter((item: any) => item?.id && item?.date && item.date >= todayKey)
+      .sort(
+        (a: any, b: any) =>
+          (toDate(occasionDate(a))?.getTime() || Number.MAX_SAFE_INTEGER) -
+          (toDate(occasionDate(b))?.getTime() || Number.MAX_SAFE_INTEGER),
+      );
+  }, []);
 
   useEffect(() => {
     if (suppliedOccasions !== undefined) return;
@@ -100,21 +112,9 @@ export function FamilyAgenda({
     let alive = true;
     const read = async () => {
       try {
-        const rows = await listOccasions({
-          userId: null,
-          canManageOccasions: false,
-        });
+        const rows = await readUpcomingOccasions();
         if (!alive) return;
-        const todayKey = dateKey(new Date());
-        setLoadedOccasions(
-          (rows || [])
-            .filter((item: any) => item?.id && item?.date && item.date >= todayKey)
-            .sort(
-              (a: any, b: any) =>
-                (toDate(occasionDate(a))?.getTime() || Number.MAX_SAFE_INTEGER) -
-                (toDate(occasionDate(b))?.getTime() || Number.MAX_SAFE_INTEGER),
-            ),
-        );
+        setLoadedOccasions(rows);
       } catch {
         if (alive) setLoadedOccasions([]);
       }
@@ -124,9 +124,39 @@ export function FamilyAgenda({
     return () => {
       alive = false;
     };
-  }, [suppliedOccasions]);
+  }, [readUpcomingOccasions, suppliedOccasions]);
 
-  const occasions = suppliedOccasions ?? loadedOccasions;
+  const occasions = useMemo(() => {
+    if (suppliedOccasions === undefined) return loadedOccasions;
+    if (loadedOccasions.length === 0) return suppliedOccasions;
+
+    const merged = new Map<string, any>();
+    suppliedOccasions.forEach((item) => item?.id && merged.set(item.id, item));
+    loadedOccasions.forEach((item) => item?.id && merged.set(item.id, item));
+    return [...merged.values()].sort(
+      (a, b) =>
+        (toDate(occasionDate(a))?.getTime() || Number.MAX_SAFE_INTEGER) -
+        (toDate(occasionDate(b))?.getTime() || Number.MAX_SAFE_INTEGER),
+    );
+  }, [loadedOccasions, suppliedOccasions]);
+
+  const handleQuickCreateSaved = useCallback(
+    async (target: QuickCreateTarget) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["upcoming-events"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-counts"] }),
+      ]);
+
+      if (target === "occasion") {
+        try {
+          setLoadedOccasions(await readUpcomingOccasions());
+        } catch {
+          // The realtime/page refresh remains a fallback if this immediate read fails.
+        }
+      }
+    },
+    [queryClient, readUpcomingOccasions],
+  );
 
   const agendaItems = useMemo<AgendaItem[]>(() => {
     const rows: AgendaItem[] = [];
@@ -229,21 +259,18 @@ export function FamilyAgenda({
     !rolesLoading && (isAdmin || isManager || isChairman || sectionHeads.length > 0);
   const managementActions = [
     {
-      to: "/meetings",
       create: "meeting",
       label: "اجتماع",
       icon: Users,
       allowed: !rolesLoading && canManageSection("meetings"),
     },
     {
-      to: "/trips",
       create: "trip",
       label: "رحلة",
       icon: Plane,
       allowed: !rolesLoading && canManageSection("trips"),
     },
     {
-      to: "/tasks",
       create: "task",
       label: "مهمة",
       icon: ListChecks,
@@ -253,7 +280,6 @@ export function FamilyAgenda({
 
   const quickActions = [
     {
-      to: "/family-occasions",
       create: "occasion",
       label: "مناسبة",
       icon: PartyPopper,
@@ -262,7 +288,6 @@ export function FamilyAgenda({
     ...(managementActions.length < 3
       ? [
           {
-            to: "/community",
             create: "community",
             label: "مشاركة",
             icon: MessageCircle,
@@ -322,8 +347,7 @@ export function FamilyAgenda({
                 type="button"
                 onClick={() =>
                   setMonthCursor(
-                    (current) =>
-                      new Date(current.getFullYear(), current.getMonth() + 1, 1),
+                    (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1),
                   )
                 }
                 aria-label="الشهر التالي"
@@ -335,8 +359,7 @@ export function FamilyAgenda({
                 type="button"
                 onClick={() =>
                   setMonthCursor(
-                    (current) =>
-                      new Date(current.getFullYear(), current.getMonth() - 1, 1),
+                    (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1),
                   )
                 }
                 aria-label="الشهر السابق"
@@ -364,9 +387,7 @@ export function FamilyAgenda({
                     aria-label={`${day.toLocaleDateString("ar-SA")}، ${events.length} عناصر`}
                   >
                     <span>{day.toLocaleDateString("ar-SA", { day: "numeric" })}</span>
-                    {events[0] && (
-                      <small data-tone={events[0].tone}>{events[0].kind}</small>
-                    )}
+                    {events[0] && <small data-tone={events[0].tone}>{events[0].kind}</small>}
                     {events.length > 1 && <i>+{events.length - 1}</i>}
                   </Link>
                 );
@@ -398,7 +419,11 @@ export function FamilyAgenda({
           </div>
         </section>
 
-        <MemberPostsPreview userId={userId} authLoading={rolesLoading} headingId={`${actionsId}-posts`} />
+        <MemberPostsPreview
+          userId={userId}
+          authLoading={rolesLoading}
+          headingId={`${actionsId}-posts`}
+        />
       </div>
 
       <nav id={actionsId} className="family-agenda__actions" aria-label="الإضافة السريعة">
@@ -410,18 +435,30 @@ export function FamilyAgenda({
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
-              <Link
-                key={`${action.to}-${action.create}`}
-                to={action.to as any}
-                search={{ create: action.create } as any}
+              <button
+                key={action.create}
+                type="button"
+                onClick={() => setQuickCreateTarget(action.create as QuickCreateTarget)}
+                aria-haspopup="dialog"
               >
                 <Icon aria-hidden="true" />
                 <span>{action.label}</span>
-              </Link>
+              </button>
             );
           })}
         </div>
       </nav>
+
+      {quickCreateTarget && (
+        <QuickCreateDialog
+          key={quickCreateTarget}
+          target={quickCreateTarget}
+          userId={userId}
+          canCreateOfficialOccasion={canCreateOfficialOccasion}
+          onClose={() => setQuickCreateTarget(null)}
+          onSaved={handleQuickCreateSaved}
+        />
+      )}
     </section>
   );
 }
