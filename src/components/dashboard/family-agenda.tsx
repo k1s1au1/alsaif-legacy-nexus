@@ -87,7 +87,6 @@ export function FamilyAgenda({
     isManager,
     isChairman,
     sectionHeads,
-    canCreateOfficialOccasion,
     isLoading: rolesLoading,
   } = useUserRole();
 
@@ -454,7 +453,6 @@ export function FamilyAgenda({
           key={quickCreateTarget}
           target={quickCreateTarget}
           userId={userId}
-          canCreateOfficialOccasion={canCreateOfficialOccasion}
           onClose={() => setQuickCreateTarget(null)}
           onSaved={handleQuickCreateSaved}
         />

@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { AppShell } from "@/components/app-shell";
 import {
@@ -40,7 +40,6 @@ import {
   saveOccasion,
   type OccasionVisibility,
 } from "@/lib/api/occasions";
-
 
 type OccasionType =
   | "wedding"
@@ -106,7 +105,6 @@ type StoredOccasion = Occasion & {
 };
 
 type Meta = { key: OccasionType; title: string; icon: any; designs: number };
-
 
 const TYPES: Meta[] = [
   { key: "wedding", title: "زواج / ملكة", icon: Heart, designs: 3 },
@@ -187,7 +185,6 @@ const COPY: Record<
   },
 };
 
-
 const ROOT = "/occasion-templates";
 const OCCASION_FONTS: Array<{ id: OccasionFont; label: string; family: string }> = [
   {
@@ -230,9 +227,7 @@ function occasionHeading(type: OccasionType, value: Extra) {
 }
 
 function occasionBody(type: OccasionType, value: Extra) {
-  return occasionTextMode(value.textMode) === "custom"
-    ? (value.customBody ?? "")
-    : COPY[type].body;
+  return occasionTextMode(value.textMode) === "custom" ? (value.customBody ?? "") : COPY[type].body;
 }
 
 function occasionTextOffset(value?: number) {
@@ -430,10 +425,7 @@ function Preview({
               )
             )}
             {type === "birthday" && a !== null && (
-              <div
-                className="font-black leading-none"
-                style={{ fontSize: scaledText(30, 8, 48) }}
-              >
+              <div className="font-black leading-none" style={{ fontSize: scaledText(30, 8, 48) }}>
                 {a}
                 <span className="mr-1" style={{ fontSize: scaledText(10, 2.2, 15) }}>
                   عامًا
@@ -507,7 +499,17 @@ function Stepper({ step }: { step: number }) {
   );
 }
 
-function FamilyOccasionsPage() {
+type FamilyOccasionsPageProps = {
+  quickCreateOnly?: boolean;
+  onQuickCreateClose?: () => void;
+  onQuickCreateSaved?: () => void | Promise<void>;
+};
+
+function FamilyOccasionsPage({
+  quickCreateOnly = false,
+  onQuickCreateClose,
+  onQuickCreateSaved,
+}: FamilyOccasionsPageProps = {}) {
   const { userId, canManageSection, canCreateOfficialOccasion } = useUserRole();
   const canManageOccasions = canManageSection("occasions");
   const [items, setItems] = useState<StoredOccasion[]>([]);
@@ -517,7 +519,7 @@ function FamilyOccasionsPage() {
   const [visibility, setVisibility] = useState<OccasionVisibility>("public");
   const [invitees, setInvitees] = useState<string[]>([]);
   const [inviteeQuery, setInviteeQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(quickCreateOnly);
   const [editing, setEditing] = useState<string | null>(null);
   const [viewingOccasion, setViewingOccasion] = useState<Occasion | null>(null);
   const [step, setStep] = useState(1);
@@ -551,8 +553,9 @@ function FamilyOccasionsPage() {
   }, [userId, canManageOccasions]);
 
   useEffect(() => {
+    if (quickCreateOnly) return;
     void refresh();
-  }, [refresh]);
+  }, [quickCreateOnly, refresh]);
 
   useRealtimeSync(["events", "event_invitees", "event_attendees"], () => void refresh());
 
@@ -568,8 +571,7 @@ function FamilyOccasionsPage() {
 
   const selected = useMemo(() => meta(type), [type]);
   const previews = Array.from({ length: selected.designs }, (_, i) => i + 1);
-  const set = (k: keyof Extra, v: string | boolean | number) =>
-    setX((q) => ({ ...q, [k]: v }));
+  const set = (k: keyof Extra, v: string | boolean | number) => setX((q) => ({ ...q, [k]: v }));
 
   function reset() {
     setEditing(null);
@@ -601,8 +603,22 @@ function FamilyOccasionsPage() {
   }
 
   useEffect(() => {
-    if (consumeQuickCreate("occasion")) start();
-  }, []);
+    if (!quickCreateOnly && consumeQuickCreate("occasion")) start();
+  }, [quickCreateOnly]);
+
+  useEffect(() => {
+    if (!quickCreateOnly || !open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, quickCreateOnly]);
+
+  const closeEditor = useCallback(() => {
+    setOpen(false);
+    if (quickCreateOnly) onQuickCreateClose?.();
+  }, [onQuickCreateClose, quickCreateOnly]);
 
   function edit(o: StoredOccasion) {
     setEditing(o.id);
@@ -676,7 +692,16 @@ function FamilyOccasionsPage() {
       });
       toast.success(editing ? "تم تحديث المناسبة" : "تم نشر المناسبة");
       setOpen(false);
-      await refresh();
+      if (quickCreateOnly) {
+        try {
+          await onQuickCreateSaved?.();
+        } catch {
+          // The dashboard's regular refresh remains a fallback.
+        }
+        onQuickCreateClose?.();
+      } else {
+        await refresh();
+      }
     } catch (error: any) {
       toast.error(error?.message || "تعذّر حفظ المناسبة، حاول مرة أخرى");
     } finally {
@@ -695,7 +720,6 @@ function FamilyOccasionsPage() {
     }
   }
 
-
   const field = (label: string, key: keyof Extra, span = false) => (
     <label className={span ? "sm:col-span-2" : ""}>
       <span className="mb-1.5 block text-xs font-black">{label}</span>
@@ -708,132 +732,137 @@ function FamilyOccasionsPage() {
   );
 
   return (
-    <AppShell title="مناسبات العائلة" user={{ name: "", role: "", initial: "س" }}>
-      <main dir="rtl" className="mx-auto w-full max-w-7xl px-4 pb-28 pt-5 sm:px-6">
-        <section className="rounded-[32px] border border-border bg-card p-7 shadow-sm">
-          <Sparkles className="size-8 text-gold-primary" />
-          <h1 className="mt-3 text-3xl font-black text-primary">مناسبات العائلة</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            دعوات جاهزة بصياغة كاملة؛ اختر القالب ثم أدخل البيانات المتغيرة فقط.
-          </p>
-          <button
-            onClick={start}
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-white"
-          >
-            <Plus className="size-4" /> إضافة مناسبة جديدة
-          </button>
-        </section>
+    <>
+      {!quickCreateOnly && (
+        <AppShell title="مناسبات العائلة" user={{ name: "", role: "", initial: "س" }}>
+          <main dir="rtl" className="mx-auto w-full max-w-7xl px-4 pb-28 pt-5 sm:px-6">
+            <section className="rounded-[32px] border border-border bg-card p-7 shadow-sm">
+              <Sparkles className="size-8 text-gold-primary" />
+              <h1 className="mt-3 text-3xl font-black text-primary">مناسبات العائلة</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                دعوات جاهزة بصياغة كاملة؛ اختر القالب ثم أدخل البيانات المتغيرة فقط.
+              </p>
+              <button
+                onClick={start}
+                className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-white"
+              >
+                <Plus className="size-4" /> إضافة مناسبة جديدة
+              </button>
+            </section>
 
-        {loading ? (
-          <section className="mt-6 rounded-[30px] border border-border bg-card p-10 text-center">
-            <CalendarDays className="mx-auto size-10 animate-pulse" />
-            <h2 className="mt-4 text-xl font-black">جاري تحميل المناسبات…</h2>
-          </section>
-        ) : items.length === 0 ? (
-          <section className="mt-6 rounded-[30px] border border-border bg-card p-10 text-center">
-            <CalendarDays className="mx-auto size-10" />
-            <h2 className="mt-4 text-xl font-black">لا توجد مناسبات حتى الآن</h2>
-          </section>
-        ) : (
-          <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((o) => {
-              const ex = extra(o.details);
-              const badge =
-                o.visibility === "official"
-                  ? { label: "مناسبة عائلة السيف", cls: "bg-gold-primary/15 text-gold-primary" }
-                  : o.visibility === "private"
-                    ? { label: "خاصة", cls: "bg-primary/10 text-primary" }
-                    : { label: "مناسبة عضو", cls: "bg-muted text-muted-foreground" };
-              return (
-                <article
-                  key={o.id}
-                  className={`rounded-[28px] border bg-card p-4 transition-all hover:shadow-md ${o.visibility === "official" ? "border-gold-primary/50 shadow-sm" : "border-border"}`}
-                >
-                  <div className="grid grid-cols-[92px_1fr] gap-4">
-                    <button
-                      onClick={() => setViewingOccasion(o)}
-                      className="relative group overflow-hidden rounded-[20px] transition-transform active:scale-95"
+            {loading ? (
+              <section className="mt-6 rounded-[30px] border border-border bg-card p-10 text-center">
+                <CalendarDays className="mx-auto size-10 animate-pulse" />
+                <h2 className="mt-4 text-xl font-black">جاري تحميل المناسبات…</h2>
+              </section>
+            ) : items.length === 0 ? (
+              <section className="mt-6 rounded-[30px] border border-border bg-card p-10 text-center">
+                <CalendarDays className="mx-auto size-10" />
+                <h2 className="mt-4 text-xl font-black">لا توجد مناسبات حتى الآن</h2>
+              </section>
+            ) : (
+              <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {items.map((o) => {
+                  const ex = extra(o.details);
+                  const badge =
+                    o.visibility === "official"
+                      ? { label: "مناسبة عائلة السيف", cls: "bg-gold-primary/15 text-gold-primary" }
+                      : o.visibility === "private"
+                        ? { label: "خاصة", cls: "bg-primary/10 text-primary" }
+                        : { label: "مناسبة عضو", cls: "bg-muted text-muted-foreground" };
+                  return (
+                    <article
+                      key={o.id}
+                      className={`rounded-[28px] border bg-card p-4 transition-all hover:shadow-md ${o.visibility === "official" ? "border-gold-primary/50 shadow-sm" : "border-border"}`}
                     >
-                      <Preview
-                        type={o.type}
-                        design={o.design}
-                        birthDate={o.birthDate}
-                        eventDate={o.date}
-                        birthdayAudience={o.birthdayAudience}
-                        name={o.title}
-                        time={o.time}
-                        location={o.location}
-                        x={ex}
-                        show
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                        <Search className="size-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
-                      </div>
-                    </button>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[11px] font-black text-gold-primary">
-                          {meta(o.type).title}
-                        </span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${badge.cls}`}>
-                          {badge.label}
-                        </span>
-                      </div>
-                      <h3 className="mt-1 truncate text-lg font-black">
-                        {o.title || COPY[o.type].heading}
-                      </h3>
-                      {o.visibility === "private" && (
-                        <p className="mt-1 text-[11px] font-bold text-muted-foreground">
-                          {o.inviteeCount} مدعو · {o.attendeeCount} تأكيد حضور
-                        </p>
-                      )}
-                      <div className="mt-4 flex gap-2">
-                        {o.canEdit && (
-                          <button
-                            onClick={() => edit(o)}
-                            className="flex-1 rounded-xl bg-primary/5 py-2"
-                            title="تعديل"
-                          >
-                            <Pencil className="mx-auto size-4" />
-                          </button>
-                        )}
+                      <div className="grid grid-cols-[92px_1fr] gap-4">
                         <button
-                          onClick={() => void shareOccasion(o)}
-                          className="flex-1 rounded-xl bg-gold-primary/10 py-2 text-gold-primary"
-                          title="مشاركة"
+                          onClick={() => setViewingOccasion(o)}
+                          className="relative group overflow-hidden rounded-[20px] transition-transform active:scale-95"
                         >
-                          <Share2 className="mx-auto size-4" />
+                          <Preview
+                            type={o.type}
+                            design={o.design}
+                            birthDate={o.birthDate}
+                            eventDate={o.date}
+                            birthdayAudience={o.birthdayAudience}
+                            name={o.title}
+                            time={o.time}
+                            location={o.location}
+                            x={ex}
+                            show
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <Search className="size-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
+                          </div>
                         </button>
-                        {o.canEdit && (
-                          <button
-                            onClick={() => void remove(o.id)}
-                            className="flex-1 rounded-xl bg-red-500/5 py-2 text-red-600"
-                            title="حذف"
-                          >
-                            <Trash2 className="mx-auto size-4" />
-                          </button>
-                        )}
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[11px] font-black text-gold-primary">
+                              {meta(o.type).title}
+                            </span>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${badge.cls}`}
+                            >
+                              {badge.label}
+                            </span>
+                          </div>
+                          <h3 className="mt-1 truncate text-lg font-black">
+                            {o.title || COPY[o.type].heading}
+                          </h3>
+                          {o.visibility === "private" && (
+                            <p className="mt-1 text-[11px] font-bold text-muted-foreground">
+                              {o.inviteeCount} مدعو · {o.attendeeCount} تأكيد حضور
+                            </p>
+                          )}
+                          <div className="mt-4 flex gap-2">
+                            {o.canEdit && (
+                              <button
+                                onClick={() => edit(o)}
+                                className="flex-1 rounded-xl bg-primary/5 py-2"
+                                title="تعديل"
+                              >
+                                <Pencil className="mx-auto size-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => void shareOccasion(o)}
+                              className="flex-1 rounded-xl bg-gold-primary/10 py-2 text-gold-primary"
+                              title="مشاركة"
+                            >
+                              <Share2 className="mx-auto size-4" />
+                            </button>
+                            {o.canEdit && (
+                              <button
+                                onClick={() => void remove(o.id)}
+                                className="flex-1 rounded-xl bg-red-500/5 py-2 text-red-600"
+                                title="حذف"
+                              >
+                                <Trash2 className="mx-auto size-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </section>
-        )}
-
-      </main>
+                    </article>
+                  );
+                })}
+              </section>
+            )}
+          </main>
+        </AppShell>
+      )}
 
       {open && (
         <div
-          className="fixed inset-0 z-[120] flex items-end justify-center bg-black/55 sm:items-center sm:p-5"
+          className={`fixed inset-0 flex items-end justify-center bg-black/55 sm:items-center sm:p-5 ${quickCreateOnly ? "z-[190]" : "z-[120]"}`}
           dir="rtl"
         >
           <div className="max-h-[96dvh] w-full max-w-4xl overflow-y-auto rounded-t-[32px] bg-card sm:rounded-[32px]">
             <div className="sticky top-0 z-20 border-b border-border bg-card/95 px-5 pb-4 pt-5">
               <div className="mb-5 flex items-center justify-between">
                 <button
-                  onClick={() => setOpen(false)}
+                  onClick={closeEditor}
                   className="grid size-10 place-items-center rounded-full bg-muted"
                 >
                   <X className="size-5" />
@@ -987,9 +1016,7 @@ function FamilyOccasionsPage() {
                           {members
                             .filter((m) => m.id !== userId)
                             .filter((m) =>
-                              inviteeQuery.trim()
-                                ? m.name.includes(inviteeQuery.trim())
-                                : true,
+                              inviteeQuery.trim() ? m.name.includes(inviteeQuery.trim()) : true,
                             )
                             .map((m) => {
                               const on = invitees.includes(m.id);
@@ -1115,7 +1142,11 @@ function FamilyOccasionsPage() {
                             className="min-h-12 w-full rounded-2xl border border-border bg-card px-4 text-sm font-bold"
                           >
                             {OCCASION_FONTS.map((font) => (
-                              <option key={font.id} value={font.id} style={{ fontFamily: font.family }}>
+                              <option
+                                key={font.id}
+                                value={font.id}
+                                style={{ fontFamily: font.family }}
+                              >
                                 {font.label}
                               </option>
                             ))}
@@ -1182,10 +1213,7 @@ function FamilyOccasionsPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              set(
-                                "fontScale",
-                                Math.min(1.4, occasionFontScale(x.fontScale) + 0.05),
-                              )
+                              set("fontScale", Math.min(1.4, occasionFontScale(x.fontScale) + 0.05))
                             }
                             aria-label="تكبير الخط"
                             className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-xl font-black"
@@ -1428,7 +1456,7 @@ function FamilyOccasionsPage() {
           </div>
         </div>
       )}
-      {viewingOccasion && (
+      {!quickCreateOnly && viewingOccasion && (
         <div
           className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 sm:p-10"
           dir="rtl"
@@ -1468,7 +1496,26 @@ function FamilyOccasionsPage() {
           </div>
         </div>
       )}
-    </AppShell>
+    </>
+  );
+}
+
+export function FamilyOccasionCreateDialog({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved: () => void | Promise<void>;
+}) {
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <FamilyOccasionsPage
+      quickCreateOnly
+      onQuickCreateClose={onClose}
+      onQuickCreateSaved={onSaved}
+    />,
+    document.body,
   );
 }
 

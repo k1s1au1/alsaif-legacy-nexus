@@ -1,7 +1,7 @@
 import { MemberDialog } from "@/components/community/member-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesInsert } from "@/integrations/supabase/types";
-import { listFamilyMembers, saveOccasion, type OccasionVisibility } from "@/lib/api/occasions";
+import { FamilyOccasionCreateDialog } from "@/pages/family-occasions-page";
 import {
   BookOpen,
   CalendarDays,
@@ -10,7 +10,6 @@ import {
   ListChecks,
   Loader2,
   MessageCircle,
-  PartyPopper,
   Plane,
   Send,
   Users,
@@ -25,7 +24,6 @@ export type QuickCreateTarget = "meeting" | "trip" | "task" | "occasion" | "comm
 type QuickCreateDialogProps = {
   target: QuickCreateTarget;
   userId: string | null;
-  canCreateOfficialOccasion?: boolean;
   onClose: () => void;
   onSaved: (target: QuickCreateTarget) => void | Promise<void>;
 };
@@ -55,20 +53,6 @@ const fieldClass =
   "w-full min-h-12 rounded-2xl border border-border/70 bg-muted/35 px-4 text-sm font-bold text-foreground shadow-inner outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/5 placeholder:text-muted-foreground/55";
 const textAreaClass = `${fieldClass} resize-none py-3`;
 const labelClass = "mb-1.5 block px-1 text-[11px] font-black tracking-wide text-primary/75";
-
-const occasionTypes = [
-  ["wedding", "زواج"],
-  ["newborn", "مولود"],
-  ["graduation", "تخرج"],
-  ["birthday", "ميلاد"],
-  ["promotion", "ترقية"],
-  ["recovery", "سلامة وشفاء"],
-  ["gathering", "اجتماع عائلي"],
-  ["condolence", "عزاء"],
-  ["ramadan", "رمضان"],
-  ["eid_fitr", "عيد الفطر"],
-  ["eid_adha", "عيد الأضحى"],
-] as const;
 
 function errorDescription(error: unknown) {
   if (error && typeof error === "object" && "message" in error) {
@@ -551,212 +535,8 @@ function TaskQuickForm({ userId, onClose, onSaved }: QuickCreateDialogProps) {
   );
 }
 
-function OccasionQuickForm({
-  onClose,
-  onSaved,
-  canCreateOfficialOccasion,
-}: QuickCreateDialogProps) {
-  const [saving, setSaving] = useState(false);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [invitees, setInvitees] = useState<string[]>([]);
-  const [visibility, setVisibility] = useState<OccasionVisibility>("public");
-  const [form, setForm] = useState({
-    type: "wedding",
-    title: "",
-    date: "",
-    time: "",
-    location: "",
-    details: "",
-  });
-
-  useEffect(() => {
-    let alive = true;
-    void listFamilyMembers()
-      .then((rows) => {
-        if (alive) setMembers(rows);
-      })
-      .catch(() => {
-        if (alive) setMembers([]);
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const toggleInvitee = (id: string) =>
-    setInvitees((current) =>
-      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
-    );
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!form.title.trim() || !form.date) {
-      return toast.error("عنوان المناسبة وتاريخها مطلوبان");
-    }
-    if (visibility === "private" && invitees.length === 0) {
-      return toast.error("اختر المدعوين للمناسبة الخاصة");
-    }
-
-    setSaving(true);
-    try {
-      await saveOccasion({
-        visibility,
-        inviteeIds: invitees,
-        payload: {
-          id: "",
-          type: form.type,
-          design: 1,
-          title: form.title.trim(),
-          date: form.date,
-          time: form.time,
-          location: form.location.trim(),
-          details: JSON.stringify({
-            inviteMode: visibility === "private" ? "private" : "public",
-            showLogo: form.type !== "condolence",
-            fontFamily: "ibm",
-            fontScale: 1,
-            textMode: form.details.trim() ? "custom" : "ready",
-            customBody: form.details.trim() || undefined,
-            textOffsetY: 0,
-          }),
-        },
-      });
-      toast.success("تم نشر المناسبة");
-      await onSaved("occasion");
-      onClose();
-    } catch (error) {
-      toast.error("تعذّر نشر المناسبة", { description: errorDescription(error) });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <FormShell
-      title="إضافة مناسبة"
-      description="نشر مناسبة عائلية من دون مغادرة لوحة العائلة."
-      icon={<PartyPopper className="size-5" />}
-      onClose={onClose}
-    >
-      <form onSubmit={submit} className="member-dialog-form">
-        <div className="member-dialog-scroll space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="نوع المناسبة">
-              <select
-                value={form.type}
-                onChange={(event) => setForm({ ...form, type: event.target.value })}
-                className={fieldClass}
-              >
-                {occasionTypes.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="عنوان المناسبة">
-              <input
-                value={form.title}
-                onChange={(event) => setForm({ ...form, title: event.target.value })}
-                placeholder="عنوان المناسبة"
-                className={fieldClass}
-                required
-              />
-            </Field>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="التاريخ">
-              <input
-                type="date"
-                value={form.date}
-                onChange={(event) => setForm({ ...form, date: event.target.value })}
-                className={fieldClass}
-                required
-              />
-            </Field>
-            <Field label="الوقت">
-              <input
-                type="time"
-                value={form.time}
-                onChange={(event) => setForm({ ...form, time: event.target.value })}
-                className={fieldClass}
-              />
-            </Field>
-          </div>
-          <Field label="الموقع">
-            <input
-              value={form.location}
-              onChange={(event) => setForm({ ...form, location: event.target.value })}
-              placeholder="مكان المناسبة"
-              className={fieldClass}
-            />
-          </Field>
-          <Field label="نص إضافي">
-            <textarea
-              value={form.details}
-              onChange={(event) => setForm({ ...form, details: event.target.value })}
-              placeholder="تفاصيل أو عبارة تظهر في المناسبة..."
-              rows={3}
-              className={textAreaClass}
-            />
-          </Field>
-          <Field label="خصوصية المناسبة">
-            <div
-              className={`grid gap-2 ${canCreateOfficialOccasion ? "grid-cols-3" : "grid-cols-2"}`}
-            >
-              <ChoiceButton
-                active={visibility === "public"}
-                onClick={() => setVisibility("public")}
-              >
-                عامة
-              </ChoiceButton>
-              <ChoiceButton
-                active={visibility === "private"}
-                onClick={() => setVisibility("private")}
-              >
-                خاصة
-              </ChoiceButton>
-              {canCreateOfficialOccasion && (
-                <ChoiceButton
-                  active={visibility === "official"}
-                  onClick={() => setVisibility("official")}
-                >
-                  رسمية
-                </ChoiceButton>
-              )}
-            </div>
-          </Field>
-          {visibility === "private" && (
-            <Field label="المدعوون">
-              <div className="max-h-40 space-y-2 overflow-y-auto rounded-2xl border border-border/70 bg-muted/20 p-2">
-                {members.map((member) => (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() => toggleInvitee(member.id)}
-                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-bold transition ${
-                      invitees.includes(member.id)
-                        ? "bg-primary text-white"
-                        : "bg-card text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <span>{member.name}</span>
-                    <span aria-hidden="true">{invitees.includes(member.id) ? "✓" : "+"}</span>
-                  </button>
-                ))}
-              </div>
-            </Field>
-          )}
-        </div>
-        <SubmitActions
-          label="نشر المناسبة"
-          saving={saving}
-          onClose={onClose}
-          icon={<Send className="size-5" />}
-        />
-      </form>
-    </FormShell>
-  );
+function OccasionQuickForm({ onClose, onSaved }: QuickCreateDialogProps) {
+  return <FamilyOccasionCreateDialog onClose={onClose} onSaved={() => onSaved("occasion")} />;
 }
 
 function CommunityQuickForm({ userId, onClose, onSaved }: QuickCreateDialogProps) {
