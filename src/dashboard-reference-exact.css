@@ -272,3 +272,17 @@ html body main .council-terrain-scene .council-portal-contact-shadow {
     overflow: hidden !important;
   }
 }
+
+/* iPad landscape keeps the tablet chrome but the terrain itself is full-bleed,
+ * matching the desktop composition instead of stopping at max-w-6xl. */
+@media (min-width: 970px) and (max-width: 1600px) and (orientation: landscape) {
+  html[data-dashboard-tablet-landscape="true"]
+    body
+    main
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-inline: calc(50% - 50vw) !important;
+  }
+}

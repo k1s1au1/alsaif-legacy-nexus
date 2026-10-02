@@ -203,6 +203,16 @@
 }
 
 @media (min-width: 768px) and (max-width: 1600px) and (orientation: portrait) {
+  html body main[data-tablet-portrait="true"] > .app-shell-bottom-dock {
+    position: fixed !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
   html body main[data-tablet-portrait="true"] > .app-shell-bottom-dock > nav.app-shell-curved-dock {
     height: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
     padding: 30px clamp(42px, 7vw, 112px) calc(9px + env(safe-area-inset-bottom, 0px)) !important;
