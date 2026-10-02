@@ -5,9 +5,20 @@ html body main .desktop-overview-shell > .desktop-portal-stage {
   container-type: inline-size;
 }
 
-html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene,
-html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-portal-stage > .desktop-portal-model.heritage-pavilion-reference.council-terrain-scene {
-  --terrain-height: clamp(340px, 35.7cqw, 720px);
+html
+  body
+  main
+  .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero
+  .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene,
+html
+  body
+  main
+  .desktop-rebuild-shell
+  .desktop-overview-shell
+  > .desktop-portal-stage
+  > .desktop-portal-model.heritage-pavilion-reference.council-terrain-scene {
+  --terrain-height: clamp(340px, 42cqw, 720px);
   --terrain-model-height: 104%;
   --terrain-floor-gap: 16%;
   position: relative !important;
@@ -159,7 +170,12 @@ html body main .council-terrain-scene .council-portal-contact-shadow {
     margin-inline: calc(50% - 50vw) !important;
   }
 
-  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene {
+  html
+    body
+    main
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene {
     --terrain-height: clamp(500px, 136cqw, 660px);
     --terrain-model-height: 60%;
     --terrain-floor-gap: 12%;
@@ -200,8 +216,59 @@ html body main .council-terrain-scene .council-portal-contact-shadow {
 }
 
 @media (min-width: 700px) and (max-width: 969.98px) and (orientation: portrait) {
-  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene {
+  html
+    body
+    main
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene {
     --terrain-height: clamp(740px, 102cqw, 840px);
     --terrain-model-height: 62%;
+  }
+}
+
+/* Full-bleed terrain on desktop and iPad.
+ * The scene reaches the host card on every side while the services retain
+ * their own breathing room below/alongside it. Phone sizing stays unchanged. */
+@media (min-width: 970px) {
+  html body main .desktop-rebuild-shell .desktop-overview-shell {
+    gap: 0 !important;
+    padding: 0 !important;
+  }
+
+  html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-portal-stage {
+    align-self: stretch !important;
+    overflow: hidden !important;
+  }
+
+  html body main .desktop-rebuild-shell .desktop-overview-shell > .desktop-services-panel {
+    padding: 28px !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1199px) {
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero,
+  html
+    body
+    main
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    > .dashboard-portal-card,
+  html
+    body
+    main
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    .dashboard-portal-layout {
+    padding: 0 !important;
+  }
+
+  html
+    body
+    main
+    .dashboard-page.max-w-6xl.mx-auto.space-y-12
+    > .dashboard-portal-hero
+    > .dashboard-portal-card {
+    overflow: hidden !important;
   }
 }
