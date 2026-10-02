@@ -304,6 +304,22 @@
   padding-top: 8px;
 }
 
+.family-seal-service-grid > a {
+  position: relative;
+}
+
+.family-seal-service-grid > a[data-has-below="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 14px;
+  bottom: -3px;
+  height: 1px;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 54%, transparent);
+  box-shadow: 0 0 8px
+    color-mix(in srgb, var(--identity-accent, var(--gold-primary)) 12%, transparent);
+}
+
 .family-seal-service-item {
   display: flex;
   align-items: center;

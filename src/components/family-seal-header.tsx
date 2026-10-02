@@ -102,10 +102,14 @@ export function FamilySealHeader({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <div className="family-seal-service-grid">
-              {services.map((service) => {
+              {services.map((service, index) => {
                 const Icon = service.icon;
                 return (
-                  <Link key={service.id} to={service.to}>
+                  <Link
+                    key={service.id}
+                    to={service.to}
+                    data-has-below={index + 3 < services.length || undefined}
+                  >
                     <DropdownMenuItem
                       className="family-seal-service-item"
                       data-active={path === service.to || undefined}
