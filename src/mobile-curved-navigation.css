@@ -25,10 +25,10 @@
     align-items: end !important;
     width: 100% !important;
     max-width: none !important;
-    height: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
     margin: 0 !important;
-    padding: 30px max(8px, env(safe-area-inset-right, 0px))
-      calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)) !important;
+    padding: 24px max(8px, env(safe-area-inset-right, 0px))
+      calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)) !important;
     overflow: visible !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -43,10 +43,10 @@
   html body main > .app-shell-bottom-dock > nav.app-shell-curved-dock > .app-shell-dock-curve {
     position: absolute !important;
     z-index: 0 !important;
-    top: -25px !important;
+    top: -18px !important;
     left: 0 !important;
     width: 100% !important;
-    height: 76px !important;
+    height: 60px !important;
     overflow: visible !important;
     pointer-events: none !important;
   }
@@ -64,12 +64,12 @@
     display: flex !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 50px !important;
+    min-height: 44px !important;
     margin: 0 !important;
     padding: 3px 2px 0 !important;
     align-items: center !important;
     justify-content: flex-end !important;
-    gap: 3px !important;
+    gap: 2px !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
@@ -80,8 +80,8 @@
   }
 
   html body main > .app-shell-bottom-dock > nav.app-shell-curved-dock > .app-shell-dock-item > svg {
-    width: 21px !important;
-    height: 21px !important;
+    width: 20px !important;
+    height: 20px !important;
     flex: 0 0 auto !important;
     color: inherit !important;
     stroke-width: 2 !important;
@@ -122,8 +122,8 @@
     > nav.app-shell-curved-dock
     > .app-shell-dock-item.is-active
     > svg {
-    width: 24px !important;
-    height: 24px !important;
+    width: 23px !important;
+    height: 23px !important;
     stroke-width: 2.65 !important;
     filter: drop-shadow(
       0 4px 9px color-mix(in srgb, var(--dock-active) 38%, transparent)
@@ -144,9 +144,9 @@
     > .app-shell-dock-item.is-active::after {
     content: "" !important;
     position: absolute !important;
-    top: -10px !important;
-    width: 5px !important;
-    height: 5px !important;
+    top: -7px !important;
+    width: 4px !important;
+    height: 4px !important;
     border-radius: 999px !important;
     background: var(--dock-line) !important;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--nav-bg, var(--primary)) 88%, transparent) !important;
@@ -175,8 +175,8 @@
     z-index: 2 !important;
     align-self: end !important;
     width: 1px !important;
-    height: 25px !important;
-    margin-bottom: 14px !important;
+    height: 22px !important;
+    margin-bottom: 11px !important;
     background: color-mix(in srgb, var(--dock-line) 54%, transparent) !important;
     box-shadow: 0 0 8px color-mix(in srgb, var(--dock-line) 12%, transparent) !important;
   }
@@ -195,14 +195,14 @@
   }
 
   html body main > .app-shell-content {
-    padding-bottom: calc(9rem + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(7.75rem + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 
 @media (min-width: 768px) and (max-width: 1600px) and (orientation: portrait) {
   html body main[data-tablet-portrait="true"] > .app-shell-bottom-dock > nav.app-shell-curved-dock {
-    height: calc(110px + env(safe-area-inset-bottom, 0px)) !important;
-    padding: 38px clamp(42px, 7vw, 112px) calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 30px clamp(42px, 7vw, 112px) calc(9px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   html
@@ -211,8 +211,8 @@
     > .app-shell-bottom-dock
     > nav.app-shell-curved-dock
     > .app-shell-dock-curve {
-    top: -31px !important;
-    height: 92px !important;
+    top: -24px !important;
+    height: 76px !important;
   }
 
   html
@@ -221,8 +221,8 @@
     > .app-shell-bottom-dock
     > nav.app-shell-curved-dock
     > .app-shell-dock-item {
-    min-height: 58px !important;
-    gap: 5px !important;
+    min-height: 52px !important;
+    gap: 4px !important;
   }
 
   html
@@ -232,8 +232,8 @@
     > nav.app-shell-curved-dock
     > .app-shell-dock-item
     > svg {
-    width: 27px !important;
-    height: 27px !important;
+    width: 25px !important;
+    height: 25px !important;
   }
 
   html
@@ -243,8 +243,8 @@
     > nav.app-shell-curved-dock
     > .app-shell-dock-item.is-active
     > svg {
-    width: 31px !important;
-    height: 31px !important;
+    width: 28px !important;
+    height: 28px !important;
   }
 
   html
@@ -254,7 +254,7 @@
     > nav.app-shell-curved-dock
     > .app-shell-dock-item
     > span {
-    font-size: 12px !important;
+    font-size: 11.5px !important;
   }
 
   html
@@ -263,11 +263,11 @@
     > .app-shell-bottom-dock
     > nav.app-shell-curved-dock
     > .app-shell-dock-separator {
-    height: 30px !important;
-    margin-bottom: 15px !important;
+    height: 27px !important;
+    margin-bottom: 12px !important;
   }
 
   html body main[data-tablet-portrait="true"] > .app-shell-content {
-    padding-bottom: calc(11rem + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
