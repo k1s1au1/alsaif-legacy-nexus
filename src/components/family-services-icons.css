@@ -1,0 +1,38 @@
+.family-services-menu-icon {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  background: var(--nav-bg, var(--primary));
+  color: white;
+  box-shadow: 0 10px 22px -13px rgb(0 0 0 / 45%);
+}
+.family-services-menu-icon[data-tone="accent"] {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--gold-primary) 88%, white),
+    color-mix(in srgb, var(--gold-primary) 75%, #725b2f)
+  );
+}
+.family-services-menu-icon > .family-services-menu-lock {
+  position: absolute;
+  bottom: -3px;
+  inset-inline-end: -3px;
+  width: 20px;
+  height: 20px;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--nav-bg, var(--primary)) 14%, transparent);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--primary);
+}
+html[data-theme-color-mode="custom"] .family-services-menu-icon {
+  background: var(--identity-icon);
+  color: var(--primary-foreground);
+}
+html[data-theme-color-mode="custom"] .family-services-menu-lock {
+  color: var(--identity-text);
+}

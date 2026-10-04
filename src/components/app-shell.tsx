@@ -1,6 +1,6 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState, type LinkProps } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState, type ReactNode, type MouseEventHandler } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearOfflineData } from "@/lib/offline-data";
 import {
@@ -13,21 +13,31 @@ import {
   ChevronDown,
   Settings,
   X,
+  Newspaper,
   Bell,
   Sparkles,
   Clock,
   Home,
+  MessageCircle,
   ShieldCheck,
   MoreHorizontal,
+  Ticket,
   CalendarDays,
+  ListChecks,
+  Wallet,
+  Archive,
   ChevronLeft,
+  Lock,
   LayoutGrid,
   Radio,
   AlertOctagon,
   Inbox,
+  PartyPopper,
+  Handshake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FamilyServicesSheet } from "@/components/family-services-sheet";
+import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
+import "./family-services-icons.css";
 import { useSiteLogo } from "@/hooks/use-site-logo";
 import { UserAvatar } from "@/components/user-avatar";
 import { NotificationsBell } from "@/components/notifications-bell";
@@ -122,6 +132,43 @@ function BottomNavItem({
       )}
     >
       {content}
+    </Link>
+  );
+}
+
+interface QuickActionItemProps {
+  to: LinkProps["to"];
+  label: string;
+  icon: ReactNode;
+  tone: "primary" | "accent";
+  restricted?: boolean;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+}
+
+function QuickActionItem({
+  to,
+  label,
+  icon,
+  tone,
+  restricted,
+  onClick,
+}: QuickActionItemProps) {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center gap-3 group animate-fade-up",
+        restricted && "opacity-50",
+      )}
+    >
+      <span className="family-services-menu-icon" data-tone={tone} aria-hidden="true">
+        {icon}
+        {restricted && <Lock size={12} className="family-services-menu-lock" />}
+      </span>
+      <span className="text-xs font-black text-white/70 group-hover:text-gold-primary transition-colors text-center leading-tight">
+        {label}
+      </span>
     </Link>
   );
 }
@@ -235,7 +282,6 @@ function AppShellChrome({
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const familyServicesTriggerRef = useRef<HTMLButtonElement>(null);
   const [showMoreHub, setShowMoreHub] = useState(false);
   const [isTabletPortrait, setIsTabletPortrait] = useState(false);
   const [useFamilySealHeader, setUseFamilySealHeader] = useState(false);
@@ -255,9 +301,6 @@ function AppShellChrome({
           viewportHeight > viewportWidth,
       );
       setUseFamilySealHeader(isFamilySealViewport(viewportWidth, viewportHeight, isTouchDevice));
-      if (viewportWidth >= 768 && !(isTouchDevice && viewportWidth <= 1600 && viewportHeight > viewportWidth)) {
-        setShowQuickActions(false);
-      }
     };
 
     syncTabletPortrait();
@@ -336,13 +379,13 @@ function AppShellChrome({
   }, [onlineUserIds]);
 
   useEffect(() => {
-    if (sidebarOpen || showMoreHub) {
+    if (sidebarOpen || showQuickActions || showMoreHub) {
       document.body.style.overflow = "hidden";
       return () => {
         document.body.style.overflow = "unset";
       };
     }
-  }, [sidebarOpen, showMoreHub]);
+  }, [sidebarOpen, showQuickActions, showMoreHub]);
 
   async function signOut() {
     try {
@@ -939,9 +982,6 @@ function AppShellChrome({
 
               <button
                 type="button"
-                ref={familyServicesTriggerRef}
-                aria-haspopup="dialog"
-                aria-controls="family-services-sheet"
                 aria-expanded={showQuickActions}
                 onClick={() => setShowQuickActions(true)}
                 className={cn(
@@ -1108,15 +1148,234 @@ function AppShellChrome({
           )}
         </AnimatePresence>
 
-        <FamilyServicesSheet
-          open={showQuickActions}
-          onOpenChange={setShowQuickActions}
-          isTabletPortrait={isTabletPortrait}
-          isGuest={isGuest}
-          allowedSections={allowedSections}
-          onRestricted={() => toast.error("خاص بالعائلة")}
-          triggerRef={familyServicesTriggerRef}
-        />
+        {/* QUICK ACTIONS HUB OVERLAY (MATCHES MORE HUB DESIGN) */}
+        <AnimatePresence>
+          {showQuickActions && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[160] flex flex-col justify-end bg-black/40 md:backdrop-blur-sm"
+              onClick={() => setShowQuickActions(false)}
+            >
+              <motion.div
+                drag="y"
+                dragConstraints={{ top: 0 }}
+                dragElastic={0.1}
+                onDragEnd={(_, info) => {
+                  if (info.offset.y > 80) setShowQuickActions(false);
+                }}
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
+                className={cn(
+                  "bg-[var(--nav-bg)]/30 backdrop-blur-2xl rounded-t-[40px] border-t border-white/10 p-8 pb-12 space-y-8 shadow-[0_-20px_80px_rgba(0,0,0,0.6)]",
+                  "touch-none relative overflow-hidden will-change-transform",
+                )}
+                onClick={(e) => e.stopPropagation()}
+                dir="rtl"
+              >
+                {/* Subtle Texture Overlay */}
+                <div
+                  className="absolute inset-0 opacity-[0.06] pointer-events-none mix-blend-overlay"
+                  style={{
+                    backgroundImage: `url("https://www.transparenttextures.com/patterns/pinstriped-suit.png")`,
+                  }}
+                />
+
+                <div className="relative z-10 w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-2 opacity-50" />
+
+                <div className="relative z-10 text-center space-y-1">
+                  <h3 className="text-2xl font-black text-white">الوصول السريع</h3>
+                  <p className="text-white/40 font-bold uppercase tracking-widest text-[11px]">
+                    بوابة مجلس السيف الرقمية
+                  </p>
+                </div>
+
+                <div className="relative z-10 grid grid-cols-3 gap-y-8 gap-x-4">
+                  <QuickActionItem
+                    to="/chat"
+                    label="محادثة"
+                    icon={<MessageCircle size={28} strokeWidth={1.8} />}
+                    tone="primary"
+                    restricted={isGuest && !allowedSections.includes("chat")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("chat")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/trips"
+                    label="ترفيه"
+                    icon={<Ticket size={28} strokeWidth={1.8} />}
+                    tone="primary"
+                    restricted={isGuest && !allowedSections.includes("trips")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("trips")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/meetings"
+                    label="اجتماعات"
+                    icon={<Users size={28} strokeWidth={1.8} />}
+                    tone="accent"
+                    restricted={isGuest && !allowedSections.includes("meetings")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("meetings")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/family-occasions"
+                    label="مناسبات العائلة"
+                    icon={<PartyPopper size={28} strokeWidth={1.8} />}
+                    tone="primary"
+                    restricted={isGuest && !allowedSections.includes("family-occasions")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("family-occasions")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/tasks"
+                    label="مهام"
+                    icon={<ListChecks size={28} strokeWidth={1.8} />}
+                    tone="accent"
+                    restricted={isGuest && !allowedSections.includes("tasks")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("tasks")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/majlis"
+                    label="الأخبار"
+                    icon={<Newspaper size={28} strokeWidth={1.8} />}
+                    tone="accent"
+                    restricted={isGuest && !allowedSections.includes("news")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("news")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/community"
+                    label="ركن الأعضاء"
+                    icon={<Handshake size={28} strokeWidth={1.8} />}
+                    tone="accent"
+                    restricted={isGuest && !allowedSections.includes("community")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("community")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/archive"
+                    label="الألبوم"
+                    icon={<Archive size={28} strokeWidth={1.8} />}
+                    tone="primary"
+                    restricted={isGuest && !allowedSections.includes("archive")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("archive")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/family-tree"
+                    label="نسب وأثر"
+                    icon={<LineageLegacyIcon size={28} strokeWidth={1.8} />}
+                    tone="primary"
+                    restricted={isGuest && !allowedSections.includes("tree")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("tree")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/vault"
+                    label="الخزنة"
+                    icon={<Lock size={28} strokeWidth={1.8} />}
+                    tone="accent"
+                    restricted={isGuest && !allowedSections.includes("vault")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("vault")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/finance"
+                    label="الصندوق"
+                    icon={<Wallet size={28} strokeWidth={1.8} />}
+                    tone="primary"
+                    restricted={isGuest && !allowedSections.includes("finance")}
+                    onClick={(e: any) => {
+                      if (isGuest && !allowedSections.includes("finance")) {
+                        e.preventDefault(); toast.error("خاص بالعائلة");
+                      } else {
+                        setShowQuickActions(false);
+                      }
+                    }}
+                  />
+                  <QuickActionItem
+                    to="/profile"
+                    label="ملفي"
+                    icon={<User size={28} strokeWidth={1.8} />}
+                    tone="accent"
+                    onClick={() => setShowQuickActions(false)}
+                  />
+                  <QuickActionItem
+                    to="/settings"
+                    label="الإعدادات"
+                    icon={<Settings size={28} strokeWidth={1.8} />}
+                    tone="primary"
+                    onClick={() => setShowQuickActions(false)}
+                  />
+                </div>
+
+                <div className="relative z-10 pt-4">
+                  <button
+                    onClick={() => setShowQuickActions(false)}
+                    className="w-full py-4 rounded-[22px] bg-white/5 text-white/60 font-black text-xs border border-white/10 active:scale-95 transition-all"
+                  >
+                    إغلاق
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
     </BiometricGate>
