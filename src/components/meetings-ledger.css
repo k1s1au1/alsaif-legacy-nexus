@@ -246,8 +246,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
-.meeting-ledger-rsvp-options button,
-.meeting-ledger-response {
+.meeting-ledger-rsvp-options button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -257,35 +256,26 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-}
-.meeting-ledger-going {
-  background: var(--ledger-paper);
-  color: var(--ledger-heading);
-  border: 1px solid color-mix(in srgb, var(--ledger-gold) 35%, transparent);
-}
-.meeting-ledger-decline {
   background: transparent;
   color: inherit;
-  border: 1px solid var(--ledger-gold);
+  border: 2px solid color-mix(in srgb, var(--ledger-gold) 55%, transparent);
+}
+.meeting-ledger-rsvp-options button svg {
+  flex-shrink: 0;
 }
 .meeting-ledger-rsvp-options button.is-selected {
-  box-shadow: inset 0 0 0 1px currentColor;
+  background: var(--ledger-ink);
+  color: var(--ledger-paper);
+  border-color: var(--ledger-gold);
   font-weight: 800;
 }
-.meeting-ledger-response {
-  background: color-mix(in srgb, var(--ledger-green) 5%, var(--ledger-paper));
-  color: var(--ledger-heading);
-  border: 1px solid color-mix(in srgb, var(--ledger-green) 24%, transparent);
+.meeting-ledger-featured .meeting-ledger-rsvp-options button.is-selected {
+  background: var(--ledger-paper);
+  color: var(--ledger-ink);
 }
-.meeting-ledger-response.is-declined {
-  color: #8b4132;
-  background: #fcf3ee;
-  border-color: #ead0c3;
-}
-.dark .meeting-ledger-response.is-declined {
-  color: #f5beab;
-  background: #392720;
-  border-color: #795144;
+.dark .meeting-ledger-featured .meeting-ledger-rsvp-options button.is-selected {
+  background: var(--ledger-ink);
+  color: var(--ledger-paper);
 }
 .meeting-ledger-companions {
   display: flex;
@@ -382,27 +372,29 @@
 .meeting-ledger-row-actions {
   grid-column: 1 / -1;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
   gap: 8px;
-}
-.meeting-ledger-row-actions > .meeting-ledger-rsvp {
-  flex: 1;
-  max-width: 160px;
+  text-align: center;
 }
 .meeting-ledger-details-button {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 8px 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 32px;
   color: var(--ledger-ink);
   border: 1px solid color-mix(in srgb, var(--ledger-gold) 40%, transparent);
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 17px;
+  font-weight: 700;
 }
 .meeting-ledger-details-button svg {
+  position: absolute;
+  inset-inline-end: 12px;
   color: var(--ledger-gold);
 }
 .meeting-ledger-past-status {
@@ -767,10 +759,6 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .meeting-ledger-row-actions > .meeting-ledger-rsvp {
-    flex: none;
-    max-width: none;
-  }
   .meeting-ledger-row .meeting-ledger-attendance > span {
     display: inline;
   }
@@ -887,9 +875,6 @@
   }
   .meeting-ledger-row .meeting-ledger-attendance {
     justify-content: flex-start;
-  }
-  .meeting-ledger-row-actions {
-    flex-direction: row-reverse;
   }
   .meeting-ledger-dialog-header {
     padding: 62px 16px 16px;

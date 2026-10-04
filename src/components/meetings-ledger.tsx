@@ -134,7 +134,6 @@ function RsvpControls({
   ready,
   saving,
   onRsvp,
-  compact = false,
 }: {
   meeting: Meeting;
   attendees: Attendee[];
@@ -142,10 +141,8 @@ function RsvpControls({
   ready: boolean;
   saving: boolean;
   onRsvp: LedgerProps["onRsvp"];
-  compact?: boolean;
 }) {
   const mine = attendees.find((attendee) => attendee.user_id === userId);
-  const [showChoices, setShowChoices] = useState(false);
   const [companionsDraft, setCompanionsDraft] = useState<string | null>(null);
   const companions = mine?.companions_count || 0;
   const value = companionsDraft ?? String(companions);
@@ -155,67 +152,40 @@ function RsvpControls({
     setCompanionsDraft(null);
   };
   return (
-    <div className={cn("meeting-ledger-rsvp", compact && "is-compact")}>
-      {compact && !showChoices ? (
+    <div className="meeting-ledger-rsvp">
+      <div
+        className="meeting-ledger-rsvp-options"
+        role="group"
+        aria-label={`حضور ${meeting.title}`}
+      >
         <button
           type="button"
-          className={cn("meeting-ledger-response", mine?.rsvp === "not_going" && "is-declined")}
+          className={cn("meeting-ledger-going", mine?.rsvp === "going" && "is-selected")}
+          aria-pressed={mine?.rsvp === "going"}
           disabled={!ready || saving}
-          onClick={() => setShowChoices(true)}
-          aria-label={`تغيير رد الحضور: ${meeting.title}`}
+          onClick={() => onRsvp(meeting.id, "going", companions)}
         >
           {saving ? (
             <Loader2 size={17} className="animate-spin" />
-          ) : mine?.rsvp === "not_going" ? (
-            <XCircle size={17} />
           ) : mine?.rsvp === "going" ? (
-            <CheckCircle2 size={17} />
+            <Check size={18} strokeWidth={3} />
           ) : (
-            <Users size={17} />
+            <CheckCircle2 size={18} />
           )}
-          {mine?.rsvp === "going"
-            ? "سأحضر"
-            : mine?.rsvp === "not_going"
-              ? "أعتذر"
-              : mine?.rsvp === "maybe"
-                ? "ربما أحضر"
-                : "تأكيد الحضور"}
+          <span>{mine?.rsvp === "going" ? "اختيارك: سأحضر" : "سأحضر"}</span>
         </button>
-      ) : (
-        <div
-          className="meeting-ledger-rsvp-options"
-          role="group"
-          aria-label={`حضور ${meeting.title}`}
+        <button
+          type="button"
+          className={cn("meeting-ledger-decline", mine?.rsvp === "not_going" && "is-selected")}
+          aria-pressed={mine?.rsvp === "not_going"}
+          disabled={!ready || saving}
+          onClick={() => onRsvp(meeting.id, "not_going")}
         >
-          <button
-            type="button"
-            className={cn("meeting-ledger-going", mine?.rsvp === "going" && "is-selected")}
-            aria-pressed={mine?.rsvp === "going"}
-            disabled={!ready || saving}
-            onClick={() => {
-              onRsvp(meeting.id, "going", companions);
-              setShowChoices(false);
-            }}
-          >
-            {saving ? <Loader2 size={17} className="animate-spin" /> : <CheckCircle2 size={18} />}
-            سأحضر
-          </button>
-          <button
-            type="button"
-            className={cn("meeting-ledger-decline", mine?.rsvp === "not_going" && "is-selected")}
-            aria-pressed={mine?.rsvp === "not_going"}
-            disabled={!ready || saving}
-            onClick={() => {
-              onRsvp(meeting.id, "not_going");
-              setShowChoices(false);
-            }}
-          >
-            <XCircle size={18} />
-            أعتذر
-          </button>
-        </div>
-      )}
-      {!compact && mine?.rsvp === "going" && (
+          {mine?.rsvp === "not_going" ? <Check size={18} strokeWidth={3} /> : <XCircle size={18} />}
+          <span>{mine?.rsvp === "not_going" ? "اختيارك: أعتذر" : "أعتذر"}</span>
+        </button>
+      </div>
+      {mine?.rsvp === "going" && (
         <label className="meeting-ledger-companions">
           <span>عدد المرافقين</span>
           <input
@@ -475,9 +445,7 @@ export function MeetingsLedger(props: LedgerProps) {
                   <AttendancePreview attendees={meetingAttendees(meeting.id)} profiles={profiles} />
                 </div>
                 <div className="meeting-ledger-row-actions">
-                  {tab === "upcoming" ? (
-                    <RsvpControls key={meeting.id} {...rsvpProps(meeting)} compact />
-                  ) : (
+                  {tab === "previous" && (
                     <span
                       className={cn(
                         "meeting-ledger-past-status",
