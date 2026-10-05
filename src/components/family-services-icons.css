@@ -5,6 +5,7 @@
   place-items: center;
   width: 60px;
   height: 60px;
+  border: 1px solid rgb(255 255 255 / 35%);
   border-radius: 20px;
   background: var(--nav-bg, var(--primary));
   color: white;
