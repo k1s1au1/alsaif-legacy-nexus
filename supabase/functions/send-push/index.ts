@@ -94,9 +94,27 @@ Deno.serve(async (req) => {
 
     if (dbError) throw new Error(`خطأ في قاعدة البيانات: ${dbError.message}`);
 
+    // Per-category opt-out: map the notification destination to a preference column
+    const target = String(payload.category || url || "").toLowerCase();
+    const prefMap: [string, string][] = [
+      ["meeting", "meetings"], ["chat", "chat"], ["task", "tasks"],
+      ["occasion", "occasions"], ["event", "occasions"], ["trip", "trips"],
+      ["finance", "finance"], ["fund", "finance"], ["majlis", "news"], ["news", "news"],
+      ["community", "community"], ["member-post", "community"], ["request", "requests"],
+      ["admin", "admin"], ["game", "entertainment"], ["entertain", "entertainment"],
+    ];
+    const prefKey = prefMap.find(([k]) => target.includes(k))?.[1];
+    let mutedUsers = new Set<string>();
+    if (prefKey) {
+      const { data: muted } = await supabase
+        .from("notification_preferences").select("user_id").eq(prefKey, false);
+      mutedUsers = new Set((muted || []).map((m: any) => m.user_id));
+    }
+
     const tokens = (rows || [])
       .filter((r: any) => {
         if (user_ids?.length && !user_ids.includes(r.user_id)) return false;
+        if (mutedUsers.has(r.user_id)) return false;
         return !(exclude_user_id && r.user_id === exclude_user_id);
       })
       .map((r: any) => r.token);

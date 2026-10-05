@@ -1252,26 +1252,49 @@ function ThemeCard({ active, label, icon, onClick }: any) {
   );
 }
 
-const NOTIF_OPTIONS: {
-  key: "meetings" | "entertainment" | "tasks" | "chat" | "news";
-  label: string;
-  desc: string;
-}[] = [
-  { key: "meetings", label: "إشعارات الاجتماعات", desc: "تنبيه عند إنشاء اجتماع جديد." },
-  { key: "entertainment", label: "إشعارات الترفيه", desc: "تنبيه للفعاليات والرحلات والمناسبات." },
-  { key: "tasks", label: "إشعارات المهام", desc: "تنبيه عند إسناد مهمة لك." },
-  { key: "chat", label: "إشعارات المحادثات", desc: "تنبيه عند وصول رسالة جديدة." },
-  { key: "news", label: "إشعارات الأخبار والإعلانات", desc: "تنبيه عند نشر خبر أو إعلان." },
+type NotifKey =
+  | "meetings" | "occasions" | "trips" | "tasks" | "chat" | "news"
+  | "community" | "finance" | "requests" | "entertainment" | "admin";
+
+const NOTIF_GROUPS: { title: string; items: { key: NotifKey; label: string; desc: string }[] }[] = [
+  {
+    title: "المجلس واللقاءات",
+    items: [
+      { key: "meetings", label: "الاجتماعات", desc: "إنشاء اجتماع جديد أو تغيير موعده." },
+      { key: "occasions", label: "المناسبات العائلية", desc: "الأفراح والمناسبات والدعوات الخاصة." },
+      { key: "trips", label: "الرحلات", desc: "إعلان رحلة جديدة وتحديثاتها." },
+    ],
+  },
+  {
+    title: "التواصل",
+    items: [
+      { key: "chat", label: "المحادثات", desc: "وصول رسالة جديدة لك." },
+      { key: "news", label: "الأخبار والإعلانات", desc: "نشر خبر أو إعلان في المجلس." },
+      { key: "community", label: "ركن الأعضاء", desc: "المنشورات والتعليقات والتصويتات." },
+    ],
+  },
+  {
+    title: "الأعمال والمتابعة",
+    items: [
+      { key: "tasks", label: "المهام", desc: "إسناد مهمة لك أو تحديثها." },
+      { key: "finance", label: "الصندوق المالي", desc: "التحويلات والمساهمات والمشاريع." },
+      { key: "requests", label: "الطلبات الخاصة", desc: "الردود على طلباتك وتحديث حالتها." },
+    ],
+  },
+  {
+    title: "أخرى",
+    items: [
+      { key: "entertainment", label: "الترفيه والألعاب", desc: "دعوات غرف الألعاب والفعاليات الترفيهية." },
+      { key: "admin", label: "تنبيهات الإدارة", desc: "طلبات العضوية وتعديل البيانات (للمسؤولين)." },
+    ],
+  },
 ];
+const ALL_KEYS = NOTIF_GROUPS.flatMap((g) => g.items.map((i) => i.key));
 
 function NotificationPreferencesSection() {
-  const [prefs, setPrefs] = useState<Record<string, boolean>>({
-    meetings: true,
-    entertainment: true,
-    tasks: true,
-    chat: true,
-    news: true,
-  });
+  const [prefs, setPrefs] = useState<Record<string, boolean>>(
+    Object.fromEntries(ALL_KEYS.map((k) => [k, true])),
+  );
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -1285,26 +1308,30 @@ function NotificationPreferencesSection() {
       setUserId(auth.user.id);
       const { data } = await supabase
         .from("notification_preferences")
-        .select("meetings,entertainment,tasks,chat,news")
+        .select(ALL_KEYS.join(","))
         .eq("user_id", auth.user.id)
         .maybeSingle();
-      if (data) setPrefs(data as any);
+      if (data) setPrefs((p) => ({ ...p, ...(data as any) }));
       setLoading(false);
     })();
   }, []);
 
-  const toggle = async (key: string) => {
+  const save = async (next: Record<string, boolean>, prev: Record<string, boolean>) => {
     if (!userId) return;
-    const next = { ...prefs, [key]: !prefs[key] };
     setPrefs(next);
     const { error } = await supabase
       .from("notification_preferences")
-      .upsert({ user_id: userId, ...next }, { onConflict: "user_id" });
+      .upsert({ user_id: userId, ...next } as any, { onConflict: "user_id" });
     if (error) {
       toast.error("تعذّر حفظ الإعداد");
-      setPrefs(prefs);
+      setPrefs(prev);
     }
   };
+
+  const toggle = (key: string) => save({ ...prefs, [key]: !prefs[key] }, prefs);
+  const setAll = (v: boolean) =>
+    save(Object.fromEntries(ALL_KEYS.map((k) => [k, v])), prefs);
+  const enabledCount = ALL_KEYS.filter((k) => prefs[k]).length;
 
   return (
     <section className="settings-panel settings-panel--notifications space-y-6 animate-fade-up">
@@ -1314,45 +1341,78 @@ function NotificationPreferencesSection() {
         </h3>
         <div className="h-px flex-1 bg-border/60" />
       </div>
-      <div className="settings-notification-list card-surface overflow-hidden divide-y divide-border/40">
-        {NOTIF_OPTIONS.map((o) => (
-          <div
-            key={o.key}
-            className="settings-notification-row p-6 md:p-8 flex items-center justify-between gap-4"
+
+      <div className="card-surface p-5 md:p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="text-right">
+          <p className="font-black text-primary text-sm md:text-base">
+            الإشعارات المفعّلة: {enabledCount} من {ALL_KEYS.length}
+          </p>
+          <p className="text-xs font-bold text-muted-foreground">
+            أوقف أي قسم لا تريد تنبيهاته، وتبقى بقية الإشعارات تعمل.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setAll(true)}
+            disabled={loading}
+            className="px-4 py-2 rounded-xl text-xs font-black bg-primary text-primary-foreground"
           >
-            <div className="flex items-center gap-4 md:gap-6 min-w-0">
-              <div className="size-11 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shrink-0">
-                <Bell className="size-5" />
-              </div>
-              <div className="text-right min-w-0">
-                <p className="font-black text-primary tracking-tight text-sm md:text-base">
-                  {o.label}
-                </p>
-                <p className="text-xs font-bold text-muted-foreground opacity-60 truncate">
-                  {o.desc}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => toggle(o.key)}
-              disabled={loading}
-              aria-pressed={prefs[o.key]}
-              className={cn(
-                "relative w-14 h-8 rounded-full transition-colors shrink-0",
-                prefs[o.key] ? "bg-primary" : "bg-muted",
-                loading && "opacity-50",
-              )}
-            >
-              <span
-                className={cn(
-                  "absolute top-1 size-6 rounded-full bg-white shadow transition-all",
-                  prefs[o.key] ? "right-1" : "right-7",
-                )}
-              />
-            </button>
-          </div>
-        ))}
+            تفعيل الكل
+          </button>
+          <button
+            onClick={() => setAll(false)}
+            disabled={loading}
+            className="px-4 py-2 rounded-xl text-xs font-black bg-muted text-foreground"
+          >
+            إيقاف الكل
+          </button>
+        </div>
       </div>
+
+      {NOTIF_GROUPS.map((group) => (
+        <div key={group.title} className="space-y-3">
+          <p className="text-sm font-black text-foreground pr-1">{group.title}</p>
+          <div className="settings-notification-list card-surface overflow-hidden divide-y divide-border/40">
+            {group.items.map((o) => (
+              <div
+                key={o.key}
+                className="settings-notification-row p-5 md:p-6 flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="size-11 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shrink-0">
+                    <Bell className="size-5" />
+                  </div>
+                  <div className="text-right min-w-0">
+                    <p className="font-black text-primary tracking-tight text-sm md:text-base">
+                      {o.label}
+                    </p>
+                    <p className="text-xs font-bold text-muted-foreground opacity-70">{o.desc}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => toggle(o.key)}
+                  disabled={loading}
+                  role="switch"
+                  aria-checked={prefs[o.key]}
+                  aria-label={o.label}
+                  className={cn(
+                    "relative w-14 h-8 rounded-full transition-colors shrink-0",
+                    prefs[o.key] ? "bg-primary" : "bg-muted",
+                    loading && "opacity-50",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute top-1 size-6 rounded-full bg-background shadow transition-all",
+                      prefs[o.key] ? "right-1" : "right-7",
+                    )}
+                  />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </section>
   );
 }
