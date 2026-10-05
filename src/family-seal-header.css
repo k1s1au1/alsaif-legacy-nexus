@@ -20,7 +20,7 @@
     --seal-ink: var(--primary);
     --seal-accent: var(--identity-accent, var(--gold-primary));
     --seal-paper: color-mix(in srgb, var(--card) 94%, var(--identity-soft, var(--background)) 6%);
-    --seal-line: color-mix(in srgb, var(--seal-accent) 42%, var(--border));
+    --seal-line: color-mix(in srgb, var(--seal-accent) 62%, var(--border));
     --seal-hover: color-mix(in srgb, var(--seal-ink) 8%, var(--seal-paper));
     display: grid;
     grid-template-columns: 48px minmax(0, 1fr) 122px minmax(0, 1fr) 48px;
@@ -95,6 +95,7 @@
   }
 
   .family-seal-wing {
+    --seal-wing-shape: polygon(0 10%, 94% 0, 100% 25%, 100% 75%, 94% 100%, 0 90%);
     display: flex;
     align-items: center;
     justify-content: space-evenly;
@@ -105,17 +106,27 @@
     gap: 5px;
   }
 
-  .family-seal-wing::before {
+  .family-seal-wing::before,
+  .family-seal-wing::after {
     content: "";
     position: absolute;
-    inset: 0;
     z-index: -1;
-    background: var(--seal-paper);
-    border-block: 1px solid var(--seal-line);
-    clip-path: polygon(0 10%, 94% 0, 100% 25%, 100% 75%, 94% 100%, 0 90%);
+    clip-path: var(--seal-wing-shape);
+    pointer-events: none;
   }
 
-  .family-seal-wing-end::before {
+  .family-seal-wing::before {
+    inset: 0;
+    background: var(--seal-line);
+  }
+
+  .family-seal-wing::after {
+    inset: 1px;
+    background: var(--seal-paper);
+  }
+
+  .family-seal-wing-end::before,
+  .family-seal-wing-end::after {
     transform: scaleX(-1);
   }
 
