@@ -49,9 +49,9 @@ export function QuickActionsBanner() {
   return (
     <>
       <style>{`
-        /* Hide the services banner entirely on desktop / wide screens */
+        /* Hide only when the full desktop dashboard renders its replacement panel. */
         @media (min-width: 1200px) {
-          .family-services-section { display: none !important; }
+          body:has(.desktop-rebuild-shell) .family-services-section { display: none !important; }
         }
 
         .family-service-icon-primary {
