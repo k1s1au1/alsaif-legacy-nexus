@@ -1069,32 +1069,50 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          admin: boolean
           chat: boolean
+          community: boolean
           created_at: string
           entertainment: boolean
+          finance: boolean
           meetings: boolean
           news: boolean
+          occasions: boolean
+          requests: boolean
           tasks: boolean
+          trips: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          admin?: boolean
           chat?: boolean
+          community?: boolean
           created_at?: string
           entertainment?: boolean
+          finance?: boolean
           meetings?: boolean
           news?: boolean
+          occasions?: boolean
+          requests?: boolean
           tasks?: boolean
+          trips?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          admin?: boolean
           chat?: boolean
+          community?: boolean
           created_at?: string
           entertainment?: boolean
+          finance?: boolean
           meetings?: boolean
           news?: boolean
+          occasions?: boolean
+          requests?: boolean
           tasks?: boolean
+          trips?: boolean
           updated_at?: string
           user_id?: string
         }
