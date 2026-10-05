@@ -95,15 +95,25 @@
   }
 
   .family-seal-wing {
-    --seal-wing-shape: polygon(0 10%, 94% 0, 100% 25%, 100% 75%, 94% 100%, 0 90%);
+    --seal-wing-line: color-mix(in srgb, var(--seal-ink) 38%, var(--seal-paper));
+    --seal-wing-rim: color-mix(in srgb, var(--seal-ink) 13%, var(--seal-paper));
+    --seal-wing-notch-radius: 47px;
+    --seal-wing-notch-offset: -28px;
     display: flex;
     align-items: center;
     justify-content: space-evenly;
     position: relative;
     min-width: 0;
     height: 70px;
-    padding: 10px 16px;
-    gap: 5px;
+    padding-block: 8px;
+    padding-inline: 12px 32px;
+    gap: 12px;
+    isolation: isolate;
+    filter: drop-shadow(0 5px 9px color-mix(in srgb, var(--seal-ink) 10%, transparent));
+  }
+
+  .family-seal-wing-end {
+    padding-inline: 32px 12px;
   }
 
   .family-seal-wing::before,
@@ -111,18 +121,39 @@
     content: "";
     position: absolute;
     z-index: -1;
-    clip-path: var(--seal-wing-shape);
+    border-radius: 4px 35px 35px 4px;
+    -webkit-mask-image: radial-gradient(
+      circle var(--seal-wing-notch-radius) at var(--seal-wing-notch-offset) 50%,
+      transparent calc(var(--seal-wing-notch-radius) - 0.5px),
+      #000 var(--seal-wing-notch-radius)
+    );
+    mask-image: radial-gradient(
+      circle var(--seal-wing-notch-radius) at var(--seal-wing-notch-offset) 50%,
+      transparent calc(var(--seal-wing-notch-radius) - 0.5px),
+      #000 var(--seal-wing-notch-radius)
+    );
     pointer-events: none;
   }
 
   .family-seal-wing::before {
     inset: 0;
-    background: var(--seal-line);
+    background: var(--seal-wing-line);
   }
 
   .family-seal-wing::after {
-    inset: 1px;
-    background: var(--seal-paper);
+    --seal-wing-notch-radius: 48.5px;
+    --seal-wing-notch-offset: -29.5px;
+    inset: 1.5px;
+    border-radius: 3px 34px 34px 3px;
+    background: radial-gradient(
+      circle at var(--seal-wing-notch-offset) 50%,
+      var(--seal-paper) 0 calc(var(--seal-wing-notch-radius) + 3px),
+      var(--seal-wing-rim) calc(var(--seal-wing-notch-radius) + 3px) calc(var(--seal-wing-notch-radius) + 4px),
+      var(--seal-paper) calc(var(--seal-wing-notch-radius) + 5px)
+    );
+    box-shadow:
+      inset 0 0 0 3px var(--seal-paper),
+      inset 0 0 0 4px var(--seal-wing-rim);
   }
 
   .family-seal-wing-end::before,
@@ -138,10 +169,10 @@
     position: relative;
     flex: 1;
     min-width: 0;
-    min-height: 44px;
-    padding: 8px 9px;
-    border: 0;
-    border-radius: 10px;
+    min-height: 52px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 999px;
     background: transparent;
     color: var(--seal-ink);
     font-size: 13px;
@@ -157,22 +188,30 @@
     stroke: currentColor;
   }
 
-  .family-seal-link:hover,
-  .family-seal-link[aria-current="page"],
-  .family-seal-link[data-active="true"],
-  .family-seal-link[data-state="open"] {
+  .family-seal-link:hover {
     background: var(--seal-hover);
     color: var(--seal-ink);
   }
 
-  .family-seal-link[aria-current="page"]::after,
-  .family-seal-link[data-active="true"]::after {
+  .family-seal-link[aria-current="page"],
+  .family-seal-link[data-active="true"],
+  .family-seal-link[data-state="open"] {
+    border-color: var(--seal-wing-rim);
+    background: color-mix(in srgb, var(--seal-ink) 7%, var(--seal-paper));
+    color: var(--seal-ink);
+    box-shadow: inset 0 1px 2px color-mix(in srgb, var(--seal-paper) 70%, transparent);
+  }
+
+  .family-seal-wing-end > .family-seal-link + .family-seal-link::before {
     content: "";
     position: absolute;
-    bottom: 1px;
-    width: 22px;
-    height: 2px;
-    background: var(--seal-accent);
+    inset-inline-start: -7px;
+    top: 50%;
+    width: 1px;
+    height: 26px;
+    transform: translateY(-50%);
+    background: var(--seal-wing-rim);
+    pointer-events: none;
   }
 
   .family-seal-medallion {
@@ -251,10 +290,6 @@
   .family-seal-header {
     grid-template-columns: 44px minmax(0, 1fr) 112px minmax(0, 1fr) 44px;
     gap: 7px;
-  }
-
-  .family-seal-wing {
-    padding-inline: 8px;
   }
 
   .family-seal-medallion {
