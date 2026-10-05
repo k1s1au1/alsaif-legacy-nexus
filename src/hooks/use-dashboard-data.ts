@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getCurrentUser, getSupabase } from "@/integrations/supabase/client";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
+import { getStoredHeaderNavKeys, normalizeBottomNavKeys } from "@/lib/navigation-registry";
 import {
   isMeetingActive,
   isTaskActive,
@@ -52,7 +53,9 @@ export function useProfile() {
         role,
         initial: (profileName?.[0] || user.email?.[0] || "ع").toUpperCase(),
         avatarPath: profileData?.avatar_url ?? null,
-        bottomNavPrefs: (profileData?.bottom_nav_prefs as any[]) || null,
+        navigationPrefs: profileData?.bottom_nav_prefs ?? null,
+        bottomNavPrefs: normalizeBottomNavKeys(profileData?.bottom_nav_prefs),
+        headerNavPrefs: getStoredHeaderNavKeys(profileData?.bottom_nav_prefs),
         allowedSections: (profileData?.allowed_sections as string[]) || [],
       };
     },

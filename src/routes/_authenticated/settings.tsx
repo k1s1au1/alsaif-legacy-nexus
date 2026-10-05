@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { AppShell } from "@/components/app-shell";
 import { BackgroundUploader } from "@/components/background-uploader";
@@ -10,6 +10,7 @@ import {
   Languages,
   Bell,
   Smartphone,
+  Monitor,
   Check,
   Palette,
   Type,
@@ -39,10 +40,17 @@ import {
   NavItemKey,
   DEFAULT_NAV_KEYS,
   normalizeBottomNavKeys,
+  normalizeHeaderNavKeys,
+  getStoredHeaderNavKeys,
+  canAccessNavItem,
+  updateNavigationPreferences,
 } from "@/lib/navigation-registry";
+import { useProfile } from "@/hooks/use-dashboard-data";
+import { useUserRole } from "@/hooks/use-user-role";
 import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { APP_FONTS as FONTS, applyAppFont } from "@/lib/typography";
 import { ThemeCustomizationDialog } from "@/components/theme-customization-dialog";
+import { HeaderNavigationDialog } from "@/components/header-navigation-dialog";
 import "@/settings-responsive.css";
 
 type SettingsSectionId =
@@ -70,6 +78,19 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   const queryClient = useQueryClient();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+  const roleAccess = useUserRole();
+  const navigationSaveLock = useRef(false);
+  const [navigationSaving, setNavigationSaving] = useState(false);
+  const [showHeaderNavPicker, setShowHeaderNavPicker] = useState(false);
+  const headerAccess = {
+    canAccessAdmin: roleAccess.isCouncilLeadership || roleAccess.isTechnicalAdmin || roleAccess.sectionHeads.length > 0,
+    isGuest: roleAccess.isGuest,
+    allowedSections: profile?.allowedSections || [],
+  };
+  const headerNavKeys = normalizeHeaderNavKeys(profile?.headerNavPrefs, headerAccess);
+  const headerNavOptions = NAV_REGISTRY.filter((item) => item.id !== "dashboard" && canAccessNavItem(item, headerAccess));
+  const navigationReady = !!profile && !profileLoading && !roleAccess.isLoading;
   const { simpleMode, setSimpleMode } = useSimpleMode();
   const [darkMode, setDarkMode] = useState<"light" | "dark" | "system" | null>(null);
   const [font, setFont] = useState("Tajawal");
@@ -125,19 +146,15 @@ function SettingsPage() {
       setCanCustomizeBg(isA);
       setIsAdmin(isA || rs.includes("manager"));
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("bottom_nav_prefs")
-        .eq("id", auth.user.id)
-        .maybeSingle();
-
-      if (profile?.bottom_nav_prefs && Array.isArray(profile.bottom_nav_prefs)) {
-        const keys = normalizeBottomNavKeys(profile.bottom_nav_prefs);
-        setBottomNavKeys(keys);
-        localStorage.setItem("bottom_nav_prefs", JSON.stringify(keys));
-      }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+    const keys = normalizeBottomNavKeys(profile.navigationPrefs);
+    setBottomNavKeys(keys);
+    localStorage.setItem("bottom_nav_prefs", JSON.stringify(keys));
+  }, [profile?.navigationPrefs]);
 
   useEffect(() => {
     setBiometricEnabled(localStorage.getItem("app-use-biometrics") === "true");
@@ -310,8 +327,65 @@ function SettingsPage() {
     );
   };
 
+  const saveNavigationPreferences = async (
+    change: Parameters<typeof updateNavigationPreferences>[1],
+    message: string,
+  ) => {
+    if (navigationSaveLock.current || !navigationReady) return;
+    navigationSaveLock.current = true;
+    setNavigationSaving(true);
+    try {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!auth.user) throw new Error("سجّل الدخول لحفظ الاختصارات");
+
+      // Read the latest row so changing either bar preserves the other bar,
+      // including preferences saved on another device since this page opened.
+      const { data: current, error: readError } = await supabase
+        .from("profiles")
+        .select("bottom_nav_prefs")
+        .eq("id", auth.user.id)
+        .maybeSingle();
+      if (readError) throw readError;
+      if (!current) throw new Error("تعذر تحميل تفضيلات الحساب");
+      const next = updateNavigationPreferences(current.bottom_nav_prefs, change);
+      const { data: saved, error } = await supabase
+        .from("profiles")
+        .update({ bottom_nav_prefs: next })
+        .eq("id", auth.user.id)
+        .select("bottom_nav_prefs")
+        .single();
+      if (error) throw error;
+      if (!saved) throw new Error("تعذر حفظ الاختصارات");
+
+      const prefs = saved.bottom_nav_prefs;
+      const bottom = normalizeBottomNavKeys(prefs);
+      setBottomNavKeys(bottom);
+      localStorage.setItem("bottom_nav_prefs", JSON.stringify(bottom));
+      queryClient.setQueryData<NonNullable<typeof profile>>(["profile"], (cached) => cached ? {
+        ...cached,
+        navigationPrefs: prefs,
+        bottomNavPrefs: bottom,
+        headerNavPrefs: getStoredHeaderNavKeys(prefs),
+      } : cached);
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success(message);
+    } catch (error) {
+      console.error("Nav preference update error:", error);
+      toast.error("تعذر حفظ الاختصارات. حاول مرة أخرى.");
+    } finally {
+      navigationSaveLock.current = false;
+      setNavigationSaving(false);
+    }
+  };
+
+  const handleHeaderNavChoice = (keys: NavItemKey[] | null) => saveNavigationPreferences(
+    { header: keys === null ? null : normalizeHeaderNavKeys(keys, headerAccess) },
+    keys === null ? "تمت استعادة اختصارات الشريط العلوي الافتراضية" : "تم حفظ اختصارات الشريط العلوي",
+  );
+
   const handleNavChoice = async (key: NavItemKey) => {
-    if (key === "dashboard") return;
+    if (key === "dashboard" || navigationSaving) return;
 
     const previous = normalizeBottomNavKeys(bottomNavKeys);
     const next = [...previous];
@@ -322,26 +396,10 @@ function SettingsPage() {
       next[otherSlot] = next[navSlotToEdit];
     }
     next[navSlotToEdit] = key;
-    setBottomNavKeys(next);
-
-    const { data: auth } = await supabase.auth.getUser();
-    if (auth.user) {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ bottom_nav_prefs: next })
-        .eq("id", auth.user.id);
-
-      if (error) {
-        console.error("Nav preference update error:", error);
-        setBottomNavKeys(previous);
-        toast.error(`تعذر حفظ التفضيلات: ${error.message}`);
-      } else {
-        localStorage.setItem("bottom_nav_prefs", JSON.stringify(next));
-        // Force immediate refresh of the AppShell nav
-        queryClient.invalidateQueries({ queryKey: ["profile"] });
-        toast.success(navSlotToEdit === 1 ? "تم تحديث الخانة الثانية" : "تم تحديث الخانة الرابعة");
-      }
-    }
+    await saveNavigationPreferences(
+      { bottom: next },
+      navSlotToEdit === 1 ? "تم تحديث الخانة الثانية" : "تم تحديث الخانة الرابعة",
+    );
   };
 
   const currentThemeObj =
@@ -841,9 +899,44 @@ function SettingsPage() {
                     </div>
                     <button
                       onClick={() => setShowNavPicker(true)}
-                      className="w-full btn-gold py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-sm shadow-2xl shadow-gold-primary/20"
+                      disabled={!navigationReady || navigationSaving}
+                      className="w-full btn-gold py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-sm shadow-2xl shadow-gold-primary/20 disabled:opacity-60"
                     >
                       <Palette className="size-5" /> تخصيص الشريط السفلي
+                    </button>
+                  </div>
+                  <div className="settings-shortcuts-card card-surface p-8 space-y-6">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-muted-foreground">الكمبيوتر والآيباد الأفقي</p>
+                        <h4 className="text-xl font-black text-primary">اختصارات الشريط العلوي</h4>
+                      </div>
+                      <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <Monitor className="size-7" aria-hidden="true" />
+                      </div>
+                    </div>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      الافتراضي هو التقويم والإدارة لمن لديهم صلاحية الإدارة، والتقويم والدردشة لبقية الأعضاء.
+                    </p>
+                    <div className="flex flex-wrap gap-2" aria-label="الاختصارات الحالية">
+                      {headerNavKeys.map((key) => {
+                        const item = NAV_REGISTRY.find((entry) => entry.id === key)!;
+                        const Icon = item.icon;
+                        return (
+                          <span key={key} className="flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs font-bold text-primary">
+                            <Icon size={16} aria-hidden="true" />
+                            {key === "chat" ? "الدردشة" : item.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowHeaderNavPicker(true)}
+                      disabled={!navigationReady || navigationSaving}
+                      className="btn-gold flex w-full items-center justify-center gap-3 rounded-2xl py-4 text-sm font-black disabled:opacity-60"
+                    >
+                      <Monitor className="size-5" aria-hidden="true" /> تخصيص الشريط العلوي
                     </button>
                   </div>
                 </div>
@@ -1040,6 +1133,15 @@ function SettingsPage() {
         </div>
       </div>
 
+      <HeaderNavigationDialog
+        open={showHeaderNavPicker}
+        onOpenChange={setShowHeaderNavPicker}
+        keys={headerNavKeys}
+        options={headerNavOptions}
+        saving={navigationSaving || !navigationReady}
+        onChange={handleHeaderNavChoice}
+      />
+
       <AnimatePresence>
         {showNavPicker && (
           <div
@@ -1126,9 +1228,10 @@ function SettingsPage() {
                       <button
                         key={n.id}
                         onClick={() => handleNavChoice(n.id)}
+                        disabled={navigationSaving || !navigationReady}
                         aria-pressed={selectedSlot !== null}
                         className={cn(
-                          "p-4 rounded-[28px] border-2 transition-all flex flex-col items-center gap-3 group relative",
+                          "p-4 rounded-[28px] border-2 transition-all flex flex-col items-center gap-3 group relative disabled:opacity-60",
                           selectedSlot
                             ? "border-primary bg-primary/5 shadow-inner"
                             : "border-transparent bg-muted/30 hover:bg-muted/50",

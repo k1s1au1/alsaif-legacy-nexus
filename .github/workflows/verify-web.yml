@@ -29,6 +29,8 @@ jobs:
         run: npm run test:member-posts
       - name: Check approved account entry
         run: npm run test:account-entry
+      - name: Check navigation preferences and permissions
+        run: npm run test:navigation
       - name: Check Millionaire game rules
         run: npm run test:millionaire
       - name: Check service worker syntax

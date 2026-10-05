@@ -53,7 +53,7 @@ import { isFamilySealViewport } from "@/lib/family-header-viewport";
 import { BiometricGate } from "@/components/biometric-gate";
 import { useProfile } from "@/hooks/use-dashboard-data";
 import { useUserRole } from "@/hooks/use-user-role";
-import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS, normalizeBottomNavKeys } from "@/lib/navigation-registry";
+import { NAV_REGISTRY, NavItemKey, DEFAULT_NAV_KEYS, normalizeBottomNavKeys, normalizeHeaderNavKeys } from "@/lib/navigation-registry";
 import {
   DropdownMenu,
   DropdownMenuArrow,
@@ -415,6 +415,15 @@ function AppShellChrome({
     roleAccess.isTechnicalAdmin ||
     roleAccess.sectionHeads.length > 0;
   const isGuest = globalProfile?.role === "ضيف المجلس";
+  const headerNavKeys = normalizeHeaderNavKeys(globalProfile?.headerNavPrefs, {
+    canAccessAdmin: isAdmin,
+    isGuest: roleAccess.isGuest || isGuest,
+    allowedSections,
+  });
+  const headerShortcuts = headerNavKeys.flatMap((key) => {
+    const item = NAV_REGISTRY.find((entry) => entry.id === key);
+    return item ? [{ ...item, label: item.id === "chat" ? "الدردشة" : item.label }] : [];
+  });
   const canShowDockItem = (def: (typeof NAV_REGISTRY)[number]) => {
     if (def.adminOnly && !isAdmin) return false;
     if (!isGuest) return true;
@@ -595,7 +604,7 @@ function AppShellChrome({
               logo={dynamicLogo}
               title={title}
               path={path}
-              isAdmin={isAdmin}
+              shortcuts={headerShortcuts}
               services={familySealServices}
               onOpenMenu={() => setSidebarOpen(true)}
               account={

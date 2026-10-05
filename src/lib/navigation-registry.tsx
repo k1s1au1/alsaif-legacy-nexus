@@ -75,11 +75,8 @@ const NAV_ITEM_KEYS = new Set<NavItemKey>(NAV_REGISTRY.map((item) => item.id));
 const DEFAULT_CUSTOM_NAV_KEYS: NavItemKey[] = DEFAULT_NAV_KEYS.slice(1);
 
 export function normalizeBottomNavKeys(value: unknown): NavItemKey[] {
-  const requested = Array.isArray(value)
-    ? value.filter(
-        (key): key is NavItemKey => typeof key === "string" && NAV_ITEM_KEYS.has(key as NavItemKey),
-      )
-    : [];
+  const stored = isPreferenceRecord(value) ? value.bottom : value;
+  const requested = validNavKeys(stored);
 
   const customKeys: NavItemKey[] = [];
   for (const key of [...requested, ...DEFAULT_CUSTOM_NAV_KEYS]) {
@@ -89,4 +86,68 @@ export function normalizeBottomNavKeys(value: unknown): NavItemKey[] {
   }
 
   return ["dashboard", ...customKeys];
+}
+
+export interface NavigationAccess {
+  canAccessAdmin: boolean;
+  isGuest?: boolean;
+  allowedSections?: readonly string[];
+}
+
+type NavigationPreferences = NavItemKey[] | {
+  v: 1;
+  bottom: NavItemKey[];
+  header?: NavItemKey[];
+};
+
+function isPreferenceRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validNavKeys(value: unknown): NavItemKey[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (key): key is NavItemKey => typeof key === "string" && NAV_ITEM_KEYS.has(key as NavItemKey),
+      )
+    : [];
+}
+
+/** An absent header preference follows the user's current permissions. */
+export function getStoredHeaderNavKeys(value: unknown): NavItemKey[] | undefined {
+  return isPreferenceRecord(value) && Array.isArray(value.header)
+    ? validNavKeys(value.header)
+    : undefined;
+}
+
+export function canAccessNavItem(item: NavItemDef, access: NavigationAccess): boolean {
+  if (item.adminOnly && !access.canAccessAdmin) return false;
+  if (!access.isGuest) return true;
+  return ["dashboard", "profile", "settings", "members"].includes(item.id) ||
+    !!access.allowedSections?.includes(item.id);
+}
+
+export function normalizeHeaderNavKeys(value: unknown, access: NavigationAccess): NavItemKey[] {
+  const defaults: NavItemKey[] = ["calendar", access.canAccessAdmin ? "admin" : "chat"];
+  const result: NavItemKey[] = [];
+  for (const key of [...validNavKeys(value), ...defaults, ...NAV_REGISTRY.map((item) => item.id)]) {
+    const item = NAV_REGISTRY.find((entry) => entry.id === key);
+    if (!item || key === "dashboard" || result.includes(key) || !canAccessNavItem(item, access)) continue;
+    result.push(key);
+    if (result.length === 2) break;
+  }
+  return result;
+}
+
+/** Keep legacy arrays readable and preserve the other bar when one is edited. */
+export function updateNavigationPreferences(
+  current: unknown,
+  change: { bottom?: NavItemKey[]; header?: NavItemKey[] | null },
+): NavigationPreferences {
+  const bottom = normalizeBottomNavKeys(change.bottom ?? current);
+  const header = change.header === null
+    ? undefined
+    : change.header === undefined
+      ? getStoredHeaderNavKeys(current)
+      : validNavKeys(change.header);
+  return header === undefined ? bottom : { v: 1, bottom, header };
 }

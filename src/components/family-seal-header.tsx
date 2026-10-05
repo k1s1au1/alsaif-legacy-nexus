@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  CalendarDays,
   ChevronDown,
   Home,
   LayoutGrid,
   Menu,
   Settings,
-  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import type { NavItemDef } from "@/lib/navigation-registry";
@@ -29,7 +27,7 @@ interface FamilySealHeaderProps {
   logo: string | null;
   title: string;
   path: string;
-  isAdmin: boolean;
+  shortcuts: NavItemDef[];
   services: FamilySealService[];
   onOpenMenu: () => void;
   account: ReactNode;
@@ -40,7 +38,7 @@ export function FamilySealHeader({
   logo,
   title,
   path,
-  isAdmin,
+  shortcuts,
   services,
   onOpenMenu,
   account,
@@ -144,25 +142,21 @@ export function FamilySealHeader({
         </span>
       </div>
 
-      <nav className="family-seal-wing family-seal-wing-end" aria-label="التقويم والإدارة">
-        <Link
-          to="/calendar"
-          className="family-seal-link"
-          aria-current={path === "/calendar" ? "page" : undefined}
-        >
-          <CalendarDays size={20} aria-hidden="true" />
-          <span>التقويم</span>
-        </Link>
-        {isAdmin && (
-          <Link
-            to="/admin"
-            className="family-seal-link"
-            aria-current={path.startsWith("/admin") ? "page" : undefined}
-          >
-            <ShieldCheck size={20} aria-hidden="true" />
-            <span>الإدارة</span>
-          </Link>
-        )}
+      <nav className="family-seal-wing family-seal-wing-end" aria-label="اختصارات الشريط العلوي">
+        {shortcuts.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.id}
+              to={item.to}
+              className="family-seal-link"
+              aria-current={path === item.to || path.startsWith(`${item.to}/`) ? "page" : undefined}
+            >
+              <Icon size={20} aria-hidden="true" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="family-seal-utilities family-seal-account-controls">
