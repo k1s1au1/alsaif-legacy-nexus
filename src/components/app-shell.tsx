@@ -576,6 +576,7 @@ function AppShellChrome({
       <main
         className="app-shell-main relative min-h-screen pb-40 md:pb-24"
         data-tablet-portrait={isTabletPortrait ? "true" : undefined}
+        data-chat-layout={/^\/chat(?:\/|$)/.test(path) ? "true" : undefined}
       >
         <motion.div
           initial={false}
@@ -1419,8 +1420,8 @@ const SHELL_TITLE_MAP: [RegExp, string][] = [
   [/^\/chat/, "المحادثات"],
 ];
 
-// Full-screen routes that intentionally render without the app chrome.
-const isBareRoute = (path: string) => path === "/onboarding" || /^\/chat\/[^/]+/.test(path);
+// Chat keeps the same persistent navigation as the rest of the family app.
+const isBareRoute = (path: string) => path === "/onboarding";
 
 export function AppShellLayout({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });

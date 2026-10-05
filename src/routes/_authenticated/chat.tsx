@@ -12,7 +12,7 @@ import {
   X,
   Plus,
   Clock,
-  Sparkles,
+  MessageCircle,
   Trash2,
 } from "lucide-react";
 import {
@@ -29,9 +29,10 @@ import {
 } from "@/lib/chat";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/user-avatar";
-import { useSiteLogo } from "@/hooks/use-site-logo";
+import { useChatViewport } from "@/hooks/use-chat-viewport";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import "@/chat-workspace.css";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   ssr: false,
@@ -55,7 +56,7 @@ type ConversationListItem = {
 function ChatLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isConvOpen = /^\/chat\/[^/]+/.test(path);
-  const dynamicLogo = useSiteLogo();
+  const viewportRef = useChatViewport();
 
   const [meId, setMeId] = useState<string | null>(null);
   const [shellUser, setShellUser] = useState<{
@@ -254,63 +255,46 @@ function ChatLayout() {
 
   return (
     <AppShell title="المحادثات" user={shellUser} fullWidth={true}>
-      <div className="flex h-[calc(100vh-6rem)] -m-4 md:-m-8 lg:-m-12 overflow-hidden bg-card animate-fade-up relative z-10 shadow-2xl">
-        <aside
-          className={cn(
-            "flex flex-col w-full lg:w-[280px] xl:w-[320px] shrink-0 border-l border-border bg-muted/20 relative z-20 transition-all duration-500",
-            isConvOpen ? "hidden lg:flex" : "flex",
-          )}
-        >
-          <div className="p-6 space-y-6 shrink-0 border-b border-border bg-card/50 backdrop-blur-md">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-gold-primary">
-                  <Sparkles className="size-3 animate-pulse" />
-                  <span className="text-[11px] font-black uppercase tracking-[0.3em]">الرسائل</span>
-                </div>
-                <h2 className="text-2xl font-black text-primary tracking-tighter">مجلس السيف</h2>
+      <div
+        ref={viewportRef}
+        className="chat-workspace"
+        data-conversation-open={isConvOpen ? "true" : "false"}
+        dir="rtl"
+      >
+        <aside className="chat-sidebar" aria-label="قائمة المحادثات">
+          <div className="chat-sidebar-top">
+            <div className="chat-sidebar-heading">
+              <div>
+                <span className="chat-sidebar-eyebrow">مجلس السيف</span>
+                <h2>المحادثات</h2>
               </div>
               <button
                 onClick={() => setShowNew("chat")}
-                className="size-10 rounded-xl bg-gold-primary text-emerald-950 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+                className="chat-sidebar-new"
+                aria-label="بدء محادثة جديدة"
               >
-                <Plus className="size-5" strokeWidth={3} />
+                <Plus className="size-5" />
               </button>
             </div>
-            <div className="relative group">
-              <Search
-                className="size-3.5 absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
-                strokeWidth={3}
-              />
+            <div className="chat-sidebar-search">
+              <Search size={18} aria-hidden="true" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث في المحادثات..."
-                className="w-full bg-background border border-border rounded-xl pl-4 pr-10 py-2.5 text-xs font-bold focus:ring-2 focus:ring-primary/10 transition-all shadow-inner"
+                aria-label="البحث في المحادثات"
               />
             </div>
-            <div className="flex p-1 bg-muted rounded-xl border border-border/40">
-              <button
-                onClick={() => setShowArchive(false)}
-                className={cn(
-                  "flex-1 py-2 text-[10px] font-black rounded-lg transition-all",
-                  !showArchive ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
-                )}
-              >
+            <div className="chat-sidebar-tabs">
+              <button onClick={() => setShowArchive(false)} aria-pressed={!showArchive}>
                 النشطة
               </button>
-              <button
-                onClick={() => setShowArchive(true)}
-                className={cn(
-                  "flex-1 py-2 text-[10px] font-black rounded-lg transition-all flex items-center justify-center gap-2",
-                  showArchive ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
-                )}
-              >
+              <button onClick={() => setShowArchive(true)} aria-pressed={showArchive}>
                 <Archive size={12} /> المؤرشفة
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-1 bg-muted/10 min-h-0 custom-scrollbar">
+          <div className="chat-conversation-list custom-scrollbar">
             {loading ? (
               <div className="py-20 text-center opacity-30">
                 <Clock className="size-8 mx-auto animate-spin mb-2" />
@@ -334,37 +318,21 @@ function ChatLayout() {
             )}
           </div>
         </aside>
-        <main
-          className={cn(
-            "flex-1 min-w-0 bg-background relative z-10",
-            isConvOpen ? "flex" : "hidden lg:flex",
-          )}
-        >
+        <section className="chat-main" aria-label="المحادثة">
           {!isConvOpen && (
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-8 animate-fade-up">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gold-primary/10 blur-[80px] rounded-full scale-150" />
-                <div
-                  className="size-48 md:size-64 relative z-10 logo-alsaif opacity-10"
-                  style={{ "--logo-url": `url(${dynamicLogo || ""})` } as any}
-                />
+            <div className="chat-empty">
+              <div className="chat-empty-icon">
+                <MessageCircle size={32} />
               </div>
-              <div className="space-y-2 max-w-sm">
-                <h3 className="text-2xl font-black text-primary tracking-tight">مجلس المحادثات</h3>
-                <p className="text-muted-foreground font-bold text-base opacity-60 leading-relaxed">
-                  اختر إحدى الجلسات لبدء حوار عائلي ممتع وآمن.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowNew("chat")}
-                className="btn-gold px-10 py-4 text-base rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all"
-              >
+              <h3>مجلس العائلة</h3>
+              <p>اختر محادثة من القائمة أو ابدأ محادثة جديدة مع أفراد العائلة.</p>
+              <button onClick={() => setShowNew("chat")} className="chat-primary-button">
                 بدء مجلس جديد
               </button>
             </div>
           )}
-          <Outlet />
-        </main>
+          {isConvOpen && <Outlet />}
+        </section>
       </div>
       <AnimatePresence>
         {showNew && meId && (
@@ -407,7 +375,7 @@ function ConversationRow({
   const [dragX, setDragX] = useState(0);
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] group/row bg-muted/5">
+    <div className="chat-conversation-row group/row">
       {/* BACKGROUND ACTIONS - Only visible when dragging */}
       <div className="absolute inset-0 flex items-center justify-between px-8 z-0">
         <div
@@ -447,67 +415,38 @@ function ConversationRow({
         <Link
           to="/chat/$conversationId"
           params={{ conversationId: item.conversation.id }}
-          className={cn(
-            "flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group/row border",
-            active
-              ? "bg-primary text-white shadow-xl shadow-primary/10 border-primary"
-              : "bg-card hover:bg-muted/50 text-foreground border-border/40 shadow-sm",
-          )}
+          className="chat-conversation-link"
+          aria-current={active ? "page" : undefined}
         >
           <div className="relative shrink-0">
-            <div
-              className={cn(
-                "size-12 rounded-xl border transition-all relative",
-                active ? "border-white/20 shadow-inner" : "border-gold-primary/10 shadow-sm",
-              )}
-            >
+            <div className="chat-conversation-avatar">
               {item.conversation.kind === "group" ? (
-                <div className="size-full flex items-center justify-center bg-muted rounded-xl overflow-hidden">
-                  <Users className={cn("size-5", active ? "text-white" : "text-primary")} />
+                <div className="size-full flex items-center justify-center">
+                  <Users className="size-5" />
                 </div>
               ) : (
                 <UserAvatar
                   path={otherAvatarPath}
                   name={title}
                   initial={initial}
-                  className="size-full rounded-xl overflow-hidden"
+                  fallbackClassName="chat-avatar-initial"
+                  className="size-full rounded-full overflow-hidden"
                   userId={other?.user_id ?? null}
                   presenceDotClassName="absolute -bottom-1 -left-1 size-3.5 ring-2 ring-card shadow-lg z-20"
                 />
               )}
             </div>
-            {!active && item.unread > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-4.5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-black grid place-items-center border-2 border-card shadow-lg z-30">
-                {item.unread}
-              </span>
-            )}
+            {item.unread > 0 && <span className="chat-unread-badge">{item.unread}</span>}
           </div>
           <div className="flex-1 min-w-0 space-y-0.5 text-right">
             <div className="flex items-center justify-between gap-2">
-              <h3
-                className={cn(
-                  "text-sm font-black truncate",
-                  active ? "text-white" : "text-primary",
-                )}
-              >
-                {title}
-              </h3>
-              <span
-                className={cn(
-                  "text-[11px] font-bold opacity-40",
-                  active ? "text-white" : "text-muted-foreground",
-                )}
-              >
+              <h3 className="chat-conversation-title">{title}</h3>
+              <span className="chat-conversation-time">
                 {item.lastMessage ? chatTimeLabel(item.lastMessage.created_at) : ""}
               </span>
             </div>
             <div className="flex items-center gap-1.5 overflow-hidden">
-              <p
-                className={cn(
-                  "text-[11px] font-bold truncate flex-1",
-                  active ? "text-white/70" : "text-muted-foreground",
-                )}
-              >
+              <p className="chat-conversation-preview">
                 {lastMine && item.lastMessage && (
                   <CheckCheck className={cn("size-3 inline ml-1 opacity-50")} />
                 )}

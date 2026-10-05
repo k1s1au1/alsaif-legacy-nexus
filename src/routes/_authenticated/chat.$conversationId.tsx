@@ -28,7 +28,7 @@ import {
   X,
   Clock,
   ChevronLeft,
-  MoreHorizontal,
+  Info,
   Mic,
   Square,
   FileText,
@@ -96,12 +96,20 @@ function ConversationRoute() {
   const [recordingTime, setRecordingTime] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const draftRef = useRef<HTMLTextAreaElement>(null);
   const isInitialLoad = useRef(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const input = draftRef.current;
+    if (!input) return;
+    input.style.height = "auto";
+    input.style.height = draft ? `${Math.min(input.scrollHeight, 112)}px` : "40px";
+  }, [draft]);
 
   const myParticipant = useMemo(
     () => participants.find((p) => p.user_id === meId),
@@ -350,7 +358,7 @@ function ConversationRoute() {
     } else {
       scrollContainer.scrollTo({
         top: scrollContainer.scrollHeight,
-        behavior: "smooth"
+        behavior: "smooth",
       });
     }
   }, []);
@@ -358,12 +366,15 @@ function ConversationRoute() {
   useEffect(() => {
     if (messages.length > 0) {
       // Small delay to allow DOM to update with new messages
-      const timeout = setTimeout(() => {
-        scrollToBottom(isInitialLoad.current);
-        if (isInitialLoad.current) {
-          isInitialLoad.current = false;
-        }
-      }, isInitialLoad.current ? 50 : 0);
+      const timeout = setTimeout(
+        () => {
+          scrollToBottom(isInitialLoad.current);
+          if (isInitialLoad.current) {
+            isInitialLoad.current = false;
+          }
+        },
+        isInitialLoad.current ? 50 : 0,
+      );
       return () => clearTimeout(timeout);
     }
   }, [messages.length, scrollToBottom]);
@@ -507,15 +518,13 @@ function ConversationRoute() {
     const body = draft.trim();
     if (!body || !meId || !conv || sending) return;
     setSending(true);
-    const { error } = await supabase
-      .from("messages")
-      .insert({
-        conversation_id: conv.id,
-        sender_id: meId,
-        kind: "text",
-        body,
-        reply_to_id: replyTo?.id ?? null,
-      });
+    const { error } = await supabase.from("messages").insert({
+      conversation_id: conv.id,
+      sender_id: meId,
+      kind: "text",
+      body,
+      reply_to_id: replyTo?.id ?? null,
+    });
     setSending(false);
     if (!error) {
       setDraft("");
@@ -584,26 +593,28 @@ function ConversationRoute() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-background relative overflow-hidden" dir="rtl">
+    <div className="chat-thread" dir="rtl">
       {/* INTEGRATED HEADER */}
-      <header className="h-20 lg:h-24 shrink-0 border-b border-border bg-card/60 backdrop-blur-xl flex items-center justify-between px-4 lg:px-10 z-30 shadow-sm">
+      <header className="chat-thread-header">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => navigate({ to: "/chat" })}
-            className="lg:hidden p-1 -mr-1 text-muted-foreground hover:text-primary transition-all"
+            className="chat-back-button chat-icon-button"
+            aria-label="العودة إلى المحادثات"
           >
             <ChevronLeft className="size-6" />
           </button>
 
-          <div
-            className="flex items-center gap-4 cursor-pointer group"
+          <button
+            className="chat-thread-identity"
             onClick={() => setShowInfo(true)}
+            aria-label={`تفاصيل ${title}`}
           >
             <div className="relative shrink-0">
-              <div className="size-10 lg:size-12 rounded-xl lg:rounded-2xl bg-muted border border-border relative">
+              <div className="chat-thread-avatar">
                 {conv?.kind === "group" ? (
-                  <div className="size-full flex items-center justify-center bg-primary/5 rounded-xl lg:rounded-2xl overflow-hidden">
-                    <Users className="size-5 lg:size-6 text-primary" />
+                  <div className="size-full flex items-center justify-center">
+                    <Users className="size-5" />
                   </div>
                 ) : (
                   <UserAvatar
@@ -611,7 +622,8 @@ function ConversationRoute() {
                       otherInDirect ? (profiles[otherInDirect.user_id]?.avatar_url ?? null) : null
                     }
                     name={title}
-                    className="size-full object-cover rounded-xl lg:rounded-2xl overflow-hidden"
+                    fallbackClassName="chat-avatar-initial"
+                    className="size-full object-cover rounded-full overflow-hidden"
                     userId={otherInDirect?.user_id ?? null}
                     presenceDotClassName="absolute -bottom-1 -left-1 size-3 lg:size-4 ring-2 ring-card shadow-lg z-20"
                   />
@@ -619,92 +631,117 @@ function ConversationRoute() {
               </div>
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm lg:text-base font-black tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
-                {title}
-              </h2>
-              <p className="text-[11px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">
-                {statusLabel}
-              </p>
+              <h2 className="chat-thread-title">{title}</h2>
+              <p className="chat-thread-status">{statusLabel}</p>
             </div>
-          </div>
+          </button>
         </div>
 
         <div className="flex items-center gap-1 lg:gap-2">
           <button
             onClick={() => setShowSearch(!showSearch)}
-            className={cn(
-              "size-9 lg:size-10 rounded-xl flex items-center justify-center transition-all",
-              showSearch ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted",
-            )}
+            className="chat-icon-button"
+            aria-label="البحث في الرسائل"
+            aria-expanded={showSearch}
           >
             <Search className="size-4" strokeWidth={2.5} />
           </button>
           <button
             onClick={() => setShowInfo(true)}
-            className="size-9 lg:size-10 rounded-xl bg-muted/40 text-muted-foreground hover:bg-muted flex items-center justify-center transition-all"
+            className="chat-icon-button"
+            aria-label="تفاصيل المجلس"
           >
-            <MoreHorizontal className="size-4.5" strokeWidth={2.5} />
+            <Info className="size-5" />
           </button>
         </div>
       </header>
 
-      {/* MESSAGES AREA */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 lg:px-10 py-6 lg:py-10 space-y-4 lg:space-y-6 relative min-h-0 custom-scrollbar"
-      >
-        <AnimatePresence initial={false}>
-          {renderGroupedMessages({
-            messages,
-            meId,
-            profiles,
-            participants,
-            reactions,
-            deliveries,
-            onReply: setReplyTo,
-            onReact: (id: string) => setReactingTo(id),
-            onDelete: (m: Message) => {
-              if (m.sender_id === meId || isAdmin)
-                supabase
-                  .from("messages")
-                  .update({ deleted_at: new Date().toISOString() })
-                  .eq("id", m.id);
-            },
-            isAdmin,
-            reactingTo,
-            onPickReaction: (mid: string, e: string) => {
-              supabase
-                .from("message_reactions")
-                .insert({ message_id: mid, user_id: meId!, emoji: e });
-              setReactingTo(null);
-            },
-            closeReactingTo: () => setReactingTo(null),
-            onMediaLoad: () => scrollToBottom(false),
-          })}
-        </AnimatePresence>
-
-        {typingUsers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-full w-fit border border-border/50"
+      {showSearch && (
+        <div className="chat-message-search">
+          <Search size={18} aria-hidden="true" />
+          <input
+            autoFocus
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="ابحث في رسائل المجلس..."
+            aria-label="البحث في رسائل المجلس"
+          />
+          <button
+            className="chat-icon-button"
+            aria-label="إغلاق البحث"
+            onClick={() => {
+              setShowSearch(false);
+              setSearch("");
+            }}
           >
-            <div className="flex gap-1">
-              <span className="size-1 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
-              <span className="size-1 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
-              <span className="size-1 bg-primary rounded-full animate-bounce" />
-            </div>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-              {typingUsers.length === 1
-                ? `${displayName(profiles[typingUsers[0]])} يكتب...`
-                : "عدة أشخاص يكتبون..."}
-            </p>
-          </motion.div>
-        )}
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* MESSAGES AREA */}
+      <div ref={scrollRef} className="chat-messages custom-scrollbar">
+        <div className="chat-message-list">
+          <AnimatePresence initial={false}>
+            {renderGroupedMessages({
+              messages:
+                showSearch && search.trim()
+                  ? messages.filter((message) =>
+                      `${message.body ?? ""} ${message.attachment_name ?? ""}`
+                        .toLowerCase()
+                        .includes(search.trim().toLowerCase()),
+                    )
+                  : messages,
+              meId,
+              profiles,
+              participants,
+              reactions,
+              deliveries,
+              onReply: setReplyTo,
+              onReact: (id: string) => setReactingTo(id),
+              onDelete: (m: Message) => {
+                if (m.sender_id === meId || isAdmin)
+                  supabase
+                    .from("messages")
+                    .update({ deleted_at: new Date().toISOString() })
+                    .eq("id", m.id);
+              },
+              isAdmin,
+              reactingTo,
+              onPickReaction: (mid: string, e: string) => {
+                supabase
+                  .from("message_reactions")
+                  .insert({ message_id: mid, user_id: meId!, emoji: e });
+                setReactingTo(null);
+              },
+              closeReactingTo: () => setReactingTo(null),
+              onMediaLoad: () => scrollToBottom(false),
+            })}
+          </AnimatePresence>
+
+          {typingUsers.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-full w-fit border border-border/50"
+            >
+              <div className="flex gap-1">
+                <span className="size-1 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <span className="size-1 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <span className="size-1 bg-primary rounded-full animate-bounce" />
+              </div>
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                {typingUsers.length === 1
+                  ? `${displayName(profiles[typingUsers[0]])} يكتب...`
+                  : "عدة أشخاص يكتبون..."}
+              </p>
+            </motion.div>
+          )}
+        </div>
       </div>
 
       {/* INPUT AREA */}
-      <div className="px-3 lg:px-6 pb-3 lg:pb-6 shrink-0 relative z-20 bg-background">
+      <div className="chat-composer">
         <AnimatePresence>
           {replyTo && (
             <motion.div
@@ -723,6 +760,7 @@ function ConversationRoute() {
               </div>
               <button
                 onClick={() => setReplyTo(null)}
+                aria-label="إلغاء الرد"
                 className="size-7 rounded-full hover:bg-muted text-muted-foreground flex items-center justify-center transition-all"
               >
                 <X size={14} />
@@ -731,8 +769,8 @@ function ConversationRoute() {
           )}
         </AnimatePresence>
 
-        <form onSubmit={sendText} className="flex items-end gap-2 lg:gap-3 max-w-6xl mx-auto">
-          <div className="flex-1 bg-muted/30 border border-border rounded-[20px] lg:rounded-[24px] p-1.5 lg:p-2 flex items-end shadow-inner focus-within:border-primary/30 transition-all relative">
+        <form onSubmit={sendText} className="chat-compose-form">
+          <div className="chat-compose-input">
             {isRecording ? (
               <div className="flex-1 flex items-center justify-between px-4 py-2.5">
                 <div className="flex items-center gap-3">
@@ -754,35 +792,45 @@ function ConversationRoute() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="size-9 lg:size-11 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary transition-all"
+                  className="chat-compose-tool"
+                  aria-label="إرفاق ملف"
+                  disabled={!canSend || sending}
                 >
                   <Paperclip className="size-4 lg:size-5" strokeWidth={2.5} />
                 </button>
                 <textarea
+                  ref={draftRef}
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
-                  placeholder="اكتب..."
+                  placeholder={canSend ? "اكتب رسالة..." : "الإرسال غير متاح لك في هذا المجلس"}
+                  aria-label="نص الرسالة"
+                  disabled={!canSend || sending}
                   rows={1}
-                  className="flex-1 bg-transparent border-none focus:outline-none px-2 py-2.5 font-bold text-sm text-foreground resize-none max-h-24 lg:max-h-32 no-scrollbar min-h-[40px] lg:min-h-[44px]"
+                  className="chat-draft custom-scrollbar"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                       e.preventDefault();
                       sendText();
                     }
                   }}
                 />
-                <div className="flex items-center gap-0.5">
+                <div className="chat-compose-tools">
                   <button
                     type="button"
                     onClick={() => setShowEmoji(!showEmoji)}
-                    className="size-9 lg:size-11 rounded-full text-muted-foreground hover:text-primary transition-all"
+                    className="chat-compose-tool"
+                    aria-label="إضافة رمز تعبيري"
+                    aria-expanded={showEmoji}
+                    disabled={!canSend || sending}
                   >
                     <Smile className="size-5 lg:size-5.5" strokeWidth={2.5} />
                   </button>
                   <button
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
-                    className="size-9 lg:size-11 rounded-full text-muted-foreground hover:text-primary transition-all"
+                    className="chat-compose-tool"
+                    aria-label="إرفاق صورة"
+                    disabled={!canSend || sending}
                   >
                     <ImageIcon className="size-5 lg:size-5.5" strokeWidth={2.5} />
                   </button>
@@ -795,7 +843,9 @@ function ConversationRoute() {
             <button
               type="button"
               onClick={startRecording}
-              className="size-[48px] lg:size-[52px] shrink-0 rounded-[16px] lg:rounded-[20px] bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+              className="chat-send-button"
+              aria-label="تسجيل رسالة صوتية"
+              disabled={!canSend || sending}
             >
               <Mic className="size-5 lg:size-6" strokeWidth={2.5} />
             </button>
@@ -803,15 +853,17 @@ function ConversationRoute() {
             <button
               type="button"
               onClick={stopRecording}
-              className="size-[48px] lg:size-[52px] shrink-0 rounded-[16px] lg:rounded-[20px] bg-red-500 text-white flex items-center justify-center shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-all"
+              className="chat-send-button is-recording"
+              aria-label="إيقاف التسجيل وإرسال الرسالة الصوتية"
             >
               <Square className="size-5 lg:size-6" strokeWidth={2.5} />
             </button>
           ) : (
             <button
               type="submit"
-              disabled={sending}
-              className="size-[48px] lg:size-[52px] shrink-0 rounded-[16px] lg:rounded-[20px] bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:scale-100 transition-all"
+              disabled={sending || !canSend}
+              className="chat-send-button"
+              aria-label="إرسال الرسالة"
             >
               {sending ? (
                 <div className="size-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
@@ -827,9 +879,9 @@ function ConversationRoute() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
-              className="absolute bottom-[76px] left-3 right-3 lg:left-auto lg:right-10 lg:w-[360px] z-30 rounded-2xl border border-border bg-card p-3 shadow-2xl"
+              className="chat-emoji-picker"
             >
-              <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto custom-scrollbar" dir="ltr">
+              <div className="chat-emoji-picker-grid custom-scrollbar" dir="ltr">
                 {EMOJI_PICKER.map((emoji) => (
                   <button
                     key={emoji}
@@ -838,7 +890,7 @@ function ConversationRoute() {
                       setDraft((value) => value + emoji);
                       setShowEmoji(false);
                     }}
-                    className="size-9 rounded-lg text-lg hover:bg-muted transition-colors"
+                    className="chat-emoji-choice"
                   >
                     {emoji}
                   </button>
@@ -907,11 +959,8 @@ function renderGroupedMessages(opts: any) {
     const day = dayKey(m.created_at);
     if (day !== lastDay) {
       nodes.push(
-        <div key={`day-${day}`} className="flex justify-center my-8 relative">
-          <div className="h-px w-full bg-border absolute top-1/2 left-0" />
-          <span className="relative z-10 text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground bg-background px-6 rounded-full border border-border">
-            {dayLabel(m.created_at)}
-          </span>
+        <div key={`day-${day}`} className="chat-day-separator">
+          <span>{dayLabel(m.created_at)}</span>
         </div>,
       );
       lastDay = day;
@@ -984,7 +1033,7 @@ function MessageBubble({
     <motion.div
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn("flex group/msg w-full gap-3", mine ? "flex-row-reverse" : "flex-row")}
+      className={cn("chat-message group/msg", mine && "is-mine")}
     >
       {!mine && (
         <div className="shrink-0 pt-1">
@@ -1000,27 +1049,10 @@ function MessageBubble({
         </div>
       )}
 
-      <div
-        className={cn(
-          "flex flex-col gap-1.5 relative max-w-[85%] md:max-w-[70%]",
-          mine ? "items-end" : "items-start",
-        )}
-      >
-        {!mine && (
-          <span className="text-[11px] font-black text-primary opacity-40 mr-1 tracking-widest uppercase">
-            {name}
-          </span>
-        )}
+      <div className={cn("chat-message-content")}>
+        {!mine && <span className="chat-message-sender">{name}</span>}
 
-        <div
-          onClick={() => setShowActions(!showActions)}
-          className={cn(
-            "relative p-4 rounded-[24px] shadow-sm transition-all duration-300 border cursor-pointer active:scale-[0.99]",
-            mine
-              ? "bg-primary text-white border-primary rounded-tr-none"
-              : "bg-card border-border text-foreground rounded-tl-none",
-          )}
-        >
+        <div onClick={() => setShowActions(!showActions)} className="chat-bubble">
           {replyTo && (
             <div
               className={cn(
@@ -1036,7 +1068,7 @@ function MessageBubble({
             </div>
           )}
 
-          <div className="text-[14px] md:text-[15px] font-bold leading-relaxed whitespace-pre-wrap dir-rtl text-right">
+          <div className="chat-bubble-body">
             {m.deleted_at ? (
               <em className="opacity-30 font-medium italic">🚫 تم حذف الرسالة</em>
             ) : (
@@ -1055,16 +1087,8 @@ function MessageBubble({
                   <AudioPlayer url={signedUrl} duration={m.attachment_duration_ms} mine={mine} />
                 )}
                 {m.kind === "file" && signedUrl && (
-                  <a
-                    href={signedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-xl border transition-all hover:scale-[1.02]",
-                      mine ? "bg-white/10 border-white/20" : "bg-muted border-border",
-                    )}
-                  >
-                    <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                  <a href={signedUrl} target="_blank" rel="noreferrer" className="chat-file">
+                    <div className="chat-file-icon">
                       <FileText size={20} />
                     </div>
                     <div className="flex-1 min-w-0 text-right">
@@ -1081,15 +1105,10 @@ function MessageBubble({
             )}
           </div>
 
-          <div
-            className={cn(
-              "flex items-center gap-2 mt-2 text-[10px] font-black uppercase tracking-widest",
-              mine ? "text-white/40 justify-end" : "text-muted-foreground opacity-30",
-            )}
-          >
+          <div className="chat-bubble-meta">
             <span className="tabular-nums">{timeLabel(m.created_at)}</span>
             {mine && !m.deleted_at && (
-              <CheckCheck className={cn("size-2.5 transition-colors", isRead ? "text-blue-400" : "text-white/40")} />
+              <CheckCheck className="size-3" data-read={isRead ? "true" : "false"} />
             )}
           </div>
         </div>
@@ -1126,6 +1145,7 @@ function MessageBubble({
                   e.stopPropagation();
                   onReact();
                 }}
+                aria-label="التفاعل مع الرسالة"
                 className="p-2 rounded-full bg-muted/50 text-muted-foreground hover:text-primary transition-all shadow-sm border border-border"
               >
                 <Smile size={14} />
@@ -1135,6 +1155,7 @@ function MessageBubble({
                   e.stopPropagation();
                   onReply();
                 }}
+                aria-label="الرد على الرسالة"
                 className="p-2 rounded-full bg-muted/50 text-muted-foreground hover:text-primary transition-all shadow-sm border border-border"
               >
                 <Reply size={14} />
@@ -1145,6 +1166,7 @@ function MessageBubble({
                     e.stopPropagation();
                     onDelete(m);
                   }}
+                  aria-label="حذف الرسالة"
                   className="p-2 rounded-full bg-red-500/5 text-red-500/50 hover:text-red-500 transition-all shadow-sm border border-red-500/10"
                 >
                   <Trash2 size={14} />
@@ -1153,37 +1175,34 @@ function MessageBubble({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-
-      <AnimatePresence>
-        {reacting && (
-          <motion.div
-            initial={{ y: 10, opacity: 0, scale: 0.9 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 10, opacity: 0, scale: 0.9 }}
-            className={cn(
-              "absolute z-[60] -top-12 bg-card border border-border p-1.5 rounded-2xl flex gap-1 shadow-2xl",
-              mine ? "right-10" : "left-10",
-            )}
-          >
-            {EMOJI_QUICK.map((e) => (
-              <button
-                key={e}
-                onClick={() => onPickReaction(m.id, e)}
-                className="size-10 flex items-center justify-center text-xl hover:bg-muted rounded-xl transition-all active:scale-125"
-              >
-                {e}
-              </button>
-            ))}
-            <button
-              onClick={closeReacting}
-              className="size-10 flex items-center justify-center text-muted-foreground hover:text-foreground"
+        <AnimatePresence>
+          {reacting && (
+            <motion.div
+              initial={{ y: 10, opacity: 0, scale: 0.9 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 10, opacity: 0, scale: 0.9 }}
+              className="chat-reaction-picker"
             >
-              <X size={16} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {EMOJI_QUICK.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => onPickReaction(m.id, e)}
+                  className="size-10 flex items-center justify-center text-xl hover:bg-muted rounded-xl transition-all active:scale-125"
+                >
+                  {e}
+                </button>
+              ))}
+              <button
+                onClick={closeReacting}
+                aria-label="إغلاق التفاعلات"
+                className="size-10 flex items-center justify-center text-muted-foreground hover:text-foreground"
+              >
+                <X size={16} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
@@ -1202,7 +1221,12 @@ function InfoDrawer({
   const otherProfile = otherUser ? profiles[otherUser.user_id] : null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-end overflow-hidden">
+    <div
+      className="fixed inset-0 z-[100] flex justify-end overflow-hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="تفاصيل المجلس"
+    >
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -1221,6 +1245,7 @@ function InfoDrawer({
           <h3 className="text-lg font-black text-primary">تفاصيل المجلس</h3>
           <button
             onClick={onClose}
+            aria-label="إغلاق تفاصيل المجلس"
             className="size-10 rounded-full hover:bg-muted flex items-center justify-center transition-all text-muted-foreground"
           >
             <X size={24} />
@@ -1348,19 +1373,12 @@ function AudioPlayer({
   };
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 p-2 rounded-2xl min-w-[200px] mb-1",
-        mine ? "bg-white/10" : "bg-muted",
-      )}
-    >
+    <div className="chat-audio">
       <audio ref={audioRef} src={url} className="hidden" />
       <button
         onClick={toggle}
-        className={cn(
-          "size-10 shrink-0 rounded-full flex items-center justify-center transition-all",
-          mine ? "bg-white text-primary" : "bg-primary text-white",
-        )}
+        className="chat-audio-play"
+        aria-label={playing ? "إيقاف الرسالة الصوتية مؤقتًا" : "تشغيل الرسالة الصوتية"}
       >
         {playing ? (
           <Pause size={18} fill="currentColor" />
@@ -1368,8 +1386,8 @@ function AudioPlayer({
           <Play size={18} fill="currentColor" className="ml-0.5" />
         )}
       </button>
-      <div className="flex-1 space-y-1">
-        <div className="h-1 bg-current opacity-10 rounded-full overflow-hidden">
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="chat-audio-progress">
           <div className="h-full bg-current transition-all" style={{ width: `${progress}%` }} />
         </div>
         <div className="flex justify-between text-[11px] font-black opacity-60 tabular-nums text-right">
