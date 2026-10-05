@@ -50,6 +50,12 @@ export function FamilySealHeader({
 
   return (
     <header className="family-seal-header" dir="rtl" aria-label="شريط العائلة">
+      <div className="family-seal-frame" aria-hidden="true">
+        <span className="family-seal-frame-corner" data-corner="top-left" />
+        <span className="family-seal-frame-corner" data-corner="top-right" />
+        <span className="family-seal-frame-corner" data-corner="bottom-left" />
+        <span className="family-seal-frame-corner" data-corner="bottom-right" />
+      </div>
       <div className="family-seal-utilities">
         <button
           type="button"
