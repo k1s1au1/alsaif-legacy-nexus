@@ -22,7 +22,7 @@ type HealthCheck = {
   latency_ms: number;
 };
 
-const ALLOWED_ROLES = new Set(["admin", "chairman", "manager"]);
+const ALLOWED_ROLES = new Set(["admin", "chairman", "vice_chairman", "technical_admin", "manager"]);
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS });
