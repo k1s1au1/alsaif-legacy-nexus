@@ -83,6 +83,7 @@ const desktopServiceItems: { id: NavItemKey; label: string; description: string 
   { id: "members", label: "ركن الأعضاء", description: "مجتمع أفراد العائلة" },
   { id: "family-tree", label: "نسب وأثر", description: "أنساب العائلة وإرثها" },
   { id: "vault", label: "الخزنة", description: "المحتوى العائلي الخاص" },
+  { id: "chat", label: "الدردشة", description: "تواصل خاص بالعائلة" },
 ];
 
 function BottomNavItem({
