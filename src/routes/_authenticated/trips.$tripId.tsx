@@ -379,7 +379,7 @@ function TripDetail() {
           } else toast.success("تم تأكيد حضورك ✨");
         }
       }
-      await loadAttendees(tripId);
+      void loadAttendees(tripId);
     } catch (err: any) {
       toast.error("حدث خطأ في تحديث الحضور");
       setAttendanceStatus(prevStatus);
