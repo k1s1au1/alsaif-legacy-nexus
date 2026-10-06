@@ -110,12 +110,21 @@
 .album-sections {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 7px;
   margin-block: 20px 12px;
   padding: 3px;
   overflow-x: auto;
   scrollbar-width: none;
+}
+.album-sections button:first-child {
+  margin-inline-start: auto;
+}
+.album-sections button:last-child {
+  margin-inline-end: auto;
+}
+.album-sections button.album-new-section {
+  border-style: dashed;
 }
 .album-sections::-webkit-scrollbar {
   display: none;

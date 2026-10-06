@@ -23,6 +23,7 @@ const GOVERNED_SECTIONS: Section[] = [
   "community",
   "faith",
   "heritage",
+  "archive",
   "finance",
 ];
 

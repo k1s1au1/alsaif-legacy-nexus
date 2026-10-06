@@ -1,4 +1,18 @@
-export type AlbumSectionKey = "family" | "meetings" | "events" | "trips";
+export type BuiltinAlbumKey = "family" | "meetings" | "events" | "trips";
+export type AlbumSectionKey = BuiltinAlbumKey | `custom:${string}`;
+
+export type CustomAlbum = {
+  id: string;
+  title: string;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type AlbumAccess = {
+  userId: string | null;
+  roles: readonly string[];
+  sectionHeads: readonly string[];
+};
 
 export type ArchiveItem = {
   id: string;
@@ -9,7 +23,8 @@ export type ArchiveItem = {
   pinned: boolean;
   expires_at: string | null;
   created_at: string;
-  section: AlbumSectionKey;
+  section: BuiltinAlbumKey;
+  album_id?: string | null;
 };
 
 export type AlbumItem = ArchiveItem & {
@@ -20,6 +35,67 @@ export type AlbumItem = ArchiveItem & {
 
 export type AlbumLayout = "book" | "page" | "phone";
 export type TurnDirection = "right" | "left";
+
+export function albumItemKey(item: Pick<ArchiveItem, "section" | "album_id">): AlbumSectionKey {
+  return item.album_id ? `custom:${item.album_id}` : item.section;
+}
+
+export function albumDestination(key: AlbumSectionKey) {
+  if (["family", "meetings", "events", "trips"].includes(key)) {
+    return { section: key as BuiltinAlbumKey, album_id: null };
+  }
+  const id = key.slice("custom:".length);
+  if (
+    !key.startsWith("custom:") ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  ) {
+    throw new Error("الألبوم المحدد غير صالح");
+  }
+  return { section: "family" as const, album_id: id };
+}
+
+export function canCreateFamilyAlbums(access: AlbumAccess) {
+  return (
+    !!access.userId &&
+    (access.roles.includes("chairman") ||
+      access.roles.includes("vice_chairman") ||
+      access.sectionHeads.includes("archive"))
+  );
+}
+
+export function canUploadToAlbum(access: AlbumAccess, key: AlbumSectionKey) {
+  if (!access.userId) return false;
+  if (key.startsWith("custom:")) return access.roles.length > 0;
+  if (key === "family" || canCreateFamilyAlbums(access)) return true;
+  return access.sectionHeads.includes(key === "events" ? "occasions" : key);
+}
+
+export function canManageAlbumItem(access: AlbumAccess, item: ArchiveItem) {
+  if (!access.userId) return false;
+  if (canCreateFamilyAlbums(access)) return true;
+  if (item.album_id || item.section === "family") return item.uploader_id === access.userId;
+  return access.sectionHeads.includes(item.section === "events" ? "occasions" : item.section);
+}
+
+export const ALBUM_MAX_BYTES = 50 * 1024 * 1024;
+
+export function albumMediaError(file: Pick<File, "type" | "size">) {
+  if (!file.type.startsWith("image/") && !file.type.startsWith("video/"))
+    return "اختر صورة أو مقطع فيديو.";
+  if (file.size === 0) return "الملف فارغ؛ اختر ملفاً آخر.";
+  if (file.size > ALBUM_MAX_BYTES) return "حجم الملف يتجاوز 50 ميجابايت.";
+  return null;
+}
+
+export function albumNameError(title: string, existingTitles: readonly string[]) {
+  const trimmed = title.trim();
+  if (!trimmed) return "اكتب اسم الألبوم.";
+  if (Array.from(trimmed).length > 60) return "اسم الألبوم لا يتجاوز 60 حرفاً.";
+  const normalized = (value: string) => value.trim().replace(/\s+/g, " ").toLocaleLowerCase("ar");
+  if (existingTitles.some((value) => normalized(value) === normalized(trimmed)))
+    return "يوجد ألبوم بهذا الاسم؛ اختر اسماً آخر.";
+  return null;
+}
 
 // A fine-pointer desktop gets a spread even on a tall window. Touch devices
 // get two pages only in landscape with enough height to read both pages.

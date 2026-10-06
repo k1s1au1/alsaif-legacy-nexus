@@ -51,13 +51,14 @@ type PhotoActions = {
 type Props = PhotoActions & {
   items: AlbumItem[];
   sections: Section[];
-  counts: Record<AlbumSectionKey, number>;
+  counts: Partial<Record<AlbumSectionKey, number>>;
   activeSection: AlbumSectionKey;
   onSectionChange: (section: AlbumSectionKey) => void;
   canUpload: boolean;
   uploading: boolean;
   loading: boolean;
   onUpload: () => void;
+  onCreateAlbum?: () => void;
 };
 
 function useAlbumLayout() {
@@ -241,7 +242,7 @@ export function FamilyAlbumBook(props: Props) {
             className="album-add"
             onClick={onUpload}
             disabled={!canUpload || uploading}
-            title={!canUpload ? "إضافة الذكريات في هذا القسم متاحة للإدارة" : undefined}
+            title={!canUpload ? "إضافة الذكريات غير متاحة لحسابك حالياً" : undefined}
           >
             {uploading ? (
               <Loader2 size={17} className="animate-spin" />
@@ -266,9 +267,15 @@ export function FamilyAlbumBook(props: Props) {
           >
             <Icon size={16} />
             <span>{label}</span>
-            <small>{counts[key]}</small>
+            <small>{counts[key] ?? 0}</small>
           </button>
         ))}
+        {props.onCreateAlbum && (
+          <button type="button" className="album-new-section" onClick={props.onCreateAlbum}>
+            <Plus size={16} />
+            <span>ألبوم جديد</span>
+          </button>
+        )}
       </nav>
 
       {searchOpen && (

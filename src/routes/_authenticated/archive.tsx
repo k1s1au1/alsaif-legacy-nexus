@@ -4,15 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { FamilyAlbumBook } from "@/components/family-album-book";
 import { FamilyAlbumViewer } from "@/components/family-album-viewer";
-import type {
-  AlbumItem as ItemWithUrl,
-  ArchiveItem,
-  AlbumSectionKey as SectionKey,
+import { FamilyAlbumUploadDialog } from "@/components/family-album-upload-dialog";
+import {
+  albumItemKey,
+  albumNameError,
+  canCreateFamilyAlbums,
+  canManageAlbumItem,
+  canUploadToAlbum,
 } from "@/lib/family-album";
-import { Users, CalendarDays, Sparkles, Plane } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { AlbumItem, AlbumSectionKey, CustomAlbum } from "@/lib/family-album";
+import { uploadAlbumMemories } from "@/lib/family-album-upload";
+import type { AlbumUploadInput } from "@/lib/family-album-upload";
+import { Users, CalendarDays, Sparkles, Plane, Images } from "lucide-react";
 import { toast } from "sonner";
-import { roleLabel } from "@/hooks/use-user-role";
+import { roleLabel, useUserRole } from "@/hooks/use-user-role";
 import { AnimatePresence } from "framer-motion";
 
 export const Route = createFileRoute("/_authenticated/archive")({
@@ -26,285 +31,346 @@ export const Route = createFileRoute("/_authenticated/archive")({
   component: ArchivePage,
 });
 
-const SECTIONS: {
-  key: SectionKey;
-  label: string;
-  icon: LucideIcon;
-  hint: string;
-  privOnly: boolean;
-}[] = [
+const SECTIONS = [
   {
-    key: "family",
+    key: "family" as const,
     label: "ألبوم العائلة",
     icon: Users,
     hint: "لحظاتنا اليومية العفوية التي تجمعنا سوياً.",
-    privOnly: false,
   },
   {
-    key: "meetings",
+    key: "meetings" as const,
     label: "الاجتماعات",
     icon: CalendarDays,
     hint: "توثيق الاجتماعات الدورية واللقاءات الرسمية.",
-    privOnly: true,
   },
   {
-    key: "events",
+    key: "events" as const,
     label: "المناسبات",
     icon: Sparkles,
     hint: "أفراح العائلة، الأعياد، والمناسبات الكبرى.",
-    privOnly: true,
   },
   {
-    key: "trips",
-    label: "الترفيه",
+    key: "trips" as const,
+    label: "الرحلات",
     icon: Plane,
     hint: "أرشيف الرحلات العائلية، الكشتات، والمغامرات.",
-    privOnly: true,
   },
 ];
 
-const MAX_BYTES = 50 * 1024 * 1024;
-
 function ArchivePage() {
+  const { userId, roles, sectionHeads, primaryRole, isLoading: roleLoading } = useUserRole();
+  const access = { userId, roles, sectionHeads };
   const [profile, setProfile] = useState({
     name: "",
     role: "",
     initial: "ص",
     avatarPath: null as string | null,
   });
-  const [me, setMe] = useState<{ id: string; isPriv: boolean } | null>(null);
-  const [items, setItems] = useState<ItemWithUrl[]>([]);
+  const [items, setItems] = useState<AlbumItem[]>([]);
+  const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<SectionKey>("family");
-  const [selectedItem, setSelectedItem] = useState<ItemWithUrl | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState({ completed: 0, total: 0 });
+  const [activeSection, setActiveSection] = useState<AlbumSectionKey>("family");
+  const [selectedItem, setSelectedItem] = useState<AlbumItem | null>(null);
+  const [dialog, setDialog] = useState<"memory" | "album" | null>(null);
+  const requestId = useRef(0);
+  const uploadBusy = useRef(false);
+  const sections = useMemo(
+    () => [
+      ...SECTIONS,
+      ...customAlbums.map((album) => ({
+        key: `custom:${album.id}` as const,
+        label: album.title,
+        icon: Images,
+        hint: `ذكريات العائلة في ألبوم ${album.title}.`,
+      })),
+    ],
+    [customAlbums],
+  );
+  const uploadOptions = sections.map((section) => ({
+    key: section.key,
+    label: section.label,
+    canUpload: !roleLoading && canUploadToAlbum(access, section.key),
+  }));
+  const canCreateAlbum = !roleLoading && canCreateFamilyAlbums(access);
 
   const load = useCallback(async () => {
+    const request = ++requestId.current;
     setLoading(true);
     try {
-      const { data: rows, error } = await supabase
-        .from("archive_items")
-        .select("*")
-        .order("pinned", { ascending: false })
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      const uploaderIds = [...new Set((rows ?? []).map((r) => r.uploader_id))];
-      const { data: profs } = uploaderIds.length
+      const [memories, albums] = await Promise.all([
+        supabase
+          .from("archive_items")
+          .select("*")
+          .order("pinned", { ascending: false })
+          .order("created_at", { ascending: false }),
+        supabase.from("archive_albums").select("*").order("created_at"),
+      ]);
+      if (memories.error) throw memories.error;
+      if (albums.error) throw albums.error;
+      const rows = memories.data ?? [];
+      const uploaderIds = [...new Set(rows.map((row) => row.uploader_id))];
+      const { data: profiles } = uploaderIds.length
         ? await supabase
             .from("profiles")
             .select("id, arabic_name, full_name, avatar_url")
             .in("id", uploaderIds)
         : { data: [] };
-
-      const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
-
+      const profileMap = new Map<
+        string,
+        { arabic_name: string | null; full_name: string | null; avatar_url: string | null }
+      >((profiles ?? []).map((profile) => [profile.id, profile]));
       const withUrls = await Promise.all(
-        (rows ?? []).map(async (r) => {
+        rows.map(async (row) => {
           const { data: signed } = await supabase.storage
             .from("archive-media")
-            .createSignedUrl(r.storage_path, 60 * 60);
-
-          const p = profMap.get(r.uploader_id) as any;
+            .createSignedUrl(row.storage_path, 3600);
+          const uploader = profileMap.get(row.uploader_id);
           return {
-            ...(r as ArchiveItem),
+            ...row,
             url: signed?.signedUrl ?? "",
-            uploaderName: p?.arabic_name || p?.full_name || "عضو",
-            avatar_url: p?.avatar_url,
+            uploaderName: uploader?.arabic_name || uploader?.full_name || "عضو",
+            avatar_url: uploader?.avatar_url,
           };
         }),
       );
+      if (request !== requestId.current) return;
+      setCustomAlbums(albums.data ?? []);
       setItems(withUrls);
+      setActiveSection((key) =>
+        key.startsWith("custom:") &&
+        !(albums.data ?? []).some((album) => `custom:${album.id}` === key)
+          ? "family"
+          : key,
+      );
     } catch (err) {
-      console.error("Archive load error:", err);
-      toast.error("فشل تحميل الألبوم");
+      if (request === requestId.current) {
+        console.error("Archive load error:", err);
+        toast.error("تعذر تحميل الألبوم. حاول مرة أخرى.");
+      }
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      const [{ data: p }, { data: roles }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select(
-            "id, arabic_name, full_name, avatar_url, is_active, created_at, updated_at, first_name, father_name, grandfather_name, parent_id, terms_accepted_at",
-          )
-          .eq("id", u.user.id)
-          .maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", u.user.id),
-      ]);
-      const name =
-        p?.arabic_name?.trim() ||
-        p?.full_name?.trim() ||
-        u.user.email?.split("@")[0] ||
-        "عضو العائلة";
-      const rs = (roles ?? []).map((r) => r.role);
-      setProfile({
-        name,
-        role: roleLabel(
-          rs.includes("admin")
-            ? "admin"
-            : rs.includes("chairman")
-              ? "chairman"
-              : rs.includes("manager")
-                ? "manager"
-                : "member",
-        ),
-        initial: (name[0] ?? "س").toUpperCase(),
-        avatarPath: p?.avatar_url ?? null,
+    if (!userId) return;
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("arabic_name, full_name, avatar_url")
+      .eq("id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const name = data?.arabic_name?.trim() || data?.full_name?.trim() || "عضو العائلة";
+        setProfile({
+          name,
+          role: roleLabel(primaryRole),
+          initial: (name[0] ?? "س").toUpperCase(),
+          avatarPath: data?.avatar_url ?? null,
+        });
       });
-      setMe({
-        id: u.user.id,
-        isPriv: rs.includes("admin") || rs.includes("manager") || rs.includes("chairman"),
-      });
-      await load();
-    })();
-
-    const ch = supabase
-      .channel("archive-items-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "archive_items" }, () =>
-        load(),
-      )
-      .subscribe();
     return () => {
-      supabase.removeChannel(ch);
+      cancelled = true;
     };
-  }, [load]);
+  }, [userId, primaryRole]);
 
-  const currentSection = SECTIONS.find((s) => s.key === activeSection)!;
-  const canUpload = !!me && (!currentSection.privOnly || me.isPriv);
-  const filtered = useMemo(
-    () => items.filter((i) => i.section === activeSection),
-    [items, activeSection],
-  );
-
-  const counts = useMemo(() => {
-    const c: Record<SectionKey, number> = { family: 0, meetings: 0, events: 0, trips: 0 };
-    for (const it of items) c[it.section] = (c[it.section] ?? 0) + 1;
-    return c;
-  }, [items]);
-
-  async function onPickFiles(files: FileList | null) {
-    if (!files || !files.length || !me) return;
-    if (!canUpload) {
-      toast.error("لا تملك صلاحية الرفع في هذا القسم");
+  const permissionKey = `${roles.join(",")}|${sectionHeads.join(",")}`;
+  useEffect(() => {
+    if (roleLoading) return;
+    if (!userId) {
+      setLoading(false);
+      setItems([]);
+      setCustomAlbums([]);
       return;
     }
+    void load();
+    const channel = supabase
+      .channel("archive-items-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "archive_items" }, () => {
+        void load();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "archive_albums" }, () => {
+        void load();
+      })
+      .subscribe();
+    return () => {
+      requestId.current += 1;
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, roleLoading, permissionKey, load]);
+
+  const filtered = useMemo(
+    () => items.filter((item) => albumItemKey(item) === activeSection),
+    [items, activeSection],
+  );
+  const counts = useMemo(() => {
+    const result: Partial<Record<AlbumSectionKey, number>> = {};
+    for (const item of items) {
+      const key = albumItemKey(item);
+      result[key] = (result[key] ?? 0) + 1;
+    }
+    return result;
+  }, [items]);
+
+  async function createAlbum(title: string): Promise<AlbumSectionKey> {
+    if (!userId || !canCreateAlbum)
+      throw new Error("إنشاء الألبومات متاح لمسؤول الألبوم ورئيس المجلس ونائبه.");
+    const invalid = albumNameError(title, [...sections.map((section) => section.label), "الترفيه"]);
+    if (invalid) throw new Error(invalid);
+    const { data, error } = await supabase
+      .from("archive_albums")
+      .insert({ title: title.trim(), created_by: userId })
+      .select("*")
+      .single();
+    if (error)
+      throw new Error(
+        error.code === "23505"
+          ? "يوجد ألبوم بهذا الاسم؛ اختر اسماً آخر."
+          : "تعذر إنشاء الألبوم. تحقق من صلاحيتك وحاول مرة أخرى.",
+      );
+    // Cancel a pre-creation snapshot while its signed URLs are still loading.
+    requestId.current += 1;
+    setLoading(false);
+    setCustomAlbums((previous) =>
+      previous.some((album) => album.id === data.id) ? previous : [...previous, data],
+    );
+    const key: AlbumSectionKey = `custom:${data.id}`;
+    setActiveSection(key);
+    void load();
+    toast.success("تم إنشاء الألبوم");
+    return key;
+  }
+
+  async function saveMemories(input: AlbumUploadInput) {
+    if (
+      !userId ||
+      roleLoading ||
+      !sections.some((section) => section.key === input.album) ||
+      !canUploadToAlbum(access, input.album)
+    ) {
+      throw new Error("لا تملك صلاحية الإضافة إلى الألبوم المحدد.");
+    }
+    if (uploadBusy.current) throw new Error("جاري حفظ الذكريات.");
+    uploadBusy.current = true;
     setUploading(true);
-    toast.loading("جاري رفع الوسائط للألبوم...");
+    setProgress({ completed: 0, total: input.files.length });
     try {
-      for (const file of Array.from(files)) {
-        if (file.size > MAX_BYTES) {
-          toast.error(`${file.name}: الحجم يتجاوز 50 ميجابايت`);
-          continue;
-        }
-        const isImage = file.type.startsWith("image/");
-        const isVideo = file.type.startsWith("video/");
-        if (!isImage && !isVideo) {
-          toast.error(`${file.name}: نوع غير مدعوم`);
-          continue;
-        }
-        const ext = file.name.split(".").pop() || (isImage ? "jpg" : "mp4");
-        const path = `${me.id}/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("archive-media")
-          .upload(path, file, { contentType: file.type, upsert: false });
-        if (upErr) {
-          toast.error(`فشل رفع ${file.name}`);
-          continue;
-        }
-        const { error: insErr } = await supabase.from("archive_items").insert({
-          uploader_id: me.id,
-          media_type: isImage ? "image" : "video",
-          storage_path: path,
-          caption: null,
-          section: activeSection,
-        });
-        if (insErr) {
-          await supabase.storage.from("archive-media").remove([path]);
-          toast.error(`فشل حفظ ${file.name}`);
-        }
+      const result = await uploadAlbumMemories(userId, input, {
+        upload: async (path, file) => {
+          const { error } = await supabase.storage
+            .from("archive-media")
+            .upload(path, file, { contentType: file.type, upsert: false });
+          if (error) throw error;
+        },
+        insert: async (item) => {
+          const { error } = await supabase.from("archive_items").insert(item);
+          if (error) throw error;
+        },
+        remove: async (path) => {
+          const { error } = await supabase.storage.from("archive-media").remove([path]);
+          if (error) throw error;
+        },
+        onProgress: (completed, total) => setProgress({ completed, total }),
+      });
+      if (result.uploaded.length) {
+        setActiveSection(input.album);
+        toast.success(`تم حفظ ${result.uploaded.length} من الذكريات في الألبوم`);
+        await load();
       }
-      toast.dismiss();
-      toast.success("تم تحديث الألبوم بنجاح ✨");
-      await load();
+      if (!result.errors.length && result.uploaded.length) setDialog(null);
+      return result;
     } finally {
+      uploadBusy.current = false;
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
-  async function togglePin(item: ItemWithUrl) {
-    const { error } = await supabase
+  async function togglePin(item: AlbumItem) {
+    if (!canManageAlbumItem(access, item)) return;
+    const { data, error } = await supabase
       .from("archive_items")
       .update({ pinned: !item.pinned })
-      .eq("id", item.id);
-    if (error) toast.error("تعذر التحديث");
-    else load();
+      .eq("id", item.id)
+      .select("id")
+      .maybeSingle();
+    if (error || !data) toast.error("تعذر التحديث");
+    else void load();
   }
 
-  async function removeItem(item: ItemWithUrl) {
-    if (!confirm("هل تريد حذف هذا الذكرى نهائياً؟")) return;
-    const { error } = await supabase.from("archive_items").delete().eq("id", item.id);
-    if (error) {
+  async function removeItem(item: AlbumItem) {
+    if (!canManageAlbumItem(access, item) || !confirm("هل تريد حذف هذه الذكرى نهائياً؟")) return;
+    const { data, error } = await supabase
+      .from("archive_items")
+      .delete()
+      .eq("id", item.id)
+      .select("id")
+      .maybeSingle();
+    if (error || !data) {
       toast.error("تعذر الحذف");
       return;
     }
-    await supabase.storage.from("archive-media").remove([item.storage_path]);
-    toast.success("تم حذف الذكرى");
+    const { error: storageError } = await supabase.storage
+      .from("archive-media")
+      .remove([item.storage_path]);
+    if (storageError) toast.error("تم حذف الذكرى من الألبوم، وتعذر تنظيف ملفها.");
+    else toast.success("تم حذف الذكرى");
     if (selectedItem?.id === item.id) setSelectedItem(null);
-    load();
+    void load();
   }
-
-  const canManage = (item: ItemWithUrl) => {
-    if (!me) return false;
-    if (item.section === "family") return me.isPriv || item.uploader_id === me.id;
-    return me.isPriv;
-  };
 
   return (
     <AppShell title="الألبوم العائلي" user={profile}>
       <FamilyAlbumBook
         items={filtered}
-        sections={SECTIONS}
+        sections={sections}
         counts={counts}
         activeSection={activeSection}
         onSectionChange={setActiveSection}
-        canUpload={canUpload}
+        canUpload={uploadOptions.some((option) => option.canUpload)}
         uploading={uploading}
         loading={loading}
-        onUpload={() => fileRef.current?.click()}
+        onUpload={() => setDialog("memory")}
+        onCreateAlbum={canCreateAlbum ? () => setDialog("album") : undefined}
         onView={setSelectedItem}
-        canManage={canManage}
+        canManage={(item) => canManageAlbumItem(access, item)}
         onTogglePin={togglePin}
         onDelete={removeItem}
       />
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*,video/*"
-        multiple
-        className="hidden"
-        aria-label="إضافة صور أو مقاطع فيديو للألبوم"
-        onChange={(e) => onPickFiles(e.target.files)}
-      />
-
-      {/* Cinema Mode Lightbox */}
+      {dialog && (
+        <FamilyAlbumUploadDialog
+          albums={uploadOptions}
+          initialAlbum={
+            uploadOptions.find((option) => option.key === activeSection && option.canUpload)?.key ??
+            uploadOptions.find((option) => option.canUpload)?.key ??
+            "family"
+          }
+          createOnly={dialog === "album"}
+          canCreateAlbum={canCreateAlbum}
+          uploading={uploading}
+          progress={progress}
+          onCreateAlbum={createAlbum}
+          onSubmit={saveMemories}
+          onClose={() => {
+            if (!uploadBusy.current) setDialog(null);
+          }}
+        />
+      )}
       <AnimatePresence>
         {selectedItem && (
           <FamilyAlbumViewer
             item={selectedItem}
             sectionLabel={
-              SECTIONS.find((s) => s.key === selectedItem.section)?.label ?? "ألبوم العائلة"
+              sections.find((section) => section.key === albumItemKey(selectedItem))?.label ??
+              "ألبوم العائلة"
             }
             onClose={() => setSelectedItem(null)}
-            onDelete={canManage(selectedItem) ? () => removeItem(selectedItem) : undefined}
+            onDelete={
+              canManageAlbumItem(access, selectedItem) ? () => removeItem(selectedItem) : undefined
+            }
             onDownload={() => window.open(selectedItem.url, "_blank", "noopener,noreferrer")}
           />
         )}

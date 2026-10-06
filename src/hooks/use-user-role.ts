@@ -20,6 +20,7 @@ export type Section =
   | "community"
   | "faith"
   | "heritage"
+  | "archive"
   | "finance";
 
 export const SECTIONS: Section[] = [
@@ -31,6 +32,7 @@ export const SECTIONS: Section[] = [
   "community",
   "faith",
   "heritage",
+  "archive",
   "finance",
 ];
 
@@ -61,6 +63,8 @@ export function sectionLabel(section: Section | string): string {
       return "نفحات إيمانية";
     case "heritage":
       return "نسب وأثر";
+    case "archive":
+      return "الألبوم";
     case "finance":
       return "المالية";
     default:

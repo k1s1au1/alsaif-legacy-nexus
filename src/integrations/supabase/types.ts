@@ -146,8 +146,30 @@ export type Database = {
         }
         Relationships: []
       }
+      archive_albums: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       archive_items: {
         Row: {
+          album_id: string | null
           caption: string | null
           created_at: string
           expires_at: string | null
@@ -160,6 +182,7 @@ export type Database = {
           uploader_id: string
         }
         Insert: {
+          album_id?: string | null
           caption?: string | null
           created_at?: string
           expires_at?: string | null
@@ -172,6 +195,7 @@ export type Database = {
           uploader_id: string
         }
         Update: {
+          album_id?: string | null
           caption?: string | null
           created_at?: string
           expires_at?: string | null
@@ -183,7 +207,15 @@ export type Database = {
           updated_at?: string
           uploader_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "archive_items_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "archive_albums"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bank_transfers: {
         Row: {
