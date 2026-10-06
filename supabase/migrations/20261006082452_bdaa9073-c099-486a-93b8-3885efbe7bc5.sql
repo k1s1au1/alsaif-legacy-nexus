@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.can_view_vault_item(uuid, uuid, text[], timestamptz) FROM PUBLIC, anon;
