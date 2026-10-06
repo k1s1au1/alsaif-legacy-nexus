@@ -13,6 +13,7 @@
     "test:account-entry": "node --test scripts/test-account-entry.mjs",
     "test:navigation": "node --test scripts/test-navigation-preferences.mjs",
     "test:meetings": "node --test scripts/test-meeting-attendance.mjs",
+    "test:family-album": "node --test scripts/test-family-album.mjs",
     "test:millionaire": "node scripts/test-millionaire.mjs",
     "format": "prettier --write ."
   },

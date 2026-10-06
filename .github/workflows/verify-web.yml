@@ -33,6 +33,8 @@ jobs:
         run: npm run test:navigation
       - name: Check meeting attendance and companion persistence
         run: npm run test:meetings
+      - name: Check family album pagination and search
+        run: npm run test:family-album
       - name: Check Millionaire game rules
         run: npm run test:millionaire
       - name: Check service worker syntax
