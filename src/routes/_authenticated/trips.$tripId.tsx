@@ -187,31 +187,48 @@ function TripDetail() {
   }
 
   async function addItem() {
-    if (!newItemName.trim() || !userId) return;
-    setAddingItem(true);
+    const name = newItemName.trim();
+    if (!name || !userId) return;
+    const tempId = `temp-${Date.now()}`;
+    setNewItemName("");
+    setChecklist((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        name,
+        assigned_to: null,
+        created_by: userId,
+        created_at: new Date().toISOString(),
+        creator: { id: userId, arabic_name: profile.name, avatar_url: profile.avatarPath },
+        assignee: null,
+      },
+    ]);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("trip_items")
-        .insert({ trip_id: tripId, name: newItemName.trim(), created_by: userId });
+        .insert({ trip_id: tripId, name, created_by: userId })
+        .select("id")
+        .single();
       if (error) throw error;
-      setNewItemName("");
+      setChecklist((prev) => prev.map((i) => (i.id === tempId ? { ...i, id: data.id } : i)));
       toast.success("تمت إضافة الغرض للقائمة");
-      await loadChecklist(tripId);
     } catch (err: any) {
+      setChecklist((prev) => prev.filter((i) => i.id !== tempId));
+      setNewItemName(name);
       toast.error("تعذر إضافة الغرض");
-    } finally {
-      setAddingItem(false);
     }
   }
 
   async function deleteItem(id: string) {
     if (!confirm("حذف الغرض؟")) return;
+    const snapshot = checklist;
+    setChecklist((prev) => prev.filter((item) => item.id !== id));
     try {
       const { error } = await supabase.from("trip_items").delete().eq("id", id);
       if (error) throw error;
-      setChecklist((prev) => prev.filter((item) => item.id !== id));
       toast.success("تم الحذف");
     } catch (err: any) {
+      setChecklist(snapshot);
       toast.error("فشل الحذف");
     }
   }
@@ -220,41 +237,60 @@ function TripDetail() {
     if (!userId) return;
     const isMine = item.assigned_to === userId;
     const newAssignedTo = isMine ? null : userId;
+    const me = { id: userId, arabic_name: profile.name, avatar_url: profile.avatarPath };
+    setChecklist((prev) =>
+      prev.map((i) =>
+        i.id === item.id ? { ...i, assigned_to: newAssignedTo, assignee: isMine ? null : me } : i,
+      ),
+    );
     try {
       const { error } = await supabase
         .from("trip_items")
         .update({ assigned_to: newAssignedTo })
         .eq("id", item.id);
       if (error) throw error;
-      await loadChecklist(tripId);
       toast.success(isMine ? "تم إلغاء التطوع" : "شكراً لتطوعك");
     } catch (err: any) {
+      setChecklist((prev) => prev.map((i) => (i.id === item.id ? item : i)));
       toast.error("فشل تحديث الحالة");
     }
   }
 
   useEffect(() => {
+    setProfile((p) => ({ ...p, role: roleLabel(primaryRole) }));
+  }, [primaryRole]);
+
+  useEffect(() => {
+    let cancelled = false;
     (async () => {
-      if (userId) {
-        const { data: p } = await supabase
-          .from("profiles")
-          .select("arabic_name, full_name, avatar_url")
-          .eq("id", userId)
-          .maybeSingle();
+      const profileTask = userId
+        ? Promise.all([
+            supabase
+              .from("profiles")
+              .select("arabic_name, full_name, avatar_url")
+              .eq("id", userId)
+              .maybeSingle(),
+            supabase
+              .from("trip_attendees")
+              .select("status, companions_count")
+              .eq("trip_id", tripId)
+              .eq("user_id", userId)
+              .maybeSingle(),
+          ])
+        : Promise.resolve(null);
+      const tripTask = supabase.from("trips").select("*").eq("id", tripId).maybeSingle();
+
+      const [mineRes, tripRes] = await Promise.all([profileTask, tripTask]);
+      if (cancelled) return;
+      if (mineRes) {
+        const [{ data: p }, { data: mine }] = mineRes;
         const name = p?.arabic_name?.trim() || p?.full_name?.trim() || "عضو العائلة";
-        setProfile({
+        setProfile((prev) => ({
+          ...prev,
           name,
-          role: roleLabel(primaryRole),
           initial: (name[0] ?? "س").toUpperCase(),
           avatarPath: p?.avatar_url ?? null,
-        });
-
-        const { data: mine } = await supabase
-          .from("trip_attendees")
-          .select("status, companions_count")
-          .eq("trip_id", tripId)
-          .eq("user_id", userId)
-          .maybeSingle();
+        }));
         if (mine) {
           setAttendanceStatus((mine as any).status || "going");
           setCompanionsCount((mine as any).companions_count || 0);
@@ -264,30 +300,41 @@ function TripDetail() {
         }
         setAttendanceLoaded(true);
       }
-      const { data: t } = await supabase.from("trips").select("*").eq("id", tripId).maybeSingle();
-      setTrip((t as Trip | null) ?? null);
-      await loadAttendees(tripId);
-      await loadChecklist(tripId);
+      setTrip((tripRes.data as Trip | null) ?? null);
       setLoading(false);
+      // Secondary lists load in the background without blocking the page.
+      void loadAttendees(tripId);
+      void loadChecklist(tripId);
     })();
 
+    let tA: ReturnType<typeof setTimeout> | undefined;
+    let tC: ReturnType<typeof setTimeout> | undefined;
     const channel = supabase
       .channel(`trip-${tripId}-realtime`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "trip_attendees", filter: `trip_id=eq.${tripId}` },
-        () => loadAttendees(tripId),
+        () => {
+          clearTimeout(tA);
+          tA = setTimeout(() => loadAttendees(tripId), 300);
+        },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "trip_items", filter: `trip_id=eq.${tripId}` },
-        () => loadChecklist(tripId),
+        () => {
+          clearTimeout(tC);
+          tC = setTimeout(() => loadChecklist(tripId), 300);
+        },
       )
       .subscribe();
     return () => {
+      cancelled = true;
+      clearTimeout(tA);
+      clearTimeout(tC);
       supabase.removeChannel(channel);
     };
-  }, [tripId, userId, primaryRole]);
+  }, [tripId, userId]);
 
   async function updateAttendance(
     status: "going" | "not_going",
