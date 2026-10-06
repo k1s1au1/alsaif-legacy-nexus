@@ -1418,6 +1418,7 @@ export type Database = {
           id: string
           is_encrypted: boolean
           owner_id: string
+          shared_with: string[]
           storage_path: string | null
           title: string
           unlock_at: string | null
@@ -1429,6 +1430,7 @@ export type Database = {
           id?: string
           is_encrypted?: boolean
           owner_id: string
+          shared_with?: string[]
           storage_path?: string | null
           title: string
           unlock_at?: string | null
@@ -1440,6 +1442,7 @@ export type Database = {
           id?: string
           is_encrypted?: boolean
           owner_id?: string
+          shared_with?: string[]
           storage_path?: string | null
           title?: string
           unlock_at?: string | null
@@ -1728,6 +1731,10 @@ export type Database = {
       can_view_event: { Args: { _event: string; _u: string }; Returns: boolean }
       can_view_private_request: {
         Args: { _r: string; _u: string }
+        Returns: boolean
+      }
+      can_view_vault_item: {
+        Args: { _owner: string; _shared: string[]; _u: string; _unlock: string }
         Returns: boolean
       }
       count_fcm_tokens: { Args: never; Returns: number }
