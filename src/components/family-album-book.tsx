@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import {
   BookOpen,
+  Book,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -34,6 +35,8 @@ import {
   filterAlbumItems,
 } from "@/lib/family-album";
 import type { AlbumItem, AlbumLayout, AlbumSectionKey, TurnDirection } from "@/lib/family-album";
+import { FamilyAlbumCover } from "./family-album-cover";
+import type { AlbumBindingState } from "./family-album-cover";
 import "./family-album-book.css";
 
 type Section = {
@@ -99,6 +102,14 @@ export function FamilyAlbumBook(props: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [anchor, setAnchor] = useState(0);
   const [turn, setTurn] = useState<Turn | null>(null);
+  const [binding, setBinding] = useState<AlbumBindingState>("closed");
+  const bindingRef = useRef<AlbumBindingState>("closed");
+  const coverRef = useRef<HTMLButtonElement>(null);
+  const pagesRef = useRef<HTMLDivElement>(null);
+  const previousLayout = useRef(layout);
+  const openedOnce = useRef(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(false);
   const turnToken = useRef(0);
   const turnBusy = useRef(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -117,6 +128,42 @@ export function FamilyAlbumBook(props: Props) {
     turnBusy.current = false;
     setTurn(null);
   }
+
+  function setBindingState(state: AlbumBindingState) {
+    bindingRef.current = state;
+    setBinding(state);
+  }
+
+  function openBook() {
+    if (bindingRef.current !== "closed") return;
+    openedOnce.current = true;
+    setBindingState(reduceMotion ? "open" : "opening");
+  }
+
+  function closeBook() {
+    if (bindingRef.current !== "open") return;
+    cancelTurn();
+    setBindingState(reduceMotion ? "closed" : "closing");
+  }
+
+  function finishBinding(state: AlbumBindingState) {
+    if (bindingRef.current !== state) return;
+    if (state === "opening") setBindingState("open");
+    if (state === "closing") setBindingState("closed");
+  }
+
+  useEffect(() => {
+    if (previousLayout.current !== layout || reduceMotion) {
+      finishBinding(bindingRef.current);
+    }
+    previousLayout.current = layout;
+  }, [layout, reduceMotion]);
+
+  useEffect(() => {
+    if (binding === "open") pagesRef.current?.focus({ preventScroll: true });
+    if (binding === "closed" && openedOnce.current)
+      coverRef.current?.focus({ preventScroll: true });
+  }, [binding]);
 
   useEffect(() => {
     cancelTurn();
@@ -146,14 +193,14 @@ export function FamilyAlbumBook(props: Props) {
     // Move only the thumbnail strip; scrollIntoView also jumps the whole
     // document to the footer on phones when the album first opens.
     if (delta) strip.scrollBy({ left: delta, behavior: "instant" });
-  }, [page, pageSize]);
+  }, [page, pageSize, binding]);
 
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus();
   }, [searchOpen]);
 
   function navigate(direction: TurnDirection) {
-    if (turnBusy.current || loading) return;
+    if (bindingRef.current !== "open" || turnBusy.current || loading) return;
     const target = albumTurnTarget(page, pages, direction);
     if (target === null) return;
     if (layout !== "book" || reduceMotion) {
@@ -182,6 +229,11 @@ export function FamilyAlbumBook(props: Props) {
 
   function onBookKeyDown(event: KeyboardEvent<HTMLElement>) {
     if ((event.target as HTMLElement).closest("input, select, [role=menu]")) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeBook();
+      return;
+    }
     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
       event.preventDefault();
       navigate(event.key === "ArrowRight" ? "right" : "left");
@@ -205,38 +257,51 @@ export function FamilyAlbumBook(props: Props) {
           <p>صور نحفظها.. وذكريات نعيشها</p>
         </div>
         <div className="album-tools">
-          <label className="album-year">
-            <span className="sr-only">السنة</span>
-            <select
-              aria-label="السنة"
-              value={year}
-              onChange={(e) => {
-                cancelTurn();
-                setAnchor(0);
-                setYear(e.target.value);
-              }}
-            >
-              <option value="all">كل السنوات</option>
-              {years.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            className="album-icon-button"
-            aria-label={searchOpen ? "إغلاق البحث" : "بحث في الذكريات"}
-            aria-expanded={searchOpen}
-            aria-controls="album-search"
-            onClick={() => {
-              setSearchOpen(!searchOpen);
-              if (searchOpen) setQuery("");
-            }}
-          >
-            {searchOpen ? <X size={18} /> : <Search size={18} />}
-          </button>
+          {binding === "open" && (
+            <>
+              <label className="album-year">
+                <span className="sr-only">السنة</span>
+                <select
+                  aria-label="السنة"
+                  value={year}
+                  onChange={(e) => {
+                    cancelTurn();
+                    setAnchor(0);
+                    setYear(e.target.value);
+                  }}
+                >
+                  <option value="all">كل السنوات</option>
+                  {years.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="album-icon-button"
+                aria-label={searchOpen ? "إغلاق البحث" : "بحث في الذكريات"}
+                aria-expanded={searchOpen}
+                aria-controls="album-search"
+                onClick={() => {
+                  setSearchOpen(!searchOpen);
+                  if (searchOpen) setQuery("");
+                }}
+              >
+                {searchOpen ? <X size={18} /> : <Search size={18} />}
+              </button>
+              <button
+                type="button"
+                className="album-close-book"
+                onClick={closeBook}
+                aria-label="إغلاق الكتاب"
+              >
+                <Book size={17} />
+                <span>إغلاق الكتاب</span>
+              </button>
+            </>
+          )}
           <button
             type="button"
             className="album-add"
@@ -278,7 +343,7 @@ export function FamilyAlbumBook(props: Props) {
         )}
       </nav>
 
-      {searchOpen && (
+      {searchOpen && binding === "open" && (
         <label className="album-search" id="album-search">
           <Search size={18} />
           <span className="sr-only">البحث بالوصف أو اسم الناشر</span>
@@ -301,172 +366,227 @@ export function FamilyAlbumBook(props: Props) {
         <span>{filtered.length} ذكرى</span>
       </div>
 
-      {loading && items.length === 0 ? (
-        <div className="album-empty" role="status">
-          <Loader2 size={30} className="animate-spin" />
-          <p>نفتح دفتر الذكريات…</p>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="album-empty">
-          <BookOpen size={38} />
-          <h2>{query || year !== "all" ? "ما لقينا ذكريات بهذا البحث" : "صفحات تنتظر ذكرياتكم"}</h2>
-          <p>
-            {query || year !== "all"
-              ? "جرّب وصفاً آخر أو اعرض كل السنوات."
-              : "أضف أول صورة أو فيديو ليبدأ دفتر العائلة."}
-          </p>
-          {query || year !== "all" ? (
-            <button
-              type="button"
-              className="album-add"
-              onClick={() => {
-                setQuery("");
-                setYear("all");
-              }}
-            >
-              عرض كل الذكريات
-            </button>
-          ) : (
-            canUpload && (
-              <button type="button" className="album-add" disabled={uploading} onClick={onUpload}>
-                <Plus size={17} />
-                إضافة ذكرى
-              </button>
-            )
-          )}
-        </div>
-      ) : (
-        <>
-          <div
-            className="album-reader"
-            onKeyDown={onBookKeyDown}
-            tabIndex={0}
-            aria-label="صفحات دفتر العائلة"
-            aria-busy={busy}
-          >
-            {layout === "book" ? (
-              <>
+      <div className="album-binding" data-state={binding}>
+        <FamilyAlbumCover
+          state={binding}
+          buttonRef={coverRef}
+          onOpen={openBook}
+          onRest={finishBinding}
+        />
+        <div
+          className="album-pages"
+          id="family-album-pages"
+          ref={pagesRef}
+          hidden={binding === "closed"}
+          inert={binding !== "open"}
+          aria-hidden={binding !== "open" || undefined}
+          tabIndex={-1}
+          onKeyDown={onBookKeyDown}
+        >
+          {loading && items.length === 0 ? (
+            <div className="album-empty" role="status">
+              <Loader2 size={30} className="animate-spin" />
+              <p>نفتح دفتر الذكريات…</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="album-empty">
+              <BookOpen size={38} />
+              <h2>
+                {query || year !== "all" ? "ما لقينا ذكريات بهذا البحث" : "صفحات تنتظر ذكرياتكم"}
+              </h2>
+              <p>
+                {query || year !== "all"
+                  ? "جرّب وصفاً آخر أو اعرض كل السنوات."
+                  : "أضف أول صورة أو فيديو ليبدأ دفتر العائلة."}
+              </p>
+              {query || year !== "all" ? (
                 <button
                   type="button"
-                  className="album-edge-arrow album-edge-left"
-                  aria-label="الصفحتان السابقتان"
+                  className="album-add"
+                  onClick={() => {
+                    setQuery("");
+                    setYear("all");
+                  }}
+                >
+                  عرض كل الذكريات
+                </button>
+              ) : (
+                canUpload && (
+                  <button
+                    type="button"
+                    className="album-add"
+                    disabled={uploading}
+                    onClick={onUpload}
+                  >
+                    <Plus size={17} />
+                    إضافة ذكرى
+                  </button>
+                )
+              )}
+            </div>
+          ) : (
+            <>
+              <div
+                className="album-reader"
+                onPointerDown={(event) => {
+                  if (
+                    event.pointerType !== "touch" ||
+                    (event.target as HTMLElement).closest(".album-photo-menu, .album-edge-arrow")
+                  )
+                    return;
+                  swiped.current = false;
+                  touchStart.current = { x: event.clientX, y: event.clientY };
+                }}
+                onPointerUp={(event) => {
+                  const start = touchStart.current;
+                  touchStart.current = null;
+                  if (!start) return;
+                  const dx = event.clientX - start.x;
+                  const dy = event.clientY - start.y;
+                  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                  swiped.current = true;
+                  navigate(dx > 0 ? "right" : "left");
+                }}
+                onPointerCancel={() => {
+                  touchStart.current = null;
+                }}
+                onClickCapture={(event) => {
+                  if (!swiped.current) return;
+                  swiped.current = false;
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                tabIndex={0}
+                aria-label="صفحات دفتر العائلة"
+                aria-busy={busy}
+              >
+                {layout === "book" ? (
+                  <>
+                    <button
+                      type="button"
+                      className="album-edge-arrow album-edge-left"
+                      aria-label="الصفحتان السابقتان"
+                      disabled={busy || page === 0}
+                      onClick={() => navigate("left")}
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <div className="album-book" data-turning={turn?.direction ?? "idle"}>
+                      <div className="album-book-cover" />
+                      <div className="album-spread">
+                        <div className="album-stationary-page album-page-left">
+                          <BookPage
+                            items={staticLeft}
+                            side="left"
+                            folio={staticLeftPage * 2 + 2}
+                            actions={actions}
+                            interactive={!turn}
+                          />
+                        </div>
+                        <div className="album-stationary-page album-page-right">
+                          <BookPage
+                            items={staticRight}
+                            side="right"
+                            folio={staticRightPage * 2 + 1}
+                            actions={actions}
+                            interactive={!turn}
+                          />
+                        </div>
+                        {turn && (
+                          <TurningLeaf
+                            key={turn.token}
+                            turn={turn}
+                            frontItems={turn.direction === "right" ? spread.left : spread.right}
+                            backItems={
+                              turn.direction === "right" ? nextSpread.right : nextSpread.left
+                            }
+                            actions={actions}
+                            onComplete={() => finishTurn(turn)}
+                          />
+                        )}
+                      </div>
+                      <div className="album-spine" aria-hidden="true" />
+                    </div>
+                    <button
+                      type="button"
+                      className="album-edge-arrow album-edge-right"
+                      aria-label="الصفحتان التاليتان"
+                      disabled={busy || page === pages - 1}
+                      onClick={() => navigate("right")}
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                  </>
+                ) : (
+                  <div className="album-single-page">
+                    <BookPage
+                      items={filtered.slice(page * pageSize, (page + 1) * pageSize)}
+                      side="single"
+                      folio={page + 1}
+                      actions={actions}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="album-pagination" dir="ltr">
+                <button
+                  type="button"
+                  className="album-icon-button"
+                  aria-label="الصفحة السابقة"
                   disabled={busy || page === 0}
                   onClick={() => navigate("left")}
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={18} />
                 </button>
-                <div className="album-book" data-turning={turn?.direction ?? "idle"}>
-                  <div className="album-book-cover" />
-                  <div className="album-spread">
-                    <div className="album-stationary-page album-page-left">
-                      <BookPage
-                        items={staticLeft}
-                        side="left"
-                        folio={staticLeftPage * 2 + 2}
-                        actions={actions}
-                        interactive={!turn}
-                      />
-                    </div>
-                    <div className="album-stationary-page album-page-right">
-                      <BookPage
-                        items={staticRight}
-                        side="right"
-                        folio={staticRightPage * 2 + 1}
-                        actions={actions}
-                        interactive={!turn}
-                      />
-                    </div>
-                    {turn && (
-                      <TurningLeaf
-                        key={turn.token}
-                        turn={turn}
-                        frontItems={turn.direction === "right" ? spread.left : spread.right}
-                        backItems={turn.direction === "right" ? nextSpread.right : nextSpread.left}
-                        actions={actions}
-                        onComplete={() => finishTurn(turn)}
-                      />
-                    )}
-                  </div>
-                  <div className="album-spine" aria-hidden="true" />
-                </div>
+                <span role="status" aria-live="polite" aria-label={`صفحة ${page + 1} من ${pages}`}>
+                  {page + 1}
+                  <span className="album-pagination-divider">/</span>
+                  {pages}
+                </span>
                 <button
                   type="button"
-                  className="album-edge-arrow album-edge-right"
-                  aria-label="الصفحتان التاليتان"
+                  className="album-icon-button"
+                  aria-label="الصفحة التالية"
                   disabled={busy || page === pages - 1}
                   onClick={() => navigate("right")}
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={18} />
                 </button>
-              </>
-            ) : (
-              <div className="album-single-page">
-                <BookPage
-                  items={filtered.slice(page * pageSize, (page + 1) * pageSize)}
-                  side="single"
-                  folio={page + 1}
-                  actions={actions}
-                />
               </div>
-            )}
-          </div>
-
-          <div className="album-pagination" dir="ltr">
-            <button
-              type="button"
-              className="album-icon-button"
-              aria-label="الصفحة السابقة"
-              disabled={busy || page === 0}
-              onClick={() => navigate("left")}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <span role="status" aria-live="polite" aria-label={`صفحة ${page + 1} من ${pages}`}>
-              {page + 1}
-              <span className="album-pagination-divider">/</span>
-              {pages}
-            </span>
-            <button
-              type="button"
-              className="album-icon-button"
-              aria-label="الصفحة التالية"
-              disabled={busy || page === pages - 1}
-              onClick={() => navigate("right")}
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-          <div className="album-thumbnails" ref={thumbRef} aria-label="الوصول إلى الذكريات">
-            {filtered.map((item, index) => (
-              <button
-                type="button"
-                key={item.id}
-                data-photo-index={index}
-                className={Math.floor(index / pageSize) === page ? "is-current" : ""}
-                aria-current={Math.floor(index / pageSize) === page ? "page" : undefined}
-                aria-label={`انتقل إلى ${albumCaption(item)}`}
-                disabled={busy}
-                onClick={() => setAnchor(index)}
-              >
-                {item.media_type === "image" ? (
-                  <img src={item.url} alt="" loading="lazy" />
-                ) : (
-                  <>
-                    <video src={item.url} muted playsInline preload="metadata" />
-                    <Play size={15} />
-                  </>
-                )}
-              </button>
-            ))}
-          </div>
-          {loading && (
-            <p className="album-refresh" role="status">
-              <Loader2 size={14} className="animate-spin" />
-              جاري تحديث الذكريات
-            </p>
+              <div className="album-thumbnails" ref={thumbRef} aria-label="الوصول إلى الذكريات">
+                {filtered.map((item, index) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    data-photo-index={index}
+                    className={Math.floor(index / pageSize) === page ? "is-current" : ""}
+                    aria-current={Math.floor(index / pageSize) === page ? "page" : undefined}
+                    aria-label={`انتقل إلى ${albumCaption(item)}`}
+                    disabled={busy}
+                    onClick={() => setAnchor(index)}
+                  >
+                    {item.media_type === "image" ? (
+                      <img src={item.url} alt="" loading="lazy" />
+                    ) : (
+                      <>
+                        <video src={item.url} muted playsInline preload="metadata" />
+                        <Play size={15} />
+                      </>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {loading && (
+                <p className="album-refresh" role="status">
+                  <Loader2 size={14} className="animate-spin" />
+                  جاري تحديث الذكريات
+                </p>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+      </div>
     </section>
   );
 }

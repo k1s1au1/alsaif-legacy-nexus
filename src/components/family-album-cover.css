@@ -1,0 +1,334 @@
+.album-binding {
+  --album-foil: var(--identity-text-on-nav, var(--album-paper));
+  --album-cover-icon: var(--identity-icon-on-nav, var(--album-foil));
+  --album-closed-height: clamp(360px, 60svh, 620px);
+  position: relative;
+  isolation: isolate;
+}
+.album-binding:not([data-state="open"]) {
+  min-height: calc(var(--album-closed-height) + 56px);
+}
+.album-pages[hidden] {
+  display: none !important;
+}
+.album-pages {
+  outline: none;
+}
+.album-binding[data-state="opening"] .album-pages {
+  animation: album-pages-uncover 1.12s ease-in-out both;
+}
+.album-binding[data-state="closing"] .album-pages {
+  animation: album-pages-cover 1.12s ease-in-out both;
+}
+.album-cover-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: calc(var(--album-closed-height) + 56px);
+  padding: 8px 22px 16px;
+  perspective: 1800px;
+}
+.album-binding:is([data-state="opening"], [data-state="closing"]) .album-cover-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.album-hardcover-volume {
+  position: relative;
+  width: min(100%, calc(var(--album-closed-height) * 0.79));
+  aspect-ratio: 0.79;
+  transform-style: preserve-3d;
+}
+.album-hardcover-pages {
+  position: absolute;
+  inset: 2% 3% 2% -3%;
+  border: 1px solid color-mix(in srgb, var(--album-cover) 20%, var(--album-paper));
+  border-radius: 8px;
+  transform: translateZ(-8px);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--album-paper) 0 2px,
+    color-mix(in srgb, var(--album-cover) 16%, var(--album-paper)) 2px 3px
+  );
+  box-shadow:
+    -8px 3px 0 -4px var(--album-cover),
+    0 19px 24px -12px #00000036;
+}
+.family-album .album-hardcover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 7px 12px 12px 7px;
+  background: transparent;
+  font-family: var(--font-royal, "Amiri", serif);
+  text-align: center;
+  transform-origin: right center;
+  transform-style: preserve-3d;
+  -webkit-tap-highlight-color: transparent;
+}
+.family-album .album-hardcover:disabled {
+  opacity: 1;
+}
+.album-hardcover-front,
+.album-hardcover-back {
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.album-hardcover-front {
+  container-type: inline-size;
+  color: var(--album-foil);
+  border: 1px solid color-mix(in srgb, var(--album-cover) 65%, var(--album-foil));
+  background-color: var(--album-cover);
+  background-image: linear-gradient(
+    100deg,
+    #ffffff0d,
+    transparent 14%,
+    #00000009 82%,
+    #ffffff0b 92%,
+    #00000033
+  );
+  box-shadow:
+    inset 2px 2px 3px #ffffff30,
+    inset -3px -3px 5px #0000004d,
+    0 12px 18px -8px #00000036;
+  transform: translateZ(2px);
+}
+.album-hardcover-grain {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.42;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.76 .61' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='.9'/%3E%3C/svg%3E");
+}
+.album-cover-border {
+  position: absolute;
+  inset: 5.1%;
+  border: 1px solid var(--album-foil);
+  outline: 1px solid var(--album-foil);
+  outline-offset: 5px;
+  box-shadow:
+    inset 0 0 0 3px var(--album-cover),
+    inset 0 0 0 4px color-mix(in srgb, var(--album-foil) 60%, var(--album-cover));
+}
+.album-cover-corner {
+  position: absolute;
+  width: 25%;
+  height: auto;
+  color: var(--album-cover-icon);
+  pointer-events: none;
+}
+.album-cover-corner[data-corner="top-left"] {
+  top: 7%;
+  left: 7%;
+}
+.album-cover-corner[data-corner="top-right"] {
+  top: 7%;
+  right: 7%;
+  transform: scaleX(-1);
+}
+.album-cover-corner[data-corner="bottom-left"] {
+  bottom: 7%;
+  left: 7%;
+  transform: scaleY(-1);
+}
+.album-cover-corner[data-corner="bottom-right"] {
+  bottom: 7%;
+  right: 7%;
+  transform: scale(-1);
+}
+.album-cover-relief {
+  fill: color-mix(in srgb, var(--album-cover) 85%, #000);
+  stroke: color-mix(in srgb, var(--album-cover) 75%, var(--album-foil));
+  stroke-width: 0.8;
+  filter: drop-shadow(1px 2px 1px #00000075);
+}
+.album-cover-emboss-line {
+  fill: none;
+  stroke: color-mix(in srgb, var(--album-foil) 18%, var(--album-cover));
+  stroke-width: 1.8;
+}
+.album-cover-foil {
+  fill: currentColor;
+}
+.album-cover-seal {
+  position: absolute;
+  top: 25%;
+  left: 35%;
+  width: 30%;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3%;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
+  line-height: 1.1;
+  font-size: 6.5cqi;
+  text-shadow: 0 1px 1px #00000050;
+}
+.album-cover-seal-diamonds {
+  color: var(--album-cover-icon);
+  font-family: serif;
+  font-size: 2.1cqi;
+  line-height: 1;
+}
+.album-cover-title {
+  position: absolute;
+  top: 49%;
+  left: 8%;
+  width: 84%;
+  font-size: 12cqi;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+  text-shadow: 0 2px 1px #00000040;
+}
+.album-cover-rule {
+  position: absolute;
+  top: 66%;
+  left: 34%;
+  width: 32%;
+  display: flex;
+  align-items: center;
+  gap: 12%;
+  color: var(--album-cover-icon);
+  font-family: serif;
+  font-size: 2.5cqi;
+}
+.album-cover-rule i {
+  height: 1px;
+  background: var(--album-foil);
+  flex: 1;
+}
+.album-cover-subtitle {
+  position: absolute;
+  top: 70%;
+  left: 10%;
+  width: 80%;
+  font-size: 4.8cqi;
+  line-height: 1.7;
+  white-space: nowrap;
+  text-shadow: 0 1px 1px #00000040;
+}
+.album-hardcover-back {
+  background: var(--album-paper);
+  transform: rotateY(180deg) translateZ(2px);
+  padding: 9%;
+  color: var(--album-paper-ink);
+  box-shadow: inset 0 0 15px #00000015;
+}
+.album-cover-endpaper-frame {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border: 1px solid var(--album-border);
+  font-size: 23px;
+}
+.album-hardcover-spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -3%;
+  width: 3%;
+  border-radius: 0 7px 7px 0;
+  background: linear-gradient(
+    90deg,
+    var(--album-cover),
+    color-mix(in srgb, var(--album-cover) 70%, #000)
+  );
+  box-shadow: inset 1px 0 2px #ffffff20;
+  transform-origin: left center;
+  transform: rotateY(50deg);
+}
+.album-cover-open-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--album-ink);
+  font-size: 13px;
+}
+.album-cover-open-hint svg {
+  color: var(--album-icon);
+}
+.album-binding:not([data-state="closed"]) .album-cover-open-hint {
+  visibility: hidden;
+}
+.album-close-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 11px;
+  color: var(--album-ink);
+  border: 1px solid var(--album-border);
+  border-radius: 9px;
+  font-size: 12px;
+}
+.album-close-book svg {
+  color: var(--album-icon);
+}
+.album-reader {
+  touch-action: pan-y;
+}
+.family-album[data-layout="phone"] .album-binding {
+  --album-closed-height: clamp(320px, 56svh, 480px);
+}
+.family-album[data-layout="phone"] .album-cover-stage {
+  padding-inline: 16px;
+}
+.family-album[data-layout="phone"] .album-cover-open-hint {
+  font-size: 12px;
+}
+.family-album[data-layout="phone"] .album-close-book span {
+  display: none;
+}
+.family-album[data-layout="phone"] .album-close-book {
+  width: 40px;
+  justify-content: center;
+  padding: 6px;
+}
+@keyframes album-pages-uncover {
+  0%,
+  20% {
+    opacity: 0;
+  }
+  85%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes album-pages-cover {
+  0%,
+  20% {
+    opacity: 1;
+  }
+  85%,
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .album-binding .album-pages {
+    animation: none;
+  }
+}
