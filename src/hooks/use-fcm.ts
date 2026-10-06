@@ -4,6 +4,7 @@ import { setupPushNotifications } from "@/lib/pushNotifications";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { FCM_VAPID_KEY, FIREBASE_CONFIG } from "@/lib/fcm-config";
+import { claimPushToken } from "@/lib/push-token-ownership";
 import { initializeApp, getApps } from "firebase/app";
 import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 
@@ -79,17 +80,7 @@ export function useFcm() {
 
           if (token) {
             const { data: auth } = await supabase.auth.getUser();
-            if (auth.user) {
-              await supabase.from("push_tokens").upsert(
-                {
-                  user_id: auth.user.id,
-                  token,
-                  platform: "web",
-                  is_active: true,
-                },
-                { onConflict: "user_id,token" }
-              );
-            }
+            if (auth.user) await claimPushToken(token, "web");
           }
         } catch (err) {
           console.warn("[Push] Web initialization failed:", err);
