@@ -134,15 +134,24 @@ function ConversationRoute() {
 
     const loadData = async () => {
       try {
-        const { data: authData } = await supabase.auth.getUser();
-        if (!active || !authData?.user) return;
-        setMeId(authData.user.id);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user = sessionData.session?.user;
+        if (!active || !user) return;
+        setMeId(user.id);
 
-        const { data: c, error: cErr } = await supabase
-          .from("conversations")
-          .select("*")
-          .eq("id", conversationId)
-          .maybeSingle();
+        const [{ data: c, error: cErr }, { data: parts }, { data: msgs }] = await Promise.all([
+          supabase.from("conversations").select("*").eq("id", conversationId).maybeSingle(),
+          supabase
+            .from("conversation_participants")
+            .select("*")
+            .eq("conversation_id", conversationId),
+          supabase
+            .from("messages")
+            .select("*")
+            .eq("conversation_id", conversationId)
+            .order("created_at", { ascending: false })
+            .limit(150),
+        ]);
         if (!active) return;
         if (cErr || !c) {
           setNotFound(true);
@@ -150,58 +159,47 @@ function ConversationRoute() {
           return;
         }
         setConv(c as unknown as Conversation);
-
-        const [{ data: parts }, { data: profs }, { data: msgs }] = await Promise.all([
-          supabase
-            .from("conversation_participants")
-            .select("*")
-            .eq("conversation_id", conversationId),
-          supabase.from("profiles").select("id, arabic_name, full_name, avatar_url"),
-          supabase
-            .from("messages")
-            .select("*")
-            .eq("conversation_id", conversationId)
-            .order("created_at", { ascending: true })
-            .limit(300),
-        ]);
-
-        if (!active) return;
         const partList = (parts ?? []) as unknown as Participant[];
         setParticipants(partList);
+        const msgList = ((msgs ?? []) as Message[]).reverse();
+        setMessages(msgList);
+        setLoading(false);
+
+        // Secondary data loads in the background without blocking the chat.
+        const userIds = Array.from(
+          new Set([...partList.map((p) => p.user_id), ...msgList.map((m) => m.sender_id)]),
+        ).filter(Boolean) as string[];
+        const ids = msgList.map((m) => m.id);
+        const [profRes, presRes, rxRes, dlRes] = await Promise.all([
+          userIds.length
+            ? supabase
+                .from("profiles")
+                .select("id, arabic_name, full_name, avatar_url")
+                .in("id", userIds)
+            : Promise.resolve({ data: [] as any[] }),
+          userIds.length
+            ? supabase.from("user_presence").select("*").in("user_id", userIds)
+            : Promise.resolve({ data: [] as any[] }),
+          ids.length
+            ? supabase.from("message_reactions").select("*").in("message_id", ids)
+            : Promise.resolve({ data: [] as any[] }),
+          ids.length
+            ? supabase.from("message_deliveries").select("*").in("message_id", ids)
+            : Promise.resolve({ data: [] as any[] }),
+        ]);
+        if (!active) return;
         const pmap: Record<string, Profile> = {};
-        (profs ?? []).forEach((p) => {
+        (profRes.data ?? []).forEach((p: any) => {
           if (p.id) pmap[p.id] = p as Profile;
         });
         setProfiles(pmap);
-        const msgList = (msgs ?? []) as Message[];
-        setMessages(msgList);
-
-        if (msgList.length) {
-          const ids = msgList.map((m) => m.id);
-          const [{ data: rxs }, { data: delvs }] = await Promise.all([
-            supabase.from("message_reactions").select("*").in("message_id", ids),
-            supabase.from("message_deliveries").select("*").in("message_id", ids),
-          ]);
-          if (active) {
-            setReactions((rxs ?? []) as Reaction[]);
-            setDeliveries((delvs ?? []) as Delivery[]);
-          }
-        }
-
-        const userIds = partList.map((p) => p.user_id).filter(Boolean);
-        if (active && userIds.length) {
-          const { data: pres } = await supabase
-            .from("user_presence")
-            .select("*")
-            .in("user_id", userIds);
-          if (active) {
-            const pm: Record<string, Presence> = {};
-            (pres ?? []).forEach((x) => {
-              if (x.user_id) pm[x.user_id] = x as Presence;
-            });
-            setPresence(pm);
-          }
-        }
+        const pm: Record<string, Presence> = {};
+        (presRes.data ?? []).forEach((x: any) => {
+          if (x.user_id) pm[x.user_id] = x as Presence;
+        });
+        setPresence(pm);
+        setReactions((rxRes.data ?? []) as Reaction[]);
+        setDeliveries((dlRes.data ?? []) as Delivery[]);
       } catch (err) {
         console.error("Chat loading error:", err);
       } finally {
@@ -271,33 +269,36 @@ function ConversationRoute() {
     };
   }, [draft, meId]);
 
+  const markedReadRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    markedReadRef.current = new Set();
+  }, [conversationId]);
   useEffect(() => {
     if (!meId || !messages.length) return;
-
-    const markAsRead = async () => {
-      const unreadIds = messages
-        .filter(
-          (m) =>
-            m.sender_id !== meId &&
-            !deliveries.some((d) => d.message_id === m.id && d.user_id === meId && d.read_at),
-        )
-        .map((m) => m.id);
-
-      if (unreadIds.length > 0) {
-        await supabase.from("message_deliveries").upsert(
-          unreadIds.map((mid) => ({
-            message_id: mid,
-            conversation_id: conversationId,
-            user_id: meId,
-            read_at: new Date().toISOString(),
-          })),
-          { onConflict: "message_id,user_id" },
-        );
-      }
-    };
-
-    markAsRead();
-  }, [messages, meId, deliveries]);
+    const readSet = new Set(
+      deliveries.filter((d) => d.user_id === meId && d.read_at).map((d) => d.message_id),
+    );
+    const unreadIds = messages
+      .filter(
+        (m) =>
+          m.sender_id !== meId && !readSet.has(m.id) && !markedReadRef.current.has(m.id),
+      )
+      .map((m) => m.id);
+    if (!unreadIds.length) return;
+    unreadIds.forEach((id) => markedReadRef.current.add(id));
+    const t = setTimeout(() => {
+      void supabase.from("message_deliveries").upsert(
+        unreadIds.map((mid) => ({
+          message_id: mid,
+          conversation_id: conversationId,
+          user_id: meId,
+          read_at: new Date().toISOString(),
+        })),
+        { onConflict: "message_id,user_id" },
+      );
+    }, 400);
+    return () => clearTimeout(t);
+  }, [messages, meId, deliveries, conversationId]);
 
   useEffect(() => {
     if (!meId) return;
