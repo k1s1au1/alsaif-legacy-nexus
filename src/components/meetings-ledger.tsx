@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Bell,
@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
 import { localDayKey } from "@/lib/day-lifecycle";
 import {
   formatMeetingDate,
+  countMeetingAttendance,
+  normalizeCompanionsCount,
   MEETING_LOCALE,
   type Attendee,
   type Meeting,
@@ -50,6 +52,7 @@ type LedgerProps = {
   onEdit: (meeting: Meeting) => void;
   onDelete: (id: string) => void;
   onRsvp: (id: string, rsvp: Rsvp, companions?: number) => void;
+  onCompanionsChange: (id: string, companions: number) => void;
   onRemind: (meeting: Meeting) => void;
   onShowMinutes: (meeting: Meeting) => void;
 };
@@ -95,7 +98,7 @@ function AttendancePreview({
 }) {
   const going = attendees.filter((attendee) => attendee.rsvp === "going");
   const visible = going.slice(0, 3);
-  const total = going.reduce((sum, attendee) => sum + 1 + (attendee.companions_count || 0), 0);
+  const total = countMeetingAttendance(attendees);
   return (
     <div className="meeting-ledger-attendance">
       <span>
@@ -134,6 +137,7 @@ function RsvpControls({
   ready,
   saving,
   onRsvp,
+  onCompanionsChange,
 }: {
   meeting: Meeting;
   attendees: Attendee[];
@@ -141,16 +145,29 @@ function RsvpControls({
   ready: boolean;
   saving: boolean;
   onRsvp: LedgerProps["onRsvp"];
+  onCompanionsChange: LedgerProps["onCompanionsChange"];
 }) {
   const mine = attendees.find((attendee) => attendee.user_id === userId);
   const [companionsDraft, setCompanionsDraft] = useState<string | null>(null);
-  const companions = mine?.companions_count || 0;
+  const companions = normalizeCompanionsCount(mine?.companions_count);
   const value = companionsDraft ?? String(companions);
   const saveCompanions = () => {
-    const count = Math.max(0, Math.floor(Number(value) || 0));
-    if (count !== companions) onRsvp(meeting.id, "going", count);
+    if (!ready || saving) return;
+    const count = normalizeCompanionsCount(Number(value));
+    if (count !== companions) onCompanionsChange(meeting.id, count);
     setCompanionsDraft(null);
   };
+  useEffect(() => {
+    if (companionsDraft == null || companionsDraft.trim() === "" || !ready || saving || mine?.rsvp !== "going") return;
+    const count = Number(companionsDraft);
+    if (!Number.isSafeInteger(count) || count < 0) return;
+    if (count === companions) return;
+    const timeout = setTimeout(() => {
+      onCompanionsChange(meeting.id, count);
+      setCompanionsDraft(null);
+    }, 450);
+    return () => clearTimeout(timeout);
+  }, [companionsDraft, companions, meeting.id, mine?.rsvp, onCompanionsChange, ready, saving]);
   return (
     <div className="meeting-ledger-rsvp">
       <div
@@ -195,7 +212,8 @@ function RsvpControls({
             inputMode="numeric"
             value={value}
             aria-label={`عدد المرافقين في ${meeting.title}`}
-            disabled={saving || !ready}
+            disabled={!ready}
+            aria-busy={saving}
             onChange={(event) => setCompanionsDraft(event.target.value)}
             onBlur={saveCompanions}
             onKeyDown={(event) => {
@@ -243,6 +261,7 @@ export function MeetingsLedger(props: LedgerProps) {
     ready: props.ready,
     saving: props.savingRsvp === meeting.id,
     onRsvp: props.onRsvp,
+    onCompanionsChange: props.onCompanionsChange,
   });
   const selectTab = (value: "upcoming" | "previous") => {
     setTab(value);

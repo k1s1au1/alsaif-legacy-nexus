@@ -29,6 +29,19 @@ export type ProfileLite = {
   avatar_url: string | null;
 };
 
+export function normalizeCompanionsCount(value: number | null | undefined) {
+  const count = value ?? 0;
+  return Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+}
+
+export function countMeetingAttendance(attendees: Attendee[]) {
+  return attendees.reduce(
+    (total, attendee) =>
+      total + (attendee.rsvp === "going" ? 1 + normalizeCompanionsCount(attendee.companions_count) : 0),
+    0,
+  );
+}
+
 // The date tile and month name must use the same calendar.
 export const MEETING_LOCALE = "ar-SA-u-ca-gregory-nu-latn";
 

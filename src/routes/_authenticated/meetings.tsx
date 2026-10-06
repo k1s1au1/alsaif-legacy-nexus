@@ -11,6 +11,7 @@ import { MeetingsLedger } from "@/components/meetings-ledger";
 import {
   formatMeetingDate as formatDate,
   splitMeetings,
+  normalizeCompanionsCount,
   type Meeting,
   type Attendee,
   type ProfileLite,
@@ -214,12 +215,19 @@ function MeetingsPage() {
     }
   };
 
-  const setRsvp = async (meetingId: string, rsvp: Rsvp, companionsCount: number = 0) => {
+  const setRsvp = async (
+    meetingId: string,
+    rsvp: Rsvp,
+    companionsCount: number = 0,
+    mode: "choice" | "companions" = "choice",
+  ) => {
     if (!userId || savingRsvp === meetingId) return;
 
     const prevAttendees = attendees;
     const current = attendees.find((a) => a.meeting_id === meetingId && a.user_id === userId);
-    const isRemoving = current?.rsvp === rsvp && current?.companions_count === companionsCount;
+    const count = rsvp === "going" ? normalizeCompanionsCount(companionsCount) : 0;
+    if (mode === "companions" && (current?.rsvp !== "going" || normalizeCompanionsCount(current.companions_count) === count)) return;
+    const isRemoving = mode === "choice" && current?.rsvp === rsvp && normalizeCompanionsCount(current?.companions_count) === count;
 
     setSavingRsvp(meetingId);
 
@@ -230,7 +238,7 @@ function MeetingsPage() {
         ? without
         : [
             ...without,
-            { meeting_id: meetingId, user_id: userId, rsvp, companions_count: companionsCount },
+            { meeting_id: meetingId, user_id: userId, rsvp, companions_count: count },
           ];
     });
 
@@ -248,29 +256,29 @@ function MeetingsPage() {
           meeting_id: meetingId,
           user_id: userId,
           rsvp,
-          companions_count: rsvp === "going" ? companionsCount : 0,
+          companions_count: count,
         };
 
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("meeting_attendees")
-          .upsert(payload, { onConflict: "meeting_id,user_id" });
+          .upsert(payload, { onConflict: "meeting_id,user_id" })
+          .select("*")
+          .single();
 
-        if (error) {
-          if (!error.message?.includes("companions_count")) throw error;
-          const { error: retryError } = await supabase
-            .from("meeting_attendees")
-            .upsert(
-              { meeting_id: meetingId, user_id: userId, rsvp },
-              { onConflict: "meeting_id,user_id" },
-            );
-          if (retryError) throw retryError;
+        if (error) throw error;
+        if (!data || data.rsvp !== rsvp || data.companions_count !== count) {
+          throw new Error("Meeting attendance was not saved with the requested companion count");
         }
+        setAttendees((prev) => [
+          ...prev.filter((a) => !(a.meeting_id === meetingId && a.user_id === userId)),
+          data as Attendee,
+        ]);
 
-        toast.success(rsvp === "going" ? "ننتظر تشريفك!" : "تم تسجيل اعتذارك");
+        toast.success(mode === "companions" ? "تم حفظ عدد المرافقين" : rsvp === "going" ? "ننتظر تشريفك!" : "تم تسجيل اعتذارك");
       }
     } catch (error) {
       console.error("Meeting RSVP error:", error);
-      toast.error("تعذر تحديث حالة الحضور");
+      toast.error(mode === "companions" ? "تعذر حفظ عدد المرافقين" : "تعذر تحديث حالة الحضور");
       setAttendees(prevAttendees);
     } finally {
       setSavingRsvp(null);
@@ -321,13 +329,14 @@ function MeetingsPage() {
           profiles={profiles}
           userId={userId}
           canManage={canManage}
-          ready={!rolesLoading && !!userId && !savingRsvp}
+          ready={!rolesLoading && !!userId}
           loading={loading}
           savingRsvp={savingRsvp}
           onCreate={openCreate}
           onEdit={openEdit}
           onDelete={deleteMeeting}
           onRsvp={setRsvp}
+          onCompanionsChange={(id, count) => void setRsvp(id, "going", count, "companions")}
           onRemind={handleRemindAll}
           onShowMinutes={setShowMinutes}
         />

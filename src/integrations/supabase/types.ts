@@ -702,6 +702,7 @@ export type Database = {
       }
       meeting_attendees: {
         Row: {
+          companions_count: number
           created_at: string
           id: string
           meeting_id: string
@@ -710,6 +711,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          companions_count?: number
           created_at?: string
           id?: string
           meeting_id: string
@@ -718,6 +720,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          companions_count?: number
           created_at?: string
           id?: string
           meeting_id?: string
