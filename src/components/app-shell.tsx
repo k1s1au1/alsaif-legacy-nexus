@@ -25,7 +25,7 @@ import {
   CalendarDays,
   ListChecks,
   Wallet,
-  Archive,
+  BookImage,
   ChevronLeft,
   Lock,
   LayoutGrid,
@@ -1308,7 +1308,7 @@ function AppShellChrome({
                   <QuickActionItem
                     to="/archive"
                     label="الألبوم"
-                    icon={<Archive size={28} strokeWidth={1.8} />}
+                    icon={<BookImage size={28} strokeWidth={1.8} />}
                     tone="primary"
                     restricted={isGuest && !allowedSections.includes("archive")}
                     onClick={(e: any) => {

@@ -1,6 +1,6 @@
 import {
   MessageCircle, Ticket, CalendarDays, ListChecks, Newspaper, Wallet,
-  Archive, Users, Handshake, Lock, ChevronDown, ChevronUp, PartyPopper,
+  BookImage, Users, Handshake, Lock, ChevronDown, ChevronUp, PartyPopper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
@@ -30,7 +30,7 @@ const services = [
   { to: "/meetings", label: "الاجتماعات", description: "جدولة اجتماعات العائلة", icon: <Users /> },
   { to: "/family-occasions", label: "مناسبات العائلة", description: "أفراح ومناسبات وذكريات العائلة", icon: <PartyPopper /> },
   { to: "/majlis", label: "الأخبار", description: "آخر أخبار العائلة", icon: <Newspaper /> },
-  { to: "/archive", label: "الألبومات", description: "ذكرياتنا في صور جميلة", icon: <Archive /> },
+  { to: "/archive", label: "الألبومات", description: "ذكرياتنا في صور جميلة", icon: <BookImage /> },
   { to: "/calendar", label: "تقويم العائلة", description: "المواعيد والمناسبات", icon: <CalendarDays /> },
   { to: "/chat", label: "المحادثات", description: "تواصل خاص بالعائلة", icon: <MessageCircle /> },
   { to: "/community", label: "ركن الأعضاء", description: "مجتمع أفراد العائلة", icon: <Handshake /> },

@@ -3,11 +3,10 @@ import { occasionDateTime } from "@/lib/upcoming-occasions";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  Archive,
+  BookImage,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Image as ImageIcon,
   Inbox,
   ListChecks,
   Newspaper,
@@ -78,7 +77,7 @@ const services = [
     icon: PartyPopper,
   },
   { to: "/majlis", label: "الأخبار", desc: "آخر أخبار العائلة", icon: Newspaper },
-  { to: "/archive", label: "الألبومات", desc: "ذكرياتنا في صور جميلة", icon: Archive },
+  { to: "/archive", label: "الألبومات", desc: "ذكرياتنا في صور جميلة", icon: BookImage },
   { to: "/calendar", label: "تقويم العائلة", desc: "المواعيد والمناسبات", icon: CalendarDays },
   { to: "/chat", label: "المحادثات", desc: "تواصل خاص بالعائلة", icon: MessageCircle },
   { to: "/community", label: "ركن الأعضاء", desc: "مجتمع أفراد العائلة", icon: Handshake },
@@ -805,13 +804,13 @@ export function DesktopDashboardExtras({
               </div>
             </Link>
             <Link to="/archive" className="desktop-mini-card">
-              <ImageIcon />
+              <BookImage />
               <div>
                 <span>معرض العائلة</span>
                 <b>الصور والذكريات</b>
                 <small>افتح الألبومات المحفوظة</small>
               </div>
-              <Archive />
+              <BookImage />
             </Link>
           </div>
         </section>

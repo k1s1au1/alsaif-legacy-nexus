@@ -15,7 +15,7 @@ import {
 import type { AlbumItem, AlbumSectionKey, CustomAlbum } from "@/lib/family-album";
 import { uploadAlbumMemories } from "@/lib/family-album-upload";
 import type { AlbumUploadInput } from "@/lib/family-album-upload";
-import { Users, CalendarDays, Sparkles, Plane, Images } from "lucide-react";
+import { BookImage, CalendarDays, Sparkles, Plane, Images } from "lucide-react";
 import { toast } from "sonner";
 import { roleLabel, useUserRole } from "@/hooks/use-user-role";
 import { AnimatePresence } from "framer-motion";
@@ -35,7 +35,7 @@ const SECTIONS = [
   {
     key: "family" as const,
     label: "ألبوم العائلة",
-    icon: Users,
+    icon: BookImage,
     hint: "لحظاتنا اليومية العفوية التي تجمعنا سوياً.",
   },
   {
