@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import type { RefObject } from "react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Sparkles } from "lucide-react";
+import { useSiteLogo } from "@/hooks/use-site-logo";
 import "./family-album-cover.css";
 
 export type AlbumBindingState = "closed" | "opening" | "open" | "closing";
@@ -45,6 +46,7 @@ export function FamilyAlbumCover({
   onOpen: () => void;
   onRest: (state: AlbumBindingState) => void;
 }) {
+  const logo = useSiteLogo();
   if (state === "open") return null;
   const moving = state === "opening" || state === "closing";
   const opening = state === "opening";
@@ -85,17 +87,17 @@ export function FamilyAlbumCover({
             <HeritageCorner corner="bottom-left" />
             <HeritageCorner corner="bottom-right" />
             <span className="album-cover-seal">
-              <span className="album-cover-seal-diamonds" aria-hidden="true">
-                ◆◆
-              </span>
-              <span>
-                مجلس
-                <br />
-                السيف
-              </span>
-              <span className="album-cover-seal-diamonds" aria-hidden="true">
-                ◆
-              </span>
+              {logo ? (
+                <img
+                  className="album-cover-logo"
+                  src={logo}
+                  alt="شعار العائلة"
+                  decoding="async"
+                  draggable={false}
+                />
+              ) : (
+                <Sparkles className="album-cover-logo-placeholder" aria-hidden="true" />
+              )}
             </span>
             <span className="album-cover-title">ألبوم العائلة</span>
             <span className="album-cover-rule" aria-hidden="true">
