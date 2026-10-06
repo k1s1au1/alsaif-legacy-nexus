@@ -145,7 +145,7 @@ function TripsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, primaryRole, activeDayKey]);
+  }, [userId, activeDayKey]);
 
   useEffect(() => {
     if (rolesLoading) return;
