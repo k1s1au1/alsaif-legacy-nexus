@@ -1737,6 +1737,10 @@ export type Database = {
         Args: { _owner: string; _shared: string[]; _u: string; _unlock: string }
         Returns: boolean
       }
+      claim_push_token: {
+        Args: { _platform: string; _token: string }
+        Returns: undefined
+      }
       count_fcm_tokens: { Args: never; Returns: number }
       find_member_by_login_phone: { Args: { _phone: string }; Returns: string }
       find_or_create_direct: { Args: { _other: string }; Returns: string }
@@ -1808,6 +1812,7 @@ export type Database = {
       normalize_section: { Args: { _s: string }; Returns: string }
       phone_login_key: { Args: { _phone: string }; Returns: string }
       public_stats: { Args: never; Returns: Json }
+      release_push_token: { Args: { _token: string }; Returns: undefined }
       review_profile_change_request: {
         Args: { _approve: boolean; _id: string; _note?: string }
         Returns: undefined
