@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { DASHBOARD_OCCASIONS_QUERY_KEY } from "@/hooks/use-dashboard-occasions";
 
 import { AppShell } from "@/components/app-shell";
 import {
@@ -510,6 +512,7 @@ function FamilyOccasionsPage({
   onQuickCreateClose,
   onQuickCreateSaved,
 }: FamilyOccasionsPageProps = {}) {
+  const queryClient = useQueryClient();
   const { userId, canManageSection, canCreateOfficialOccasion } = useUserRole();
   const canManageOccasions = canManageSection("occasions");
   const [items, setItems] = useState<StoredOccasion[]>([]);
@@ -690,6 +693,7 @@ function FamilyOccasionsPage({
           birthdayAudience: type === "birthday" ? audience : undefined,
         },
       });
+      await queryClient.invalidateQueries({ queryKey: DASHBOARD_OCCASIONS_QUERY_KEY });
       toast.success(editing ? "تم تحديث المناسبة" : "تم نشر المناسبة");
       setOpen(false);
       if (quickCreateOnly) {
@@ -713,6 +717,7 @@ function FamilyOccasionsPage({
     if (!window.confirm("حذف المناسبة؟")) return;
     try {
       await deleteOccasion(id);
+      await queryClient.invalidateQueries({ queryKey: DASHBOARD_OCCASIONS_QUERY_KEY });
       await refresh();
       toast.success("تم حذف المناسبة");
     } catch {

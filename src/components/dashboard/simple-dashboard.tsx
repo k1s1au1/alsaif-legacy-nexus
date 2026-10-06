@@ -1,4 +1,4 @@
-import { listOccasions } from "@/lib/api/occasions";
+import { useDashboardOccasions } from "@/hooks/use-dashboard-occasions";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { Link } from "@tanstack/react-router";
 import {
@@ -13,7 +13,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import "./simple-dashboard.css";
 
 type SimpleDashboardProps = {
@@ -60,37 +60,7 @@ export function SimpleDashboard({
 }: SimpleDashboardProps) {
   const activeDayKey = useDayBoundaryKey();
   const today = useMemo(() => new Date(), [activeDayKey]);
-  const [occasions, setOccasions] = useState<any[]>([]);
-
-  useEffect(() => {
-    let active = true;
-
-    const loadOccasions = async () => {
-      try {
-        const rows = await listOccasions({
-          userId: null,
-          canManageOccasions: false,
-        });
-        if (active) {
-          const startOfToday = new Date();
-          startOfToday.setHours(0, 0, 0, 0);
-          setOccasions(
-            (rows || []).filter((occasion: any) => {
-              const date = occasionDate(occasion);
-              return Boolean(date && date >= startOfToday);
-            }),
-          );
-        }
-      } catch {
-        if (active) setOccasions([]);
-      }
-    };
-
-    void loadOccasions();
-    return () => {
-      active = false;
-    };
-  }, [activeDayKey]);
+  const { data: occasions = [] } = useDashboardOccasions();
 
   const nextItem = useMemo<UpcomingItem | null>(() => {
     const startOfToday = new Date(today);
@@ -248,4 +218,3 @@ export function SimpleDashboard({
     </main>
   );
 }
-

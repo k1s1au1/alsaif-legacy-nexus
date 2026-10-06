@@ -1,4 +1,5 @@
-import { listOccasions } from "@/lib/api/occasions";
+import { useDashboardOccasions } from "@/hooks/use-dashboard-occasions";
+import { occasionDateTime } from "@/lib/upcoming-occasions";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -313,47 +314,7 @@ export function DesktopDashboardExtras({
   const [followExpanded, setFollowExpanded] = useState(false);
   const [followIndex, setFollowIndex] = useState(0);
   const [newsIndex, setNewsIndex] = useState(0);
-  const [occasions, setOccasions] = useState<LocalOccasion[]>([]);
-
-  useEffect(() => {
-    let alive = true;
-    const read = async () => {
-      try {
-        const rows = await listOccasions({ userId: null, canManageOccasions: false });
-        if (!alive) return;
-        const today = new Date();
-        const key = [
-          today.getFullYear(),
-          String(today.getMonth() + 1).padStart(2, "0"),
-          String(today.getDate()).padStart(2, "0"),
-        ].join("-");
-        setOccasions(
-          rows
-            .filter((item) => item?.id && item?.date && item.date >= key)
-            .sort(
-              (a, b) =>
-                new Date(`${a.date}T${a.time || "23:59"}:00`).getTime() -
-                new Date(`${b.date}T${b.time || "23:59"}:00`).getTime(),
-            ) as unknown as LocalOccasion[],
-        );
-      } catch {
-        if (alive) setOccasions([]);
-      }
-    };
-
-    const onVisibility = () => {
-      if (!document.hidden) void read();
-    };
-
-    void read();
-    window.addEventListener("focus", () => void read());
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return () => {
-      alive = false;
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, []);
+  const { data: occasions = [] } = useDashboardOccasions();
 
   const upcoming = useMemo(() => {
     const rows: any[] = [];
@@ -397,7 +358,7 @@ export function DesktopDashboardExtras({
       rows.push({
         kind: occasionLabels[item.type || ""] || "مناسبة عائلية",
         title: item.title || occasionLabels[item.type || ""] || "مناسبة عائلية",
-        date: item.date ? `${item.date}T${item.time || "23:59"}:00` : item.date,
+        date: occasionDateTime(item),
         location: item.location,
         icon: PartyPopper,
         cardType: "occasion",
@@ -602,7 +563,9 @@ export function DesktopDashboardExtras({
                       <div>
                         <b>{item.title}</b>
                         <span>
-                          {item.kind} · {fmtDate(item.date)}
+                          {item.kind} · {item.cardType === "occasion" && !item.date
+                            ? "الموعد غير محدد"
+                            : fmtDate(item.date)}
                         </span>
                       </div>
                       <Link to={item.to} aria-label={item.actionLabel || `فتح ${item.title}`}>
@@ -676,7 +639,9 @@ export function DesktopDashboardExtras({
                       <div className="desktop-next-meta">
                         <span>
                           <CalendarDays size={15} />
-                          {fmtDate(item.date)}
+                          {item.cardType === "occasion" && !item.date
+                            ? "الموعد غير محدد"
+                            : fmtDate(item.date)}
                         </span>
                         {item.location && (
                           <span>

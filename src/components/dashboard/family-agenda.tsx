@@ -1,4 +1,5 @@
-import { listOccasions } from "@/lib/api/occasions";
+import { useDashboardOccasions } from "@/hooks/use-dashboard-occasions";
+import { occasionDateTime } from "@/lib/upcoming-occasions";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
@@ -13,7 +14,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { useUserRole } from "@/hooks/use-user-role";
 import { MemberPostsPreview } from "./member-posts-preview";
@@ -58,11 +59,6 @@ const itemDateKey = (value?: string | null) => {
   return parsed ? dateKey(parsed) : "";
 };
 
-const occasionDate = (item: any) => {
-  if (!item?.date) return null;
-  return `${item.date}T${item.time || "23:59"}:00`;
-};
-
 export function FamilyAgenda({
   meetings = [],
   trips = [],
@@ -76,7 +72,9 @@ export function FamilyAgenda({
   const [monthCursor, setMonthCursor] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
-  const [loadedOccasions, setLoadedOccasions] = useState<any[]>([]);
+  const { data: loadedOccasions = [] } = useDashboardOccasions(
+    suppliedOccasions === undefined,
+  );
   const [quickCreateTarget, setQuickCreateTarget] = useState<QuickCreateTarget | null>(null);
   const actionsId = `family-agenda-actions-${useId().replace(/:/g, "")}`;
 
@@ -90,72 +88,14 @@ export function FamilyAgenda({
     isLoading: rolesLoading,
   } = useUserRole();
 
-  const readUpcomingOccasions = useCallback(async () => {
-    const rows = await listOccasions({
-      userId: null,
-      canManageOccasions: false,
-    });
-    const todayKey = dateKey(new Date());
-    return (rows || [])
-      .filter((item: any) => item?.id && item?.date && item.date >= todayKey)
-      .sort(
-        (a: any, b: any) =>
-          (toDate(occasionDate(a))?.getTime() || Number.MAX_SAFE_INTEGER) -
-          (toDate(occasionDate(b))?.getTime() || Number.MAX_SAFE_INTEGER),
-      );
-  }, []);
+  const occasions = suppliedOccasions ?? loadedOccasions;
 
-  useEffect(() => {
-    if (suppliedOccasions !== undefined) return;
-
-    let alive = true;
-    const read = async () => {
-      try {
-        const rows = await readUpcomingOccasions();
-        if (!alive) return;
-        setLoadedOccasions(rows);
-      } catch {
-        if (alive) setLoadedOccasions([]);
-      }
-    };
-
-    void read();
-    return () => {
-      alive = false;
-    };
-  }, [readUpcomingOccasions, suppliedOccasions]);
-
-  const occasions = useMemo(() => {
-    if (suppliedOccasions === undefined) return loadedOccasions;
-    if (loadedOccasions.length === 0) return suppliedOccasions;
-
-    const merged = new Map<string, any>();
-    suppliedOccasions.forEach((item) => item?.id && merged.set(item.id, item));
-    loadedOccasions.forEach((item) => item?.id && merged.set(item.id, item));
-    return [...merged.values()].sort(
-      (a, b) =>
-        (toDate(occasionDate(a))?.getTime() || Number.MAX_SAFE_INTEGER) -
-        (toDate(occasionDate(b))?.getTime() || Number.MAX_SAFE_INTEGER),
-    );
-  }, [loadedOccasions, suppliedOccasions]);
-
-  const handleQuickCreateSaved = useCallback(
-    async (target: QuickCreateTarget) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["upcoming-events"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard-counts"] }),
-      ]);
-
-      if (target === "occasion") {
-        try {
-          setLoadedOccasions(await readUpcomingOccasions());
-        } catch {
-          // The realtime/page refresh remains a fallback if this immediate read fails.
-        }
-      }
-    },
-    [queryClient, readUpcomingOccasions],
-  );
+  const handleQuickCreateSaved = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["upcoming-events"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard-counts"] }),
+    ]);
+  }, [queryClient]);
 
   const agendaItems = useMemo<AgendaItem[]>(() => {
     const rows: AgendaItem[] = [];
@@ -205,7 +145,7 @@ export function FamilyAgenda({
         id: `occasion-${item.id}`,
         kind: "مناسبة",
         title: item.title || "مناسبة عائلية",
-        date: occasionDate(item),
+        date: occasionDateTime(item),
         to: "/family-occasions",
         tone: "occasion",
         icon: PartyPopper,
