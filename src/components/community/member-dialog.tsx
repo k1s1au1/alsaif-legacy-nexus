@@ -9,11 +9,12 @@ type MemberDialogProps = {
   description: string;
   icon?: ReactNode;
   wide?: boolean;
+  className?: string;
   onClose: () => void;
   children: ReactNode;
 };
 
-export function MemberDialog({ title, description, icon, wide, onClose, children }: MemberDialogProps) {
+export function MemberDialog({ title, description, icon, wide, className, onClose, children }: MemberDialogProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -55,7 +56,7 @@ export function MemberDialog({ title, description, icon, wide, onClose, children
           <Dialog.Content
             ref={contentRef}
             dir="rtl"
-            className={cn("member-dialog-panel", wide && "member-dialog-panel-wide")}
+            className={cn("member-dialog-panel", wide && "member-dialog-panel-wide", className)}
             onOpenAutoFocus={(event) => {
               event.preventDefault();
               returnFocusRef.current = document.activeElement instanceof HTMLElement
