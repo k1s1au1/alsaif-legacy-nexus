@@ -393,6 +393,8 @@ function AppShellChrome({
       await queryClient.cancelQueries();
       queryClient.clear();
       await clearOfflineData();
+      const { releasePushToken } = await import("@/lib/push-token-ownership");
+      await releasePushToken();
       await supabase.auth.signOut();
       toast.success("تم تسجيل الخروج");
       navigate({ to: "/auth", replace: true });

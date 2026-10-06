@@ -507,15 +507,11 @@ function SettingsPage() {
         });
 
         if (token) {
-          const { data: auth } = await supabase.auth.getUser();
-          if (auth.user) {
-            const { error: tokenError } = await supabase
-              .from("push_tokens")
-              .upsert(
-                { user_id: auth.user.id, token, platform: "web", is_active: true },
-                { onConflict: "user_id,token" },
-              );
-            if (tokenError) throw new Error(`تعذر حفظ تسجيل الجهاز: ${tokenError.message}`);
+          const { claimPushToken } = await import("@/lib/push-token-ownership");
+          try {
+            await claimPushToken(token, "web");
+          } catch (tokenError: any) {
+            throw new Error(`تعذر حفظ تسجيل الجهاز: ${tokenError?.message ?? ""}`);
           }
         }
       }

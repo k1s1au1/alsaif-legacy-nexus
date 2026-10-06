@@ -58,21 +58,12 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
         return;
       }
 
-      const { error } = await supabase.from("push_tokens").upsert(
-        {
-          user_id: auth.user.id,
-          token: token.value,
-          platform: Capacitor.getPlatform(),
-          is_active: true,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,token" },
-      );
-
-      if (!error) {
-        console.log("[Push] Token saved successfully to Supabase.");
-      } else {
-        console.error("[Push] Error saving token to Supabase:", error);
+      try {
+        const { claimPushToken } = await import("@/lib/push-token-ownership");
+        await claimPushToken(token.value, Capacitor.getPlatform());
+        console.log("[Push] Token bound to current account.");
+      } catch (error) {
+        console.error("[Push] Error saving token:", error);
       }
     });
 
