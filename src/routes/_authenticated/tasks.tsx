@@ -350,6 +350,7 @@ function TasksPage() {
                     }}
                     canManage={isPrivileged || t.created_by === userId}
                   />
+                  </div>
                 ))}
               </AnimatePresence>
             </div>
