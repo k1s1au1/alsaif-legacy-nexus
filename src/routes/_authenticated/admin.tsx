@@ -1394,7 +1394,7 @@ function AdminPage() {
 }
 
 function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }) {
-  const [subTab, setSubTab] = useState<"meetings" | "trips" | "tasks" | "occasions">("meetings");
+  const [subTab, setSubTab] = useState<"meetings" | "trips" | "tasks" | "occasions" | "requests">("meetings");
 
   return (
     <section className="animate-fade-up space-y-8">
@@ -1451,6 +1451,15 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
           )}
         >
           المهام ({data.tasks.length})
+        </button>
+        <button
+          onClick={() => setSubTab("requests")}
+          className={cn(
+            "px-6 py-2 rounded-xl text-xs font-black transition-all",
+            subTab === "requests" ? "bg-white text-primary shadow-sm" : "text-muted-foreground",
+          )}
+        >
+          الطلبات المغلقة ({data.requests.length})
         </button>
       </div>
 
