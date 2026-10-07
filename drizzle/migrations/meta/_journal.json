@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791386552924,
+      "tag": "0000_rich_push_images_all_sections",
+      "breakpoints": true
+    }
+  ]
+}
