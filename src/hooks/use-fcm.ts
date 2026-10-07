@@ -69,7 +69,7 @@ export function useFcm() {
              notification.onclick = () => {
                window.focus();
                notification.close();
-               if (targetUrl.startsWith("/")) navigate({ to: targetUrl });
+               if (targetUrl.startsWith("/")) { window.history.pushState({}, "", targetUrl); window.dispatchEvent(new PopStateEvent("popstate")); }
              };
            });
 

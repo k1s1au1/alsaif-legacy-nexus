@@ -14,7 +14,8 @@ import { PostCard, type CommunityPost as Post } from "@/components/community/pos
 
 export const Route = createFileRoute("/_authenticated/community")({
   ssr:false,
-  validateSearch:(search:Record<string,unknown>):{post?:string;create?:string}=>({
+  validateSearch:(search:Record<string,unknown>):{post?:string;create?:string;request?:string}=>({
+    request:typeof search.request==="string"&&/^[0-9a-f-]{36}$/i.test(search.request)?search.request:undefined,
     post:typeof search.post==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(search.post)?search.post:undefined,
     create:typeof search.create==="string"?search.create:undefined,
   }),
@@ -28,6 +29,7 @@ const COMMUNITY_CACHE_PREFIX = "member_corner_posts";
 
 function CommunityPage(){
  const selectedPostId=Route.useSearch().post;
+ const openRequestId=Route.useSearch().request;
  const {
    userId:meId,
    canManageSection,
@@ -47,7 +49,8 @@ function CommunityPage(){
  const [loadingMore,setLoadingMore]=useState(false);
  const [hasMore,setHasMore]=useState(true);
  const [showAdd,setShowAdd]=useState(false);
- const [showRequests,setShowRequests]=useState(false);
+ const [showRequests,setShowRequests]=useState(!!openRequestId);
+ useEffect(()=>{if(openRequestId)setShowRequests(true)},[openRequestId]);
  const requestsTriggerRef=useRef<HTMLButtonElement>(null);
  const [filter,setFilter]=useState<string>("all");
  const postsRef=useRef<Post[]>([]);
@@ -325,7 +328,7 @@ function CommunityPage(){
      </div>
      {showRequests && <section id="community-private-requests" className="community-requests-panel" aria-label="الطلبات الخاصة">
        <div className="community-requests-close"><button type="button" className="community-icon-button" aria-label="إغلاق الطلبات الخاصة" onClick={() => { setShowRequests(false); requestsTriggerRef.current?.focus({preventScroll:true}); }}><X size={18}/></button></div>
-       <PrivateRequestsSection/>
+       <PrivateRequestsSection initialOpenId={openRequestId}/>
      </section>}
      {selectedPostId && <section id="member-corner-selected" className="community-selected" aria-label="المشاركة المختارة">
        <div className="community-selected-heading"><h3>المشاركة المختارة</h3><Link to="/community" search={{}}><X size={15}/>العودة لجميع المشاركات</Link></div>

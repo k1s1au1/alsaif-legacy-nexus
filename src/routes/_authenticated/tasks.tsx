@@ -336,8 +336,8 @@ function TasksPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <AnimatePresence mode="popLayout">
                 {filteredTasks.map((t, idx) => (
+                  <div key={t.id} data-focus-id={t.id}>
                   <ModernTaskCard
-                    key={t.id}
                     task={t}
                     index={idx}
                     userId={userId}
@@ -350,6 +350,7 @@ function TasksPage() {
                     }}
                     canManage={isPrivileged || t.created_by === userId}
                   />
+                  </div>
                 ))}
               </AnimatePresence>
             </div>

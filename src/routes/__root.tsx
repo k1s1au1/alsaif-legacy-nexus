@@ -28,6 +28,7 @@ import { DesktopSidebarQuickAccess } from "@/components/desktop-sidebar-quick-ac
 import { DeviceOrientationGuard } from "@/components/device-orientation-guard";
 import { RouteScrollManager } from "@/components/route-scroll-manager";
 import { AppOpenAlerts } from "@/components/app-open-alerts";
+import { NotificationFocus } from "@/components/notification-focus";
 import { OfflineStatus } from "@/components/offline-status";
 
 function NotFoundComponent(){return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><h1 className="text-7xl font-bold text-gold-primary">404</h1><h2 className="mt-4 text-xl font-semibold text-foreground">الصفحة غير موجودة</h2><p className="mt-2 text-sm text-muted-foreground">الصفحة التي تبحث عنها غير موجودة أو تم نقلها.</p><div className="mt-6"><Link to="/" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90">الرئيسية</Link></div></div></div>}
@@ -58,5 +59,5 @@ function RootShell({children}:Readonly<{children:ReactNode}>){
     };
     syncTheme();
   },[]);
-  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><AppOpenAlerts/><DesktopSidebarQuickAccess/><Toaster richColors position="top-center"/><OfflineStatus/></QueryClientProvider><Scripts/></body></html>
+  return <html lang="ar" dir="rtl" suppressHydrationWarning><head><HeadContent/></head><body><QueryClientProvider client={queryClient}>{children}<RouteScrollManager/><DeviceOrientationGuard/><AppOpenAlerts/><NotificationFocus/><DesktopSidebarQuickAccess/><Toaster richColors position="top-center"/><OfflineStatus/></QueryClientProvider><Scripts/></body></html>
 }

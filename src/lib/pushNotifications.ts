@@ -115,7 +115,7 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
           label: "فتح",
           onClick: () => {
             const url = (notification.data as any)?.url;
-            if (url && navigate) navigate({ to: url as any });
+            if (url && navigate) openNotificationUrl(url);
           }
         }
       });
@@ -127,7 +127,7 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
       await LocalNotifications.removeAllListeners();
       await LocalNotifications.addListener("localNotificationActionPerformed", (ev: any) => {
         const url = ev?.notification?.extra?.url;
-        if (url && navigate) navigate({ to: url as any });
+        if (url && navigate) openNotificationUrl(url);
       });
     } catch (e) {
       console.warn("[Push] Local listener failed:", e);
@@ -163,7 +163,7 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
 
       // Handle Deep Linking (Redirection)
       if (url && navigate) {
-        navigate({ to: url as any });
+        openNotificationUrl(url);
       }
     });
 
@@ -200,4 +200,11 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
       toast.error("فشل إعداد الإشعارات: " + msg);
     }
   }
+}
+
+function openNotificationUrl(url: string) {
+  if (typeof url !== "string" || !url.startsWith("/")) return;
+  // Full URL incl. query (?focus=, ?post=) — go via history so params are kept.
+  window.history.pushState({}, "", url);
+  window.dispatchEvent(new PopStateEvent("popstate"));
 }

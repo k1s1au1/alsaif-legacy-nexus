@@ -778,6 +778,7 @@ function FamilyOccasionsPage({
                   return (
                     <article
                       key={o.id}
+                      data-focus-id={o.id}
                       className={`rounded-[28px] border bg-card p-4 transition-all hover:shadow-md ${o.visibility === "official" ? "border-gold-primary/50 shadow-sm" : "border-border"}`}
                     >
                       <div className="grid grid-cols-[92px_1fr] gap-4">
