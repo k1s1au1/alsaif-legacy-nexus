@@ -1,6 +1,8 @@
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { richNotificationContent } from "@/lib/rich-notification";
+import { RichNotifications } from "@/lib/rich-notification-native";
 
 /**
  * Sets up native push notifications (Android via Capacitor).
@@ -49,7 +51,7 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
 
     // 2. Add listeners
     await PushNotifications.addListener("registration", async (token) => {
-      console.log("[Push] Registration successful, token:", token.value);
+      console.log("[Push] Registration successful.");
       localStorage.setItem("fcm_token", token.value);
 
       const { data: auth } = await supabase.auth.getUser();
@@ -72,9 +74,10 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
     });
 
     await PushNotifications.addListener("pushNotificationReceived", async (notification) => {
-      console.log("[Push] Notification received in foreground:", notification);
-      const title = notification.title || (notification.data as any)?.title || "تنبيه جديد";
-      const body = notification.body || (notification.data as any)?.body || "";
+      const { title, body, image, url } = richNotificationContent({
+        notification: { title: notification.title, body: notification.body },
+        data: notification.data,
+      });
 
       // Android does not display push payloads while the app is in the
       // foreground, so mirror it as a real system notification.
@@ -91,12 +94,22 @@ export async function setupPushNotifications(navigate?: (options: { to: string }
             sound: "default",
             vibration: true,
           });
-          await LocalNotifications.schedule({
+          let imageShown = false;
+          if (image && Capacitor.getPlatform() === "android") {
+            try {
+              await RichNotifications.show({ title, body, image, url });
+              imageShown = true;
+            } catch {
+              // Older installed apps lack the new plugin; retain expanded text.
+            }
+          }
+          if (!imageShown) await LocalNotifications.schedule({
             notifications: [
               {
                 id: Math.floor(Math.random() * 100000),
                 title,
                 body,
+                largeBody: body,
                 channelId: "alsaif_notifications",
                 smallIcon: "ic_launcher",
                 extra: notification.data || {},

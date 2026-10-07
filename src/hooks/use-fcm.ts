@@ -7,6 +7,7 @@ import { FCM_VAPID_KEY, FIREBASE_CONFIG } from "@/lib/fcm-config";
 import { claimPushToken } from "@/lib/push-token-ownership";
 import { initializeApp, getApps } from "firebase/app";
 import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
+import { richNotificationContent } from "@/lib/rich-notification";
 
 /**
  * Hook to initialize push notifications for both Web and Mobile.
@@ -53,24 +54,17 @@ export function useFcm() {
            // the web app is in the foreground. Listen explicitly and display a
            // real browser notification so a successful test is visible at once.
            unsubscribeForeground = onMessage(messaging, (payload) => {
-             const title = payload.notification?.title || payload.data?.title || "إشعار جديد";
-             const body = payload.notification?.body || payload.data?.body || "";
-             const targetUrl = payload.data?.url || "/";
-
+             const { title, body, image, url } = richNotificationContent(payload);
              if (Notification.permission !== "granted") return;
-
-             const notification = new Notification(title, {
+             // Service-worker notifications work on Android browsers too, where
+             // constructing Notification directly is not supported.
+             void registration.showNotification(title, {
                body,
-               icon: "/logo.png",
-               badge: "/logo.png",
-               data: { url: targetUrl },
-             });
-
-             notification.onclick = () => {
-               window.focus();
-               notification.close();
-               if (targetUrl.startsWith("/")) { window.history.pushState({}, "", targetUrl); window.dispatchEvent(new PopStateEvent("popstate")); }
-             };
+                icon: "/logo-home.png",
+                badge: "/logo-home.png",
+                ...(image ? { image } : {}),
+                data: { url },
+              }).catch((error) => console.warn("[Push] Foreground display failed:", error));
            });
 
           const token = await getToken(messaging, {
