@@ -211,6 +211,7 @@ function AdminPage() {
     trips: [] as any[],
     tasks: [] as any[],
     occasions: [] as any[],
+    requests: [] as any[],
   });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<AdminTab>("requests");
@@ -433,6 +434,7 @@ function AdminPage() {
             { data: archTasks },
             { data: archOccasions },
             { data: archProfiles },
+            { data: archRequests },
           ] = await Promise.all([
             supabase.from("meetings").select("*").order("scheduled_at", { ascending: false }),
             supabase.from("meeting_attendees").select("*"),
@@ -440,6 +442,11 @@ function AdminPage() {
             supabase.from("tasks").select("*").order("created_at", { ascending: false }),
             supabase.from("events").select("*").order("starts_at", { ascending: false }),
             supabase.from("profiles").select("id, arabic_name, full_name, avatar_url"),
+            supabase
+              .from("private_requests")
+              .select("id,author_id,title,body,visibility,status,created_at,updated_at")
+              .eq("status", "closed")
+              .order("updated_at", { ascending: false }),
           ]);
 
           const profMap = new Map<string, any>((archProfiles || []).map(p => [p.id, p]));
@@ -469,6 +476,10 @@ function AdminPage() {
             occasions: (archOccasions || [])
               .filter((occasion) => isFamilyOccasionEvent(occasion))
               .filter((occasion) => isFamilyOccasionArchived(occasion, archiveNow)),
+            requests: (archRequests || []).map((request) => ({
+              ...request,
+              author: profMap.get(request.author_id),
+            })),
           });
 
         } catch (err) {
@@ -1383,7 +1394,7 @@ function AdminPage() {
 }
 
 function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }) {
-  const [subTab, setSubTab] = useState<"meetings" | "trips" | "tasks" | "occasions">("meetings");
+  const [subTab, setSubTab] = useState<"meetings" | "trips" | "tasks" | "occasions" | "requests">("meetings");
 
   return (
     <section className="animate-fade-up space-y-8">
@@ -1440,6 +1451,15 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
           )}
         >
           المهام ({data.tasks.length})
+        </button>
+        <button
+          onClick={() => setSubTab("requests")}
+          className={cn(
+            "px-6 py-2 rounded-xl text-xs font-black transition-all",
+            subTab === "requests" ? "bg-white text-primary shadow-sm" : "text-muted-foreground",
+          )}
+        >
+          الطلبات المغلقة ({data.requests.length})
         </button>
       </div>
 
@@ -1572,6 +1592,45 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
                       </span>
                     )}
                   </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {subTab === "requests" && (
+          <div className="space-y-4">
+            {data.requests.length === 0 ? (
+              <div className="card-surface p-12 text-center text-sm font-bold text-muted-foreground">
+                لا توجد طلبات خاصة مغلقة حتى الآن.
+              </div>
+            ) : (
+              data.requests.map((request: any) => (
+                <div key={request.id} className="card-surface p-6 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-black text-white bg-slate-600">
+                          مغلق
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-[10px] font-black bg-muted text-muted-foreground">
+                          {request.visibility === "chairman_only" ? "رئيس المجلس فقط" : "رئيس المجلس والنائب"}
+                        </span>
+                      </div>
+                      <h4 className="text-lg font-black text-primary">{request.title}</h4>
+                      <p className="text-xs font-bold text-muted-foreground">
+                        من: {request.author?.arabic_name || request.author?.full_name || "عضو"} · أُغلق في{" "}
+                        {new Date(request.updated_at).toLocaleDateString("ar-SA", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold text-muted-foreground whitespace-pre-wrap border-t border-border/40 pt-3">
+                    {request.body}
+                  </p>
                 </div>
               ))
             )}
