@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       ["meeting", "meetings"], ["chat", "chat"], ["task", "tasks"],
       ["occasion", "occasions"], ["event", "occasions"], ["trip", "trips"],
       ["finance", "finance"], ["fund", "finance"], ["majlis", "news"], ["news", "news"],
-      ["community", "community"], ["member-post", "community"], ["request", "requests"],
+      ["request", "requests"], ["community", "community"], ["member-post", "community"],
       ["admin", "admin"], ["game", "entertainment"], ["entertain", "entertainment"],
     ];
     const prefKey = prefMap.find(([k]) => target.includes(k))?.[1];
