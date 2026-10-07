@@ -61,7 +61,11 @@ const VISIBILITY_META: Record<Visibility, string> = {
   chairman_only: "رئيس المجلس فقط",
 };
 
-export function PrivateRequestsSection() {
+export function PrivateRequestsSection({ initialOpenId }: { initialOpenId?: string } = {}) {
+  useEffect(() => {
+    if (initialOpenId) setOpenId(initialOpenId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialOpenId]);
   const { userId: meId, isChairman, isCouncilLeadership } = useUserRole();
   const [rows, setRows] = useState<PrivateRequest[]>([]);
   const [loading, setLoading] = useState(true);
