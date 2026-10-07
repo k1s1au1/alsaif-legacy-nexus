@@ -286,7 +286,10 @@ function ConversationRoute() {
       .map((m) => m.id);
     if (!unreadIds.length) return;
     unreadIds.forEach((id) => markedReadRef.current.add(id));
-    const t = setTimeout(() => {
+    // Fire-and-forget: never cancel this upsert in cleanup. A new `deliveries`
+    // reference (background load or realtime) re-runs this effect within the
+    // 400ms window; cancelling here meant read_at was never written.
+    setTimeout(() => {
       void supabase.from("message_deliveries").upsert(
         unreadIds.map((mid) => ({
           message_id: mid,
@@ -297,7 +300,6 @@ function ConversationRoute() {
         { onConflict: "message_id,user_id" },
       );
     }, 400);
-    return () => clearTimeout(t);
   }, [messages, meId, deliveries, conversationId]);
 
   useEffect(() => {

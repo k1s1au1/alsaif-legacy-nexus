@@ -76,9 +76,8 @@ function MeetingsPage() {
 
   const loadAll = useCallback(async () => {
     const cached = OfflineCache.load("meetings");
-    const cachedHistory = OfflineCache.load("meetings-history");
-    if (cached || cachedHistory) {
-      setMeetings([...(cached || []), ...(cachedHistory || [])] as Meeting[]);
+    if (cached) {
+      setMeetings(cached as Meeting[]);
     }
 
     setLoading(true);
