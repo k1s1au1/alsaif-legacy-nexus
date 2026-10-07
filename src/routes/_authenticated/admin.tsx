@@ -1598,6 +1598,45 @@ function MasterArchive({ data, onRefresh }: { data: any; onRefresh: () => void }
           </div>
         )}
 
+        {subTab === "requests" && (
+          <div className="space-y-4">
+            {data.requests.length === 0 ? (
+              <div className="card-surface p-12 text-center text-sm font-bold text-muted-foreground">
+                لا توجد طلبات خاصة مغلقة حتى الآن.
+              </div>
+            ) : (
+              data.requests.map((request: any) => (
+                <div key={request.id} className="card-surface p-6 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-black text-white bg-slate-600">
+                          مغلق
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-[10px] font-black bg-muted text-muted-foreground">
+                          {request.visibility === "chairman_only" ? "رئيس المجلس فقط" : "رئيس المجلس والنائب"}
+                        </span>
+                      </div>
+                      <h4 className="text-lg font-black text-primary">{request.title}</h4>
+                      <p className="text-xs font-bold text-muted-foreground">
+                        من: {request.author?.arabic_name || request.author?.full_name || "عضو"} · أُغلق في{" "}
+                        {new Date(request.updated_at).toLocaleDateString("ar-SA", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold text-muted-foreground whitespace-pre-wrap border-t border-border/40 pt-3">
+                    {request.body}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
         {subTab === "tasks" && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
