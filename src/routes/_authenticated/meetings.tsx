@@ -76,9 +76,8 @@ function MeetingsPage() {
 
   const loadAll = useCallback(async () => {
     const cached = OfflineCache.load("meetings");
-    const cachedHistory = OfflineCache.load("meetings-history");
-    if (cached || cachedHistory) {
-      setMeetings([...(cached || []), ...(cachedHistory || [])] as Meeting[]);
+    if (cached) {
+      setMeetings(cached as Meeting[]);
     }
 
     setLoading(true);
@@ -91,10 +90,9 @@ function MeetingsPage() {
 
       if (meetingError) throw meetingError;
       const allMeetings = (m ?? []) as Meeting[];
-      const { upcoming, previous } = splitMeetings(allMeetings);
-      setMeetings(allMeetings);
+      const { upcoming } = splitMeetings(allMeetings);
+      setMeetings(upcoming);
       OfflineCache.save("meetings", upcoming);
-      OfflineCache.save("meetings-history", previous);
       setAttendees((a ?? []) as Attendee[]);
       const map: Record<string, ProfileLite> = {};
       ((pr ?? []) as ProfileLite[]).forEach((p) => {

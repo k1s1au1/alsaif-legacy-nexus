@@ -420,17 +420,6 @@ export function MeetingsLedger(props: LedgerProps) {
             >
               القادمة <span>({upcoming.length})</span>
             </button>
-            <button
-              type="button"
-              id="meetings-previous-tab"
-              role="tab"
-              aria-controls="meetings-list"
-              aria-selected={tab === "previous"}
-              className={cn(tab === "previous" && "is-active")}
-              onClick={() => selectTab("previous")}
-            >
-              السابقة <span>({previous.length})</span>
-            </button>
           </div>
           {selectedDay && (
             <button

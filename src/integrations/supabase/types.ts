@@ -1750,6 +1750,15 @@ export type Database = {
         Returns: undefined
       }
       can_create_official_occasion: { Args: { _u: string }; Returns: boolean }
+      can_manage_archive_item: {
+        Args: {
+          _album: string
+          _section: string
+          _uploader: string
+          _user: string
+        }
+        Returns: boolean
+      }
       can_manage_roles: { Args: { _u: string }; Returns: boolean }
       can_manage_section: {
         Args: { _section: string; _user: string }
