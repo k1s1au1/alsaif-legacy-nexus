@@ -314,18 +314,34 @@ self.addEventListener("message", (event) => {
 });
 
 messaging.onBackgroundMessage((payload) => {
+  // Firebase already displays notification payloads (including their image).
+  // Only data-only messages need manual display; never show the same push twice.
+  if (payload.notification) return;
   const title = payload.notification?.title || payload.data?.title || "إشعار جديد";
+  const image = payload.data?.image;
   const options = {
     body: payload.notification?.body || payload.data?.body || "",
-    icon: "/logo.png",
-    badge: "/logo.png",
+    icon: "/logo-home.png",
+    badge: "/logo-home.png",
+    ...(typeof image === "string" && image.startsWith("https://") ? { image } : {}),
     data: payload.data || {},
   };
-  self.registration.showNotification(title, options);
+  return self.registration.showNotification(title, options);
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/";
-  event.waitUntil(clients.openWindow(url));
+  const data = event.notification.data;
+  const rawUrl = data?.url || data?.FCM_MSG?.data?.url || "/";
+  const target = new URL(rawUrl, self.location.origin);
+  if (target.origin !== self.location.origin) return;
+  event.waitUntil((async () => {
+    const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
+    const existing = windows.find((client) => new URL(client.url).origin === target.origin);
+    if (existing) {
+      await existing.navigate(target.href);
+      return existing.focus();
+    }
+    return clients.openWindow(target.href);
+  })());
 });
