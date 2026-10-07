@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Send rich mobile notifications with available content images and unabridged text; verify payload and expanded display support
+
 - [x] Match the dashboard gateway and family-services area to the approved desktop/mobile references and verify all target viewports
 - [ ] Rebuild game-room entry, lobby, table shell, cards, and responsive layouts (entry and shared table foundation complete)
 - [x] Replace shared lottery with synchronized per-game starting-player draw
