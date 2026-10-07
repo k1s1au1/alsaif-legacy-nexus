@@ -211,6 +211,7 @@ function AdminPage() {
     trips: [] as any[],
     tasks: [] as any[],
     occasions: [] as any[],
+    requests: [] as any[],
   });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<AdminTab>("requests");
@@ -433,6 +434,7 @@ function AdminPage() {
             { data: archTasks },
             { data: archOccasions },
             { data: archProfiles },
+            { data: archRequests },
           ] = await Promise.all([
             supabase.from("meetings").select("*").order("scheduled_at", { ascending: false }),
             supabase.from("meeting_attendees").select("*"),
@@ -440,6 +442,11 @@ function AdminPage() {
             supabase.from("tasks").select("*").order("created_at", { ascending: false }),
             supabase.from("events").select("*").order("starts_at", { ascending: false }),
             supabase.from("profiles").select("id, arabic_name, full_name, avatar_url"),
+            supabase
+              .from("private_requests")
+              .select("id,author_id,title,body,visibility,status,created_at,updated_at")
+              .eq("status", "closed")
+              .order("updated_at", { ascending: false }),
           ]);
 
           const profMap = new Map<string, any>((archProfiles || []).map(p => [p.id, p]));
@@ -469,6 +476,10 @@ function AdminPage() {
             occasions: (archOccasions || [])
               .filter((occasion) => isFamilyOccasionEvent(occasion))
               .filter((occasion) => isFamilyOccasionArchived(occasion, archiveNow)),
+            requests: (archRequests || []).map((request) => ({
+              ...request,
+              author: profMap.get(request.author_id),
+            })),
           });
 
         } catch (err) {
