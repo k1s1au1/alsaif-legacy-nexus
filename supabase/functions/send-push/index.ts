@@ -86,6 +86,41 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
+    // Resolve private images to short-lived signed HTTPS links so Android/web can show them.
+    let image: string | undefined = typeof payload.image === "string" && /^https:\/\//i.test(payload.image) ? payload.image : undefined;
+    let allowedUsers: Set<string> | null = null;
+    const SIGN_TTL = 60 * 60 * 24 * 7;
+    if (typeof payload.message_id === "string" && /^[0-9a-f-]{36}$/i.test(payload.message_id)) {
+      const { data: msg } = await supabase.from("messages")
+        .select("conversation_id, kind, attachment_url, deleted_at").eq("id", payload.message_id).maybeSingle();
+      if (msg) {
+        // A chat image may only ever reach members of that conversation.
+        const { data: members } = await supabase.from("conversation_participants")
+          .select("user_id").eq("conversation_id", msg.conversation_id);
+        allowedUsers = new Set((members || []).map((m: any) => m.user_id));
+        if (msg.kind === "image" && msg.attachment_url && !msg.deleted_at) {
+          const { data: signed } = await supabase.storage.from("chat-attachments").createSignedUrl(msg.attachment_url, SIGN_TTL);
+          if (signed?.signedUrl) image = signed.signedUrl;
+        }
+      } else {
+        allowedUsers = new Set();
+      }
+    }
+    const tripMatch = !image && typeof url === "string" ? url.match(/^\/trips\/([0-9a-f-]{36})/i) : null;
+    if (tripMatch) {
+      const { data: trip } = await supabase.from("trips").select("image_url").eq("id", tripMatch[1]).maybeSingle();
+      const path = trip?.image_url as string | undefined;
+      if (path && /^https:\/\//i.test(path)) image = path;
+      else if (path) {
+        const { data: signed } = await supabase.storage.from("trip-images").createSignedUrl(path, SIGN_TTL);
+        if (signed?.signedUrl) image = signed.signedUrl;
+      }
+    }
+    const extraData: Record<string, string> = {};
+    for (const [k, v] of Object.entries(customData || {})) if (v != null) extraData[k] = String(v);
+    if (image) extraData.image = image; else delete extraData.image;
+
+
     // Fetch tokens
     const { data: rows, error: dbError } = await supabase
       .from("push_tokens")
