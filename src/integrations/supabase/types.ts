@@ -1856,6 +1856,10 @@ export type Database = {
       normalize_section: { Args: { _s: string }; Returns: string }
       phone_login_key: { Args: { _phone: string }; Returns: string }
       public_stats: { Args: never; Returns: Json }
+      push_content_for_url: {
+        Args: { _fallback: string; _url: string }
+        Returns: Json
+      }
       release_push_token: { Args: { _token: string }; Returns: undefined }
       review_profile_change_request: {
         Args: { _approve: boolean; _id: string; _note?: string }
