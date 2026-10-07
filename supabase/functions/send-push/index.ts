@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json().catch(() => ({}));
-    const { title, body, url, image, user_ids, exclude_user_id, data: customData } = payload;
+    const { title, body, url, user_ids, exclude_user_id, data: customData } = payload;
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
     const tokens = (rows || [])
       .filter((r: any) => {
         if (user_ids?.length && !user_ids.includes(r.user_id)) return false;
+        if (allowedUsers && !allowedUsers.has(r.user_id)) return false;
         if (mutedUsers.has(r.user_id)) return false;
         return !(exclude_user_id && r.user_id === exclude_user_id);
       })
@@ -169,14 +170,14 @@ Deno.serve(async (req) => {
       const message = {
         message: {
           token: fcmToken,
-          notification: { title, body, image },
-          data: { url: url || "", ...customData },
+          notification: { title, body, ...(image ? { image } : {}) },
+          data: { ...extraData, url: url || "", title: String(title || ""), body: String(body || "") },
           android: {
             priority: "high",
-            notification: { channel_id: "alsaif_notifications", sound: "default", visibility: "PUBLIC" }
+            notification: { channel_id: "alsaif_notifications", sound: "default", visibility: "PUBLIC", ...(image ? { image } : {}) }
           },
           webpush: {
-            notification: { title, body, icon: "/favicon.ico", image },
+            notification: { title, body, icon: "/favicon.ico", ...(image ? { image } : {}) },
             fcm_options: { link: url || "/" }
           }
         }
