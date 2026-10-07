@@ -386,8 +386,23 @@ function RequestThreadDialog({ request, meId, canManageStatus, onClose, onChange
       .update({ status } as any)
       .eq("id", request.id);
     if (error) return toast.error("تعذر تحديث الحالة");
-    toast.success("تم تحديث حالة الطلب");
+    toast.success(status === "closed" ? "تم إغلاق الطلب ونقله إلى الأرشيف" : "تم تحديث حالة الطلب");
     await onChanged();
+    if (status === "closed") onClose();
+  };
+
+  const isAuthor = meId === request.author_id;
+
+  const deleteRequest = async () => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا الطلب نهائياً؟ لا يمكن التراجع.")) return;
+    const { error } = await supabase
+      .from("private_requests")
+      .delete()
+      .eq("id", request.id);
+    if (error) return toast.error("تعذر حذف الطلب — يمكن حذف الطلبات الجديدة فقط، أو أغلقه بدلاً من ذلك");
+    toast.success("تم حذف الطلب نهائياً");
+    await onChanged();
+    onClose();
   };
 
   const authorName =
