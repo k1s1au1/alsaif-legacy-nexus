@@ -1854,6 +1854,10 @@ export type Database = {
         Returns: undefined
       }
       normalize_section: { Args: { _s: string }; Returns: string }
+      occasion_push_image: {
+        Args: { _audience: string; _design: number; _type: string }
+        Returns: string
+      }
       phone_login_key: { Args: { _phone: string }; Returns: string }
       public_stats: { Args: never; Returns: Json }
       push_content_for_url: {
