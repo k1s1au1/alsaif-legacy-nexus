@@ -102,8 +102,10 @@ export function PrivateRequestsSection() {
     };
   }, [meId, load]);
 
-  const mine = rows.filter((r) => r.author_id === meId);
-  const inbox = rows.filter((r) => r.author_id !== meId);
+  // الطلبات المغلقة تُنقل إلى أرشيف لوحة الإدارة ولا تظهر هنا.
+  const active = rows.filter((r) => r.status !== "closed");
+  const mine = active.filter((r) => r.author_id === meId);
+  const inbox = active.filter((r) => r.author_id !== meId);
   const visible = scope === "mine" ? mine : inbox;
   const openRequest = rows.find((r) => r.id === openId) || null;
 
