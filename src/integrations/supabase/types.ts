@@ -826,6 +826,7 @@ export type Database = {
           id: string
           location: string | null
           location_url: string | null
+          minutes: string | null
           scheduled_at: string
           status: Database["public"]["Enums"]["meeting_status"]
           title: string
@@ -839,6 +840,7 @@ export type Database = {
           id?: string
           location?: string | null
           location_url?: string | null
+          minutes?: string | null
           scheduled_at: string
           status?: Database["public"]["Enums"]["meeting_status"]
           title: string
@@ -852,6 +854,7 @@ export type Database = {
           id?: string
           location?: string | null
           location_url?: string | null
+          minutes?: string | null
           scheduled_at?: string
           status?: Database["public"]["Enums"]["meeting_status"]
           title?: string
