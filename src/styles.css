@@ -617,3 +617,5 @@
     left: calc(50% + clamp(56px, 5.2vw, 104px)) !important;
   }
 }
+
+.notification-focus-ring { outline: 3px solid var(--color-primary, currentColor); outline-offset: 4px; border-radius: 24px; transition: outline-color .4s; }

@@ -439,7 +439,7 @@ export function MeetingsLedger(props: LedgerProps) {
             aria-busy={loading}
           >
             {visibleList.map((meeting) => (
-              <article className="meeting-ledger-row" key={meeting.id}>
+              <article className="meeting-ledger-row" key={meeting.id} data-focus-id={meeting.id}>
                 <DateTile meeting={meeting} />
                 <div className="meeting-ledger-row-copy">
                   <button
