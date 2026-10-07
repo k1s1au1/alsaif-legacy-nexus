@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
         message: {
           token: fcmToken,
           notification: { title, body, ...(image ? { image } : {}) },
-          data: { ...extraData, url: url || "", title: String(title || ""), body: String(body || "") },
+          data: { ...extraData, url: url || "" },
           android: {
             priority: "high",
             notification: { channel_id: "alsaif_notifications", sound: "default", visibility: "PUBLIC", ...(image ? { image } : {}) }
