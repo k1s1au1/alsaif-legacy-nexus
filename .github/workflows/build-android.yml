@@ -38,6 +38,6 @@ jobs:
           ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Alsaif-Family-Hub-v1.1.0
+          name: Alsaif-Family-Hub-v1.3.0
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
