@@ -448,9 +448,29 @@ function RequestThreadDialog({ request, meId, canManageStatus, onClose, onChange
             )}
           </div>
         </div>
-        <div className="p-4 rounded-3xl bg-muted/40 border border-border/50">
-          <p className="text-sm font-bold text-foreground whitespace-pre-wrap">{request.body}</p>
-        </div>
+          <div className="p-4 rounded-3xl bg-muted/40 border border-border/50">
+            <p className="text-sm font-bold text-foreground whitespace-pre-wrap">{request.body}</p>
+          </div>
+          {isAuthor && request.status !== "closed" && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setStatus("closed")}
+                className="px-4 py-2 rounded-2xl text-xs font-black border border-border bg-card text-muted-foreground hover:border-primary/40 transition-all"
+              >
+                إغلاق الطلب (يُنقل إلى الأرشيف)
+              </button>
+              {request.status === "new" && (
+                <button
+                  type="button"
+                  onClick={deleteRequest}
+                  className="px-4 py-2 rounded-2xl text-xs font-black border border-rose-500/30 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 transition-all"
+                >
+                  حذف الطلب نهائياً
+                </button>
+              )}
+            </div>
+          )}
         {loading ? (
           <div className="py-10 text-center">
             <Loader2 className="animate-spin size-7 mx-auto text-primary opacity-30" />
