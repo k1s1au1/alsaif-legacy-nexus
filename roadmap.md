@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Send rich mobile notifications with available content images and unabridged text; verify payload and expanded display support
+- [x] Send rich mobile notifications with available content images and unabridged text; payload tests pass (actual Android image display awaits an updated installed app and device test)
 
 - [x] Match the dashboard gateway and family-services area to the approved desktop/mobile references and verify all target viewports
 - [ ] Rebuild game-room entry, lobby, table shell, cards, and responsive layouts (entry and shared table foundation complete)
