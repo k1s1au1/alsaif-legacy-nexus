@@ -90,10 +90,9 @@ function MeetingsPage() {
 
       if (meetingError) throw meetingError;
       const allMeetings = (m ?? []) as Meeting[];
-      const { upcoming, previous } = splitMeetings(allMeetings);
-      setMeetings(allMeetings);
+      const { upcoming } = splitMeetings(allMeetings);
+      setMeetings(upcoming);
       OfflineCache.save("meetings", upcoming);
-      OfflineCache.save("meetings-history", previous);
       setAttendees((a ?? []) as Attendee[]);
       const map: Record<string, ProfileLite> = {};
       ((pr ?? []) as ProfileLite[]).forEach((p) => {
