@@ -528,6 +528,13 @@
 }
 
 
+/* Default sticky shell; the floating phone/tablet and seal rules add their own gutters. */
+.app-shell-header-wrap {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  padding-right: env(safe-area-inset-right, 0px) !important;
+  padding-left: env(safe-area-inset-left, 0px) !important;
+}
+
 /* route-and-section-transitions-2026-08-28 */
 /*
  * The application chrome stays mounted; only routed content moves.

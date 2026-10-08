@@ -14,17 +14,19 @@
 
   main>.z-\[80\].fixed{
     position:fixed!important;
-    top:0!important;
+    /* Keep the hardware inset outside the compact header's scale transform. */
+    top:env(safe-area-inset-top,0px)!important;
     left:0!important;
     right:0!important;
     bottom:auto!important;
     z-index:90!important;
     width:100%!important;
-    padding:10px 14px 0!important;
+    padding:10px calc(14px + env(safe-area-inset-right,0px)) 0 calc(14px + env(safe-area-inset-left,0px))!important;
     background:transparent!important;
     transform-origin:top center!important;
     pointer-events:none!important;
-    transition:transform .45s cubic-bezier(.23,1,.32,1),padding .45s cubic-bezier(.23,1,.32,1)!important;
+    /* Side insets must update immediately when a cutout moves on rotation. */
+    transition:transform .45s cubic-bezier(.23,1,.32,1),padding-top .45s cubic-bezier(.23,1,.32,1)!important;
   }
   main>.z-\[80\].fixed>header{
     pointer-events:auto!important;
@@ -45,7 +47,7 @@
 
   /* Global content spacing for every regular AppShell page. Dashboard keeps its custom full-bleed layout. */
   main>div.p-4.md\:p-8.lg\:p-12:not(:has(.max-w-6xl.mx-auto.space-y-12)){
-    padding-top:148px!important;
+    padding-top:calc(148px + env(safe-area-inset-top,0px))!important;
     padding-right:18px!important;
     padding-left:18px!important;
     padding-bottom:118px!important;
@@ -56,7 +58,7 @@
   main>div.p-4.md\:p-8.lg\:p-12:not(:has(.max-w-6xl.mx-auto.space-y-12)) section+section{
     margin-top:24px!important;
   }
-  main>div.p-4.md\:p-8.lg\:p-12:has(.max-w-6xl.mx-auto.space-y-12){padding-top:148px!important}
+  main>div.p-4.md\:p-8.lg\:p-12:has(.max-w-6xl.mx-auto.space-y-12){padding-top:calc(148px + env(safe-area-inset-top,0px))!important}
 
   /* Common blank spacers and separators inherit the active identity color instead of the app background. */
   main>div.p-4.md\:p-8.lg\:p-12 .bg-background:empty,
@@ -86,15 +88,15 @@
   main>.z-\[80\].fixed[style*="scale(0.85)"]>header>.order-last{top:15px!important;right:65px!important;transform:scale(.82)!important;transform-origin:top right!important}
 }
 @media(max-width:599px){
-  main>.z-\[80\].fixed{padding:8px 10px 0!important}
+  main>.z-\[80\].fixed{padding:8px calc(10px + env(safe-area-inset-right,0px)) 0 calc(10px + env(safe-area-inset-left,0px))!important}
   main>.z-\[80\].fixed>header{height:120px!important;border-radius:24px!important;padding-inline:14px!important}
   main>div.p-4.md\:p-8.lg\:p-12:not(:has(.max-w-6xl.mx-auto.space-y-12)){
-    padding-top:136px!important;
+    padding-top:calc(136px + env(safe-area-inset-top,0px))!important;
     padding-right:14px!important;
     padding-left:14px!important;
     padding-bottom:112px!important;
   }
-  main>div.p-4.md\:p-8.lg\:p-12:has(.max-w-6xl.mx-auto.space-y-12){padding-top:136px!important}
+  main>div.p-4.md\:p-8.lg\:p-12:has(.max-w-6xl.mx-auto.space-y-12){padding-top:calc(136px + env(safe-area-inset-top,0px))!important}
   main>div.p-4.md\:p-8.lg\:p-12:not(:has(.max-w-6xl.mx-auto.space-y-12))>.space-y-12{row-gap:20px!important}
   main>div.p-4.md\:p-8.lg\:p-12:not(:has(.max-w-6xl.mx-auto.space-y-12)) section+section{margin-top:20px!important}
   main>.z-\[80\].fixed>header::before{width:64px!important;height:64px!important;left:12px!important;top:24px!important}
@@ -105,15 +107,15 @@
   main>.z-\[80\].fixed[style*="scale(0.85)"]>header::before{width:44px!important;height:44px!important;top:11px!important}
 }
 @media(min-width:600px) and (max-width:969.98px){
-  main>.z-\[80\].fixed{padding:12px 24px 0!important}
+  main>.z-\[80\].fixed{padding:12px calc(24px + env(safe-area-inset-right,0px)) 0 calc(24px + env(safe-area-inset-left,0px))!important}
   main>.z-\[80\].fixed>header{height:132px!important;border-radius:30px!important;padding-inline:30px!important}
   main>div.p-4.md\:p-8.lg\:p-12:not(:has(.max-w-6xl.mx-auto.space-y-12)){
-    padding-top:156px!important;
+    padding-top:calc(156px + env(safe-area-inset-top,0px))!important;
     padding-right:28px!important;
     padding-left:28px!important;
     padding-bottom:128px!important;
   }
-  main>div.p-4.md\:p-8.lg\:p-12:has(.max-w-6xl.mx-auto.space-y-12){padding-top:156px!important}
+  main>div.p-4.md\:p-8.lg\:p-12:has(.max-w-6xl.mx-auto.space-y-12){padding-top:calc(156px + env(safe-area-inset-top,0px))!important}
   main>div.p-4.md\:p-8.lg\:p-12:not(:has(.max-w-6xl.mx-auto.space-y-12))>.space-y-12{row-gap:28px!important}
   main>div.p-4.md\:p-8.lg\:p-12:not(:has(.max-w-6xl.mx-auto.space-y-12)) section+section{margin-top:28px!important}
 

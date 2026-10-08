@@ -260,8 +260,8 @@
   }
   html body main>.app-shell-header-wrap>header.app-shell-header svg{color:#fff!important}
   /* Clear the floating bar so the faith strip is fully visible. */
-  html body main>.app-shell-content{
-    padding-top:120px!important;
+  html body main.app-shell-main:not(:has(> .app-shell-header-wrap[data-family-seal="true"]))>div.app-shell-content.p-4.md\:p-8.lg\:p-12{
+    padding-top:calc(120px + env(safe-area-inset-top,0px))!important;
     padding-bottom:10rem!important;
   }
 }
@@ -293,9 +293,9 @@
 /* ---------- iPad: safe-area insets so bars never hide under notch / home bar ---------- */
 @media (min-width:970px) and (max-width:1600px){
   html body main>.app-shell-header-wrap{
-    padding-top:calc(14px + env(safe-area-inset-top))!important;
-    padding-left:calc(26px + env(safe-area-inset-left))!important;
-    padding-right:calc(26px + env(safe-area-inset-right))!important;
+    padding-top:calc(14px + env(safe-area-inset-top,0px))!important;
+    padding-left:calc(26px + env(safe-area-inset-left,0px))!important;
+    padding-right:calc(26px + env(safe-area-inset-right,0px))!important;
   }
   html body main>.app-shell-bottom-dock{
     bottom:calc(24px + env(safe-area-inset-bottom))!important;
@@ -374,6 +374,10 @@
    * faith strip and the pavilion always begin below the navigation.
    */
   html body main.app-shell-main>div.app-shell-content.p-4.md\:p-8.lg\:p-12{
+    padding-top:112px!important;
+  }
+  /* The seal reserves its inset in normal flow; only the fixed branch needs it here. */
+  html body main.app-shell-main:not(:has(> .app-shell-header-wrap[data-family-seal="true"]))>div.app-shell-content.p-4.md\:p-8.lg\:p-12{
     padding-top:calc(112px + env(safe-area-inset-top, 0px))!important;
   }
 }
