@@ -10,8 +10,10 @@
     top: 0 !important;
     inset-inline: auto !important;
     width: 100% !important;
-    /* Reserve room for the seal caption without extending the side frame. */
-    padding: 16px clamp(24px, 3vw, 56px) 28px !important;
+    /* In-flow padding reserves the safe area once, including while sticky. */
+    padding: calc(16px + env(safe-area-inset-top, 0px))
+      calc(clamp(24px, 3vw, 56px) + env(safe-area-inset-right, 0px))
+      28px calc(clamp(24px, 3vw, 56px) + env(safe-area-inset-left, 0px)) !important;
     transform: none !important;
     background: linear-gradient(180deg, var(--background) 70%, transparent) !important;
     backdrop-filter: none !important;
