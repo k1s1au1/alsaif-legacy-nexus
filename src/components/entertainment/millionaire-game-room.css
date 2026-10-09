@@ -69,13 +69,22 @@
 .millionaire-modal svg {
   flex-shrink: 0;
 }
-.millionaire-table-header {
+/* Keep the site's desktop header rules out of the tabletop and its dialogs. */
+.millionaire-table .millionaire-table-header,
+.millionaire-modal .millionaire-modal-panel > header {
+  padding-inline: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+.millionaire-table .millionaire-table-header {
   display: grid;
   direction: ltr;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 16px;
-  min-height: 60px;
+  min-height: var(--millionaire-header-height, 60px) !important;
   flex-shrink: 0;
 }
 .millionaire-title {
@@ -1279,6 +1288,9 @@
   gap: 12px;
   margin-bottom: 20px;
 }
+.millionaire-modal .millionaire-modal-panel > header {
+  min-height: 0 !important;
+}
 .millionaire-modal-panel h2 {
   margin: 0;
   font-size: 23px;
@@ -1746,7 +1758,7 @@
       max(7px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   }
   .millionaire-table-header {
-    min-height: 40px;
+    --millionaire-header-height: 40px;
     gap: 8px;
   }
   .millionaire-title h1 {
@@ -1966,7 +1978,7 @@
     gap: 5px;
   }
   .millionaire-table-header {
-    min-height: 34px;
+    --millionaire-header-height: 34px;
   }
   .millionaire-title h1 {
     font-size: 21px;
