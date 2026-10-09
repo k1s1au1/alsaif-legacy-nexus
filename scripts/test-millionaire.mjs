@@ -8,17 +8,74 @@ import ts from "typescript";
 
 const directory = mkdtempSync(path.join(tmpdir(), "millionaire-rules-"));
 writeFileSync(path.join(directory, "package.json"), '{"type":"module"}');
-for (const file of ["millionaire-board", "millionaire-engine"]) {
+for (const file of ["millionaire-board", "millionaire-presentation", "millionaire-engine"]) {
   const source = readFileSync(new URL(`../src/components/entertainment/${file}.ts`, import.meta.url), "utf8");
-  const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText.replace('"./millionaire-presentation"', '"./millionaire-presentation.js"');
   writeFileSync(path.join(directory, `${file}.js`), output.replace('"./millionaire-board"', '"./millionaire-board.js"'));
 }
 const { initialMonopolyData, reduceMonopoly, chooseMillionaireBotAction } = await import(pathToFileURL(path.join(directory, "millionaire-engine.js")));
 const { MILLIONAIRE_BOARD } = await import(pathToFileURL(path.join(directory, "millionaire-board.js")));
+const { millionaireCell, millionaireThrowSeat, MILLIONAIRE_TIMING } = await import(pathToFileURL(path.join(directory, "millionaire-presentation.js")));
 after(() => rmSync(directory, { recursive: true, force: true }));
 
 const players = ["خالد", "سعود", "نورة", "فيصل"].map((name, index) => ({ id: `p${index}`, name, isBot: true, difficulty: "hard" }));
 const fresh = () => ({ phase: "playing", scores: {}, data: initialMonopolyData(players) });
+
+test("each seat sees a rotated board without changing canonical positions or ownership", () => {
+  const state = fresh();
+  state.data.properties[2] = { ownerId: "p1", level: 3, invested: 610 };
+  const before = structuredClone(state);
+  for (let seat = 0; seat < 4; seat++) {
+    const cells = MILLIONAIRE_BOARD.map((_, index) => millionaireCell(index, seat));
+    assert.equal(new Set(cells.map(cell => cell.join(","))).size, 24);
+    assert.deepEqual(millionaireCell(seat * 6, seat), [6, 6], "the viewer's corner is nearest");
+    cells.forEach(([row, col], index) => {
+      assert.ok(row === 0 || row === 6 || col === 0 || col === 6);
+      const next = cells[(index + 1) % cells.length];
+      assert.equal(Math.abs(row - next[0]) + Math.abs(col - next[1]), 1);
+    });
+    assert.equal(millionaireThrowSeat(seat, seat), 0);
+    assert.equal(millionaireThrowSeat((seat + 2) % 4, seat), 2);
+  }
+  assert.deepEqual(state, before);
+});
+
+test("roll identity advances even on a failed island attempt", () => {
+  const state = fresh();
+  state.data.positions.p0 = 6;
+  state.data.jailTurns.p0 = 3;
+  const first = withDice([1, 2], () => apply(state, "monopoly-roll"));
+  assert.deepEqual(first.data.roll, { sequence: 1, playerId: "p0", dice: [1, 2] });
+  assert.equal(first.data.positions.p0, 6);
+  assert.equal(first.data.movement, null);
+  assert.ok(first.data.presentationUntil >= Date.now() + MILLIONAIRE_TIMING.roll);
+  assert.equal(state.data.roll, null, "received snapshots stay immutable");
+});
+
+test("chance cards carry the host's exact outcome and enough time to read it", () => {
+  const original = Math.random;
+  try {
+    for (let card = 0; card < 8; card++) {
+      const state = fresh();
+      const sequence = [0.01, 0.2, (card + 0.1) / 8];
+      Math.random = () => sequence.shift() ?? 0.01;
+      const result = apply(state, "monopoly-roll");
+      assert.equal(result.data.chance.card, card);
+      assert.equal(result.data.chance.rollSequence, result.data.roll.sequence);
+      assert.equal(result.data.chance.playerId, "p0");
+      assert.ok(result.data.chance.title && result.data.chance.description);
+      assert.ok(result.data.presentationUntil >= Date.now() + MILLIONAIRE_TIMING.chance);
+      if (card === 0) assert.equal(result.data.cash.p0, 5300);
+      if (card === 1) assert.equal(result.data.cash.p0, 4820);
+      if (card === 2) assert.equal(result.data.positions.p0, 0);
+      if (card === 3) assert.equal(result.data.pending.type, "travel");
+      if (card === 4) assert.equal(result.data.escapeCards.p0, 1);
+      if (card === 5) assert.equal(result.data.positions.p0, 6);
+      if (card === 6) assert.equal(result.data.cash.p0, 5120);
+      if (card === 7) assert.equal(result.data.cash.p0, 5080);
+    }
+  } finally { Math.random = original; }
+});
 const apply = (state, type, value, playerId = players[state.data.turnIndex].id) => reduceMonopoly(state, { type, value, playerId }, players);
 function withDice(dice, run) {
   const original = Math.random;

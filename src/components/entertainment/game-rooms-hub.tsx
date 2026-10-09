@@ -63,6 +63,8 @@ import { cn } from "@/lib/utils";
 import { playGameSfx, type GameSfx } from "@/lib/game-sfx";
 import "./games-arena.css";
 import { MillionaireGameRoom } from "./millionaire-game-room";
+import { MillionaireResults } from "./millionaire-results";
+import { millionaireBotDelay } from "./millionaire-presentation";
 import { initialMonopolyData, reduceMonopoly, chooseMillionaireBotAction } from "./millionaire-engine";
 import { UnoGameRoom } from "./uno-game-room";
 
@@ -1979,7 +1981,7 @@ export function GameRoomsHub() {
     const bot = currentPlayers.find((player) => player.id === action.playerId && player.isBot);
     const timer = window.setTimeout(() => {
       void hostApply(action);
-    }, botThinkDelay(bot));
+    }, state.game === "monopoly" ? millionaireBotDelay(state.data, botThinkDelay(bot)) : botThinkDelay(bot));
     return () => window.clearTimeout(timer);
   }, [connected, hostId, me.id, players, state, hostApply]);
 
@@ -2067,7 +2069,7 @@ export function GameRoomsHub() {
           onBotDifficulty={(botId, difficulty) => void dispatch("set-bot-difficulty", { botId, difficulty })}
         />
       ) : state.phase === "results" ? (
-        <Results
+        state.game === "monopoly" ? <MillionaireResults data={state.data} players={participants} isHost={isHost} onLobby={() => void dispatch("lobby")} /> : <Results
           players={participants}
           scores={state.scores}
           isHost={isHost}
@@ -2717,6 +2719,8 @@ const GAME_GUIDES: Partial<Record<GameKey, {
     notes: [
       "المرور بالانطلاق يمنح 300K، والخروج من الجزيرة يكون بنرد مزدوج أو 150K أو بطاقة خروج.",
       "الاحتكار الخطي: امتلاك جانب كامل. الثلاثي: إكمال ثلاث مجموعات. السياحي: امتلاك العلا ومكة والمدينة.",
+      "العلم بلون اللاعب ورقمه يحدد المالك، وشكل المبنى يوضح التطوير. اضغط الأرض لعرض رسومها الحالية.",
+      "لكل لاعب منظور من جهة جلوسه. تظهر رمية النرد والحركة والبطاقة نفسها للجميع، ويمكن كتم الصوت من الطاولة.",
     ],
   },
 };
@@ -2930,10 +2934,10 @@ function GameBoard({
       if (preferences.haptics && typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(isMyTurn ? [35, 30, 65] : 22);
       }
-      if (preferences.sound) playGameTone(isMyTurn ? "turn" : "move");
+      if (preferences.sound && state.game !== "monopoly") playGameTone(isMyTurn ? "turn" : "move");
     }
     feedbackRef.current = feedbackToken;
-  }, [activeIndex, feedbackToken, gameMode, me.id, players, preferences.haptics, preferences.sound]);
+  }, [activeIndex, feedbackToken, gameMode, me.id, players, preferences.haptics, preferences.sound, state.game]);
 
   const enterGameMode = async () => {
     setGameMode(true);
@@ -2982,13 +2986,13 @@ function GameBoard({
         backgroundPosition: "center top",
       } : undefined}
     >
-      {gameMode && (state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly") && (
+      {gameMode && (state.game === "saudi-deal" || state.game === "uno") && (
         <div className="fixed inset-0 z-[10050] hidden flex-col items-center justify-center bg-[#021f19]/98 px-8 text-center text-white portrait:flex xl:hidden">
           <span className="flex size-20 items-center justify-center rounded-[26px] border border-[#e8c66f]/40 bg-[#0a5948] text-[#f0cf77] shadow-[0_0_40px_rgba(232,198,111,.2)]">
             <RotateCw className="size-10 animate-pulse" />
           </span>
           <h4 className="mt-6 text-2xl font-black text-[#f0cf77]">لف الجهاز للوضع الأفقي</h4>
-          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : state.game === "monopoly" ? "رحلة المليونير تظهر كطاولة كاملة على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
+          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
         </div>
       )}
       {showStartingDraw && (
@@ -3095,6 +3099,9 @@ function GameBoard({
               onExit={() => void leaveGameMode()}
               onGuide={() => setShowGuide(true)}
               onSettings={() => setShowSettings(true)}
+              sound={preferences.sound}
+              reducedMotion={preferences.reducedMotion}
+              onToggleSound={() => toggle("sound")}
             />
           )}
           {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}

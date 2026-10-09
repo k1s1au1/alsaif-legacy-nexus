@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Crown, RotateCcw, X } from "lucide-react";
+import { RotateCcw, X } from "lucide-react";
 import { MillionaireGameRoom } from "./millionaire-game-room";
+import { MillionaireResults } from "./millionaire-results";
+import { millionaireBotDelay } from "./millionaire-presentation";
 import {
   chooseMillionaireBotAction,
   initialMonopolyData,
@@ -27,6 +29,7 @@ export function MillionaireDemo() {
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [state, setState] = useState(newMatch);
   const [panel, setPanel] = useState<Panel>(null);
+  const [sound, setSound] = useState(true);
   const players = useMemo(
     () => DEMO_PLAYERS.map((player) => ({ ...player, difficulty })),
     [difficulty],
@@ -42,7 +45,7 @@ export function MillionaireDemo() {
     if (!action) return;
     const timer = window.setTimeout(() => {
       setState((current) => reduceMonopoly(current, action, players));
-    }, 1800);
+    }, millionaireBotDelay(state.data, 1800));
     return () => window.clearTimeout(timer);
   }, [state, players, panel]);
 
@@ -59,18 +62,11 @@ export function MillionaireDemo() {
     setState(newMatch());
     setPanel(null);
   };
-  const winner = players.find((player) => player.id === state.data.winnerId);
-  const victoryLabels: Record<string, string> = {
-    line: "الاحتكار الخطي",
-    triple: "الاحتكار الثلاثي",
-    tourism: "الاحتكار السياحي",
-    bankruptcy: "إفلاس المنافسين",
-  };
+  if (state.phase === "results") return <MillionaireResults data={state.data} players={players} isHost onLobby={restart} fullscreen actionLabel="مباراة جديدة" sound={sound} />;
 
   return (
     <main className="millionaire-demo" dir="rtl">
       <MillionaireGameRoom
-        key={state.phase === "playing" ? "playing" : "finished"}
         state={state}
         players={players}
         me={players[0]}
@@ -79,28 +75,22 @@ export function MillionaireDemo() {
         onGuide={() => setPanel("guide")}
         onSettings={() => setPanel("settings")}
         onExit={() => setPanel("exit")}
+        sound={sound}
+        onToggleSound={() => setSound(value => !value)}
       />
 
-      {(panel || state.phase === "results") && (
+      {panel && (
         <div className="millionaire-demo__overlay">
           <section className="millionaire-demo__panel" role="dialog" aria-modal="true" aria-labelledby="millionaire-demo-title">
-            {state.phase !== "results" && (
-              <button className="millionaire-demo__close" aria-label="العودة إلى اللعبة" onClick={() => setPanel(null)}><X /></button>
-            )}
-            {state.phase === "results" ? (
-              <>
-                <Crown className="millionaire-demo__trophy" />
-                <h1 id="millionaire-demo-title">{winner?.name ?? "المستثمر"} فاز بالرحلة</h1>
-                <p>{victoryLabels[state.data.victoryType] ?? "اكتملت المباراة"}</p>
-                <button className="millionaire-demo__primary" onClick={restart}><RotateCcw /> مباراة جديدة</button>
-              </>
-            ) : panel === "guide" ? (
+            <button className="millionaire-demo__close" aria-label="العودة إلى اللعبة" onClick={() => setPanel(null)}><X /></button>
+            {panel === "guide" ? (
               <>
                 <h1 id="millionaire-demo-title">طريقة اللعب</h1>
                 <p>ارمِ النرد، اشترِ المدن التي تصل إليها، ثم طوّرها إلى مبانٍ وفنادق ومعالم. يدفع لك المنافسون رسومًا عند زيارتها.</p>
                 <p>اجمع مدن المجموعة لمضاعفة الرسوم. تفوز باحتكار جهة كاملة، أو ثلاث مجموعات، أو كل المواقع السياحية، أو بإفلاس المنافسين.</p>
                 <p>استفد من بطاقات الفرصة والسفر والمهرجانات. عند نقص السيولة، بع بعض أملاكك لتسديد الرسوم.</p>
                 <p>تلعب هذه التجربة ضد ثلاثة بوتات، ويمكنك تغيير مستواهم من الإعدادات.</p>
+                <p>العلم بلون اللاعب ورقمه يوضح المالك، والمبنى يوضح التطوير. لكل لاعب منظور من جهة جلوسه، والنرد يُرمى في منتصف الطاولة للجميع.</p>
                 <button className="millionaire-demo__primary" onClick={() => setPanel(null)}>العودة إلى اللعب</button>
               </>
             ) : panel === "settings" ? (

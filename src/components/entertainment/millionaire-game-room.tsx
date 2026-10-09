@@ -1,249 +1,257 @@
 import {
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
 } from "react";
 import {
+  ArrowLeft,
   BookOpen,
   Building2,
   Castle,
-  CircleDollarSign,
   Coins,
   Crown,
+  Dices,
+  Flag,
   Gift,
   Hammer,
   Landmark,
-  LockKeyhole,
   LogOut,
   MapPin,
-  MessageCircle,
   Navigation,
   Plane,
   RotateCw,
   Settings2,
   Sparkles,
-  TicketCheck,
   Trophy,
+  Volume2,
+  VolumeX,
   WalletCards,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MILLIONAIRE_BOARD, type MillionaireSpaceKind } from "./millionaire-board";
+import { monopolyStructureTotal, monopolyToll, monopolyUpgradeCost } from "./millionaire-engine";
+import {
+  MILLIONAIRE_COLORS as COLORS,
+  MILLIONAIRE_LEVELS as LEVELS,
+  millionaireCash as cash,
+  millionaireCell,
+  millionairePoint,
+  millionaireThrowSeat,
+  millionaireInvestment,
+  millionairePropertyAt as propertyAt,
+  type MillionaireData,
+  type MillionairePlayerView,
+} from "./millionaire-presentation";
+import {
+  MillionairePawn,
+  MiniatureBuilding,
+  OwnershipFlag,
+  PhysicalDice,
+} from "./millionaire-pieces";
+import { useMillionaireScene } from "./use-millionaire-scene";
 import "./millionaire-game-room.css";
-import type { MillionaireMovement } from "./millionaire-engine";
 
-import { MILLIONAIRE_BOARD, type MillionaireSpace, type MillionaireSpaceKind } from "./millionaire-board";
 export { MILLIONAIRE_BOARD } from "./millionaire-board";
 export type { MillionaireSpace, MillionaireSpaceKind } from "./millionaire-board";
 
-type PlayerLike = {
-  id: string;
-  name: string;
-  avatarUrl: string | null;
-  isHost?: boolean;
-  isBot?: boolean;
-};
-
-type PropertyState = {
-  ownerId: string;
-  level: number;
-  invested: number;
-};
-
-type PendingState = {
-  type: "buy" | "upgrade" | "takeover" | "travel" | "festival" | "debt";
-  playerId?: string;
-  spaceIndex?: number;
-  currentLevel?: number;
-  ownerId?: string;
-  cost?: number;
-  amount?: number;
-  creditorId?: string | null;
-  reason?: string;
-  source?: string;
-};
-
-type MillionaireData = {
-  turnIndex?: number;
-  turnNumber?: number;
-  positions?: Record<string, number>;
-  cash?: Record<string, number>;
-  properties?: Record<string | number, PropertyState | string>;
-  bankrupt?: Record<string, boolean>;
-  jailTurns?: Record<string, number>;
-  escapeCards?: Record<string, number>;
-  dice?: [number, number] | null;
-  movement?: MillionaireMovement | null;
-  rolled?: boolean;
-  extraTurn?: boolean;
-  pending?: PendingState | null;
-  festival?: { spaceIndex: number; ownerId: string; untilTurn: number } | null;
-  lastAction?: string;
-  actionLog?: string[];
-};
-
-type RoomStateLike = { data: MillionaireData };
-
-type MillionaireGameRoomProps = {
-  state: RoomStateLike;
-  players: PlayerLike[];
-  me: PlayerLike;
+type Props = {
+  state: { data: MillionaireData };
+  players: MillionairePlayerView[];
+  me: MillionairePlayerView;
   immersive: boolean;
   dispatch: (type: string, value?: unknown) => Promise<void>;
   onExit: () => void;
   onGuide: () => void;
   onSettings: () => void;
+  sound?: boolean;
+  reducedMotion?: boolean;
+  onToggleSound?: () => void;
 };
 
-const PLAYER_COLORS = ["#52df72", "#f2525c", "#42a4ff", "#f1b834"];
-const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
-const LEVEL_LABELS = ["أرض", "فيلا", "مبنى", "فندق", "مَعْلم"];
-const BOARD_PLACEMENTS = [
-  [7, 7],
-  [7, 6],
-  [7, 5],
-  [7, 4],
-  [7, 3],
-  [7, 2],
-  [7, 1],
-  [6, 1],
-  [5, 1],
-  [4, 1],
-  [3, 1],
-  [2, 1],
-  [1, 1],
-  [1, 2],
-  [1, 3],
-  [1, 4],
-  [1, 5],
-  [1, 6],
-  [1, 7],
-  [2, 7],
-  [3, 7],
-  [4, 7],
-  [5, 7],
-  [6, 7],
-] as const;
-
-function firstName(name: string) {
-  return name.trim().split(/\s+/)[0] || "لاعب";
+function label(player: MillionairePlayerView, players: MillionairePlayerView[]) {
+  const first = player.name.trim().split(/\s+/)[0] || "لاعب";
+  return players.filter((item) => item.name.trim().split(/\s+/)[0] === first).length > 1
+    ? first + " " + (players.findIndex((item) => item.id === player.id) + 1)
+    : first;
 }
 
-function playerLabel(player: PlayerLike, players: PlayerLike[]) {
-  const name = firstName(player.name);
-  return players.filter((item) => firstName(item.name) === name).length > 1
-    ? `${name} ${players.findIndex((item) => item.id === player.id) + 1}`
-    : name;
+function SpaceIcon({ kind }: { kind: MillionaireSpaceKind }) {
+  const Icon =
+    kind === "start"
+      ? Trophy
+      : kind === "chance"
+        ? Gift
+        : kind === "island"
+          ? Castle
+          : kind === "travel"
+            ? Plane
+            : kind === "festival"
+              ? Sparkles
+              : kind === "tourism"
+                ? Landmark
+                : Building2;
+  return <Icon />;
 }
 
-function formatCash(value: number) {
-  const safe = Math.max(0, Math.round(Number(value) || 0));
-  if (safe >= 1000) {
-    const millions = Math.floor(safe / 1000);
-    const remainder = safe % 1000;
-    return remainder ? millions + "M" + String(remainder).padStart(3, "0") : millions + "M";
-  }
-  return safe + "K";
+function AnimatedCash({ value, reducedMotion }: { value: number; reducedMotion: boolean }) {
+  const last = useRef(value);
+  const [shown, setShown] = useState(value);
+  useEffect(() => {
+    const from = last.current;
+    last.current = value;
+    if (reducedMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setShown(value);
+      return;
+    }
+    let frame = 0;
+    let start = 0;
+    const animate = (now: number) => {
+      start ||= now;
+      const progress = Math.min(1, (now - start) / 650);
+      setShown(Math.round(from + (value - from) * (1 - (1 - progress) ** 3)));
+      if (progress < 1) frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [value, reducedMotion]);
+  return <b dir="ltr">{cash(shown)}</b>;
 }
 
-function propertyAt(data: MillionaireData, index: number): PropertyState | null {
-  const property = data.properties?.[index];
-  if (!property) return null;
-  if (typeof property === "string") {
-    const space = MILLIONAIRE_BOARD[index];
-    return { ownerId: property, level: 1, invested: space?.price ?? 0 };
-  }
-  return property as PropertyState;
-}
-
-function structureTotal(space: MillionaireSpace, targetLevel: number) {
-  if (space.kind === "tourism") return space.price;
-  const build = space.build ?? [0, 0, 0, 0];
-  let total = space.price;
-  for (let level = 1; level < targetLevel; level += 1) total += build[level - 1] ?? 0;
-  return total;
-}
-
-function upgradeCost(space: MillionaireSpace, currentLevel: number, targetLevel: number) {
-  if (space.kind !== "city") return 0;
-  return Math.max(0, structureTotal(space, targetLevel) - structureTotal(space, currentLevel));
-}
-
-function spaceIcon(kind: MillionaireSpaceKind): ReactNode {
-  if (kind === "start") return <Trophy />;
-  if (kind === "chance") return <Gift />;
-  if (kind === "island") return <LockKeyhole />;
-  if (kind === "travel") return <Plane />;
-  if (kind === "festival") return <Sparkles />;
-  if (kind === "tourism") return <Castle />;
-  return <Building2 />;
-}
-
-function PlayerPortrait({ player }: { player: PlayerLike }) {
-  if (player.avatarUrl) return <img src={player.avatarUrl} alt="" referrerPolicy="no-referrer" />;
-  return <span>{player.isBot ? "ب" : firstName(player.name).slice(0, 1)}</span>;
-}
-
-function MiniBuildings({ level, landmark }: { level: number; landmark?: boolean }) {
-  if (!level) return null;
-  return (
-    <span
-      className={cn("millionaire-mini-buildings", landmark && "is-landmark")}
-      aria-label={LEVEL_LABELS[Math.min(level, 4)]}
-    >
-      {Array.from({ length: Math.min(level, 4) }, (_, index) => (
-        <i key={index} />
-      ))}
-    </span>
-  );
-}
-
-function CityModel({
-  space,
-  level,
-  ownerColor,
+export function MillionaireDialog({
+  title,
+  onClose,
+  children,
 }: {
-  space: MillionaireSpace;
-  level: number;
-  ownerColor: string;
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
 }) {
-  if (level <= 0) return null;
-  const visibleLevel = Math.max(1, Math.min(level || 1, 4));
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const restore = document.activeElement as HTMLElement | null;
+    ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    return () => restore?.focus();
+  }, []);
   return (
-    <span
-      className={cn(
-        "millionaire-city-model",
-        level > 0 && "is-owned",
-        level >= 4 && "is-landmark",
-      )}
-      style={{ "--model-color": ownerColor } as CSSProperties}
-      aria-hidden="true"
-    >
-      <span className="millionaire-city-model__plot" />
-      <i className="millionaire-city-model__building millionaire-city-model__building--1" />
-      {visibleLevel >= 2 && (
-        <i className="millionaire-city-model__building millionaire-city-model__building--2" />
-      )}
-      {visibleLevel >= 3 && (
-        <i className="millionaire-city-model__building millionaire-city-model__building--3" />
-      )}
-      {visibleLevel >= 4 && (
-        <i className="millionaire-city-model__building millionaire-city-model__building--4" />
-      )}
-      {level > 0 && <em>{space.landmark}</em>}
-    </span>
+    <div className="millionaire-modal" onClick={onClose}>
+      <div
+        ref={ref}
+        className="millionaire-modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.stopPropagation();
+            onClose();
+          }
+          if (event.key !== "Tab") return;
+          const focusable = Array.from(
+            ref.current?.querySelectorAll<HTMLElement>(
+              "button:not(:disabled),select,a[href],input",
+            ) ?? [],
+          );
+          const first = focusable[0],
+            last = focusable[focusable.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last?.focus();
+          }
+          if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first?.focus();
+          }
+        }}
+      >
+        <header>
+          <h2>{title}</h2>
+          <button type="button" aria-label="إغلاق النافذة" onClick={onClose}>
+            <X />
+          </button>
+        </header>
+        {children}
+      </div>
+    </div>
   );
 }
 
-function playerInvestment(data: MillionaireData, playerId: string) {
-  return MILLIONAIRE_BOARD.reduce((total, _, index) => {
-    const property = propertyAt(data, index);
-    return property?.ownerId === playerId ? total + Number(property.invested ?? 0) : total;
-  }, 0);
+function CashTransfers({
+  deltas,
+  root,
+  cards,
+  reducedMotion,
+}: {
+  deltas: Record<string, number>;
+  root: HTMLDivElement | null;
+  cards: Record<string, HTMLElement | null>;
+  reducedMotion: boolean;
+}) {
+  const [flights, setFlights] = useState<
+    Array<{ id: string; sx: number; sy: number; dx: number; dy: number }>
+  >([]);
+  useLayoutEffect(() => {
+    if (!root || reducedMotion) {
+      setFlights([]);
+      return;
+    }
+    const bounds = root.getBoundingClientRect();
+    const center = { x: bounds.width * 0.52, y: bounds.height * 0.5 };
+    const point = (id: string) => {
+      const box = cards[id]?.getBoundingClientRect();
+      return box
+        ? {
+            x: box.left - bounds.left + box.width * 0.5,
+            y: box.top - bounds.top + box.height * 0.5,
+          }
+        : center;
+    };
+    const payer = Object.keys(deltas).find((id) => deltas[id] < 0);
+    const recipients = Object.keys(deltas).filter((id) => deltas[id] > 0);
+    setFlights(
+      (recipients.length ? recipients : payer ? [payer] : []).map((id) => {
+        const from =
+          recipients.length && payer ? point(payer) : recipients.length ? center : point(id);
+        const to = recipients.length ? point(id) : center;
+        return { id, sx: from.x, sy: from.y, dx: to.x - from.x, dy: to.y - from.y };
+      }),
+    );
+  }, [deltas, root, cards, reducedMotion]);
+  return (
+    <div className="millionaire-cash-flights" aria-hidden="true">
+      {flights.flatMap((flight) =>
+        [0, 1, 2, 3].map((index) => (
+          <i
+            key={flight.id + index}
+            style={
+              {
+                left: flight.sx,
+                top: flight.sy,
+                "--coin-x": flight.dx + "px",
+                "--coin-y": flight.dy + "px",
+                animationDelay: index * 65 + "ms",
+              } as CSSProperties
+            }
+          >
+            ✦
+          </i>
+        )),
+      )}
+    </div>
+  );
 }
+
+const SPECIAL_COPY: Record<string, string> = {
+  start: "تمر من هنا وتستلم مكافأة 300K من البنك.",
+  chance: "اسحب بطاقة فرصة: مكافأة أو رسوم أو سفر أو مهرجان.",
+  island: "اخرج بالنرد المزدوج، أو ادفع 150K، أو استخدم بطاقة خروج.",
+  travel: "اختر أي مدينة أو موقع سياحي للسفر إليه مباشرة.",
+  festival: "اختر أحد أملاكك لمضاعفة رسوم زيارته لدورة كاملة.",
+};
 
 export function MillionaireGameRoom({
   state,
@@ -254,790 +262,972 @@ export function MillionaireGameRoom({
   onExit,
   onGuide,
   onSettings,
-}: MillionaireGameRoomProps) {
+  sound = true,
+  reducedMotion = false,
+  onToggleSound,
+}: Props) {
   const data = state.data ?? {};
-  const [rolling, setRolling] = useState(false);
+  const [localSound, setLocalSound] = useState(sound);
+  const audible = onToggleSound ? sound : localSound;
+  const scene = useMillionaireScene(data, audible, reducedMotion);
   const [selectedSpace, setSelectedSpace] = useState<number | null>(null);
-  const [showAssets, setShowAssets] = useState(false);
-  const [assetsPlayerId, setAssetsPlayerId] = useState(me.id);
-  const [focusedPlayerId, setFocusedPlayerId] = useState(me.id);
-  const [turnSeconds, setTurnSeconds] = useState(45);
-  const [movingPlayers, setMovingPlayers] = useState<Record<string, boolean>>({});
-  const [visualPositions, setVisualPositions] = useState<Record<string, number>>(() =>
-    Object.fromEntries(players.map((player) => [player.id, Number(data.positions?.[player.id] ?? 0)])),
+  const [previewSpace, setPreviewSpace] = useState<number | null>(null);
+  const [assetsPlayer, setAssetsPlayer] = useState<string | null>(null);
+  const [highlightPlayer, setHighlightPlayer] = useState(me.id);
+  const [reviewChance, setReviewChance] = useState(false);
+  const [level, setLevel] = useState(1);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [confirmBankrupt, setConfirmBankrupt] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const playerCards = useRef<Record<string, HTMLElement | null>>({});
+  const [boardSize, setBoardSize] = useState(520);
+  const viewerSeat =
+    Math.max(
+      0,
+      players.findIndex((player) => player.id === me.id),
+    ) % 4;
+  const activeIndex = Number(data.turnIndex ?? 0) % Math.max(1, players.length);
+  const activePlayer = players[activeIndex] ?? me;
+  const activeName = label(activePlayer, players);
+  const isMyTurn = activePlayer.id === me.id && !data.bankrupt?.[me.id];
+  const pending = data.pending;
+  const pendingForMe = isMyTurn && pending?.playerId === me.id;
+  const pendingIndex = Number(pending?.spaceIndex ?? -1);
+  const decisionSpace = MILLIONAIRE_BOARD[pendingIndex];
+  const activePosition = scene.positions[activePlayer.id] ?? data.positions?.[activePlayer.id] ?? 0;
+  const inspectIndex = selectedSpace ?? (pendingIndex >= 0 ? pendingIndex : activePosition);
+  const inspect = MILLIONAIRE_BOARD[inspectIndex] ?? MILLIONAIRE_BOARD[0];
+  const inspectProperty = propertyAt(scene.visual, inspectIndex);
+  const ownerIndex = players.findIndex((player) => player.id === inspectProperty?.ownerId);
+  const owner = players[ownerIndex];
+  const ownable = inspect.kind === "city" || inspect.kind === "tourism";
+  const myCash = Number(data.cash?.[me.id] ?? 5000);
+  const canAct = !scene.busy && !sending && isMyTurn;
+  const dice = data.roll?.dice ?? data.dice ?? [1, 1];
+  const rollingSeat = players.findIndex(
+    (player) => player.id === (data.roll?.playerId ?? activePlayer.id),
   );
-  const visualPositionsRef = useRef(visualPositions);
-  const movementTimers = useRef<number[]>([]);
-  const sceneRef = useRef<HTMLDivElement>(null);
-  const spaceAnchors = useRef<Array<HTMLSpanElement | null>>([]);
-  const [boardLayout, setBoardLayout] = useState({ width: 1, height: 1, points: [] as Array<{ x: number; y: number }> });
-  const [journey, setJourney] = useState<MillionaireMovement | null>(data.movement ?? null);
-  const [journeyStep, setJourneyStep] = useState(data.movement?.steps.length ?? 0);
-  const movementSignature = data.movement ? JSON.stringify(data.movement) : "";
-  const lastMovementSignature = useRef(movementSignature);
-  const activeIndex = Number(data.turnIndex ?? 0) % Math.max(players.length, 1);
-  const activePlayer = players[activeIndex];
-  const activePlayerLabel = activePlayer ? playerLabel(activePlayer, players) : "اللاعب";
-  const isMyTurn = activePlayer?.id === me.id && !data.bankrupt?.[me.id];
-  const dice = (data.dice ?? [1, 1]) as [number, number];
-  const currentPosition = Number(visualPositions[activePlayer?.id] ?? data.positions?.[activePlayer?.id] ?? 0);
-  const currentSpace = MILLIONAIRE_BOARD[currentPosition] ?? MILLIONAIRE_BOARD[0];
-  const displayPlayers = useMemo(() => players.slice(0, 4), [players]);
-  const myProperties = MILLIONAIRE_BOARD.map((space, index) => ({
+  const throwSeat = millionaireThrowSeat(Math.max(0, rollingSeat), viewerSeat);
+  const movement = scene.journey.movement;
+  const movingPlayer = players.find((player) => player.id === movement?.playerId);
+  const path = movement?.steps.slice(0, scene.journey.step) ?? [];
+  const focus = scene.cameraFocus === null ? null : millionairePoint(scene.cameraFocus, viewerSeat);
+  const options =
+    pendingForMe && (pending?.type === "buy" || pending?.type === "upgrade") && decisionSpace
+      ? [1, 2, 3, 4].filter((target) => {
+          if (decisionSpace.kind === "tourism")
+            return target === 1 && pending.type === "buy" && decisionSpace.price <= myCash;
+          if (pending.type === "buy" && target === 4) return false;
+          const current = pending.type === "upgrade" ? Number(pending.currentLevel ?? 1) : 0;
+          const cost =
+            pending.type === "buy"
+              ? monopolyStructureTotal(pendingIndex, target)
+              : monopolyUpgradeCost(pendingIndex, current, target);
+          return target > current && cost <= myCash;
+        })
+      : [];
+  const chosenLevel = options.includes(level) ? level : options[0];
+  const cost =
+    pending?.type === "buy"
+      ? monopolyStructureTotal(pendingIndex, chosenLevel ?? 1)
+      : monopolyUpgradeCost(pendingIndex, Number(pending?.currentLevel ?? 1), chosenLevel ?? 1);
+
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const resize = () =>
+      setBoardSize(Math.max(150, Math.min(stage.clientWidth - 12, stage.clientHeight - 8)));
+    resize();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null;
+    observer?.observe(stage);
+    window.addEventListener("resize", resize);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+  useEffect(() => {
+    setLevel(1);
+    setError("");
+  }, [pending?.type, pendingIndex]);
+  useEffect(() => {
+    if (scene.phase === "rolling") setSelectedSpace(null);
+  }, [scene.phase]);
+  const perform = async (type: string, value?: unknown) => {
+    if (sending || scene.busy) return;
+    setSending(true);
+    setError("");
+    try {
+      await dispatch(type, value);
+    } catch {
+      setError("تعذر إرسال الحركة. حاول مرة أخرى.");
+    } finally {
+      setSending(false);
+    }
+  };
+  const inspectLocation = (index: number) => {
+    setSelectedSpace(index);
+    setAssetsPlayer(null);
+  };
+  const viewAssets = players.find((player) => player.id === assetsPlayer) ?? me;
+  const assets = MILLIONAIRE_BOARD.map((space, index) => ({
     space,
     index,
     property: propertyAt(data, index),
-  })).filter((item) => item.property?.ownerId === me.id);
-  const pending = data.pending ?? null;
-  const pendingSpaceIndex = Number(pending?.spaceIndex ?? -1);
-  const pendingForMe = isMyTurn && pending?.playerId === me.id;
-  const boardMoving = Object.values(movingPlayers).some(Boolean) || movementSignature !== lastMovementSignature.current;
-  const jailTurns = Number(data.jailTurns?.[me.id] ?? 0);
-  const isDebt = pendingForMe && pending?.type === "debt";
-  const inspectIndex = selectedSpace ?? currentPosition;
-  const inspectSpace = MILLIONAIRE_BOARD[inspectIndex] ?? currentSpace;
-  const inspectProperty = propertyAt(data, inspectIndex);
-  const inspectOwner = players.find((player) => player.id === inspectProperty?.ownerId);
-  const positionSignature = players
-    .map((player) => `${player.id}:${Number(data.positions?.[player.id] ?? 0)}`)
-    .join("|");
-  const assetsPlayer = players.find((player) => player.id === assetsPlayerId) ?? me;
-  const visibleAssets = MILLIONAIRE_BOARD.map((space, index) => ({ space, index, property: propertyAt(data, index) }))
-    .filter((item) => item.property?.ownerId === assetsPlayer.id);
-  const journeyPlayer = players.find((player) => player.id === journey?.playerId);
-  const journeyColor = PLAYER_COLORS[Math.max(0, players.findIndex((player) => player.id === journey?.playerId)) % PLAYER_COLORS.length];
-  const myPosition = Number(visualPositions[me.id] ?? data.positions?.[me.id] ?? 0);
-  const journeyRoute = journey ? [journey.from, ...journey.steps] : [];
-  const jumpFrom = journeyRoute[journeyRoute.length - 1];
-  const hasJump = Boolean(journey && jumpFrom !== journey.to);
-  const tokenPlacements = displayPlayers.flatMap((player, index) => {
-    if (data.bankrupt?.[player.id]) return [];
-    const position = Number(visualPositions[player.id] ?? data.positions?.[player.id] ?? 0);
-    const point = boardLayout.points[position];
-    if (!point) return [];
-    const occupants = displayPlayers.filter((item) => !data.bankrupt?.[item.id] && Number(visualPositions[item.id] ?? data.positions?.[item.id] ?? 0) === position);
-    const slot = occupants.findIndex((item) => item.id === player.id);
-    return [{
-      player, index, position, point, shared: occupants.length > 1,
-      x: point.x + (occupants.length > 1 ? slot % 2 === 0 ? -35 : 35 : 0),
-      y: point.y + (occupants.length > 1 ? Math.floor(slot / 2) * -(boardLayout.width > 500 ? 68 : 52) : 0),
-    }];
-  });
+  })).filter((item) => item.property?.ownerId === viewAssets.id);
 
-  useLayoutEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    const measure = () => {
-      const bounds = scene.getBoundingClientRect();
-      setBoardLayout({
-        width: bounds.width || 1,
-        height: bounds.height || 1,
-        points: spaceAnchors.current.map((anchor) => {
-          const point = anchor?.getBoundingClientRect();
-          return { x: (point?.left ?? bounds.left) - bounds.left, y: (point?.top ?? bounds.top) - bounds.top };
-        }),
-      });
-    };
-    measure();
-    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
-    observer?.observe(scene);
-    window.addEventListener("resize", measure);
-    return () => { observer?.disconnect(); window.removeEventListener("resize", measure); };
-  }, []);
-
-  useEffect(() => {
-    setTurnSeconds(45);
-    const timer = window.setInterval(() => {
-      setTurnSeconds((seconds) => Math.max(0, seconds - 1));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [activePlayer?.id, data.turnNumber]);
-
-  useEffect(() => {
-    movementTimers.current.forEach((timer) => window.clearTimeout(timer));
-    movementTimers.current = [];
-    const movement = data.movement;
-    const isNewMovement = Boolean(movement && movementSignature !== lastMovementSignature.current);
-    lastMovementSignature.current = movementSignature;
-    setMovingPlayers({});
-    const positions = Object.fromEntries(players.map((player) => [player.id, Number(data.positions?.[player.id] ?? 0)]));
-    if (!isNewMovement || !movement) {
-      visualPositionsRef.current = positions;
-      setVisualPositions(positions);
-      if (!movement) { setJourney(null); setJourneyStep(0); }
-      return;
-    }
-
-    setJourney(movement);
-    setJourneyStep(0);
-    positions[movement.playerId] = movement.from;
-    visualPositionsRef.current = positions;
-    setVisualPositions(positions);
-    const route = [...movement.steps];
-    if (route[route.length - 1] !== movement.to) route.push(movement.to);
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    if (reducedMotion || route.length === 0) {
-      const next = { ...positions, [movement.playerId]: movement.to };
-      visualPositionsRef.current = next;
-      setVisualPositions(next);
-      setJourneyStep(movement.steps.length);
-      return;
-    }
-    setMovingPlayers({ [movement.playerId]: true });
-    route.forEach((position, index) => {
-      movementTimers.current.push(window.setTimeout(() => {
-        const next = { ...visualPositionsRef.current, [movement.playerId]: position };
-        visualPositionsRef.current = next;
-        setVisualPositions(next);
-        setJourneyStep(Math.min(index + 1, movement.steps.length));
-        if (index === route.length - 1) setMovingPlayers({});
-      }, (index + 1) * 260));
-    });
-
-    return () => {
-      movementTimers.current.forEach((timer) => window.clearTimeout(timer));
-      movementTimers.current = [];
-    };
-  }, [positionSignature, movementSignature]);
-
-  const rollDice = async () => {
-    if (!isMyTurn || data.rolled || rolling || pending || boardMoving) return;
-    setRolling(true);
-    try {
-      await new Promise((resolve) => window.setTimeout(resolve, 620));
-      await dispatch("monopoly-roll");
-    } finally { setRolling(false); }
-  };
-
-  const levelOptions =
-    pendingForMe && (pending?.type === "buy" || pending?.type === "upgrade")
-      ? [1, 2, 3, 4].filter((level) => {
-          const space = MILLIONAIRE_BOARD[pendingSpaceIndex];
-          if (!space || space.kind === "tourism") return level === 1;
-          if (pending.type === "buy" && level === 4) return false;
-          const currentLevel = pending.type === "upgrade" ? Number(pending.currentLevel ?? 1) : 0;
-          if (level <= currentLevel) return false;
-          const cost =
-            pending.type === "buy"
-              ? structureTotal(space, level)
-              : upgradeCost(space, currentLevel, level);
-          return cost <= Number(data.cash?.[me.id] ?? 0);
-        })
-      : [];
-
-  return (
-    <section
-      className={cn("millionaire-game", immersive && "is-immersive")}
-      dir="rtl"
-      aria-label="رحلة المليونير"
-      data-moving={boardMoving}
-    >
-      <div className="millionaire-game__atmosphere" aria-hidden="true" />
-      <div className="millionaire-game__portrait-lock">
-        <span>
-          <RotateCw />
-        </span>
-        <strong>لف الجهاز للوضع الأفقي</strong>
-        <p>اللوحة الكاملة وأملاك اللاعبين تظهر في الوضع الأفقي.</p>
-      </div>
-
-      <header className="millionaire-game__brand">
-        <span className="millionaire-game__brand-mark">
-          <Sparkles />
-        </span>
-        <div>
-          <small>مجلس السيف</small>
-          <strong>رحلة المليونير</strong>
-        </div>
-      </header>
-
-      <div className="millionaire-game__round">
-        <span>
-          <small>الجولة {Number(data.turnNumber ?? 1)}</small>
+  const decisions =
+    pendingForMe && pending ? (
+      <div className="millionaire-decisions" aria-label="قرار الدور" aria-live="polite">
+        <div className="millionaire-decision-title">
+          <span>قرارك الآن</span>
           <strong>
-            {isMyTurn ? "دورك الآن" : "دور " + activePlayerLabel}
+            {pending.type === "buy"
+              ? "شراء " + decisionSpace?.name
+              : pending.type === "upgrade"
+                ? "تطوير " + decisionSpace?.name
+                : pending.type === "takeover"
+                  ? "استحواذ على " + decisionSpace?.name
+                  : pending.type === "travel"
+                    ? "اختر وجهتك"
+                    : pending.type === "festival"
+                      ? "اختر مدينة المهرجان"
+                      : "سدّد الالتزام المالي"}
           </strong>
-        </span>
-        <time dateTime={`PT${turnSeconds}S`}>00:{String(turnSeconds).padStart(2, "0")}</time>
-      </div>
-
-      <nav className="millionaire-game__tools" aria-label="أدوات اللعبة">
-        <button type="button" onClick={onGuide} aria-label="طريقة اللعب">
-          <BookOpen />
-        </button>
-        <button type="button" onClick={() => { setAssetsPlayerId(me.id); setShowAssets(true); }} aria-label="إدارة أملاكي">
-          <WalletCards />
-        </button>
-        <button type="button" onClick={onSettings} aria-label="إعدادات اللعب">
-          <Settings2 />
-        </button>
-        <button type="button" className="millionaire-game__chat" aria-label="رسائل سريعة">
-          <MessageCircle />
-        </button>
-        <button type="button" onClick={onExit} aria-label="الخروج من وضع اللعبة">
-          <LogOut />
-        </button>
-      </nav>
-
-      <div className="millionaire-game__players" aria-label="اللاعبون">
-        {displayPlayers.map((player, index) => {
-          const active = player.id === activePlayer?.id;
-          const bankrupt = Boolean(data.bankrupt?.[player.id]);
-          const ownedCount = MILLIONAIRE_BOARD.filter(
-            (_, propertyIndex) => propertyAt(data, propertyIndex)?.ownerId === player.id,
-          ).length;
-          const cash = Number(data.cash?.[player.id] ?? 5000);
-          const totalWealth = cash + playerInvestment(data, player.id);
-          const position = Number(visualPositions[player.id] ?? data.positions?.[player.id] ?? 0);
-          return (
-            <article
-              key={player.id}
-              className={cn(
-                "millionaire-player",
-                "millionaire-player--" + (index + 1),
-                active && "is-active",
-                player.id === me.id && "is-me",
-                player.id === focusedPlayerId && "is-focused",
-                bankrupt && "is-bankrupt",
-              )}
-              style={{ "--player-color": PLAYER_COLORS[index] } as CSSProperties}
-              data-player-id={player.id}
-            >
-              <div className="millionaire-player__portrait">
-                <PlayerPortrait player={player} />
-              </div>
-              <div className="millionaire-player__copy">
-                <p>
-                  {player.isHost && <Crown aria-label="المضيف" />}
-                  <strong>{playerLabel(player, players)}</strong>
-                  {player.id === me.id && <em>أنت</em>}
-                </p>
-                <div className="millionaire-player__stats">
-                  <span>
-                    <small>الكاش</small>
-                    <strong>{formatCash(cash)}</strong>
-                  </span>
-                  <span>
-                    <small>المجموع</small>
-                    <strong>{formatCash(totalWealth)}</strong>
-                  </span>
-                </div>
-                <button
-                  className="millionaire-player__location"
-                  type="button"
-                  disabled={bankrupt}
-                  onClick={() => { setFocusedPlayerId(player.id); setSelectedSpace(position); }}
-                  aria-label={"إظهار موقع " + playerLabel(player, players) + " في " + MILLIONAIRE_BOARD[position]?.name}
-                >
-                  <MapPin />
-                  <span>{player.id === me.id ? "موقعك: " : "الموقع: "}<strong>{MILLIONAIRE_BOARD[position]?.name}</strong></span>
-                </button>
-                <button
-                  className="millionaire-player__owned"
-                  type="button"
-                  onClick={() => { setAssetsPlayerId(player.id); setFocusedPlayerId(player.id); setShowAssets(true); }}
-                  aria-label={"عرض أملاك " + playerLabel(player, players)}
-                >
-                  <Landmark /> {ownedCount} أملاك · عرض
-                  {Number(data.jailTurns?.[player.id] ?? 0) > 0 && " · في الجزيرة"}
-                </button>
-              </div>
-              <b className="millionaire-player__number" aria-label={"رقم القطعة " + (index + 1)}>{index + 1}</b>
-              {bankrupt && <mark>مفلس</mark>}
-            </article>
-          );
-        })}
-      </div>
-
-      <div className="millionaire-board-scene" ref={sceneRef}>
-        <div className="millionaire-board" role="grid" aria-label="لوحة رحلة المليونير">
-          <div className="millionaire-board__rim" aria-hidden="true" />
-          <div className="millionaire-board__map" aria-hidden="true">
-            <MapPin />
-            <span>المملكة</span>
-          </div>
-          {MILLIONAIRE_BOARD.map((space, index) => {
-            const [row, column] = BOARD_PLACEMENTS[index];
-            const property = propertyAt(data, index);
-            const ownerIndex = players.findIndex((player) => player.id === property?.ownerId);
-            const occupants = players.filter(
-              (player) =>
-                Number(visualPositions[player.id] ?? data.positions?.[player.id] ?? 0) === index &&
-                !data.bankrupt?.[player.id],
-            );
-            const ownable = space.kind === "city" || space.kind === "tourism";
-            return (
-              <button
-                type="button"
-                key={space.name + "-" + index}
-                role="gridcell"
-                onClick={() => setSelectedSpace(index)}
-                className={cn(
-                  "millionaire-space",
-                  "millionaire-space--" + space.kind,
-                  "millionaire-space--side-" + space.side,
-                  index === currentPosition && "is-current",
-                  occupants.some((player) => player.id === focusedPlayerId) && "is-focused-position",
-                  property && "is-owned",
-                  property?.ownerId === me.id && "is-my-property",
-                  property?.ownerId === focusedPlayerId && "is-focused-property",
-                  journey?.steps.includes(index) && "is-on-path",
-                  journey?.from === index && "is-origin",
-                  journey?.to === index && "is-destination",
-                  data.festival?.spaceIndex === index && "is-festival",
-                )}
-                style={
-                  {
-                    gridRow: row,
-                    gridColumn: column,
-                    "--space-color": space.color,
-                    "--owner-color": ownerIndex >= 0 ? PLAYER_COLORS[ownerIndex] : "transparent",
-                    "--path-color": journeyColor,
-                  } as CSSProperties
-                }
-                aria-label={space.name + ". " + (property ? "ملك " + (players[ownerIndex] ? playerLabel(players[ownerIndex], players) : "لاعب") : ownable ? "متاح للشراء" : "محطة خاصة") + (occupants.length ? ". يقف هنا " + occupants.map((player) => playerLabel(player, players)).join("، ") : "")}
-                data-space-index={index}
-                data-owner-id={property?.ownerId ?? ""}
-              >
-                <i className="millionaire-space__band" aria-hidden="true" />
-                <span ref={(element) => { spaceAnchors.current[index] = element; }} className="millionaire-space__anchor" aria-hidden="true" />
-                <span className="millionaire-space__content" aria-hidden="true">
-                  <span className="millionaire-space__icon">{spaceIcon(space.kind)}</span>
-                  <strong>{space.name}</strong>
-                  {ownable && <small>{formatCash(space.price)}</small>}
-                </span>
-                {property && (
-                  <span className="millionaire-space__owner" aria-hidden="true">
-                    {ownerIndex + 1}
-                  </span>
-                )}
-                {ownable && (
-                  <CityModel
-                    space={space}
-                    level={property?.level ?? 0}
-                    ownerColor={ownerIndex >= 0 ? PLAYER_COLORS[ownerIndex] : space.color}
-                  />
-                )}
-              </button>
-            );
-          })}
         </div>
-
-        <div className="millionaire-board__overlays">
-          <svg className="millionaire-token-links" viewBox={`0 0 ${boardLayout.width} ${boardLayout.height}`} aria-hidden="true">
-            {tokenPlacements.filter((item) => item.shared).map(({ player, index, point, x, y }) => <line key={player.id} x1={point.x} y1={point.y} x2={x} y2={y} style={{ "--token-color": PLAYER_COLORS[index] } as CSSProperties} />)}
-          </svg>
-          {journey && boardLayout.points.length === MILLIONAIRE_BOARD.length && (
-            <svg className="millionaire-route" viewBox={`0 0 ${boardLayout.width} ${boardLayout.height}`} aria-hidden="true">
-              <polyline className="millionaire-route__line" points={journeyRoute.map((index) => `${boardLayout.points[index].x},${boardLayout.points[index].y}`).join(" ")} style={{ "--path-color": journeyColor } as CSSProperties} />
-              {hasJump && <line className="millionaire-route__jump" x1={boardLayout.points[jumpFrom].x} y1={boardLayout.points[jumpFrom].y} x2={boardLayout.points[journey.to].x} y2={boardLayout.points[journey.to].y} />}
-              {journey.steps.map((index, step) => (
-                <g key={step} className={cn("millionaire-route__step", step < journeyStep && "is-complete")} transform={`translate(${boardLayout.points[index].x}, ${boardLayout.points[index].y})`}>
-                  <circle r="10" />
-                  <text textAnchor="middle" dominantBaseline="central">{step + 1}</text>
-                </g>
-              ))}
-            </svg>
-          )}
-
-          {MILLIONAIRE_BOARD.map((space, index) => {
-            const point = boardLayout.points[index];
-            if (!point) return null;
-            const property = propertyAt(data, index);
-            const ownerIndex = players.findIndex((player) => player.id === property?.ownerId);
-            const owner = players[ownerIndex];
-            const ownable = space.kind === "city" || space.kind === "tourism";
-            return (
-              <span key={index} className={cn("millionaire-space-label", property && "is-owned", property?.ownerId === me.id && "is-mine")} style={{ left: point.x, top: point.y, "--owner-color": PLAYER_COLORS[ownerIndex] } as CSSProperties} aria-hidden="true">
-                <strong>{space.name}</strong>
-                {ownable && <small>{owner ? owner.id === me.id ? "أرضك" : playerLabel(owner, players) : "للبيع"}</small>}
-              </span>
-            );
-          })}
-
-          {tokenPlacements.map(({ player, index, position, x, y }) => {
-            return (
-              <button
-                key={player.id}
-                type="button"
-                className={cn("millionaire-token", player.id === me.id && "is-me", player.id === focusedPlayerId && "is-focused", movingPlayers[player.id] && "is-moving")}
-                style={{ left: x, top: y, "--token-color": PLAYER_COLORS[index] } as CSSProperties}
-                onClick={() => { setFocusedPlayerId(player.id); setSelectedSpace(position); }}
-                aria-label={(player.id === me.id ? "قطعتك: " : "قطعة ") + playerLabel(player, players) + "، الموقع " + MILLIONAIRE_BOARD[position].name}
-                data-player-id={player.id}
-                data-position={position}
-              >
-                <span className="millionaire-token__pawn"><b>{index + 1}</b></span>
-                <strong>{player.id === me.id ? "أنت" : playerLabel(player, players)}</strong>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="millionaire-game__center">
-          <div className="millionaire-game__crest">
-            <Landmark />
-          </div>
-          <p>رحلة</p>
-          <h2>المليونير</h2>
-          <div className="millionaire-game__center-stats">
-            <span>الجولة {Number(data.turnNumber ?? 1)}</span>
-            <i />
-            <span>{activePlayerLabel}</span>
-          </div>
-          <div
-            className={cn("millionaire-dice", rolling && "is-rolling")}
-            aria-label={"النرد " + dice[0] + " و" + dice[1]}
-          >
-            <span>{DICE_FACES[Math.max(0, dice[0] - 1)]}</span>
-            <span>{DICE_FACES[Math.max(0, dice[1] - 1)]}</span>
-          </div>
-
-          {!data.rolled ? (
-            <>
-              {isMyTurn && jailTurns > 0 && (
-                <div className="millionaire-game__jail-actions">
-                  <button
-                    type="button"
-                    disabled={Number(data.cash?.[me.id] ?? 0) < 150}
-                    onClick={() => void dispatch("monopoly-pay-jail")}
-                  >
-                    ادفع 150K
-                  </button>
-                  {Number(data.escapeCards?.[me.id] ?? 0) > 0 && (
-                    <button type="button" onClick={() => void dispatch("monopoly-use-pass")}>
-                      استخدم بطاقة خروج
+        {scene.busy ? (
+          <p className="millionaire-decision-wait">يظهر القرار بعد اكتمال الحركة…</p>
+        ) : (
+          <>
+            {(pending.type === "buy" || pending.type === "upgrade") && (
+              <>
+                <div className="millionaire-levels" role="group" aria-label="مستوى التطوير">
+                  {options.map((target) => (
+                    <button
+                      type="button"
+                      key={target}
+                      aria-label={decisionSpace?.kind === "tourism" ? "موقع سياحي" : LEVELS[target]}
+                      aria-pressed={chosenLevel === target}
+                      onClick={() => setLevel(target)}
+                    >
+                      <MiniatureBuilding level={target} space={decisionSpace} />
+                      <span>
+                        {decisionSpace?.kind === "tourism" ? "موقع سياحي" : LEVELS[target]}
+                      </span>
                     </button>
-                  )}
+                  ))}
                 </div>
-              )}
-              <button
-                type="button"
-                className="millionaire-game__roll"
-                disabled={!isMyTurn || rolling || Boolean(pending) || boardMoving}
-                onClick={() => void rollDice()}
-              >
-                {rolling
-                  ? "النرد يتحرك…"
-                  : isMyTurn
-                    ? jailTurns > 0
-                      ? "حاول الخروج بالنرد"
-                      : "ارمِ النرد"
-                    : "انتظر دورك"}
-              </button>
-            </>
-          ) : isMyTurn && !pending ? (
-            <button
-              type="button"
-              className="millionaire-game__end"
-              disabled={boardMoving}
-              onClick={() => void dispatch("monopoly-end")}
-            >
-              {data.extraTurn ? "ارمِ مرة أخرى" : "إنهاء الدور"}
-            </button>
-          ) : (
-            <div className="millionaire-game__waiting">
-              {boardMoving ? "يتحرك خانة بخانة…" : pending
-                ? "بانتظار قرار " + activePlayerLabel
-                : "يتم تنفيذ الحركة"}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <aside className="millionaire-navigation" aria-label="الموقع ومسار الحركة">
-        <div className="millionaire-navigation__location" style={{ "--my-color": PLAYER_COLORS[Math.max(0, players.findIndex((player) => player.id === me.id))] } as CSSProperties}><MapPin /><span>موقعك الآن: <strong>{MILLIONAIRE_BOARD[myPosition]?.name}</strong></span></div>
-        {journey && journeyPlayer && (
-          <div className="millionaire-navigation__journey">
-            <p role="status">{movingPlayers[journey.playerId] ? playerLabel(journeyPlayer, players) + " يتحرك إلى " : "آخر حركة: " + playerLabel(journeyPlayer, players) + " وصل إلى "}{MILLIONAIRE_BOARD[journey.to]?.name}</p>
-            <span>{MILLIONAIRE_BOARD[journey.from]?.name} ← {MILLIONAIRE_BOARD[journey.to]?.name} · {journey.steps.length ? `${journeyStep} / ${journey.steps.length} خطوات${hasJump ? " · انتقال ببطاقة" : ""}` : journey.source === "travel" ? "سفر مباشر" : "انتقال إلى الجزيرة"}</span>
-          </div>
-        )}
-      </aside>
-
-      {selectedSpace !== null && (
-        <aside className="millionaire-game__property-card" aria-live="polite">
-        <button
-          type="button"
-          aria-label="إغلاق تفاصيل المحطة"
-          onClick={() => setSelectedSpace(null)}
-        >
-          <X />
-        </button>
-        <span style={{ "--space-color": inspectSpace.color } as CSSProperties}>
-          {spaceIcon(inspectSpace.kind)}
-        </span>
-        <div>
-          <small>
-            {inspectOwner
-              ? inspectOwner.id === me.id ? "أرضك" : "ملك " + playerLabel(inspectOwner, players)
-              : inspectSpace.kind === "city" || inspectSpace.kind === "tourism"
-                ? "متاح للشراء"
-                : "محطة خاصة"}
-          </small>
-          <strong>{inspectSpace.name}</strong>
-          {(inspectSpace.kind === "city" || inspectSpace.kind === "tourism") && (
-            <p>
-              السعر {formatCash(inspectSpace.price)} · الرسوم الأساسية{" "}
-              {formatCash(inspectSpace.rent)}{" "}
-              {inspectProperty && "· " + LEVEL_LABELS[Math.min(inspectProperty.level, 4)]}
-            </p>
-          )}
-        </div>
-        </aside>
-      )}
-
-      <footer className="millionaire-game__ticker">
-        <span className="millionaire-game__status-dot" />
-        <strong>
-          {isMyTurn ? "دورك الآن" : "الدور عند " + activePlayerLabel}
-        </strong>
-        <p>{data.lastAction ?? "بدأت رحلة المليونير"}</p>
-      </footer>
-
-      {pendingForMe && !boardMoving && !rolling && (
-        <div
-          className="millionaire-decision"
-          role="dialog"
-          aria-modal="true"
-          aria-label="قرار الدور"
-        >
-          <div className="millionaire-decision__head">
-            <span>
-              {pending.type === "debt" ? (
-                <Coins />
-              ) : pending.type === "travel" ? (
-                <Navigation />
-              ) : pending.type === "festival" ? (
-                <Sparkles />
-              ) : (
-                <Building2 />
-              )}
-            </span>
-            <div>
-              <small>قرارك الآن</small>
-              <strong>
-                {pending.type === "buy" &&
-                  "استثمر في " + MILLIONAIRE_BOARD[pendingSpaceIndex]?.name}
-                {pending.type === "upgrade" && "طوّر " + MILLIONAIRE_BOARD[pendingSpaceIndex]?.name}
-                {pending.type === "takeover" &&
-                  "استحوذ على " + MILLIONAIRE_BOARD[pendingSpaceIndex]?.name}
-                {pending.type === "travel" && "اختر وجهة السفر"}
-                {pending.type === "festival" && "اختر مدينة المهرجان"}
-                {pending.type === "debt" && "سدّد الالتزام المالي"}
-              </strong>
-            </div>
-          </div>
-
-          {(pending.type === "buy" || pending.type === "upgrade") && (
-            <div className="millionaire-decision__levels">
-              {levelOptions.map((level) => {
-                const space = MILLIONAIRE_BOARD[pendingSpaceIndex];
-                const currentLevel =
-                  pending.type === "upgrade" ? Number(pending.currentLevel ?? 1) : 0;
-                const cost =
-                  pending.type === "buy"
-                    ? structureTotal(space, level)
-                    : upgradeCost(space, currentLevel, level);
-                return (
+                {options.length ? (
                   <button
-                    key={level}
                     type="button"
+                    className="millionaire-primary"
+                    disabled={!canAct}
                     onClick={() =>
-                      void dispatch(pending.type === "buy" ? "monopoly-buy" : "monopoly-upgrade", {
-                        level,
+                      void perform(pending.type === "buy" ? "monopoly-buy" : "monopoly-upgrade", {
+                        level: chosenLevel,
                       })
                     }
                   >
-                    <MiniBuildings level={level} landmark={level === 4} />
-                    <strong>{LEVEL_LABELS[level]}</strong>
-                    <small>{formatCash(cost)}</small>
+                    <Hammer /> {pending.type === "buy" ? "شراء" : "تطوير"}{" "}
+                    <b dir="ltr">{cash(cost)}</b>
                   </button>
-                );
-              })}
-            </div>
-          )}
-
-          {pending.type === "takeover" && (
-            <div className="millionaire-decision__confirm">
-              <p>دفعت رسوم الزيارة. تستطيع ضم الموقع قبل أن يتحول إلى مَعْلم.</p>
-              <button type="button" onClick={() => void dispatch("monopoly-takeover")}>
-                استحواذ مقابل {formatCash(Number(pending.cost ?? 0))}
-              </button>
-            </div>
-          )}
-
-          {(pending.type === "travel" || pending.type === "festival") && (
-            <div className="millionaire-decision__destinations">
-              {MILLIONAIRE_BOARD.map((space, index) => {
-                const property = propertyAt(data, index);
-                const allowed =
-                  pending.type === "travel"
-                    ? space.kind === "city" || space.kind === "tourism"
-                    : property?.ownerId === me.id;
-                if (!allowed) return null;
-                return (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() =>
-                      void dispatch(
-                        pending.type === "travel" ? "monopoly-travel" : "monopoly-festival",
-                        { spaceIndex: index },
-                      )
-                    }
-                  >
-                    <i style={{ background: space.color }} />
-                    <span>
-                      {space.name}
-                      <small>
-                        {property ? LEVEL_LABELS[Math.min(property.level, 4)] : "متاحة"}
-                      </small>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {isDebt && (
-            <div className="millionaire-decision__debt">
-              <p>
-                المطلوب: <strong>{formatCash(Number(pending.amount ?? 0))}</strong> · رصيدك:{" "}
-                <strong>{formatCash(data.cash?.[me.id] ?? 0)}</strong>
-              </p>
-              {Number(data.cash?.[me.id] ?? 0) >= Number(pending.amount ?? 0) && (
+                ) : (
+                  <p>رصيدك لا يكفي للاستثمار في هذا الموقع.</p>
+                )}
+              </>
+            )}
+            {pending.type === "takeover" && (
+              <>
+                <p>دفعت رسوم الزيارة. يمكنك شراء الموقع من مالكه قبل تطويره إلى مَعْلم.</p>
                 <button
                   type="button"
-                  className="is-pay"
-                  onClick={() => void dispatch("monopoly-pay-debt")}
+                  className="millionaire-primary"
+                  disabled={!canAct || myCash < Number(pending.cost)}
+                  onClick={() => void perform("monopoly-takeover")}
                 >
-                  سداد كامل
+                  <Flag /> استحواذ <b dir="ltr">{cash(Number(pending.cost))}</b>
                 </button>
-              )}
-              <div>
-                {myProperties.map(({ space, index, property }) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => void dispatch("monopoly-sell", { spaceIndex: index })}
-                  >
-                    بيع {space.name}
-                    <small>
-                      +{formatCash(Math.round(Number(property?.invested ?? space.price) * 0.7))}
-                    </small>
-                  </button>
-                ))}
+              </>
+            )}
+            {(pending.type === "travel" || pending.type === "festival") && (
+              <div className="millionaire-destinations">
+                {MILLIONAIRE_BOARD.map((space, index) => {
+                  const allowed =
+                    pending.type === "travel"
+                      ? space.kind === "city" || space.kind === "tourism"
+                      : propertyAt(data, index)?.ownerId === me.id;
+                  return allowed ? (
+                    <button
+                      type="button"
+                      key={index}
+                      disabled={!canAct}
+                      onMouseEnter={() => setPreviewSpace(index)}
+                      onFocus={() => setPreviewSpace(index)}
+                      onMouseLeave={() => setPreviewSpace(null)}
+                      onBlur={() => setPreviewSpace(null)}
+                      onClick={() => {
+                        setPreviewSpace(null);
+                        setSelectedSpace(null);
+                        void perform(
+                          pending.type === "travel" ? "monopoly-travel" : "monopoly-festival",
+                          { spaceIndex: index },
+                        );
+                      }}
+                    >
+                      <MapPin />
+                      {space.name}
+                    </button>
+                  ) : null;
+                })}
               </div>
+            )}
+            {pending.type === "debt" && (
+              <>
+                <p>{pending.reason}</p>
+                <p>
+                  المطلوب <b dir="ltr">{cash(Number(pending.amount))}</b> · رصيدك{" "}
+                  <b dir="ltr">{cash(myCash)}</b>
+                </p>
+                <button
+                  type="button"
+                  className="millionaire-primary"
+                  disabled={!canAct || myCash < Number(pending.amount)}
+                  onClick={() => void perform("monopoly-pay-debt")}
+                >
+                  <Coins /> سداد كامل
+                </button>
+                <button
+                  type="button"
+                  className="millionaire-secondary"
+                  onClick={() => setAssetsPlayer(me.id)}
+                >
+                  <WalletCards /> بيع بعض أملاكك
+                </button>
+                <button
+                  type="button"
+                  className="millionaire-danger-text"
+                  disabled={!canAct}
+                  onClick={() => setConfirmBankrupt(true)}
+                >
+                  إعلان الإفلاس
+                </button>
+              </>
+            )}
+            {pending.type !== "debt" && (
               <button
                 type="button"
-                className="is-bankrupt"
-                onClick={() => void dispatch("monopoly-bankrupt")}
+                className="millionaire-secondary"
+                disabled={!canAct}
+                onClick={() => void perform("monopoly-decline")}
               >
-                إعلان الإفلاس
+                {pending.type === "travel"
+                  ? "البقاء هنا"
+                  : pending.type === "festival"
+                    ? "تجاوز المهرجان"
+                    : "تجاوز"}
               </button>
-            </div>
-          )}
+            )}
+          </>
+        )}
+      </div>
+    ) : null;
 
-          {!isDebt && (
+  return (
+    <div
+      ref={rootRef}
+      className={cn(
+        "millionaire-table",
+        immersive ? "is-immersive" : "is-embedded",
+        reducedMotion && "is-reduced-motion",
+      )}
+      dir="rtl"
+      aria-label="رحلة المليونير"
+      data-viewer-seat={viewerSeat}
+      data-phase={scene.phase}
+    >
+      <div className="millionaire-phone-rotate">
+        <RotateCw />
+        <h2>لف الجوال للوضع الأفقي</h2>
+        <p>عشان تشوف الطاولة كاملة من جهة جلوسك.</p>
+        <button type="button" onClick={onExit}>
+          رجوع
+        </button>
+      </div>
+      <header className="millionaire-table-header">
+        <div className="millionaire-title">
+          <h1>رحلة المليونير</h1>
+          <p>استكشف مدن المملكة… واصنع ثروتك</p>
+        </div>
+        <div className="millionaire-turn-pill">
+          <i style={{ background: COLORS[activeIndex % 4] }} />
+          <span>{isMyTurn ? "دورك الآن" : "دور " + activeName}</span>
+          <small>الجولة {data.turnNumber ?? 1}</small>
+        </div>
+        <nav className="millionaire-table-tools" aria-label="أدوات اللعبة">
+          <button
+            type="button"
+            aria-label={audible ? "كتم الصوت" : "تشغيل الصوت"}
+            aria-pressed={audible}
+            onClick={onToggleSound ?? (() => setLocalSound((value) => !value))}
+          >
+            {audible ? <Volume2 /> : <VolumeX />}
+          </button>
+          <button type="button" aria-label="طريقة اللعب" onClick={onGuide}>
+            <BookOpen />
+          </button>
+          <button type="button" aria-label="إعدادات اللعب" onClick={onSettings}>
+            <Settings2 />
+          </button>
+          <button
+            type="button"
+            className="is-exit"
+            aria-label="الخروج من وضع اللعبة"
+            onClick={onExit}
+          >
+            <LogOut />
+            <span>خروج</span>
+          </button>
+        </nav>
+      </header>
+
+      <div className="millionaire-table-layout">
+        <aside className="millionaire-inspector" aria-label="تفاصيل الموقع">
+          {selectedSpace !== null && (
             <button
               type="button"
-              className="millionaire-decision__decline"
-              onClick={() => void dispatch("monopoly-decline")}
+              className="millionaire-inspector-close"
+              aria-label="العودة إلى محطة الدور"
+              onClick={() => setSelectedSpace(null)}
             >
-              {pending.type === "travel"
-                ? "البقاء في محطة السفر"
-                : pending.type === "festival"
-                  ? "تجاوز المهرجان"
-                  : "تجاوز القرار"}
+              <X />
             </button>
           )}
-        </div>
-      )}
-
-      {showAssets && (
-        <div
-          className="millionaire-assets"
-          role="dialog"
-          aria-modal="true"
-          aria-label={assetsPlayer.id === me.id ? "إدارة أملاكي" : "أملاك " + playerLabel(assetsPlayer, players)}
-          onClick={() => setShowAssets(false)}
-        >
-          <div onClick={(event) => event.stopPropagation()}>
-            <header>
-              <span>
-                <WalletCards />
-              </span>
-              <div>
-                <small>المحفظة</small>
-                <strong>{assetsPlayer.id === me.id ? "أملاكي واستثماراتي" : "أملاك " + playerLabel(assetsPlayer, players)}</strong>
-              </div>
-              <button type="button" aria-label="إغلاق الأملاك" onClick={() => setShowAssets(false)}>
-                <X />
-              </button>
-            </header>
-            <nav className="millionaire-assets__players" aria-label="أملاك اللاعبين">
-              {displayPlayers.map((player, index) => (
-                <button key={player.id} type="button" aria-pressed={assetsPlayer.id === player.id} style={{ "--player-color": PLAYER_COLORS[index] } as CSSProperties} onClick={() => setAssetsPlayerId(player.id)}>
-                  {index + 1} · {player.id === me.id ? "أنت" : playerLabel(player, players)}
-                </button>
-              ))}
-            </nav>
-            <div className="millionaire-assets__summary">
-              <p>
-                <CircleDollarSign />
-                <span>
-                  السيولة<strong>{formatCash(data.cash?.[assetsPlayer.id] ?? 0)}</strong>
-                </span>
-              </p>
-              <p>
-                <Building2 />
-                <span>
-                  عدد المواقع<strong>{visibleAssets.length}</strong>
-                </span>
-              </p>
-              <p>
-                <TicketCheck />
-                <span>
-                  بطاقات الخروج<strong>{Number(data.escapeCards?.[assetsPlayer.id] ?? 0)}</strong>
-                </span>
-              </p>
-            </div>
-            <section>
-              {visibleAssets.length ? (
-                visibleAssets.map(({ space, index, property }) => (
-                  <article key={index}>
-                    <i style={{ background: PLAYER_COLORS[Math.max(0, players.findIndex((player) => player.id === assetsPlayer.id))] }} />
-                    <span>
-                      <strong>{space.name}</strong>
-                      <small>
-                        {LEVEL_LABELS[Math.min(property?.level ?? 1, 4)]} · استثمار{" "}
-                        {formatCash(property?.invested ?? space.price)}
-                      </small>
-                    </span>
-                    <MiniBuildings
-                      level={property?.level ?? 1}
-                      landmark={(property?.level ?? 1) >= 4}
-                    />
-                    {assetsPlayer.id === me.id && <button
-                      type="button"
-                      disabled={!isMyTurn || Boolean(pending) || boardMoving}
-                      onClick={() => void dispatch("monopoly-sell", { spaceIndex: index })}
-                    >
-                      <Hammer /> بيع
-                    </button>}
-                  </article>
-                ))
-              ) : (
-                <p className="millionaire-assets__empty">{assetsPlayer.id === me.id ? "لم تشترِ أي موقع بعد." : "لم يشترِ " + playerLabel(assetsPlayer, players) + " أي موقع بعد."}</p>
-              )}
-            </section>
-            <button className="millionaire-assets__show-board" type="button" onClick={() => { setFocusedPlayerId(assetsPlayer.id); setSelectedSpace(null); setShowAssets(false); }}>
-              {assetsPlayer.id === me.id ? "إظهار أملاكي على اللوح" : "إظهار أملاك " + playerLabel(assetsPlayer, players) + " على اللوح"}
-            </button>
+          <div className={"millionaire-inspector-art kind-" + inspect.kind}>
+            {ownable ? (
+              <MiniatureBuilding
+                space={inspect}
+                level={inspectProperty?.level ?? (inspect.kind === "tourism" ? 4 : 1)}
+              />
+            ) : (
+              <SpaceIcon kind={inspect.kind} />
+            )}
+            <span>
+              {inspect.landmark ?? (inspect.kind === "city" ? "مدينة استثمارية" : "محطة خاصة")}
+            </span>
           </div>
+          <div className="millionaire-inspector-body">
+            <small>{selectedSpace !== null ? "تفاصيل الموقع المحدد" : "محطة الدور"}</small>
+            <h2>{inspect.name}</h2>
+            <div
+              className={cn("millionaire-owner-label", owner && "is-owned")}
+              style={{ "--owner-color": COLORS[Math.max(0, ownerIndex) % 4] } as CSSProperties}
+            >
+              {owner ? (
+                <>
+                  <Flag /> ملك {label(owner, players)} · {ownerIndex + 1}
+                </>
+              ) : ownable ? (
+                "متاحة للشراء"
+              ) : (
+                "محطة خاصة"
+              )}
+            </div>
+            {ownable ? (
+              <dl className="millionaire-property-numbers">
+                <div>
+                  <dt>سعر الشراء</dt>
+                  <dd dir="ltr">{cash(inspect.price)}</dd>
+                </div>
+                <div>
+                  <dt>{inspectProperty ? "رسوم الزيارة الحالية" : "رسوم الزيارة الأساسية"}</dt>
+                  <dd dir="ltr">
+                    {cash(
+                      inspectProperty ? monopolyToll(scene.visual, inspectIndex) : inspect.rent,
+                    )}
+                  </dd>
+                </div>
+                {inspectProperty && (
+                  <div>
+                    <dt>مستوى التطوير</dt>
+                    <dd>
+                      {inspect.kind === "tourism"
+                        ? "موقع سياحي"
+                        : LEVELS[Math.min(4, inspectProperty.level)]}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            ) : (
+              <p className="millionaire-special-copy">{SPECIAL_COPY[inspect.kind]}</p>
+            )}
+            {data.festival?.spaceIndex === inspectIndex &&
+              Number(data.turnNumber) <= data.festival.untilTurn && (
+                <p className="millionaire-festival-label">
+                  <Sparkles /> مهرجان · الرسوم مضاعفة
+                </p>
+              )}
+            {decisions}
+            {!pendingForMe && (
+              <div className="millionaire-inspector-hint">
+                <MapPin />
+                <p>اضغط أي أرض لمعرفة مالكها وتطويرها ورسومها.</p>
+              </div>
+            )}
+            {error && (
+              <p className="millionaire-error" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
+        </aside>
+
+        <div ref={stageRef} className="millionaire-stage">
+          <div className="millionaire-view-label">
+            <Navigation /> منظورك · {label(me, players)}{" "}
+            <i style={{ background: COLORS[viewerSeat] }} />
+          </div>
+          <div
+            className="millionaire-board-camera"
+            style={
+              {
+                "--board-size": boardSize + "px",
+                "--camera-scale": focus ? 1.055 : 1,
+                "--camera-x": focus ? (50 - focus.x) * 0.045 + "%" : "0%",
+                "--camera-y": focus ? (50 - focus.y) * 0.045 + "%" : "0%",
+              } as CSSProperties
+            }
+          >
+            <div className="millionaire-luxury-board" aria-label="لوحة رحلة المليونير">
+              <div className="millionaire-board-terrain" aria-hidden="true">
+                <img
+                  src="/assets/games/millionaire-terrain.webp"
+                  alt=""
+                  style={{ transform: "rotate(" + -viewerSeat * 90 + "deg)" }}
+                />
+              </div>
+              <div className="millionaire-board-grid">
+                {MILLIONAIRE_BOARD.map((space, index) => {
+                  const [row, column] = millionaireCell(index, viewerSeat);
+                  const property = propertyAt(scene.visual, index);
+                  const ownerSeat = players.findIndex((player) => player.id === property?.ownerId);
+                  const occupants = players.filter(
+                    (player) =>
+                      !data.bankrupt?.[player.id] && (scene.positions[player.id] ?? 0) === index,
+                  );
+                  const propertyName = ownerSeat >= 0 ? label(players[ownerSeat], players) : "لاعب";
+                  const routeStep = movement?.steps.indexOf(index) ?? -1;
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setSelectedSpace(index)}
+                      className={cn(
+                        "millionaire-tile",
+                        "kind-" + space.kind,
+                        property && "is-owned",
+                        (selectedSpace === index || previewSpace === index) && "is-selected",
+                        occupants.some((player) => player.id === activePlayer.id) &&
+                          "is-active-location",
+                        path.includes(index) && "is-traversed",
+                        scene.buildings.includes(index) && "is-building",
+                        property?.ownerId === highlightPlayer && "is-highlighted-property",
+                        data.festival?.spaceIndex === index && "has-festival",
+                      )}
+                      style={
+                        {
+                          gridRow: row + 1,
+                          gridColumn: column + 1,
+                          "--city-color": space.color,
+                          "--owner-color": COLORS[Math.max(0, ownerSeat) % 4],
+                          "--route-color":
+                            COLORS[
+                              Math.max(
+                                0,
+                                players.findIndex((player) => player.id === movement?.playerId),
+                              ) % 4
+                            ],
+                        } as CSSProperties
+                      }
+                      aria-label={
+                        space.name +
+                        "، " +
+                        (property
+                          ? "ملك " +
+                            propertyName +
+                            "، " +
+                            (space.kind === "tourism"
+                              ? "موقع سياحي"
+                              : LEVELS[Math.min(4, property.level)])
+                          : space.price
+                            ? "متاحة للشراء، " + cash(space.price)
+                            : "محطة خاصة") +
+                        (occupants.length
+                          ? "، هنا " + occupants.map((player) => label(player, players)).join(" و")
+                          : "")
+                      }
+                      aria-pressed={selectedSpace === index}
+                      data-space-index={index}
+                      data-owner-id={property?.ownerId ?? ""}
+                      data-view-row={row}
+                      data-view-column={column}
+                    >
+                      <i className="millionaire-tile-band" />
+                      <span className="millionaire-tile-plot" aria-hidden="true">
+                        {space.price ? (
+                          <MiniatureBuilding space={space} level={property?.level ?? 0} />
+                        ) : (
+                          <SpaceIcon kind={space.kind} />
+                        )}
+                        {property && ownerSeat >= 0 && (
+                          <OwnershipFlag color={COLORS[ownerSeat % 4]} number={ownerSeat + 1} />
+                        )}
+                        {data.festival?.spaceIndex === index && (
+                          <Sparkles className="millionaire-tile-festival" />
+                        )}
+                      </span>
+                      <strong>{space.name}</strong>
+                      {space.price > 0 && <small dir="ltr">{cash(space.price)}</small>}
+                      {routeStep >= 0 && scene.phase === "moving" && (
+                        <b className="millionaire-step-badge">{routeStep + 1}</b>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="millionaire-center">
+                <div className="millionaire-center-brand">
+                  <span>رحلة</span>
+                  <strong>المليونير</strong>
+                  <small>من أرضنا تبدأ الرحلة</small>
+                </div>
+                <div
+                  className="millionaire-dice-area"
+                  data-throw-seat={throwSeat}
+                  aria-label={
+                    scene.phase === "rolling"
+                      ? "النرد يُرمى بالمنتصف"
+                      : "نتيجة النرد " + dice[0] + " و" + dice[1]
+                  }
+                >
+                  <PhysicalDice
+                    key={"a" + (data.roll?.sequence ?? 0)}
+                    value={dice[0]}
+                    rolling={scene.phase === "rolling"}
+                    index={0}
+                    viewerSeat={viewerSeat}
+                  />
+                  <PhysicalDice
+                    key={"b" + (data.roll?.sequence ?? 0)}
+                    value={dice[1]}
+                    rolling={scene.phase === "rolling"}
+                    index={1}
+                    viewerSeat={viewerSeat}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="millionaire-chance-deck"
+                  disabled={!data.chance || scene.busy}
+                  onClick={() => setReviewChance(true)}
+                  aria-label="قراءة آخر بطاقة فرصة"
+                >
+                  <Gift />
+                  <span>بطاقات الفرصة</span>
+                </button>
+              </div>
+              {players
+                .filter((player) => !data.bankrupt?.[player.id])
+                .map((player) => {
+                  const seat = players.findIndex((item) => item.id === player.id);
+                  const position = scene.positions[player.id] ?? 0;
+                  const point = millionairePoint(position, viewerSeat);
+                  const same = players.filter(
+                    (item) =>
+                      !data.bankrupt?.[item.id] && (scene.positions[item.id] ?? 0) === position,
+                  );
+                  const slot = same.findIndex((item) => item.id === player.id);
+                  const x = point.x + (same.length > 1 ? (slot % 2 ? 1 : -1) * 2.1 : 0);
+                  const y = point.y + (same.length > 2 ? (slot < 2 ? -1 : 1) * 1.7 : 0);
+                  return (
+                    <button
+                      key={player.id}
+                      type="button"
+                      className={cn(
+                        "millionaire-board-pawn",
+                        player.id === me.id && "is-me",
+                        scene.phase === "moving" &&
+                          movement?.playerId === player.id &&
+                          "is-walking",
+                      )}
+                      style={
+                        {
+                          left: x + "%",
+                          top: y + "%",
+                          "--pawn-color": COLORS[seat % 4],
+                        } as CSSProperties
+                      }
+                      onClick={() => {
+                        setHighlightPlayer(player.id);
+                        setSelectedSpace(position);
+                      }}
+                      aria-label={
+                        "قطعة " +
+                        label(player, players) +
+                        " في " +
+                        MILLIONAIRE_BOARD[position]?.name
+                      }
+                      data-player-id={player.id}
+                      data-position={position}
+                    >
+                      {player.id === me.id && <span>أنت</span>}
+                      <MillionairePawn color={COLORS[seat % 4]} number={seat + 1} />
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+          {scene.chance && (
+            <div className="millionaire-card-draw" role="status" aria-live="polite">
+              <div className={cn("millionaire-chance-card", scene.chanceRevealed && "is-revealed")}>
+                <div className="millionaire-chance-back">
+                  <Gift />
+                  <strong>فرصة</strong>
+                </div>
+                <div className="millionaire-chance-front">
+                  <Sparkles />
+                  <small>
+                    {players.find((player) => player.id === scene.chance?.playerId)?.name}
+                  </small>
+                  <h2>{scene.chance.title}</h2>
+                  <p>{scene.chance.description}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
+        <aside
+          className="millionaire-player-rail"
+          aria-label="اللاعبون وأملاكهم"
+          style={{ "--player-count": Math.min(4, players.length) } as CSSProperties}
+        >
+          {players.slice(0, 4).map((player, index) => {
+            const amount = Number(scene.visual.cash?.[player.id] ?? 5000);
+            const position = scene.positions[player.id] ?? 0;
+            const count = MILLIONAIRE_BOARD.filter(
+              (_, i) => propertyAt(scene.visual, i)?.ownerId === player.id,
+            ).length;
+            const delta = scene.deltas[player.id];
+            return (
+              <article
+                key={player.id}
+                ref={(element) => {
+                  playerCards.current[player.id] = element;
+                }}
+                className={cn(
+                  "millionaire-player-card",
+                  activePlayer.id === player.id && "is-active",
+                  player.id === me.id && "is-me",
+                  data.bankrupt?.[player.id] && "is-bankrupt",
+                )}
+                style={{ "--player-color": COLORS[index % 4] } as CSSProperties}
+                data-player-id={player.id}
+              >
+                <div className="millionaire-player-head">
+                  <b className="millionaire-seat-number">{index + 1}</b>
+                  <div>
+                    <strong>
+                      {label(player, players)} {player.isHost && <Crown />}
+                    </strong>
+                    <small>
+                      {player.id === me.id
+                        ? "أنت"
+                        : player.isBot
+                          ? "بوت"
+                          : activePlayer.id === player.id
+                            ? "يلعب الآن"
+                            : "على الطاولة"}
+                    </small>
+                  </div>
+                  {player.avatarUrl && (
+                    <img src={player.avatarUrl} alt="" referrerPolicy="no-referrer" />
+                  )}
+                </div>
+                <div className="millionaire-player-balance">
+                  <Coins />
+                  <AnimatedCash value={amount} reducedMotion={reducedMotion} />
+                  {delta && (
+                    <mark className={delta > 0 ? "is-gain" : "is-loss"} dir="ltr">
+                      {delta > 0 ? "+" : "−"}
+                      {cash(Math.abs(delta))}
+                    </mark>
+                  )}
+                </div>
+                <div className="millionaire-player-wealth">
+                  الثروة{" "}
+                  <b dir="ltr">{cash(amount + millionaireInvestment(scene.visual, player.id))}</b>
+                </div>
+                <button
+                  type="button"
+                  className="millionaire-player-location"
+                  disabled={Boolean(data.bankrupt?.[player.id])}
+                  onClick={() => {
+                    setHighlightPlayer(player.id);
+                    setSelectedSpace(position);
+                  }}
+                >
+                  <MapPin />
+                  {data.bankrupt?.[player.id]
+                    ? "خرج من الرحلة"
+                    : Number(data.jailTurns?.[player.id]) > 0
+                      ? "في الجزيرة"
+                      : MILLIONAIRE_BOARD[position]?.name}
+                </button>
+                <button
+                  type="button"
+                  className="millionaire-player-assets"
+                  onClick={() => {
+                    setHighlightPlayer(player.id);
+                    setAssetsPlayer(player.id);
+                  }}
+                >
+                  <Landmark /> {count} عقارات <ArrowLeft />
+                </button>
+              </article>
+            );
+          })}
+        </aside>
+      </div>
+
+      <footer className="millionaire-table-footer">
+        <div className="millionaire-journey-status" role="status" aria-live="polite">
+          <strong>
+            {scene.phase === "rolling"
+              ? activeName + " يرمي النرد…"
+              : scene.phase === "moving" && movingPlayer
+                ? label(movingPlayer, players) + " يتحرك…"
+                : isMyTurn
+                  ? "دورك الآن"
+                  : "الدور عند " + activeName}
+          </strong>
+          <span>
+            {movement && movingPlayer
+              ? (scene.phase === "ready" ? "آخر حركة: " : "") +
+                MILLIONAIRE_BOARD[movement.from]?.name +
+                " ← " +
+                MILLIONAIRE_BOARD[movement.to]?.name
+              : "ابدأ رحلتك من الانطلاق"}
+          </span>
+          {movement && (
+            <small>
+              {movement.steps.length
+                ? scene.journey.step + " / " + movement.steps.length + " خطوات"
+                : movement.source === "travel"
+                  ? "سفر مباشر"
+                  : "انتقال إلى الجزيرة"}
+            </small>
+          )}
+        </div>
+        <p className="millionaire-action-receipt">
+          {scene.busy
+            ? "تُعرض الحركة لجميع اللاعبين من جهة جلوسهم"
+            : (data.lastAction ?? "بدأت رحلة المليونير")}
+        </p>
+        <div className="millionaire-turn-actions">
+          {isMyTurn && !data.rolled && Number(data.jailTurns?.[me.id]) > 0 && (
+            <div className="millionaire-jail-actions">
+              <button
+                type="button"
+                disabled={!canAct || myCash < 150}
+                onClick={() => void perform("monopoly-pay-jail")}
+              >
+                خروج · 150K
+              </button>
+              {Number(data.escapeCards?.[me.id]) > 0 && (
+                <button
+                  type="button"
+                  disabled={!canAct}
+                  onClick={() => void perform("monopoly-use-pass")}
+                >
+                  بطاقة خروج
+                </button>
+              )}
+            </div>
+          )}
+          <button
+            type="button"
+            className="millionaire-primary"
+            disabled={!canAct || Boolean(pending)}
+            onClick={() => void perform(data.rolled ? "monopoly-end" : "monopoly-roll")}
+          >
+            {data.rolled ? <ArrowLeft /> : <Dices />}
+            {sending
+              ? "جاري الإرسال…"
+              : scene.phase === "rolling"
+                ? "النرد يتحرك…"
+                : scene.busy
+                  ? "يتحرك على اللوحة…"
+                  : !isMyTurn
+                    ? "انتظر دورك"
+                    : pending
+                      ? "اختر قرارك"
+                      : data.rolled
+                        ? data.extraTurn
+                          ? "رمية إضافية"
+                          : "إنهاء الدور"
+                        : Number(data.jailTurns?.[me.id]) > 0
+                          ? "حاول الخروج بالنرد"
+                          : "ارمِ النرد"}
+          </button>
+        </div>
+      </footer>
+      <CashTransfers
+        deltas={scene.deltas}
+        root={rootRef.current}
+        cards={playerCards.current}
+        reducedMotion={reducedMotion}
+      />
+
+      {assetsPlayer && (
+        <MillionaireDialog
+          title={
+            viewAssets.id === me.id ? "أملاكي واستثماراتي" : "أملاك " + label(viewAssets, players)
+          }
+          onClose={() => setAssetsPlayer(null)}
+        >
+          <nav className="millionaire-assets-players" aria-label="أملاك اللاعبين">
+            {players.map((player, index) => (
+              <button
+                type="button"
+                key={player.id}
+                aria-pressed={viewAssets.id === player.id}
+                style={{ "--player-color": COLORS[index % 4] } as CSSProperties}
+                onClick={() => {
+                  setAssetsPlayer(player.id);
+                  setHighlightPlayer(player.id);
+                }}
+              >
+                {index + 1} · {label(player, players)}
+              </button>
+            ))}
+          </nav>
+          <div className="millionaire-assets-summary">
+            <span>
+              الكاش<b dir="ltr">{cash(Number(data.cash?.[viewAssets.id]))}</b>
+            </span>
+            <span>
+              الثروة
+              <b dir="ltr">
+                {cash(
+                  Number(data.cash?.[viewAssets.id] ?? 0) +
+                    millionaireInvestment(data, viewAssets.id),
+                )}
+              </b>
+            </span>
+            <span>
+              بطاقات الخروج<b>{data.escapeCards?.[viewAssets.id] ?? 0}</b>
+            </span>
+          </div>
+          <div className="millionaire-assets-list">
+            {assets.length ? (
+              assets.map(({ space, index, property }) => (
+                <article key={index}>
+                  <MiniatureBuilding level={property?.level ?? 1} space={space} />
+                  <button
+                    type="button"
+                    className="millionaire-asset-inspect"
+                    onClick={() => inspectLocation(index)}
+                  >
+                    <strong>{space.name}</strong>
+                    <small>
+                      {space.kind === "tourism"
+                        ? "موقع سياحي"
+                        : LEVELS[Math.min(4, property?.level ?? 1)]}{" "}
+                      · رسوم {cash(monopolyToll(data, index))}
+                    </small>
+                    <span>
+                      <MapPin /> إظهار على اللوحة
+                    </span>
+                  </button>
+                  {viewAssets.id === me.id && (
+                    <button
+                      type="button"
+                      className="millionaire-asset-sell"
+                      disabled={!canAct || Boolean(pending && pending.type !== "debt")}
+                      onClick={() => void perform("monopoly-sell", { spaceIndex: index })}
+                    >
+                      <Hammer /> بيع{" "}
+                      <small dir="ltr">
+                        +{cash(Math.round(Number(property?.invested ?? space.price) * 0.7))}
+                      </small>
+                    </button>
+                  )}
+                </article>
+              ))
+            ) : (
+              <p className="millionaire-empty">
+                لا توجد أملاك بعد. اشترِ المدن التي تصل إليها لتبدأ الاستثمار.
+              </p>
+            )}
+          </div>
+          {viewAssets.id === me.id && (
+            <p className="millionaire-assets-note">
+              يسترجع بيع الموقع للبنك 70٪ من قيمة الاستثمار.
+            </p>
+          )}
+          <button
+            type="button"
+            className="millionaire-primary"
+            onClick={() => {
+              setHighlightPlayer(viewAssets.id);
+              setSelectedSpace(null);
+              setAssetsPlayer(null);
+            }}
+          >
+            إظهار أملاك {label(viewAssets, players)} على اللوحة
+          </button>
+        </MillionaireDialog>
       )}
-    </section>
+      {reviewChance && data.chance && (
+        <MillionaireDialog title="آخر بطاقة فرصة" onClose={() => setReviewChance(false)}>
+          <div className="millionaire-chance-review">
+            <Gift />
+            <h3>{data.chance.title}</h3>
+            <p>{data.chance.description}</p>
+            <small>
+              سحبها {players.find((player) => player.id === data.chance?.playerId)?.name}
+            </small>
+          </div>
+        </MillionaireDialog>
+      )}
+      {confirmBankrupt && (
+        <MillionaireDialog title="إعلان الإفلاس" onClose={() => setConfirmBankrupt(false)}>
+          <p>
+            ستخرج من هذه المباراة وتُنقل أملاكك حسب الالتزام المالي. يمكنك الرجوع وبيع بعض الأملاك
+            أولًا.
+          </p>
+          <button
+            type="button"
+            className="millionaire-secondary"
+            onClick={() => setConfirmBankrupt(false)}
+          >
+            الرجوع
+          </button>
+          <button
+            type="button"
+            className="millionaire-danger"
+            disabled={!canAct}
+            onClick={() => {
+              setConfirmBankrupt(false);
+              void perform("monopoly-bankrupt");
+            }}
+          >
+            إعلان الإفلاس والخروج من المباراة
+          </button>
+        </MillionaireDialog>
+      )}
+    </div>
   );
 }
