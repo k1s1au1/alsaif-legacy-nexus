@@ -39,6 +39,8 @@ jobs:
         run: npm run test:family-album
       - name: Check vault file validation and timed documents
         run: npm run test:vault
+      - name: Check UNO turns, reconnection and rematches
+        run: npm run test:uno
       - name: Check Millionaire game rules
         run: npm run test:millionaire
       - name: Check service worker syntax
