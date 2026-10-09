@@ -18,7 +18,8 @@
     "test:vault": "node --test scripts/test-vault-library.mjs",
     "test:millionaire": "node scripts/test-millionaire.mjs",
     "format": "prettier --write .",
-    "test:uno": "node scripts/test-uno.mjs"
+    "test:uno": "node scripts/test-uno.mjs",
+    "test:saudi-deal": "node scripts/test-saudi-deal.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",

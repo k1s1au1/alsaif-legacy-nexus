@@ -66,6 +66,8 @@ import { MillionaireGameRoom } from "./millionaire-game-room";
 import { MillionaireResults } from "./millionaire-results";
 import { millionaireBotDelay } from "./millionaire-presentation";
 import { initialMonopolyData, reduceMonopoly, chooseMillionaireBotAction } from "./millionaire-engine";
+import { SaudiDealGameRoom, SaudiDealResults } from "./saudi-deal-game-room";
+import { DEAL_GROUPS, initialDealData, reduceDeal, rematchDeal, getDealParticipants, isProtectedDealProperty, type DealCard } from "./saudi-deal-engine";
 import { UnoGameRoom, UnoResults } from "./uno-game-room";
 import { initialUnoData, reduceUno, unoPlayable, getUnoParticipants, rematchUno } from "./uno-engine";
 
@@ -248,6 +250,13 @@ const WHO_AM_I_CARDS = [
 
 const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق", "ك", "م", "ن", "هـ", "و"];
 const SESSION_KEY = "alsaif-live-game-room-v1";
+function timedTableGame(game: GameKey) { return game === "uno" || game === "saudi-deal"; }
+function roomParticipants(state: RoomState, live: Player[]): Player[] {
+  if (state.phase === "lobby") return live;
+  if (state.game === "uno") return getUnoParticipants(state.data, live);
+  if (state.game === "saudi-deal") return getDealParticipants(state.data, live);
+  return live;
+}
 
 type UnoColor = "red" | "blue" | "green" | "yellow" | "wild";
 type UnoMode = "classic" | "flip" | "no-mercy";
@@ -255,15 +264,6 @@ type UnoCard = {
   id: string;
   color: UnoColor;
   value: string;
-};
-
-type DealCard = {
-  id: string;
-  type: "property" | "money" | "action";
-  label: string;
-  value: number;
-  group?: string;
-  action?: "draw2" | "rent" | "steal" | "forced_swap" | "deal_breaker" | "debt" | "birthday" | "double_rent" | "just_say_no";
 };
 
 type BalootSuit = "spades" | "hearts" | "diamonds" | "clubs";
@@ -280,17 +280,6 @@ const UNO_COLOR_LABELS: Record<Exclude<UnoColor, "wild">, string> = {
   green: "أخضر",
   yellow: "أصفر",
 };
-
-const DEAL_GROUPS = [
-  { id: "najd", label: "نجد", color: "#a66a1f", size: 2, cities: ["الدرعية", "الرياض"] },
-  { id: "hijaz", label: "الحجاز", color: "#245a9b", size: 3, cities: ["مكة المكرمة", "المدينة المنورة", "جدة"] },
-  { id: "sharqiya", label: "الشرقية", color: "#087f8c", size: 3, cities: ["الأحساء", "الدمام", "الخبر"] },
-  { id: "shamal", label: "الشمال", color: "#7650a8", size: 2, cities: ["العلا", "تبوك"] },
-  { id: "janoub", label: "الجنوب", color: "#397b45", size: 3, cities: ["أبها", "جازان", "الباحة"] },
-  { id: "wasat", label: "الوسطى", color: "#a8443c", size: 3, cities: ["القصيم", "شقراء", "الخرج"] },
-  { id: "sahil", label: "الساحل", color: "#c1652d", size: 2, cities: ["ينبع", "أملج"] },
-  { id: "wadi", label: "الوادي", color: "#52636e", size: 2, cities: ["نجران", "وادي الدواسر"] },
-] as const;
 
 const BALOOT_SUITS: BalootSuit[] = ["spades", "hearts", "diamonds", "clubs"];
 const BALOOT_RANKS: BalootCard["rank"][] = ["7", "8", "9", "J", "Q", "K", "10", "A"];
@@ -333,78 +322,6 @@ function shuffle<T>(items: T[]): T[] {
 function copyData<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
-function buildDealDeck(): DealCard[] {
-  const cards: DealCard[] = [];
-  let id = 0;
-  DEAL_GROUPS.forEach((group) => {
-    for (let index = 0; index < group.size * 2; index += 1) {
-      cards.push({
-        id: `deal-${id++}`,
-        type: "property",
-        label: group.cities[index % group.cities.length],
-        value: Math.max(1, group.size - 1),
-        group: group.id,
-      });
-    }
-  });
-  [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 5, 5, 10].forEach((value) => {
-    cards.push({ id: `deal-${id++}`, type: "money", label: `${value} مليون`, value });
-  });
-  for (let index = 0; index < 6; index += 1) {
-    cards.push({ id: `deal-${id++}`, type: "action", label: "فرصة استثمار", value: 1, action: "draw2" });
-  }
-  for (let index = 0; index < 8; index += 1) {
-    cards.push({ id: `deal-${id++}`, type: "action", label: "تحصيل إيجار", value: 2, action: "rent" });
-  }
-  for (let index = 0; index < 5; index += 1) {
-    cards.push({ id: `deal-${id++}`, type: "action", label: "استحواذ على أرض", value: 3, action: "steal" });
-  }
-  for (let index = 0; index < 3; index += 1) {
-    cards.push({ id: `deal-${id++}`, type: "action", label: "صفقة تبادل", value: 3, action: "forced_swap" });
-  }
-  for (let index = 0; index < 2; index += 1) {
-    cards.push({ id: `deal-${id++}`, type: "action", label: "كسر الصفقة", value: 5, action: "deal_breaker" });
-  }
-  for (let index = 0; index < 3; index += 1) {
-    cards.push({ id: `deal-${id++}`, type: "action", label: "تحصيل دين", value: 3, action: "debt" });
-  }
-  for (let index = 0; index < 3; index += 1) {
-    cards.push({ id: `deal-${id++}`, type: "action", label: "العيدية", value: 2, action: "birthday" });
-  }
-  for (let index = 0; index < 2; index += 1) {
-    cards.push({ id: `deal-${id++}`, type: "action", label: "إيجار مضاعف", value: 1, action: "double_rent" });
-  }
-  for (let index = 0; index < 3; index += 1) {
-    cards.push({ id: `deal-${id++}`, type: "action", label: "مرفوض!", value: 4, action: "just_say_no" });
-  }
-  return shuffle(cards);
-}
-
-function initialDealData(players: Player[], starterIndex = 0) {
-  const deck = buildDealDeck();
-  const hands: Record<string, DealCard[]> = {};
-  const banks: Record<string, DealCard[]> = {};
-  const properties: Record<string, DealCard[]> = {};
-  players.forEach((player) => {
-    hands[player.id] = deck.splice(0, 5);
-    banks[player.id] = [];
-    properties[player.id] = [];
-  });
-  return {
-    hands,
-    banks,
-    properties,
-    drawPile: deck,
-    discard: [],
-    turnIndex: starterIndex,
-    needsDraw: true,
-    actionsLeft: 3,
-    rentMultiplier: 1,
-    winnerId: null,
-    lastAction: "بدأت الجولة",
-  };
-}
-
 function buildBalootDeck(): BalootCard[] {
   let id = 0;
   return shuffle(
@@ -536,7 +453,7 @@ function startState(previous: RoomState, players: Player[], now = Date.now()): R
     data: {
       ...(previous.game === "uno"
         ? initialUnoData(players, starterIndex, previous.gameOptions?.unoMode ?? "classic", now)
-        : initialGameData(previous.game, players, 0, starterIndex, previous.gameOptions)),
+        : previous.game === "saudi-deal" ? initialDealData(players, starterIndex, now) : initialGameData(previous.game, players, 0, starterIndex, previous.gameOptions)),
       starterId: starter?.id ?? null,
       starterName: starter?.name ?? "اللاعب الأول",
       starterIndex,
@@ -549,252 +466,6 @@ function wrappedIndex(index: number, length: number) {
   if (!length) return 0;
   return ((index % length) + length) % length;
 }
-function refillDealDrawPile(data: any) {
-  if (data.drawPile.length || !data.discard.length) return;
-  data.drawPile = shuffle(data.discard);
-  data.discard = [];
-}
-
-function takeDealCards(data: any, count: number): DealCard[] {
-  const result: DealCard[] = [];
-  for (let index = 0; index < count; index += 1) {
-    refillDealDrawPile(data);
-    const card = data.drawPile.shift();
-    if (card) result.push(card);
-  }
-  return result;
-}
-
-function completedDealSets(cards: DealCard[]) {
-  return DEAL_GROUPS.filter((group) => cards.filter((card) => card.group === group.id).length >= group.size).length;
-}
-
-function finishDealMove(state: RoomState, data: any, playerId: string, players: Player[]): RoomState {
-  const sets = completedDealSets(data.properties[playerId] ?? []);
-  if (sets >= 3) {
-    data.winnerId = playerId;
-    const scores = { ...state.scores, [playerId]: scoreFor(state.scores, playerId) + 1 };
-    return { ...state, phase: "results", scores, data };
-  }
-  data.actionsLeft -= 1;
-  if (data.actionsLeft <= 0) {
-    data.turnIndex = nextIndex(data.turnIndex, players.length);
-    data.actionsLeft = 3;
-    data.needsDraw = true;
-    data.rentMultiplier = 1;
-  }
-  return { ...state, data };
-}
-
-function takeDealPayment(data: any, payerId: string, amount: number): DealCard[] {
-  const bank = (data.banks[payerId] ?? []) as DealCard[];
-  const properties = (data.properties[payerId] ?? []) as DealCard[];
-  const paid: DealCard[] = [];
-  let total = 0;
-  while (bank.length && total < amount) {
-    const card = bank.shift()!;
-    paid.push(card);
-    total += card.value;
-  }
-  while (properties.length && total < amount) {
-    const card = properties.pop()!;
-    paid.push(card);
-    total += card.value;
-  }
-  data.banks[payerId] = bank;
-  data.properties[payerId] = properties;
-  return paid;
-}
-
-function blockDealAttack(data: any, targetId: string) {
-  const targetHand = (data.hands[targetId] ?? []) as DealCard[];
-  const shieldIndex = targetHand.findIndex((card) => card.action === "just_say_no");
-  if (shieldIndex < 0) return false;
-  const [shield] = targetHand.splice(shieldIndex, 1);
-  data.hands[targetId] = targetHand;
-  data.discard.push(shield);
-  return true;
-}
-
-function transferDealPayment(data: any, receiverId: string, payerId: string, amount: number) {
-  if (blockDealAttack(data, payerId)) return false;
-  const payment = takeDealPayment(data, payerId, amount);
-  payment.forEach((paidCard) => {
-    if (paidCard.type === "property") data.properties[receiverId].push(paidCard);
-    else data.banks[receiverId].push(paidCard);
-  });
-  return true;
-}
-
-function reduceDeal(state: RoomState, action: RoomAction, players: Player[]): RoomState {
-  const data = copyData(state.data);
-  const active = players[data.turnIndex % Math.max(players.length, 1)];
-  if (active?.id !== action.playerId || data.winnerId) return state;
-  const hand = (data.hands[action.playerId] ?? []) as DealCard[];
-
-  if (action.type === "deal-draw" && data.needsDraw) {
-    hand.push(...takeDealCards(data, hand.length ? 2 : 5));
-    data.hands[action.playerId] = hand;
-    data.needsDraw = false;
-    data.lastAction = `${active.name} سحب أوراقه`;
-    return { ...state, data };
-  }
-
-  if (action.type === "deal-discard" && hand.length > 7) {
-    const index = hand.findIndex((card) => card.id === action.value);
-    if (index < 0) return state;
-    const [card] = hand.splice(index, 1);
-    data.discard.push(card);
-    data.hands[action.playerId] = hand;
-    return { ...state, data };
-  }
-
-  if (action.type === "deal-end" && !data.needsDraw && hand.length <= 7) {
-    data.turnIndex = nextIndex(data.turnIndex, players.length);
-    data.actionsLeft = 3;
-    data.needsDraw = true;
-    data.rentMultiplier = 1;
-    data.lastAction = `انتهى دور ${active.name}`;
-    return { ...state, data };
-  }
-
-  if (data.needsDraw || data.actionsLeft <= 0) return state;
-  const cardIndex = hand.findIndex((card) => card.id === action.value?.cardId);
-  if (cardIndex < 0) return state;
-  const card = hand[cardIndex];
-
-  if (action.type === "deal-bank" && (card.type === "money" || card.type === "action")) {
-    hand.splice(cardIndex, 1);
-    data.hands[action.playerId] = hand;
-    data.banks[action.playerId].push(card);
-    data.lastAction = `${active.name} أضاف بطاقة إلى البنك`;
-    return finishDealMove(state, data, action.playerId, players);
-  }
-
-  if (action.type === "deal-property" && card.type === "property") {
-    hand.splice(cardIndex, 1);
-    data.hands[action.playerId] = hand;
-    data.properties[action.playerId].push(card);
-    data.lastAction = `${active.name} أضاف ${card.label}`;
-    return finishDealMove(state, data, action.playerId, players);
-  }
-
-  if (action.type !== "deal-action" || card.type !== "action") return state;
-  const targetId = action.value?.targetId as string | undefined;
-  const noTargetActions = ["draw2", "birthday", "double_rent"];
-  if (!noTargetActions.includes(card.action ?? "") && (!targetId || targetId === action.playerId)) return state;
-  if (card.action === "just_say_no") return state;
-
-  if (card.action === "steal" && targetId) {
-    const targetProperties = data.properties[targetId] as DealCard[];
-    const property = targetProperties.find((item) => item.id === action.value?.propertyId);
-    if (!property || isProtectedDealProperty(targetProperties, property)) return state;
-  }
-  if (card.action === "forced_swap" && targetId) {
-    const targetProperties = data.properties[targetId] as DealCard[];
-    const property = targetProperties.find((item) => item.id === action.value?.propertyId);
-    const ownProperties = data.properties[action.playerId] as DealCard[];
-    const ownProperty = ownProperties.find((item) => !isProtectedDealProperty(ownProperties, item));
-    if (!property || isProtectedDealProperty(targetProperties, property) || !ownProperty) return state;
-  }
-  if (card.action === "deal_breaker" && targetId) {
-    const targetProperties = data.properties[targetId] as DealCard[];
-    const requestedGroup = action.value?.group as string | undefined;
-    const completeGroup = DEAL_GROUPS.find((group) =>
-      (!requestedGroup || group.id === requestedGroup) && targetProperties.filter((item) => item.group === group.id).length >= group.size,
-    );
-    if (!completeGroup) return state;
-  }
-  hand.splice(cardIndex, 1);
-  data.hands[action.playerId] = hand;
-  data.discard.push(card);
-
-  if (card.action === "draw2") {
-    hand.push(...takeDealCards(data, 2));
-    data.lastAction = `${active.name} حصل على فرصة استثمار`;
-  }
-
-  if (card.action === "rent" && targetId) {
-    const ownProperties = data.properties[action.playerId] as DealCard[];
-    const groupCounts = DEAL_GROUPS.map((group) => ownProperties.filter((item) => item.group === group.id).length);
-    const rent = Math.max(1, Math.min(5, ...groupCounts)) * (data.rentMultiplier ?? 1);
-    const paid = transferDealPayment(data, action.playerId, targetId, rent);
-    data.rentMultiplier = 1;
-    const target = players.find((player) => player.id === targetId);
-    data.lastAction = paid ? `${active.name} حصّل ${rent} مليون من ${target?.name ?? "لاعب"}` : `${target?.name ?? "اللاعب"} رفض بطاقة الإيجار`;
-  }
-
-  if (card.action === "steal" && targetId) {
-    const targetProperties = data.properties[targetId] as DealCard[];
-    const propertyIndex = targetProperties.findIndex((item) => item.id === action.value?.propertyId);
-    if (propertyIndex >= 0) {
-      const property = targetProperties[propertyIndex];
-      const group = DEAL_GROUPS.find((item) => item.id === property.group);
-      const groupCount = targetProperties.filter((item) => item.group === property.group).length;
-      if ((!group || groupCount < group.size) && !blockDealAttack(data, targetId)) {
-        targetProperties.splice(propertyIndex, 1);
-        data.properties[action.playerId].push(property);
-        data.lastAction = `${active.name} استحوذ على ${property.label}`;
-      }
-    }
-  }
-
-  if (card.action === "forced_swap" && targetId) {
-    const targetProperties = data.properties[targetId] as DealCard[];
-    const targetIndex = targetProperties.findIndex((item) => item.id === action.value?.propertyId);
-    const ownProperties = data.properties[action.playerId] as DealCard[];
-    const ownIndex = ownProperties.findIndex((item) => !isProtectedDealProperty(ownProperties, item));
-    const target = players.find((player) => player.id === targetId);
-    if (blockDealAttack(data, targetId)) {
-      data.lastAction = `${target?.name ?? "اللاعب"} رفض صفقة التبادل`;
-    } else if (targetIndex >= 0 && ownIndex >= 0) {
-      const [targetProperty] = targetProperties.splice(targetIndex, 1);
-      const [ownProperty] = ownProperties.splice(ownIndex, 1);
-      targetProperties.push(ownProperty);
-      ownProperties.push(targetProperty);
-      data.lastAction = `${active.name} أتم صفقة تبادل مع ${target?.name ?? "لاعب"}`;
-    }
-  }
-
-  if (card.action === "deal_breaker" && targetId) {
-    const targetProperties = data.properties[targetId] as DealCard[];
-    const requestedGroup = action.value?.group as string | undefined;
-    const completeGroup = DEAL_GROUPS.find((group) =>
-      (!requestedGroup || group.id === requestedGroup) && targetProperties.filter((item) => item.group === group.id).length >= group.size,
-    );
-    const target = players.find((player) => player.id === targetId);
-    if (blockDealAttack(data, targetId)) {
-      data.lastAction = `${target?.name ?? "اللاعب"} رفض كسر الصفقة`;
-    } else if (completeGroup) {
-      const captured = targetProperties.filter((item) => item.group === completeGroup.id);
-      data.properties[targetId] = targetProperties.filter((item) => item.group !== completeGroup.id);
-      data.properties[action.playerId].push(...captured);
-      data.lastAction = `${active.name} استحوذ على مجموعة ${completeGroup.label} كاملة`;
-    }
-  }
-
-  if (card.action === "debt" && targetId) {
-    const target = players.find((player) => player.id === targetId);
-    const paid = transferDealPayment(data, action.playerId, targetId, 5);
-    data.lastAction = paid ? `${active.name} حصّل دينًا بقيمة 5 ملايين من ${target?.name ?? "لاعب"}` : `${target?.name ?? "اللاعب"} رفض تحصيل الدين`;
-  }
-
-  if (card.action === "birthday") {
-    let payers = 0;
-    players.filter((player) => player.id !== action.playerId).forEach((player) => {
-      if (transferDealPayment(data, action.playerId, player.id, 2)) payers += 1;
-    });
-    data.lastAction = `${active.name} جمع العيدية من ${payers} لاعبين`;
-  }
-
-  if (card.action === "double_rent") {
-    data.rentMultiplier = 2;
-    data.lastAction = `${active.name} فعّل الإيجار المضاعف للبطاقة التالية`;
-  }
-
-  return finishDealMove(state, data, action.playerId, players);
-}
-
 function finishBalootBidding(data: any, players: Player[], buyerIndex: number, mode: "sun" | "hokm", trump: BalootSuit | null) {
   players.forEach((player, index) => {
     const extra = index === buyerIndex ? 2 : 3;
@@ -984,11 +655,12 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
   if (action.type === "start" && state.phase === "lobby") return startState(state, players, now);
   if (action.type === "lobby") return { ...lobbyState(state.game, state.gameOptions), bots };
   if (action.type === "uno-rematch" && state.game === "uno") return rematchUno(state, players, now);
+  if (action.type === "deal-rematch" && state.game === "saudi-deal") return rematchDeal(state, players, now);
   if (action.type === "finish") return { ...state, phase: "results" };
   if (state.phase !== "playing") return state;
 
   if (state.game === "uno") return reduceUno(state, action, players, now);
-  if (state.game === "saudi-deal") return reduceDeal(state, action, players);
+  if (state.game === "saudi-deal") return reduceDeal(state, action, players, now);
   if (state.game === "baloot") return reduceBaloot(state, action, players);
   if (state.game === "monopoly") return reduceMonopoly(state, action, players);
 
@@ -1171,7 +843,7 @@ function dealBotAction(state: RoomState, bot: Player, players: Player[]): RoomAc
     const card = difficulty === "easy"
       ? randomItem(hand)!
       : hand.slice().sort((a, b) => a.value - b.value)[0];
-    return { type: "deal-discard", playerId: bot.id, value: card.id };
+    return { type: "deal-discard", playerId: bot.id, value: { cardId: card.id } };
   }
   if (data.actionsLeft <= 0 || !hand.length || (difficulty === "easy" && data.actionsLeft < 3 && Math.random() < 0.18)) {
     return { type: "deal-end", playerId: bot.id };
@@ -1535,7 +1207,7 @@ export function GameRoomsHub() {
         senderId: meRef.current.id,
         hostId: nextHostId,
         state: nextState,
-        sentAt: Date.now() + (nextState.game === "uno" ? clockOffsetRef.current : 0),
+        sentAt: Date.now() + (timedTableGame(nextState.game) ? clockOffsetRef.current : 0),
       });
     },
     [sendPacket],
@@ -1550,7 +1222,7 @@ export function GameRoomsHub() {
       avatarUrl: meRef.current.avatarUrl,
       ready: nextReady,
       joinedAt: (
-        stateRef.current.game === "uno" && stateRef.current.phase !== "lobby"
+        timedTableGame(stateRef.current.game) && stateRef.current.phase !== "lobby"
           ? stateRef.current.data.roster?.find((player: Player) => player.id === meRef.current.id)?.joinedAt
           : undefined
       ) ?? meRef.current.joinedAt,
@@ -1594,10 +1266,8 @@ export function GameRoomsHub() {
     async (action: RoomAction) => {
       if (hostRef.current !== meRef.current.id || synchronizingRef.current) return;
       const live = [...playersRef.current, ...(stateRef.current.bots ?? [])];
-      const participants = stateRef.current.game === "uno" && stateRef.current.phase !== "lobby"
-        ? getUnoParticipants(stateRef.current.data, live)
-        : live;
-      if (action.type === "uno-rematch" && action.playerId !== meRef.current.id) return;
+      const participants = roomParticipants(stateRef.current, live);
+      if (["uno-rematch", "deal-rematch"].includes(action.type) && action.playerId !== meRef.current.id) return;
       const next = applyRoomAction(stateRef.current, action, participants, Date.now() + clockOffsetRef.current);
       if (next === stateRef.current) return;
       stateRef.current = next;
@@ -1611,8 +1281,8 @@ export function GameRoomsHub() {
     async (type: string, value?: any) => {
       const action: RoomAction = {
         type,
-        value: stateRef.current.game === "uno" && type.startsWith("uno-")
-          ? { ...value, turnSequence: stateRef.current.data.turnSequence }
+        value: timedTableGame(stateRef.current.game) && (type.startsWith("uno-") || type.startsWith("deal-"))
+          ? { ...value, turnSequence: stateRef.current.data.turnSequence, round: stateRef.current.round }
           : value,
         playerId: meRef.current.id,
       };
@@ -1638,7 +1308,7 @@ export function GameRoomsHub() {
       synchronizingRef.current = false;
       setConnected(true);
       lastSnapshotAtRef.current = Date.now();
-      if (packet.sentAt && packet.state.game === "uno") {
+      if (packet.sentAt && timedTableGame(packet.state.game)) {
         clockOffsetRef.current = packet.sentAt - Date.now();
         setClockOffset(clockOffsetRef.current);
       }
@@ -1650,9 +1320,9 @@ export function GameRoomsHub() {
       return;
     }
     if (packet.kind === "action") {
-      if (stateRef.current.game === "uno" && (
+      if (timedTableGame(stateRef.current.game) && (
         packet.senderId !== packet.action.playerId ||
-        ["uno-timeout", "uno-clock"].includes(packet.action.type)
+        ["uno-timeout", "uno-clock", "deal-timeout", "deal-clock"].includes(packet.action.type)
       )) return;
       if (hostRef.current === meRef.current.id) void hostApply(packet.action);
       return;
@@ -1829,9 +1499,10 @@ export function GameRoomsHub() {
   useEffect(() => {
     if (!connected || hostId !== me.id || state.phase !== "playing") return;
     const live = [...players, ...(state.bots ?? [])];
-    const currentPlayers = state.game === "uno" ? getUnoParticipants(state.data, live) : live;
+    const currentPlayers = roomParticipants(state, live);
     const action = chooseBotAction(state, currentPlayers);
     if (!action) return;
+    if (timedTableGame(state.game)) action.value = { ...action.value, turnSequence: state.data.turnSequence, round: state.round };
     const bot = currentPlayers.find((player) => player.id === action.playerId && player.isBot);
     const timer = window.setTimeout(() => {
       void hostApply(action);
@@ -1842,19 +1513,22 @@ export function GameRoomsHub() {
   // Only the elected, connected host advances an expired turn. Sequence/deadline
   // guards in the reducer make old callbacks and delayed packets harmless.
   useEffect(() => {
-    if (!connected || hostId !== me.id || state.game !== "uno" || state.phase !== "playing") return;
+    if (!connected || hostId !== me.id || !timedTableGame(state.game) || state.phase !== "playing") return;
     const tick = () => {
       const current = stateRef.current;
-      const roster = getUnoParticipants(current.data, [...playersRef.current, ...(current.bots ?? [])]);
+      const roster = roomParticipants(current, [...playersRef.current, ...(current.bots ?? [])]);
+      const prefix = current.game === "uno" ? "uno" : "deal";
       const active = roster[Number(current.data.turnIndex ?? 0) % Math.max(1, roster.length)];
       if (!active) return;
-      if (!current.data.turnDeadline) void hostApply({ type: "uno-clock", playerId: active.id });
+      if (!current.data.turnDeadline) void hostApply({ type: `${prefix}-clock`, playerId: active.id });
       else if (Date.now() + clockOffsetRef.current >= current.data.turnDeadline) {
         void hostApply({
-          type: "uno-timeout",
+          type: `${prefix}-timeout`,
           playerId: active.id,
-          value: { turnSequence: current.data.turnSequence, deadline: current.data.turnDeadline },
+          value: { turnSequence: current.data.turnSequence, deadline: current.data.turnDeadline, round: current.round },
         });
+      } else if (current.game === "saudi-deal" && current.data.needsDraw) {
+        void hostApply({ type: "deal-draw", playerId: active.id, value: { turnSequence: current.data.turnSequence, round: current.round } });
       }
     };
     const interval = window.setInterval(tick, 250);
@@ -1914,7 +1588,7 @@ export function GameRoomsHub() {
   const selectedMeta = gameMeta(state.game);
   const participants = useMemo(() => {
     const live = [...players, ...(state.bots ?? [])];
-    return state.game === "uno" && state.phase !== "lobby" ? getUnoParticipants(state.data, live) : live;
+    return roomParticipants(state, live);
   }, [players, state]);
   const minimumReached = selectedMeta.exactPlayers
     ? participants.length === selectedMeta.exactPlayers
@@ -1972,7 +1646,7 @@ export function GameRoomsHub() {
           onBotDifficulty={(botId, difficulty) => void dispatch("set-bot-difficulty", { botId, difficulty })}
         />
       ) : state.phase === "results" ? (
-        state.game === "uno" ? <UnoResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("uno-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "monopoly" ? <MillionaireResults data={state.data} players={participants} isHost={isHost} onLobby={() => void dispatch("lobby")} /> : <Results
+        state.game === "uno" ? <UnoResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("uno-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "saudi-deal" ? <SaudiDealResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("deal-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "monopoly" ? <MillionaireResults data={state.data} players={participants} isHost={isHost} onLobby={() => void dispatch("lobby")} /> : <Results
           players={participants}
           scores={state.scores}
           isHost={isHost}
@@ -2597,11 +2271,11 @@ const GAME_GUIDES: Partial<Record<GameKey, {
   "saudi-deal": {
     goal: "اجمع ثلاث مجموعات أملاك سعودية مكتملة قبل بقية اللاعبين.",
     steps: [
-      "اسحب ورقتين في بداية الدور، أو خمس أوراق إذا كانت يدك فارغة.",
-      "نفّذ حتى ثلاث حركات: ضع ملكية، أودع مالًا، أو استخدم بطاقة حركة.",
+      "تُسحب ورقتان تلقائيًا في بداية الدور، أو خمس إذا كانت يدك فارغة. لكل دور دقيقة ونصف تشمل جميع حركاتك.",
+      "نفّذ حتى ثلاث حركات: ضع ملكية، أودع مالًا، أو استخدم بطاقة حركة. اختر الخصم والأرض قبل تأكيد الأكشن.",
       "اختر أي لاعب على الطاولة لعرض أملاكه وبنكه المكشوفين؛ أوراق اليد وحدها سرية.",
     ],
-    notes: ["الحد الأعلى لليد سبع أوراق عند إنهاء الدور.", "علامة «شرح» على بطاقة الحركة تفتح شرحها الكامل."],
+    notes: ["الحد الأعلى لليد سبع أوراق عند إنهاء الدور. إذا انتهت الـ٩٠ ثانية تُرمى الزيادة بدءًا من آخر الأوراق وينتقل الدور تلقائيًا.", "بعد اختيار ورقة اضغط زر المعلومات لشرحها. بطاقات مرفوض تصد الهجوم تلقائيًا وهي في اليد."],
   },
   baloot: {
     goal: "اكسب الأكلات وارفع نتيجة فريقك إلى 152 نقطة في نسخة البلوت داخل المجلس.",
@@ -2753,7 +2427,7 @@ function GameBoard({
   const meta = gameMeta(state.game);
   const GameIcon = meta.icon;
   const logoUrl = useSiteLogo();
-  const [gameMode, setGameMode] = useState(() => state.game === "uno" || state.game === "monopoly");
+  const [gameMode, setGameMode] = useState(() => timedTableGame(state.game) || state.game === "monopoly");
   const [portalReady, setPortalReady] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -2843,7 +2517,7 @@ function GameBoard({
       if (preferences.haptics && typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(isMyTurn ? [35, 30, 65] : 22);
       }
-      if (preferences.sound && state.game !== "monopoly") playGameTone(isMyTurn ? "turn" : "move");
+      if (preferences.sound && state.game !== "monopoly" && state.game !== "saudi-deal") playGameTone(isMyTurn ? "turn" : "move");
     }
     feedbackRef.current = feedbackToken;
   }, [activeIndex, feedbackToken, gameMode, me.id, players, preferences.haptics, preferences.sound, state.game]);
@@ -2887,13 +2561,9 @@ function GameBoard({
       className={cn(
         "grid gap-5 lg:grid-cols-[1fr_260px]",
         gameMode && "fixed inset-0 z-[9999] block !m-0 h-screen h-[100dvh] w-screen !max-w-none overflow-hidden bg-[#031d18] !transform-none",
-        gameMode && state.game === "saudi-deal" && "bg-cover bg-center",
+        gameMode && state.game === "saudi-deal" && "bg-[#eee4d1]",
         gameMode && preferences.reducedMotion && "[&_*]:!animate-none [&_*]:!transition-none",
       )}
-      style={gameMode && state.game === "saudi-deal" ? {
-        backgroundImage: "linear-gradient(rgba(1,31,25,.28),rgba(1,24,20,.5)),url('/assets/games/saudi-deal-majlis-bg.webp')",
-        backgroundPosition: "center top",
-      } : undefined}
     >
       {gameMode && (state.game === "saudi-deal" || state.game === "uno") && (
         <div className="fixed inset-0 z-[10050] hidden flex-col items-center justify-center bg-[#021f19]/98 px-8 text-center text-white portrait:flex xl:hidden">
@@ -2904,7 +2574,7 @@ function GameBoard({
           <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
         </div>
       )}
-      {showStartingDraw && state.game !== "uno" && (
+      {showStartingDraw && !timedTableGame(state.game) && (
         <div className="arena-starting-draw" role="status" aria-live="polite">
           <div className="arena-starting-draw__halo" />
           <Crown className="arena-starting-draw__crown" />
@@ -2913,13 +2583,13 @@ function GameBoard({
           <span>يبدأ الجولة</span>
         </div>
       )}
-      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && (state.game === "saudi-deal" || state.game === "monopoly") && "bg-transparent")}>
+      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && (state.game === "saudi-deal" || state.game === "monopoly") && "bg-transparent", gameMode && state.game === "saudi-deal" && "!p-0")}>
         <div
           className={cn(
             "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
             gameMode && "relative mb-0 min-h-[82px] shrink-0 border-white/10 bg-[radial-gradient(circle_at_50%_0%,#0b5a48_0%,#052d26_58%,#031f1a_100%)] px-3 pb-2 text-white shadow-lg landscape:min-h-[58px] landscape:pb-1",
             gameMode && state.game === "saudi-deal" && "bg-none bg-[#032b24]/85 backdrop-blur-md",
-            gameMode && (state.game === "uno" || state.game === "monopoly") && "hidden",
+            gameMode && (timedTableGame(state.game) || state.game === "monopoly") && "hidden",
           )}
           style={gameMode ? { paddingTop: "max(.5rem, env(safe-area-inset-top))" } : undefined}
         >
@@ -2980,9 +2650,9 @@ function GameBoard({
           className={cn(
             gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_50%_12%,rgba(23,102,80,.32),transparent_42%),linear-gradient(#031d18,#021713)] px-2 py-2 sm:px-4",
             gameMode && state.game === "saudi-deal" && "bg-none bg-transparent",
-            gameMode && (state.game === "uno" || state.game === "monopoly") && "overflow-hidden bg-none bg-transparent !p-0",
+            gameMode && (timedTableGame(state.game) || state.game === "monopoly") && "overflow-hidden bg-none bg-transparent !p-0",
           )}
-          style={gameMode && state.game !== "uno" && state.game !== "monopoly" ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
+          style={gameMode && !timedTableGame(state.game) && state.game !== "monopoly" ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
         >
           {state.game === "uno" && (
             <UnoGameRoom
@@ -3018,7 +2688,7 @@ function GameBoard({
               onToggleSound={() => toggle("sound")}
             />
           )}
-          {state.game === "saudi-deal" && <SaudiDealRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
+          {state.game === "saudi-deal" && <SaudiDealGameRoom state={state} players={players} me={me} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} connected={connected} clockOffset={clockOffset} sound={preferences.sound} reducedMotion={preferences.reducedMotion} onToggleSound={() => toggle("sound")} onExit={() => void leaveGameMode()} onGuide={() => setShowGuide(true)} onSettings={() => setShowSettings(true)} isHost={isHost} onFinish={() => void dispatch("finish")} />}
           {state.game === "trivia" && <TriviaGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
           {state.game === "judge" && <JudgeGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
           {state.game === "challenge30" && <ChallengeGame state={state} players={players} me={me} isHost={isHost} now={now} dispatch={dispatch} />}
@@ -3572,801 +3242,6 @@ function UnoRoom({
         )}
       </div>
       {!amActive && <p className="text-center text-sm font-bold text-muted-foreground">بانتظار {active?.name} — ستتحدث الطاولة عندك تلقائيًا</p>}
-    </div>
-  );
-}
-
-function dealGroup(card: DealCard) {
-  return DEAL_GROUPS.find((group) => group.id === card.group);
-}
-
-function dealGroupIcon(groupId?: string): LucideIcon {
-  if (groupId === "najd") return Landmark;
-  if (groupId === "hijaz") return Building2;
-  if (groupId === "sharqiya") return Waves;
-  if (groupId === "shamal") return Mountain;
-  if (groupId === "janoub") return Trees;
-  if (groupId === "wasat") return Building2;
-  if (groupId === "sahil") return Waves;
-  if (groupId === "wadi") return Mountain;
-  return MapPin;
-}
-
-function dealActionHelp(card: DealCard) {
-  if (card.action === "draw2") {
-    return {
-      title: "فرصة استثمار",
-      description: "اسحب بطاقتين إضافيتين فورًا. تُحسب حركة واحدة، ثم تكمل دورك إذا بقيت لديك حركات.",
-    };
-  }
-  if (card.action === "rent") {
-    return {
-      title: "تحصيل إيجار",
-      description: "اختر لاعبًا لتحصيل الإيجار منه. قيمة الإيجار تعتمد على أكبر مجموعة أملاك لديك، من مليون إلى 5 ملايين.",
-    };
-  }
-  if (card.action === "forced_swap") {
-    return { title: "صفقة تبادل", description: "اختر أرضًا غير مكتملة عند خصم. تتبادلها اللعبة مع أرض غير مكتملة من أملاكك." };
-  }
-  if (card.action === "deal_breaker") {
-    return { title: "كسر الصفقة", description: "استحوذ على مجموعة أراضٍ مكتملة كاملة من خصم. يمكن للخصم صدها ببطاقة مرفوض." };
-  }
-  if (card.action === "debt") {
-    return { title: "تحصيل دين", description: "اختر لاعبًا ليدفع لك 5 ملايين من البنك أو الأملاك المكشوفة." };
-  }
-  if (card.action === "birthday") {
-    return { title: "العيدية", description: "يحاول كل لاعب آخر دفع مليونيْن لك. من يحمل بطاقة مرفوض يصد الدفع تلقائيًا." };
-  }
-  if (card.action === "double_rent") {
-    return { title: "إيجار مضاعف", description: "ضاعف قيمة بطاقة الإيجار التالية التي تلعبها في الدور نفسه." };
-  }
-  if (card.action === "just_say_no") {
-    return { title: "مرفوض!", description: "بطاقة دفاع تُستخدم تلقائيًا من يدك لصد الإيجار أو الدين أو الاستحواذ أو كسر الصفقة." };
-  }
-  return {
-    title: "استحواذ على أرض",
-    description: "اختر أرضًا واحدة من خصم واستحوذ عليها، بشرط ألا تكون الأرض ضمن مجموعة مكتملة.",
-  };
-}
-
-function DealCardFace({
-  card,
-  compact = false,
-  actionHint = true,
-}: {
-  card: DealCard;
-  compact?: boolean;
-  actionHint?: boolean;
-}) {
-  const group = dealGroup(card);
-  const PropertyIcon = dealGroupIcon(card.group);
-  const ActionIcon = card.action === "draw2"
-    ? Sparkles
-    : card.action === "rent" || card.action === "debt" || card.action === "double_rent"
-      ? Banknote
-      : card.action === "just_say_no"
-        ? ShieldCheck
-        : card.action === "birthday"
-          ? Gift
-          : Gavel;
-
-  if (card.type === "property") {
-    return (
-      <div
-        className={cn(
-          "relative flex shrink-0 flex-col overflow-hidden rounded-2xl border-[3px] border-[#fffaf0] bg-[#fbf5e8] text-[#123b32] shadow-xl",
-          compact ? "h-28 w-[72px]" : "h-44 w-32 sm:h-48 sm:w-36",
-        )}
-      >
-        <div className={cn("flex items-center justify-between gap-1 px-2 text-white", compact ? "h-7" : "h-10 px-3")} style={{ backgroundColor: group?.color ?? "#49645b" }}>
-          <span className={cn("truncate font-black", compact ? "text-[9px]" : "text-xs")}>{group?.label ?? "مدينة"}</span>
-          <MapPin className={compact ? "size-3" : "size-4"} />
-        </div>
-        <div
-          className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-1 text-center"
-          style={{
-            backgroundImage: `linear-gradient(145deg, ${group?.color ?? "#49645b"}16, transparent 58%)`,
-          }}
-        >
-          <PropertyIcon aria-hidden className={cn("absolute -bottom-2 -left-2 opacity-[.06]", compact ? "size-14" : "size-28")} style={{ color: group?.color ?? "#49645b" }} />
-          <PropertyIcon className={cn("mb-1", compact ? "size-6" : "size-11")} style={{ color: group?.color ?? "#49645b" }} />
-          <span className={cn("font-black leading-tight", compact ? "text-[10px]" : "text-sm sm:text-base")}>{card.label}</span>
-          {!compact && <span className="mt-1 rounded-full bg-white/65 px-2 py-0.5 text-[10px] font-bold text-[#123b32]/55">معلم من {group?.label ?? "السعودية"}</span>}
-        </div>
-        <div className={cn("flex items-center justify-between border-t border-[#173f35]/10 px-2 font-black", compact ? "h-6 text-[9px]" : "h-8 px-3 text-[11px]")}>
-          <span>سعودي ديل</span>
-          <span style={{ color: group?.color }}>{card.value}م</span>
-        </div>
-      </div>
-    );
-  }
-
-  const isMoney = card.type === "money";
-  const FeatureIcon = isMoney ? Banknote : ActionIcon;
-  return (
-    <div
-      className={cn(
-        "relative flex shrink-0 flex-col overflow-hidden rounded-2xl border-[3px] border-[#fff5d9] p-2 text-white shadow-xl",
-        isMoney ? "bg-gradient-to-br from-[#0f6b54] via-[#073c32] to-[#04251f]" : "bg-gradient-to-br from-[#a7702d] via-[#744313] to-[#321d0b]",
-        compact ? "h-28 w-[72px]" : "h-44 w-32 sm:h-48 sm:w-36",
-      )}
-    >
-      <span aria-hidden className="absolute inset-1 rounded-xl border border-[#f3d58d]/35" />
-      {!isMoney && actionHint && (
-        <span className={cn("absolute left-1 top-1 z-10 flex items-center justify-center rounded-full border border-[#f5da8a] bg-[#fff8df] font-black text-[#744313] shadow", compact ? "size-5" : "h-7 gap-1 px-2 text-[10px]")}>
-          <HelpCircle className={compact ? "size-3.5" : "size-4"} />
-          {!compact && <span>شرح</span>}
-        </span>
-      )}
-      <span className={cn("relative font-black text-white/70", compact ? "text-[9px]" : "text-xs")}>
-        {isMoney ? "بنك السيف" : "بطاقة حركة"}
-      </span>
-      <FeatureIcon className={cn("relative mx-auto mt-auto text-[#f0cf78]", compact ? "size-7" : "size-12")} />
-      <span className={cn("relative mt-2 text-center font-black leading-tight", compact ? "text-[10px]" : "text-sm sm:text-base")}>{card.label}</span>
-      <span className={cn("relative mt-auto self-end rounded-full bg-black/25 px-2 py-1 font-black", compact ? "text-[9px]" : "text-[11px]")}>{card.value}م</span>
-    </div>
-  );
-}
-
-function DealPlayerTableSheet({
-  player,
-  data,
-  onClose,
-  onExplainAction,
-}: {
-  player: Player;
-  data: any;
-  onClose: () => void;
-  onExplainAction: (card: DealCard) => void;
-}) {
-  const properties = (data.properties[player.id] ?? []) as DealCard[];
-  const bank = (data.banks[player.id] ?? []) as DealCard[];
-  const handCount = data.hands[player.id]?.length ?? 0;
-  const bankTotal = bank.reduce((sum, card) => sum + card.value, 0);
-  const groups = DEAL_GROUPS.map((group) => ({
-    group,
-    cards: properties.filter((card) => card.group === group.id),
-  })).filter((entry) => entry.cards.length);
-
-  return (
-    <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/70 p-2 backdrop-blur-sm sm:items-center" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`أوراق ${player.name} على الطاولة`}
-        onClick={(event) => event.stopPropagation()}
-        className="max-h-[86dvh] w-full max-w-2xl overflow-y-auto rounded-t-[32px] border border-[#d9b868]/35 bg-[#f7f0df] p-4 text-[#143c33] shadow-2xl sm:rounded-[32px] sm:p-6"
-      >
-        <div className="sticky top-0 z-10 -mx-1 -mt-1 flex items-center gap-3 rounded-2xl bg-[#f7f0df]/95 p-2 backdrop-blur">
-          <PlayerAvatar player={player} />
-          <div className="min-w-0 flex-1">
-            <h4 className="truncate text-lg font-black">طاولة {player.name}</h4>
-            <p className="text-xs font-bold text-[#143c33]/60">اليد سرية: {handCount} أوراق مقلوبة</p>
-          </div>
-          <button type="button" onClick={onClose} className="min-h-10 rounded-xl border border-[#143c33]/15 bg-white/65 px-4 text-sm font-black">إغلاق</button>
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-2xl bg-[#0b5948] p-3 text-white">
-            <p className="text-[11px] font-bold text-white/60">الأملاك</p>
-            <p className="text-lg font-black">{properties.length}</p>
-          </div>
-          <div className="rounded-2xl bg-[#0b5948] p-3 text-white">
-            <p className="text-[11px] font-bold text-white/60">المجموعات</p>
-            <p className="text-lg font-black">{completedDealSets(properties)}/3</p>
-          </div>
-          <div className="rounded-2xl bg-[#a87930] p-3 text-white">
-            <p className="text-[11px] font-bold text-white/65">البنك</p>
-            <p className="text-lg font-black">{bankTotal}م</p>
-          </div>
-        </div>
-
-        <section className="mt-5">
-          <h5 className="font-black">الأملاك والمجموعات المكشوفة</h5>
-          {groups.length ? (
-            <div className="mt-3 space-y-4">
-              {groups.map(({ group, cards }) => {
-                const complete = cards.length >= group.size;
-                return (
-                  <div key={group.id} className="rounded-2xl border border-[#143c33]/10 bg-white/55 p-3">
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <span className="font-black" style={{ color: group.color }}>{group.label}</span>
-                      <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-black", complete ? "bg-emerald-600 text-white" : "bg-[#143c33]/7 text-[#143c33]/65")}>
-                        {complete ? "مجموعة مكتملة" : `${cards.length}/${group.size}`}
-                      </span>
-                    </div>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {cards.map((card) => <DealCardFace key={card.id} card={card} compact />)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="mt-3 rounded-2xl border border-dashed border-[#143c33]/15 p-5 text-center text-sm font-bold text-[#143c33]/50">لم يضع أملاكًا على الطاولة بعد</p>
-          )}
-        </section>
-
-        <section className="mt-5">
-          <div className="flex items-center justify-between gap-2">
-            <h5 className="font-black">بطاقات البنك المكشوفة</h5>
-            <span className="rounded-full bg-[#0b5948] px-3 py-1 text-xs font-black text-white">الإجمالي {bankTotal} مليون</span>
-          </div>
-          {bank.length ? (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
-              {bank.map((card) => card.type === "action" ? (
-                <button key={card.id} type="button" onClick={() => onExplainAction(card)} aria-label={`شرح بطاقة ${card.label}`} className="shrink-0 rounded-2xl text-right">
-                  <DealCardFace card={card} compact />
-                </button>
-              ) : <DealCardFace key={card.id} card={card} compact />)}
-            </div>
-          ) : (
-            <p className="mt-3 rounded-2xl border border-dashed border-[#143c33]/15 p-5 text-center text-sm font-bold text-[#143c33]/50">البنك فارغ</p>
-          )}
-        </section>
-      </div>
-    </div>
-  );
-}
-
-function DealActionHelpSheet({ card, onClose }: { card: DealCard; onClose: () => void }) {
-  const help = dealActionHelp(card);
-  return (
-    <div className="fixed inset-0 z-[130] flex items-end justify-center bg-black/70 p-2 backdrop-blur-sm sm:items-center" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`شرح ${help.title}`}
-        onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-lg rounded-t-[32px] border border-[#e3c677]/35 bg-[#f8f1df] p-5 text-[#143c33] shadow-2xl sm:rounded-[32px] sm:p-7"
-      >
-        <div className="flex items-start gap-4">
-          <DealCardFace card={card} actionHint={false} />
-          <div className="min-w-0 flex-1 pt-1">
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#8d591e]/10 px-3 py-1 text-xs font-black text-[#744313]">
-              <HelpCircle className="size-4" /> شرح بطاقة الأكشن
-            </span>
-            <h4 className="mt-3 text-xl font-black">{help.title}</h4>
-            <p className="mt-3 text-sm font-bold leading-7 text-[#143c33]/75">{help.description}</p>
-            <p className="mt-3 rounded-2xl bg-[#0b5948]/8 p-3 text-xs font-bold leading-6">يمكنك بدل استخدامها إيداعها في البنك بقيمة {card.value} مليون.</p>
-          </div>
-        </div>
-        <button type="button" onClick={onClose} className="mt-5 min-h-12 w-full rounded-2xl bg-[#0b5948] text-sm font-black text-white">فهمت</button>
-      </div>
-    </div>
-  );
-}
-
-function isProtectedDealProperty(properties: DealCard[], property: DealCard) {
-  const group = dealGroup(property);
-  return Boolean(group && properties.filter((item) => item.group === property.group).length >= group.size);
-}
-
-function DealPublicPropertyCard({
-  card,
-  protectedProperty,
-  targetable,
-  onTarget,
-}: {
-  card: DealCard;
-  protectedProperty: boolean;
-  targetable: boolean;
-  onTarget?: () => void;
-}) {
-  const group = dealGroup(card);
-  const PropertyIcon = dealGroupIcon(card.group);
-  return (
-    <button
-      type="button"
-      disabled={!targetable}
-      onClick={onTarget}
-      aria-label={targetable ? `استحواذ على ${card.label}` : `${card.label}${protectedProperty ? "، مجموعة محمية" : ""}`}
-      className={cn(
-        "arena-card-gloss arena-card-hover relative flex h-[62px] w-[42px] shrink-0 flex-col overflow-hidden rounded-[9px] border-2 border-[#fff9e8] bg-[#fbf4e5] text-[#123c32] shadow-[0_7px_15px_-7px_rgba(0,0,0,.9)] transition sm:h-[76px] sm:w-[52px] lg:h-[92px] lg:w-[62px] landscape:!h-[80px] landscape:!w-[54px]",
-        targetable && "-translate-y-1 cursor-pointer ring-2 ring-[#ffd66e] shadow-[0_0_20px_rgba(255,209,92,.75)]",
-        protectedProperty && "opacity-80",
-      )}
-      style={{ borderTopColor: group?.color ?? "#49645b", borderTopWidth: 7 }}
-    >
-      <PropertyIcon className="mx-auto mt-1.5 size-4 sm:mt-2 sm:size-6 landscape:!size-5" style={{ color: group?.color ?? "#49645b" }} />
-      <span className="mt-1 line-clamp-2 px-1 text-center text-[8px] font-black leading-[10px] sm:text-[10px] sm:leading-3 landscape:text-[11px] landscape:leading-3">{card.label}</span>
-      <span className="mt-auto w-full border-t border-[#123c32]/10 py-1 text-center text-[8px] font-black landscape:text-[10px]" style={{ color: group?.color }}>{group?.label}</span>
-      {targetable && <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-[#f2c85f] text-[#093e34] shadow"><Target className="size-3.5" /></span>}
-      {protectedProperty && <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-[#0b5948] text-[#efd17d] shadow"><ShieldCheck className="size-3.5" /></span>}
-    </button>
-  );
-}
-
-function DealSecretHand({ count }: { count: number }) {
-  return (
-    <div className="relative mx-auto h-9 w-[76px]" aria-label={`${count} أوراق سرية مقلوبة`}>
-      {Array.from({ length: Math.min(count, 5) }).map((_, index, cards) => {
-        const middle = (cards.length - 1) / 2;
-        return (
-          <span
-            key={index}
-            aria-hidden
-            className="absolute bottom-0 left-1/2 h-8 w-5 origin-bottom rounded border-2 border-[#f6e7bd] bg-[linear-gradient(145deg,#0d604d,#052d26_62%,#b7883c)] shadow"
-            style={{ transform: `translateX(calc(-50% + ${(index - middle) * 8}px)) rotate(${(index - middle) * 7}deg)` }}
-          />
-        );
-      })}
-      <span className="absolute -right-0.5 -top-1 z-10 flex size-5 items-center justify-center rounded-full bg-[#efd078] text-[9px] font-black text-[#07382e] shadow">{count}</span>
-    </div>
-  );
-}
-
-function DealPublicRack({
-  player,
-  data,
-  active,
-  position,
-  onInspect,
-  pendingAction,
-  onRentTarget,
-  onPropertyTarget,
-}: {
-  player: Player;
-  data: any;
-  active: boolean;
-  position: "top" | "right" | "left";
-  onInspect: () => void;
-  pendingAction: DealCard | null;
-  onRentTarget: () => void;
-  onPropertyTarget: (property: DealCard) => void;
-}) {
-  const cardCount = data.hands[player.id]?.length ?? 0;
-  const properties = (data.properties[player.id] ?? []) as DealCard[];
-  const sortedProperties = properties.slice().sort((first, second) => {
-    const firstIndex = DEAL_GROUPS.findIndex((group) => group.id === first.group);
-    const secondIndex = DEAL_GROUPS.findIndex((group) => group.id === second.group);
-    return firstIndex - secondIndex;
-  });
-  const bank = (data.banks[player.id] ?? []) as DealCard[];
-  const bankTotal = bank.reduce((sum, card) => sum + card.value, 0);
-  const positionClass = {
-    top: "left-1/2 top-2 w-[64%] max-w-[420px] -translate-x-1/2 lg:max-w-[560px] landscape:top-2 landscape:w-[32%] landscape:max-w-none",
-    right: "right-1 top-[26%] w-[27%] max-w-[168px] lg:max-w-[230px] landscape:right-[2%] landscape:top-2 landscape:w-[32%] landscape:max-w-none",
-    left: "left-1 top-[26%] w-[27%] max-w-[168px] lg:max-w-[230px] landscape:left-[2%] landscape:top-2 landscape:w-[32%] landscape:max-w-none",
-  }[position];
-  const groupProgress = DEAL_GROUPS.map((group) => ({
-    group,
-    count: properties.filter((property) => property.group === group.id).length,
-  })).filter((entry) => entry.count > 0);
-  const targetingRent = pendingAction?.action === "rent" || pendingAction?.action === "debt";
-  const targetingProperty = pendingAction?.action === "steal" || pendingAction?.action === "forced_swap" || pendingAction?.action === "deal_breaker";
-
-  return (
-    <div className={cn("absolute z-30 flex flex-col items-center", positionClass)}>
-      <button type="button" onClick={targetingRent ? onRentTarget : onInspect} className="flex flex-col items-center" aria-label={targetingRent ? `اختيار ${player.name} لدفع الإيجار` : `عرض طاولة ${player.name}`}>
-        <div className={cn("relative rounded-full border-2 bg-[#062d26] p-1 shadow-xl transition", active ? "border-[#f3cf72] shadow-[0_0_22px_rgba(240,196,91,.7)]" : "border-[#d3b768]/70", targetingRent && "animate-pulse border-[#ffd468] ring-4 ring-[#ffd468]/25")}>
-          <PlayerAvatar player={player} size="sm" />
-          {player.isBot && <Bot className="absolute -left-1 -top-1 size-4 rounded-full bg-[#0a493d] p-0.5 text-[#efd078]" />}
-          <span className="absolute -bottom-1.5 -right-2 hidden min-w-5 items-center justify-center rounded-full bg-[#efd078] px-1.5 py-0.5 text-[9px] font-black text-[#07382e] shadow landscape:flex">{cardCount}</span>
-        </div>
-        <span className={cn("-mt-1 max-w-[110px] truncate rounded-full border px-3 py-1 text-[10px] font-black shadow landscape:text-xs", active ? "border-[#f3cf72] bg-[#0a4c3e] text-[#f5d47c]" : "border-[#d3b768]/70 bg-[#06352c] text-white")}>{player.name.split(" ")[0]}</span>
-      </button>
-
-      <div className={cn("mt-1 flex w-full flex-col items-center", targetingRent && "rounded-2xl ring-2 ring-[#ffd468]/40")}>
-        {properties.length ? (
-          <div className="flex w-full flex-wrap items-start justify-center gap-1 rounded-xl border border-[#dabb6c]/45 bg-[#052d26]/80 p-1 shadow-xl backdrop-blur-sm">
-            {sortedProperties.map((property) => {
-              const protectedProperty = isProtectedDealProperty(properties, property);
-              const targetable = Boolean(
-                targetingProperty && (
-                  pendingAction?.action === "deal_breaker" ? protectedProperty : !protectedProperty
-                ),
-              );
-              return (
-                <DealPublicPropertyCard
-                  key={property.id}
-                  card={property}
-                  protectedProperty={protectedProperty}
-                  targetable={targetable}
-                  onTarget={() => onPropertyTarget(property)}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <span className="rounded-full border border-dashed border-white/20 bg-[#052d26]/75 px-3 py-1 text-center text-[9px] font-bold text-white/40 shadow">لا أراضٍ</span>
-        )}
-
-        <div className="mt-1 flex max-w-full flex-wrap items-center justify-center gap-1 rounded-full border border-[#dabb6c]/35 bg-[#052d26]/90 px-2 py-1 shadow backdrop-blur-sm">
-          {groupProgress.slice(0, 3).map(({ group, count }) => (
-            <span key={group.id} className="rounded-full px-1.5 py-0.5 text-[8px] font-black text-white landscape:text-[10px]" style={{ backgroundColor: group.color }}>{count}/{group.size}</span>
-          ))}
-          <span className="rounded-full bg-[#bd8c37] px-1.5 py-0.5 text-[8px] font-black text-[#082f27] landscape:text-[10px]">{bankTotal}م</span>
-          <button type="button" onClick={onInspect} aria-label={`تكبير طاولة ${player.name}`} className="flex size-5 items-center justify-center rounded-full bg-white/10 text-[#efd078]"><Eye className="size-3" /></button>
-        </div>
-      </div>
-
-      <div className="mt-1 landscape:hidden"><DealSecretHand count={cardCount} /></div>
-    </div>
-  );
-}
-
-function SaudiDealRoom({
-  state,
-  players,
-  me,
-  logoUrl,
-  immersive,
-  dispatch,
-}: {
-  state: RoomState;
-  players: Player[];
-  me: Player;
-  logoUrl: string | null;
-  immersive: boolean;
-  dispatch: (type: string, value?: any) => Promise<void>;
-}) {
-  const data = state.data;
-  const active = players[data.turnIndex % Math.max(players.length, 1)];
-  const amActive = active?.id === me.id;
-  const hand = (data.hands[me.id] ?? []) as DealCard[];
-  const seatedPlayers = useMemo(() => orderPlayersAroundMe(players, me.id), [players, me.id]);
-  const lastDiscard = data.discard[data.discard.length - 1] as DealCard | undefined;
-  const [pendingAction, setPendingAction] = useState<DealCard | null>(null);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [inspectedPlayerId, setInspectedPlayerId] = useState<string | null>(null);
-  const [actionHelpCard, setActionHelpCard] = useState<DealCard | null>(null);
-  const selectedCard = hand.find((card) => card.id === selectedCardId) ?? null;
-  const inspectedPlayer = players.find((player) => player.id === inspectedPlayerId) ?? null;
-  const opponents = seatedPlayers.slice(1, 4);
-  const opponentPositions: Array<"top" | "right" | "left"> = opponents.length === 1
-    ? ["top"]
-    : opponents.length === 2
-      ? ["left", "right"]
-      : ["left", "top", "right"];
-  const myProperties = (data.properties[me.id] ?? []) as DealCard[];
-  const myBank = (data.banks[me.id] ?? []) as DealCard[];
-  const myBankTotal = myBank.reduce((sum, card) => sum + card.value, 0);
-
-  useEffect(() => setPendingAction(null), [data.turnIndex]);
-  useEffect(() => {
-    if (selectedCardId && !hand.some((card) => card.id === selectedCardId)) {
-      setSelectedCardId(null);
-      return;
-    }
-    if (!selectedCardId && hand.length && amActive && !data.needsDraw) setSelectedCardId(hand[0].id);
-  }, [hand, selectedCardId, amActive, data.needsDraw]);
-
-  // السحب التلقائي: اللعبة تسحب أوراق الدور نيابة عن اللاعب بدون ضغط زر.
-  useEffect(() => {
-    if (!amActive || !data.needsDraw) return;
-    const timer = window.setTimeout(() => {
-      playGameTone("deal");
-      void dispatch("deal-draw");
-    }, 600);
-    return () => window.clearTimeout(timer);
-  }, [amActive, data.needsDraw, data.turnIndex, dispatch]);
-
-
-
-  const useAction = (card: DealCard) => {
-    if (card.action === "draw2" || card.action === "birthday" || card.action === "double_rent") {
-      void dispatch("deal-action", { cardId: card.id });
-      return;
-    }
-    if (card.action === "just_say_no") {
-      toast.info("بطاقة مرفوض تُستخدم تلقائيًا عند مهاجمتك");
-      return;
-    }
-    setPendingAction(card);
-  };
-
-  const targetRentPlayer = (player: Player) => {
-    if (pendingAction?.action !== "rent" && pendingAction?.action !== "debt") return;
-    void dispatch("deal-action", { cardId: pendingAction.id, targetId: player.id });
-    setPendingAction(null);
-  };
-
-  const targetProperty = (player: Player, property: DealCard) => {
-    if (!pendingAction || !["steal", "forced_swap", "deal_breaker"].includes(pendingAction.action ?? "")) return;
-    const targetProperties = (data.properties[player.id] ?? []) as DealCard[];
-    const protectedProperty = isProtectedDealProperty(targetProperties, property);
-    if (pendingAction.action !== "deal_breaker" && protectedProperty) return;
-    if (pendingAction.action === "deal_breaker" && !protectedProperty) return;
-    void dispatch("deal-action", {
-      cardId: pendingAction.id,
-      targetId: player.id,
-      propertyId: property.id,
-      group: pendingAction.action === "deal_breaker" ? property.group : undefined,
-    });
-    setPendingAction(null);
-  };
-
-  const stepLabel = data.needsDraw
-    ? "اسحب أوراقك"
-    : data.actionsLeft === 2
-      ? "حركتان متبقيتان"
-      : data.actionsLeft === 1
-        ? "حركة متبقية"
-        : "انتهت الحركات";
-
-  return (
-    <div
-      className={cn(
-        "relative isolate space-y-3",
-        immersive ? "-mx-1 px-4 sm:px-8 landscape:px-3" : "overflow-hidden rounded-[34px] bg-cover bg-center p-3 sm:p-6",
-      )}
-      style={!immersive ? {
-        backgroundImage: "linear-gradient(rgba(1,31,25,.3),rgba(1,24,20,.56)),url('/assets/games/saudi-deal-majlis-bg.webp')",
-      } : undefined}
-    >
-      <div className={cn("mx-auto flex w-full max-w-2xl items-center justify-center gap-3 rounded-full border border-[#dfbf6c]/35 bg-[#073d32] px-4 py-2.5 text-white shadow-[0_10px_28px_-20px_rgba(0,0,0,.9)]", immersive && "landscape:hidden")}>
-        {active && <PlayerAvatar player={active} size="sm" />}
-        <div className="min-w-0 text-center">
-          <p className="truncate text-sm font-black sm:text-base">{amActive ? "دورك الآن" : `الدور عند ${active?.name?.split(" ")[0] ?? "—"}`}</p>
-          <p className="truncate text-[10px] font-bold text-white/55 sm:text-xs">{data.lastAction}</p>
-        </div>
-        <span className="h-8 w-px bg-white/15" />
-        <div className="shrink-0 text-center">
-          <p className="text-[9px] font-bold text-white/45">{data.needsDraw ? "الخطوة التالية" : "المتبقي"}</p>
-          <p className="text-xs font-black text-[#f2cf72] sm:text-sm">{stepLabel}</p>
-        </div>
-      </div>
-
-      <div
-        className="mx-auto w-full max-w-4xl lg:max-w-6xl xl:max-w-[1400px] rounded-[36px] border border-[#e6c472]/70 p-[7px] shadow-[0_28px_70px_-26px_rgba(0,0,0,.98)] sm:p-[10px] landscape:max-w-none landscape:rounded-[28px] landscape:p-[6px]"
-        style={{
-          backgroundColor: "#4a2915",
-          backgroundImage: "radial-gradient(circle at 18% 8%,rgba(255,203,116,.22),transparent 23%),linear-gradient(90deg,rgba(20,8,3,.72),transparent 12%,transparent 88%,rgba(20,8,3,.72)),repeating-linear-gradient(104deg,#2a150a 0 7px,#72421f 7px 14px,#3a1e0e 14px 22px,#9b6530 22px 28px)",
-        }}
-      >
-        <div className="overflow-hidden rounded-[29px] border border-[#f2d487]/30 bg-[#073d32]">
-          <div
-            className={cn("relative min-h-[500px] overflow-hidden sm:min-h-[620px] lg:min-h-[780px] xl:min-h-[840px]", immersive && "min-h-[470px]", "landscape:!min-h-[260px]")}
-            style={{
-              backgroundImage: "radial-gradient(circle at 50% 47%,rgba(27,121,91,.34),transparent 43%),linear-gradient(135deg,rgba(239,205,115,.04) 25%,transparent 25%,transparent 50%,rgba(239,205,115,.04) 50%,rgba(239,205,115,.04) 75%,transparent 75%,transparent)",
-              backgroundSize: "auto,28px 28px",
-            }}
-          >
-            <div aria-hidden className="pointer-events-none absolute inset-3 rounded-[23px] border border-[#e6c56e]/25" />
-            <div aria-hidden className="pointer-events-none absolute inset-6 rounded-[19px] border border-[#e6c56e]/10" />
-
-            {opponents.map((player, index) => (
-              <DealPublicRack
-                key={player.id}
-                player={player}
-                data={data}
-                active={active?.id === player.id}
-                position={opponentPositions[index]}
-                onInspect={() => setInspectedPlayerId(player.id)}
-                pendingAction={pendingAction}
-                onRentTarget={() => targetRentPlayer(player)}
-                onPropertyTarget={(property) => targetProperty(player, property)}
-              />
-            ))}
-
-            {pendingAction && (
-              <div className="absolute inset-x-[15%] top-[160px] z-40 flex items-center justify-between gap-2 rounded-full border border-[#f3cf71] bg-[#052e27]/95 px-3 py-2 text-[#f7d77c] shadow-[0_0_24px_rgba(238,198,103,.28)] sm:top-[194px] landscape:inset-x-auto landscape:bottom-2 landscape:left-2 landscape:top-auto landscape:w-[220px]">
-                <div className="flex min-w-0 items-center gap-2">
-                  <Target className="size-4 shrink-0 animate-pulse" />
-                  <p className="truncate text-[10px] font-black sm:text-xs">
-                    {pendingAction.action === "rent"
-                      ? "اضغط اسم اللاعب لتحصيل الإيجار"
-                      : pendingAction.action === "debt"
-                        ? "اضغط اسم اللاعب لتحصيل 5 ملايين"
-                        : pendingAction.action === "deal_breaker"
-                          ? "اختر أرضًا من مجموعة مكتملة للاستحواذ عليها كلها"
-                          : pendingAction.action === "forced_swap"
-                            ? "اختر أرضًا غير مكتملة لمبادلتها"
-                            : "اختر أرضًا متوهجة — المجموعة المكتملة محمية"}
-                  </p>
-                </div>
-                <button type="button" onClick={() => setPendingAction(null)} className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-black text-white">إلغاء</button>
-              </div>
-            )}
-
-            <div className="absolute left-1/2 top-[57%] z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 sm:top-[56%] landscape:!top-auto landscape:bottom-1 landscape:translate-y-0 landscape:flex-row">
-              <div className="rounded-full border border-[#f0d17a]/55 bg-[#06392f]/90 p-1.5 shadow-[0_0_30px_rgba(224,187,92,.25)]">
-                <TableBrandSeal logoUrl={logoUrl} className="size-[76px] border-[3px] sm:size-[98px] landscape:!size-14" />
-              </div>
-
-              <div className="flex items-center justify-center gap-3 sm:gap-4">
-                <button
-                  type="button"
-                  aria-label={`سحب ${hand.length ? 2 : 5} أوراق من رزمة سعودي ديل`}
-                  disabled={!amActive || !data.needsDraw}
-                  onClick={() => void dispatch("deal-draw")}
-                  className="relative transition enabled:hover:-translate-y-1 enabled:active:scale-95 disabled:opacity-65"
-                >
-                  <BrandedCardBack label={amActive && data.needsDraw ? "اسحب" : "السيف"} count={data.drawPile.length} compact className="h-[78px] w-[52px] rounded-[10px]" />
-                  {amActive && data.needsDraw && <span className="absolute -inset-2 -z-10 animate-pulse rounded-2xl bg-[#f0cb68]/20 blur" />}
-                </button>
-
-                {lastDiscard ? (
-                  <button
-                    type="button"
-                    disabled={lastDiscard.type !== "action"}
-                    onClick={() => setActionHelpCard(lastDiscard)}
-                    aria-label={lastDiscard.type === "action" ? `شرح بطاقة ${lastDiscard.label}` : "آخر بطاقة ملعوبة"}
-                    className="h-[78px] w-[52px] overflow-hidden rounded-[10px] text-right shadow-xl"
-                  >
-                    <div className="origin-top-left scale-[.7]"><DealCardFace card={lastDiscard} compact actionHint={false} /></div>
-                  </button>
-                ) : (
-                  <div className="flex h-[78px] w-[52px] items-center justify-center rounded-[10px] border-2 border-dashed border-white/25 text-center text-[8px] font-black leading-3 text-white/40">
-                    الأوراق<br />الملعوبة
-                  </div>
-                )}
-              </div>
-
-              <p className="max-w-[220px] truncate rounded-full border border-white/5 bg-black/30 px-4 py-1.5 text-center text-[10px] font-bold text-white/55 sm:max-w-[360px] sm:text-xs landscape:hidden">{data.lastAction}</p>
-            </div>
-
-            <div
-              className={cn(
-                "absolute bottom-2 left-1/2 z-30 w-[92%] max-w-[760px] -translate-x-1/2 rounded-2xl border bg-[#052d26]/92 p-1.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,.95)] backdrop-blur-sm lg:max-w-[1000px] landscape:bottom-1 landscape:w-[46%] landscape:max-w-none",
-                active?.id === me.id ? "border-[#f0cd72] ring-2 ring-[#f0cd72]/20" : "border-white/15",
-              )}
-            >
-              <div className="mb-1 flex items-center justify-between gap-2 px-1">
-                <p className="text-[10px] font-black text-[#f3d47b]">طاولتي · {myProperties.length} أراضٍ · {myBankTotal}م</p>
-                <button
-                  type="button"
-                  onClick={() => setInspectedPlayerId(me.id)}
-                  aria-label="تكبير طاولتي"
-                  className="flex size-6 items-center justify-center rounded-full bg-white/10 text-[#efd078]"
-                >
-                  <Eye className="size-3.5" />
-                </button>
-              </div>
-              {myProperties.length ? (
-                <div className="flex flex-wrap items-start justify-center gap-1">
-                  {myProperties
-                    .slice()
-                    .sort(
-                      (first, second) =>
-                        DEAL_GROUPS.findIndex((group) => group.id === first.group) -
-                        DEAL_GROUPS.findIndex((group) => group.id === second.group),
-                    )
-                    .map((property) => (
-                      <DealPublicPropertyCard
-                        key={property.id}
-                        card={property}
-                        protectedProperty={isProtectedDealProperty(myProperties, property)}
-                        targetable={false}
-                      />
-                    ))}
-                </div>
-              ) : (
-                <p className="py-2 text-center text-[10px] font-bold text-white/45">لا أراضٍ بعد — أضف أرضًا من أوراقك لتظهر هنا</p>
-              )}
-            </div>
-          </div>
-
-          <div className="border-t-4 border-[#7d4a25] bg-[#042e27] px-2 pb-2 pt-3 sm:px-4 landscape:relative landscape:min-h-[132px] landscape:p-0">
-            {hand.length > 7 && <p className="mb-2 rounded-xl border border-rose-400/30 bg-rose-950/45 p-2 text-center text-[11px] font-black text-rose-100">يجب التخلص من {hand.length - 7} أوراق قبل إنهاء الدور</p>}
-
-            {pendingAction ? (
-              <div className="mb-2 rounded-2xl border border-[#edcb71]/45 bg-[#0a4a3d] px-4 py-3 text-center text-xs font-black text-[#f4d77f] landscape:absolute landscape:bottom-2 landscape:left-2 landscape:z-50 landscape:mb-0 landscape:w-[230px]">
-                حدّد الهدف المتوهج مباشرة من طاولة الخصم
-              </div>
-            ) : selectedCard && amActive && !data.needsDraw && (data.actionsLeft > 0 || hand.length > 7) ? (
-              <div className="mb-2 grid grid-cols-2 gap-2 rounded-[22px] bg-[#06261f]/65 p-1.5 landscape:absolute landscape:bottom-2 landscape:left-2 landscape:z-50 landscape:mb-0 landscape:w-[230px]">
-                {selectedCard.type === "property" && data.actionsLeft > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => void dispatch("deal-property", { cardId: selectedCard.id })}
-                    className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-[17px] bg-gradient-to-b from-[#f5d982] to-[#cda44b] px-4 text-sm font-black text-[#10251e] shadow-[0_10px_28px_-14px_rgba(238,196,94,.85)]"
-                  >
-                    <MapPin className="size-5" /> إضافة للمجموعة
-                  </button>
-                )}
-                {selectedCard.type === "money" && data.actionsLeft > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => void dispatch("deal-bank", { cardId: selectedCard.id })}
-                    className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-[17px] border border-[#e8c86e]/45 bg-[#0b684f] px-4 text-sm font-black text-white"
-                  >
-                    <Banknote className="size-5" /> إيداع بالبنك
-                  </button>
-                )}
-                {selectedCard.type === "action" && data.actionsLeft > 0 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => useAction(selectedCard)}
-                      className="flex min-h-12 items-center justify-center gap-2 rounded-[17px] bg-gradient-to-b from-[#f5d982] to-[#cda44b] px-3 text-sm font-black text-[#10251e] shadow"
-                    >
-                      <Sparkles className="size-5" /> استخدام البطاقة
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void dispatch("deal-bank", { cardId: selectedCard.id })}
-                      className="flex min-h-12 items-center justify-center gap-2 rounded-[17px] border border-[#e8c86e]/35 bg-[#0b684f] px-3 text-sm font-black text-white"
-                    >
-                      <Banknote className="size-5" /> إيداع بالبنك
-                    </button>
-                  </>
-                )}
-                {hand.length > 7 && (
-                  <button
-                    type="button"
-                    onClick={() => void dispatch("deal-discard", selectedCard.id)}
-                    className="col-span-2 min-h-11 rounded-[17px] bg-rose-700 px-4 text-sm font-black text-white"
-                  >
-                    التخلص من البطاقة
-                  </button>
-                )}
-              </div>
-            ) : null}
-
-            <div className="flex items-center justify-between gap-3 px-2 landscape:absolute landscape:right-2 landscape:top-1 landscape:z-50 landscape:p-0">
-              <button type="button" onClick={() => setInspectedPlayerId(me.id)} className="text-right landscape:hidden">
-                <p className="text-[10px] font-bold text-[#d6bd7b]/60">أوراقك الخاصة</p>
-                <p className="font-black text-white">{hand.length} أوراق</p>
-              </button>
-              {amActive && !data.needsDraw && (
-                <button
-                  type="button"
-                  disabled={hand.length > 7}
-                  onClick={() => void dispatch("deal-end")}
-                  className="min-h-11 rounded-2xl border border-[#e1bd66]/35 bg-white/10 px-5 text-sm font-black text-white shadow disabled:opacity-35"
-                >
-                  إنهاء دوري
-                </button>
-              )}
-            </div>
-
-            {amActive && !data.needsDraw && data.actionsLeft > 0 && !selectedCard && (
-              <p className="mt-1 text-center text-[10px] font-bold text-white/50 landscape:hidden">اختر بطاقة من يدك لتظهر الحركة المناسبة</p>
-            )}
-
-            <div
-              className="mx-auto grid min-h-[154px] w-full max-w-2xl lg:max-w-5xl items-end justify-center overflow-x-auto overflow-y-hidden px-4 pb-2 pt-8 landscape:min-h-[132px] landscape:max-w-none landscape:pl-[245px] landscape:pr-[112px] landscape:pb-0 landscape:pt-5"
-              style={{ direction: "ltr", gridTemplateColumns: `repeat(${Math.max(hand.length, 1)}, minmax(34px, 72px))` }}
-            >
-              {hand.map((card, index) => {
-                const middle = (hand.length - 1) / 2;
-                const angle = Math.max(-10, Math.min(10, (index - middle) * 3));
-                const drop = Math.abs(index - middle) * 2;
-                const selected = selectedCardId === card.id;
-                return (
-                  <div
-                    key={card.id}
-                    className={cn("relative w-[72px] origin-bottom rounded-2xl transition duration-200", selected ? "z-30" : "z-10 opacity-95 hover:z-20 hover:-translate-y-1")}
-                    style={{ transform: `translateY(${selected ? -15 : drop}px) rotate(${angle}deg)` }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCardId(card.id)}
-                      aria-pressed={selected}
-                      className={cn("block rounded-2xl text-right transition", selected && "ring-4 ring-[#f0cd72] ring-offset-2 ring-offset-[#07382f]")}
-                    >
-                      <DealCardFace card={card} compact actionHint={false} />
-                    </button>
-                    {card.type === "action" && (
-                      <button
-                        type="button"
-                        onClick={() => setActionHelpCard(card)}
-                        aria-label={`شرح بطاقة ${card.label}`}
-                        className={cn("absolute top-1.5 z-40 flex items-center rounded-full border border-[#f5da8a] bg-[#fff8df] font-black text-[#744313] shadow-lg transition active:scale-95", selected ? "-left-1.5 h-7 gap-1 px-2 text-[9px]" : "left-1 size-5 justify-center")}
-                      >
-                        <HelpCircle className={selected ? "size-3.5" : "size-3"} /> {selected && <span>شرح</span>}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {!amActive && <p className="text-center text-xs font-bold text-muted-foreground">بانتظار حركة {active?.name}</p>}
-      {inspectedPlayer && (
-        <DealPlayerTableSheet
-          player={inspectedPlayer}
-          data={data}
-          onClose={() => setInspectedPlayerId(null)}
-          onExplainAction={(card) => setActionHelpCard(card)}
-        />
-      )}
-      {actionHelpCard && <DealActionHelpSheet card={actionHelpCard} onClose={() => setActionHelpCard(null)} />}
     </div>
   );
 }
