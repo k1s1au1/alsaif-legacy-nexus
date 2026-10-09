@@ -1,4 +1,5 @@
 import { MILLIONAIRE_BOARD as MONOPOLY_BOARD } from "./millionaire-board";
+import { MILLIONAIRE_TIMING, millionaireRollDuration, type MillionaireRoll, type MillionaireChance } from "./millionaire-presentation";
 
 export type MillionairePlayer = {
   id: string;
@@ -46,6 +47,9 @@ export function initialMonopolyData(players: Player[], starterIndex = 0) {
     jailTurns: {} as Record<string, number>,
     escapeCards: {} as Record<string, number>,
     dice: null as [number, number] | null,
+    roll: null as MillionaireRoll | null,
+    chance: null as MillionaireChance | null,
+    presentationUntil: 0,
     movement: null as MillionaireMovement | null,
     rolled: false,
     doublesStreak: 0,
@@ -95,6 +99,11 @@ function recordMonopolyMovement(
     steps,
     source,
   } satisfies MillionaireMovement;
+  const routeLength = steps.length + (steps[steps.length - 1] !== data.positions[playerId] ? 1 : 0);
+  const chance = source !== "travel" && data.chance?.rollSequence === data.roll?.sequence;
+  data.presentationUntil = Date.now() + (source === "travel"
+    ? routeLength * MILLIONAIRE_TIMING.step + MILLIONAIRE_TIMING.arrival
+    : millionaireRollDuration(routeLength, chance));
 }
 
 type MonopolyPropertyState = {
@@ -124,7 +133,7 @@ function monopolyOwnable(index: number) {
   return space?.kind === "city" || space?.kind === "tourism";
 }
 
-function monopolyStructureTotal(index: number, targetLevel: number) {
+export function monopolyStructureTotal(index: number, targetLevel: number) {
   const space = MONOPOLY_BOARD[index];
   if (!space || !monopolyOwnable(index)) return 0;
   if (space.kind === "tourism") return space.price;
@@ -134,7 +143,7 @@ function monopolyStructureTotal(index: number, targetLevel: number) {
   return total;
 }
 
-function monopolyUpgradeCost(index: number, currentLevel: number, targetLevel: number) {
+export function monopolyUpgradeCost(index: number, currentLevel: number, targetLevel: number) {
   return Math.max(0, monopolyStructureTotal(index, targetLevel) - monopolyStructureTotal(index, currentLevel));
 }
 
@@ -147,7 +156,7 @@ function monopolyGroupComplete(data: any, ownerId: string, group?: string) {
   return groupIndices.length > 0 && groupIndices.every((index) => monopolyProperty(data, index)?.ownerId === ownerId);
 }
 
-function monopolyToll(data: any, index: number) {
+export function monopolyToll(data: any, index: number) {
   const space = MONOPOLY_BOARD[index];
   const property = monopolyProperty(data, index);
   if (!space || !property) return 0;
@@ -216,6 +225,7 @@ function chargeMonopolyPlayer(data: any, playerId: string, amount: number, credi
   const due = Math.max(0, Math.round(amount));
   if (Number(data.cash[playerId] ?? 0) >= due) {
     data.cash[playerId] -= due;
+    data.presentationUntil = Date.now() + MILLIONAIRE_TIMING.build;
     if (creditorId) data.cash[creditorId] = Number(data.cash[creditorId] ?? 0) + due;
     return true;
   }
@@ -226,6 +236,21 @@ function chargeMonopolyPlayer(data: any, playerId: string, amount: number, credi
 
 function resolveMonopolyChance(data: any, active: Player) {
   const card = Math.floor(Math.random() * 8);
+  const cards = [
+    ["مكافأة استثمار", "تحصل على 300K من البنك."],
+    ["رسوم تطوير", "تدفع 180K للبنك. صفِّ بعض أملاكك إذا لم يكفِ رصيدك."],
+    ["عودة إلى الانطلاق", "انتقل إلى الانطلاق واحصل على مكافأة 300K."],
+    ["رحلة مجانية", "اختر أي مدينة أو موقع سياحي، ثم طبّق قرار الوصول إليه."],
+    ["بطاقة خروج", "احتفظ ببطاقة تخرجك من الجزيرة دون رسوم عند استخدامها."],
+    ["رحلة إلى الجزيرة", "انتقل إلى الجزيرة. لديك ثلاث محاولات للخروج بالنرد المزدوج."],
+    ["مهرجان المدن", "اختر أحد أملاكك لمضاعفة رسوم زيارته لدورة كاملة."],
+    ["صيانة الأملاك", "تدفع 35K عن كل مستوى تطوير في أملاكك."],
+  ];
+  data.chance = {
+    sequence: Number(data.chance?.sequence ?? 0) + 1,
+    rollSequence: Number(data.roll?.sequence ?? 0),
+    playerId: active.id, card, title: cards[card][0], description: cards[card][1],
+  } satisfies MillionaireChance;
   if (card === 0) {
     data.cash[active.id] += 300;
     monopolyMessage(data, active.name + " حصل على مكافأة استثمار 300K");
@@ -267,6 +292,7 @@ function resolveMonopolyChance(data: any, active: Player) {
       monopolyMessage(data, active.name + " يستطيع اختيار مدينة لمهرجان الرسوم المضاعفة");
     } else {
       data.cash[active.id] += 120;
+      data.chance.description = "ليس لديك أملاك للمهرجان؛ تحصل على مكافأة بديلة 120K.";
       monopolyMessage(data, active.name + " استبدل المهرجان بمكافأة 120K");
     }
     return;
@@ -277,6 +303,7 @@ function resolveMonopolyChance(data: any, active: Player) {
   }, 0);
   if (!maintenance) {
     data.cash[active.id] += 80;
+    data.chance.description = "ليس لديك تكاليف صيانة؛ تحصل على مكافأة 80K.";
     monopolyMessage(data, active.name + " ربح 80K لعدم وجود تكاليف صيانة");
   } else if (chargeMonopolyPlayer(data, active.id, maintenance, null, active.name + " عليه صيانة " + maintenance + "K")) {
     monopolyMessage(data, active.name + " دفع صيانة أملاكه " + maintenance + "K");
@@ -369,6 +396,7 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
   if (action.type === "monopoly-pay-jail" && !data.rolled && Number(data.jailTurns[active.id] ?? 0) > 0) {
     if (Number(data.cash[active.id] ?? 0) < MONOPOLY_ISLAND_FEE) return state;
     data.cash[active.id] -= MONOPOLY_ISLAND_FEE;
+    data.presentationUntil = Date.now() + MILLIONAIRE_TIMING.build;
     data.jailTurns[active.id] = 0;
     monopolyMessage(data, active.name + " دفع " + MONOPOLY_ISLAND_FEE + "K وخرج من الجزيرة");
     return { ...state, data };
@@ -386,6 +414,8 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
     const dice: [number, number] = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
     const double = dice[0] === dice[1];
     data.dice = dice;
+    data.roll = { sequence: Number(data.roll?.sequence ?? 0) + 1, playerId: active.id, dice } satisfies MillionaireRoll;
+    data.presentationUntil = Date.now() + millionaireRollDuration(0);
     data.rolled = true;
 
     if (Number(data.jailTurns[active.id] ?? 0) > 0) {
@@ -450,6 +480,7 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
     if (!space || !monopolyOwnable(index) || monopolyProperty(data, index) || Number(data.cash[active.id] ?? 0) < cost) return state;
     data.cash[active.id] -= cost;
     data.properties[index] = { ownerId: active.id, level, invested: cost };
+    data.presentationUntil = Date.now() + MILLIONAIRE_TIMING.build;
     data.pending = null;
     const buildLabel = level === 1 ? "فيلا" : level === 2 ? "مبنى" : "فندق";
     monopolyMessage(data, active.name + " استثمر في " + space.name + " وبنى " + buildLabel);
@@ -466,6 +497,7 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
     if (!space || space.kind !== "city" || !property || property.ownerId !== active.id || property.level >= targetLevel || Number(data.cash[active.id] ?? 0) < cost) return state;
     data.cash[active.id] -= cost;
     data.properties[index] = { ...property, level: targetLevel, invested: property.invested + cost };
+    data.presentationUntil = Date.now() + MILLIONAIRE_TIMING.build;
     data.pending = null;
     monopolyMessage(data, active.name + " طوّر " + space.name + (targetLevel === 4 ? " إلى مَعْلم " + (space.landmark ?? "") : " إلى المستوى " + targetLevel));
     return { ...state, data };
@@ -478,6 +510,7 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
     if (!property || property.ownerId === active.id || property.level >= 4 || Number(data.cash[active.id] ?? 0) < cost) return state;
     data.cash[active.id] -= cost;
     data.cash[property.ownerId] = Number(data.cash[property.ownerId] ?? 0) + cost;
+    data.presentationUntil = Date.now() + MILLIONAIRE_TIMING.build;
     data.properties[index] = { ...property, ownerId: active.id };
     data.pending = null;
     monopolyMessage(data, active.name + " استحوذ على " + MONOPOLY_BOARD[index].name + " مقابل " + cost + "K");
@@ -518,6 +551,7 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
     if (!property || property.ownerId !== active.id) return state;
     const value = Math.max(1, Math.round(property.invested * .7));
     data.cash[active.id] += value;
+    data.presentationUntil = Date.now() + MILLIONAIRE_TIMING.build;
     delete data.properties[index];
     monopolyMessage(data, active.name + " باع " + MONOPOLY_BOARD[index].name + " للبنك مقابل " + value + "K");
     return { ...state, data };
@@ -527,6 +561,7 @@ export function reduceMonopoly<State extends MonopolyState>(state: State, action
     const amount = Number(data.pending.amount ?? 0);
     if (Number(data.cash[active.id] ?? 0) < amount) return state;
     data.cash[active.id] -= amount;
+    data.presentationUntil = Date.now() + MILLIONAIRE_TIMING.build;
     if (data.pending.creditorId) data.cash[data.pending.creditorId] = Number(data.cash[data.pending.creditorId] ?? 0) + amount;
     const reason = String(data.pending.reason ?? "الالتزام");
     data.pending = null;

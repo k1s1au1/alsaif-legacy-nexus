@@ -15,7 +15,9 @@ export type GameSfx =
   | "lose"
   | "error"
   | "coin"
-  | "tick";
+  | "tick"
+  | "dice"
+  | "build";
 
 let context: AudioContext | null = null;
 
@@ -87,6 +89,16 @@ export function playGameSfx(kind: GameSfx) {
     const ctx = audio();
     if (!ctx) return;
     switch (kind) {
+      case "dice":
+        for (let i = 0; i < 5; i += 1) {
+          tone(ctx, { from: 160 + i * 28, to: 90, at: i * 0.15, duration: 0.075, type: "triangle", gain: 0.05 - i * 0.005 });
+          swish(ctx, i * 0.15, 0.06, 0.02, 650);
+        }
+        break;
+      case "build":
+        tone(ctx, { from: 440, to: 660, duration: 0.12, type: "triangle", gain: 0.04 });
+        tone(ctx, { from: 880, at: 0.12, duration: 0.16, gain: 0.04 });
+        break;
       case "turn":
         tone(ctx, { from: 520, to: 780, duration: 0.16, type: "sine", gain: 0.075 });
         tone(ctx, { from: 780, to: 1040, at: 0.1, duration: 0.14, type: "sine", gain: 0.045 });
