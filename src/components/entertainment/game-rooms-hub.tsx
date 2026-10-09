@@ -66,7 +66,8 @@ import { MillionaireGameRoom } from "./millionaire-game-room";
 import { MillionaireResults } from "./millionaire-results";
 import { millionaireBotDelay } from "./millionaire-presentation";
 import { initialMonopolyData, reduceMonopoly, chooseMillionaireBotAction } from "./millionaire-engine";
-import { UnoGameRoom } from "./uno-game-room";
+import { UnoGameRoom, UnoResults } from "./uno-game-room";
+import { initialUnoData, reduceUno, unoPlayable, getUnoParticipants, rematchUno } from "./uno-engine";
 
 type GameKey =
   | "uno"
@@ -111,7 +112,7 @@ type RoomAction = {
 
 type RoomPacket =
   | { kind: "request-state"; senderId: string }
-  | { kind: "snapshot"; senderId: string; hostId: string; state: RoomState }
+  | { kind: "snapshot"; senderId: string; hostId: string; state: RoomState; sentAt?: number }
   | { kind: "action"; senderId: string; action: RoomAction }
   | { kind: "room-closed"; senderId: string };
 
@@ -332,67 +333,6 @@ function shuffle<T>(items: T[]): T[] {
 function copyData<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
-
-function buildUnoDeck(mode: UnoMode = "classic"): UnoCard[] {
-  const cards: UnoCard[] = [];
-  let id = 0;
-  UNO_COLORS.forEach((color) => {
-    cards.push({ id: `uno-${id++}`, color, value: "0" });
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "draw2"].forEach((value) => {
-      cards.push({ id: `uno-${id++}`, color, value });
-      cards.push({ id: `uno-${id++}`, color, value });
-    });
-  });
-  for (let index = 0; index < 4; index += 1) {
-    cards.push({ id: `uno-${id++}`, color: "wild", value: "wild" });
-    cards.push({ id: `uno-${id++}`, color: "wild", value: "wild4" });
-  }
-  if (mode === "flip") {
-    UNO_COLORS.forEach((color) => {
-      for (let index = 0; index < 2; index += 1) cards.push({ id: `uno-${id++}`, color, value: "flip" });
-      cards.push({ id: `uno-${id++}`, color, value: "draw5" });
-      cards.push({ id: `uno-${id++}`, color, value: "skipAll" });
-    });
-  }
-  if (mode === "no-mercy") {
-    UNO_COLORS.forEach((color) => {
-      cards.push({ id: `uno-${id++}`, color, value: "draw4" });
-      cards.push({ id: `uno-${id++}`, color, value: "discardAll" });
-      cards.push({ id: `uno-${id++}`, color, value: "skipAll" });
-    });
-    for (let index = 0; index < 4; index += 1) {
-      cards.push({ id: `uno-${id++}`, color: "wild", value: index < 2 ? "draw6" : "draw10" });
-    }
-  }
-  return shuffle(cards);
-}
-
-function initialUnoData(players: Player[], starterIndex = 0, mode: UnoMode = "classic") {
-  const deck = buildUnoDeck(mode);
-  const hands: Record<string, UnoCard[]> = {};
-  players.forEach((player) => {
-    hands[player.id] = deck.splice(0, 7);
-  });
-  let firstIndex = deck.findIndex((card) => card.color !== "wild");
-  if (firstIndex < 0) firstIndex = 0;
-  const [first] = deck.splice(firstIndex, 1);
-  return {
-    hands,
-    drawPile: deck,
-    discard: [first],
-    currentColor: first.color,
-    turnIndex: starterIndex,
-    direction: 1,
-    drawnCardId: null,
-    unoCalled: {},
-    winnerId: null,
-    mode,
-    side: "light",
-    pendingDraw: 0,
-    lastAction: "تم توزيع 7 أوراق لكل لاعب",
-  };
-}
-
 function buildDealDeck(): DealCard[] {
   const cards: DealCard[] = [];
   let id = 0;
@@ -581,7 +521,7 @@ function makeBotPlayer(existing: Player[], difficulty: BotDifficulty): Player {
   };
 }
 
-function startState(previous: RoomState, players: Player[]): RoomState {
+function startState(previous: RoomState, players: Player[], now = Date.now()): RoomState {
   const scores = { ...previous.scores };
   players.forEach((player) => {
     if (scores[player.id] == null) scores[player.id] = 0;
@@ -594,7 +534,9 @@ function startState(previous: RoomState, players: Player[]): RoomState {
     round: 0,
     scores,
     data: {
-      ...initialGameData(previous.game, players, 0, starterIndex, previous.gameOptions),
+      ...(previous.game === "uno"
+        ? initialUnoData(players, starterIndex, previous.gameOptions?.unoMode ?? "classic", now)
+        : initialGameData(previous.game, players, 0, starterIndex, previous.gameOptions)),
       starterId: starter?.id ?? null,
       starterName: starter?.name ?? "اللاعب الأول",
       starterIndex,
@@ -607,147 +549,6 @@ function wrappedIndex(index: number, length: number) {
   if (!length) return 0;
   return ((index % length) + length) % length;
 }
-
-function unoAdvance(index: number, direction: number, steps: number, players: Player[]) {
-  return wrappedIndex(index + direction * steps, players.length);
-}
-
-function refillUnoDrawPile(data: any) {
-  if (data.drawPile.length || data.discard.length <= 1) return;
-  const top = data.discard[data.discard.length - 1];
-  data.drawPile = shuffle(data.discard.slice(0, -1));
-  data.discard = [top];
-}
-
-function takeUnoCards(data: any, count: number): UnoCard[] {
-  const result: UnoCard[] = [];
-  for (let index = 0; index < count; index += 1) {
-    refillUnoDrawPile(data);
-    const card = data.drawPile.shift();
-    if (card) result.push(card);
-  }
-  return result;
-}
-
-function unoPlayable(card: UnoCard, data: any, hand: UnoCard[]) {
-  const top = data.discard[data.discard.length - 1] as UnoCard;
-  if ((data.pendingDraw ?? 0) > 0) return ["draw2", "draw4", "wild4", "draw5", "draw6", "draw10"].includes(card.value);
-  if (card.value === "wild4") {
-    return !hand.some((item) => item.id !== card.id && item.color === data.currentColor);
-  }
-  return card.color === "wild" || card.color === data.currentColor || card.value === top.value;
-}
-
-function reduceUno(state: RoomState, action: RoomAction, players: Player[]): RoomState {
-  const data = copyData(state.data);
-  const active = players[data.turnIndex % Math.max(players.length, 1)];
-  if (active?.id !== action.playerId || data.winnerId) return state;
-  const hand = (data.hands[action.playerId] ?? []) as UnoCard[];
-
-  if (action.type === "uno-call" && hand.length <= 2) {
-    data.unoCalled[action.playerId] = true;
-    data.lastAction = `${active.name} أعلن أونو!`;
-    return { ...state, data };
-  }
-
-  if (action.type === "uno-draw") {
-    if (data.drawnCardId) return state;
-    const drawCount = Math.max(1, Number(data.pendingDraw ?? 0));
-    const cards = takeUnoCards(data, drawCount);
-    const card = cards[0];
-    if (!card) return state;
-    hand.push(...cards);
-    data.hands[action.playerId] = hand;
-    data.pendingDraw = 0;
-    if (drawCount > 1) {
-      data.drawnCardId = null;
-      data.turnIndex = unoAdvance(data.turnIndex, data.direction, 1, players);
-      data.lastAction = `${active.name} سحب ${drawCount} أوراق`;
-    } else {
-      data.drawnCardId = card.id;
-      data.lastAction = `${active.name} سحب ورقة`;
-    }
-    return { ...state, data };
-  }
-
-  if (action.type === "uno-pass" && data.drawnCardId) {
-    data.drawnCardId = null;
-    data.unoCalled[action.playerId] = false;
-    data.turnIndex = unoAdvance(data.turnIndex, data.direction, 1, players);
-    data.lastAction = `${active.name} مرّر الدور`;
-    return { ...state, data };
-  }
-
-  if (action.type !== "uno-play") return state;
-  const cardIndex = hand.findIndex((card) => card.id === action.value?.cardId);
-  if (cardIndex < 0) return state;
-  const card = hand[cardIndex];
-  if (data.drawnCardId && data.drawnCardId !== card.id) return state;
-  if (!unoPlayable(card, data, hand)) return state;
-  if (card.color === "wild" && !UNO_COLORS.includes(action.value?.color)) return state;
-
-  hand.splice(cardIndex, 1);
-  data.hands[action.playerId] = hand;
-  data.discard.push(card);
-  data.currentColor = card.color === "wild" ? action.value.color : card.color;
-  data.drawnCardId = null;
-  data.lastAction = `${active.name} لعب ${unoValueLabel(card.value)}`;
-
-  if (hand.length === 0) {
-    data.winnerId = action.playerId;
-    data.lastAction = `${active.name} أنهى أوراقه وفاز بالجولة`;
-    const scores = { ...state.scores, [action.playerId]: scoreFor(state.scores, action.playerId) + 1 };
-    return { ...state, phase: "results", scores, data };
-  }
-
-  if (hand.length !== 1) data.unoCalled[action.playerId] = false;
-  let direction = data.direction as number;
-  let steps = 1;
-  if (card.value === "reverse") {
-    direction *= -1;
-    data.direction = direction;
-    steps = players.length === 2 ? 2 : 1;
-  }
-  if (card.value === "skip") steps = 2;
-  if (card.value === "flip") {
-    data.side = data.side === "dark" ? "light" : "dark";
-    data.direction *= -1;
-    direction = data.direction;
-    data.lastAction = `${active.name} قلب جهة اللعب`;
-  }
-  if (card.value === "skipAll") steps = players.length;
-  if (card.value === "discardAll") {
-    const sameColor = hand.filter((item) => item.color === card.color);
-    data.hands[action.playerId] = hand.filter((item) => item.color !== card.color);
-    data.discard.push(...sameColor);
-    data.lastAction = `${active.name} تخلص من أوراق اللون نفسه`;
-  }
-  const drawValues: Record<string, number> = { draw2: 2, wild4: 4, draw4: 4, draw5: 5, draw6: 6, draw10: 10 };
-  if (drawValues[card.value]) {
-    const targetIndex = unoAdvance(data.turnIndex, direction, 1, players);
-    const target = players[targetIndex];
-    if (target) {
-      if ((data.mode ?? "classic") === "no-mercy") {
-        data.pendingDraw = Number(data.pendingDraw ?? 0) + drawValues[card.value];
-        steps = 1;
-      } else {
-        const targetHand = (data.hands[target.id] ?? []) as UnoCard[];
-        targetHand.push(...takeUnoCards(data, drawValues[card.value]));
-        data.hands[target.id] = targetHand;
-        steps = 2;
-      }
-    }
-  }
-  if ((data.hands[action.playerId] as UnoCard[]).length === 0) {
-    data.winnerId = action.playerId;
-    data.lastAction = `${active.name} أنهى أوراقه وفاز بالجولة`;
-    const scores = { ...state.scores, [action.playerId]: scoreFor(state.scores, action.playerId) + 1 };
-    return { ...state, phase: "results", scores, data };
-  }
-  data.turnIndex = unoAdvance(data.turnIndex, direction, steps, players);
-  return { ...state, data };
-}
-
 function refillDealDrawPile(data: any) {
   if (data.drawPile.length || !data.discard.length) return;
   data.drawPile = shuffle(data.discard);
@@ -1142,7 +943,7 @@ function reduceBaloot(state: RoomState, action: RoomAction, players: Player[]): 
 }
 
 
-function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]): RoomState {
+function applyRoomAction(state: RoomState, action: RoomAction, players: Player[], now = Date.now()): RoomState {
   const bots = state.bots ?? [];
   if (action.type === "add-bot" && state.phase === "lobby") {
     const limit = gameMeta(state.game).maxPlayers ?? 12;
@@ -1180,12 +981,13 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
     if (!["classic", "flip", "no-mercy"].includes(mode)) return state;
     return { ...state, gameOptions: { ...state.gameOptions, unoMode: mode } };
   }
-  if (action.type === "start" && state.phase === "lobby") return startState(state, players);
+  if (action.type === "start" && state.phase === "lobby") return startState(state, players, now);
   if (action.type === "lobby") return { ...lobbyState(state.game, state.gameOptions), bots };
+  if (action.type === "uno-rematch" && state.game === "uno") return rematchUno(state, players, now);
   if (action.type === "finish") return { ...state, phase: "results" };
   if (state.phase !== "playing") return state;
 
-  if (state.game === "uno") return reduceUno(state, action, players);
+  if (state.game === "uno") return reduceUno(state, action, players, now);
   if (state.game === "saudi-deal") return reduceDeal(state, action, players);
   if (state.game === "baloot") return reduceBaloot(state, action, players);
   if (state.game === "monopoly") return reduceMonopoly(state, action, players);
@@ -1632,6 +1434,9 @@ export function GameRoomsHub() {
   const [connected, setConnected] = useState(false);
   const [ready, setReady] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [clockOffset, setClockOffset] = useState(0);
+  const lastSnapshotAtRef = useRef(0);
+  const clockOffsetRef = useRef(0);
 
   const channelRef = useRef<any>(null);
   const meRef = useRef(me);
@@ -1641,6 +1446,7 @@ export function GameRoomsHub() {
   const roomRef = useRef(roomCode);
   const readyRef = useRef(ready);
   const receivedSnapshotRef = useRef(false);
+  const synchronizingRef = useRef(false);
   const reconnectAttemptedRef = useRef(false);
   const electionTimerRef = useRef<number | null>(null);
   const joinTimersRef = useRef<number[]>([]);
@@ -1729,6 +1535,7 @@ export function GameRoomsHub() {
         senderId: meRef.current.id,
         hostId: nextHostId,
         state: nextState,
+        sentAt: Date.now() + (nextState.game === "uno" ? clockOffsetRef.current : 0),
       });
     },
     [sendPacket],
@@ -1742,7 +1549,11 @@ export function GameRoomsHub() {
       name: meRef.current.name,
       avatarUrl: meRef.current.avatarUrl,
       ready: nextReady,
-      joinedAt: meRef.current.joinedAt,
+      joinedAt: (
+        stateRef.current.game === "uno" && stateRef.current.phase !== "lobby"
+          ? stateRef.current.data.roster?.find((player: Player) => player.id === meRef.current.id)?.joinedAt
+          : undefined
+      ) ?? meRef.current.joinedAt,
       isHost: nextIsHost,
     });
   }, []);
@@ -1781,9 +1592,13 @@ export function GameRoomsHub() {
 
   const hostApply = useCallback(
     async (action: RoomAction) => {
-      if (hostRef.current !== meRef.current.id) return;
-      const participants = [...playersRef.current, ...(stateRef.current.bots ?? [])];
-      const next = applyRoomAction(stateRef.current, action, participants);
+      if (hostRef.current !== meRef.current.id || synchronizingRef.current) return;
+      const live = [...playersRef.current, ...(stateRef.current.bots ?? [])];
+      const participants = stateRef.current.game === "uno" && stateRef.current.phase !== "lobby"
+        ? getUnoParticipants(stateRef.current.data, live)
+        : live;
+      if (action.type === "uno-rematch" && action.playerId !== meRef.current.id) return;
+      const next = applyRoomAction(stateRef.current, action, participants, Date.now() + clockOffsetRef.current);
       if (next === stateRef.current) return;
       stateRef.current = next;
       setState(next);
@@ -1794,7 +1609,13 @@ export function GameRoomsHub() {
 
   const dispatch = useCallback(
     async (type: string, value?: any) => {
-      const action: RoomAction = { type, value, playerId: meRef.current.id };
+      const action: RoomAction = {
+        type,
+        value: stateRef.current.game === "uno" && type.startsWith("uno-")
+          ? { ...value, turnSequence: stateRef.current.data.turnSequence }
+          : value,
+        playerId: meRef.current.id,
+      };
       if (hostRef.current === meRef.current.id) {
         await hostApply(action);
       } else {
@@ -1807,11 +1628,20 @@ export function GameRoomsHub() {
   packetHandlerRef.current = (packet) => {
     if (!packet || packet.senderId === meRef.current.id) return;
     if (packet.kind === "request-state") {
-      if (hostRef.current === meRef.current.id) void publishSnapshot(stateRef.current, meRef.current.id);
+      if (hostRef.current === meRef.current.id && !synchronizingRef.current) {
+        void publishSnapshot(stateRef.current, meRef.current.id);
+      }
       return;
     }
     if (packet.kind === "snapshot") {
       receivedSnapshotRef.current = true;
+      synchronizingRef.current = false;
+      setConnected(true);
+      lastSnapshotAtRef.current = Date.now();
+      if (packet.sentAt && packet.state.game === "uno") {
+        clockOffsetRef.current = packet.sentAt - Date.now();
+        setClockOffset(clockOffsetRef.current);
+      }
       hostRef.current = packet.hostId;
       stateRef.current = packet.state;
       setHostId(packet.hostId);
@@ -1820,6 +1650,10 @@ export function GameRoomsHub() {
       return;
     }
     if (packet.kind === "action") {
+      if (stateRef.current.game === "uno" && (
+        packet.senderId !== packet.action.playerId ||
+        ["uno-timeout", "uno-clock"].includes(packet.action.type)
+      )) return;
       if (hostRef.current === meRef.current.id) void hostApply(packet.action);
       return;
     }
@@ -1833,11 +1667,13 @@ export function GameRoomsHub() {
     async (
       requestedCode: string,
       mode: "create" | "join" | "restore",
-      restored?: { state?: RoomState; hostId?: string; ready?: boolean },
+      restored?: { state?: RoomState; hostId?: string; ready?: boolean; clockOffset?: number },
     ) => {
       const code = cleanCode(requestedCode);
       if (code.length !== 6 || channelRef.current) return;
       setConnecting(true);
+      clockOffsetRef.current = restored?.clockOffset ?? 0;
+      setClockOffset(clockOffsetRef.current);
       receivedSnapshotRef.current = mode === "create" || Boolean(restored?.state);
 
       const startingState = restored?.state ?? lobbyState();
@@ -1856,6 +1692,7 @@ export function GameRoomsHub() {
         config: { broadcast: { self: false }, presence: { key: meRef.current.id } },
       });
       channelRef.current = channel;
+      let subscribedOnce = false;
 
       channel
         .on("broadcast", { event: "room" }, ({ payload }: { payload: RoomPacket }) => {
@@ -1904,6 +1741,8 @@ export function GameRoomsHub() {
               hostRef.current = successor.id;
               setHostId(successor.id);
               if (successor.id === meRef.current.id) {
+                synchronizingRef.current = false;
+                setConnected(true);
                 toast.info("أصبحت مضيف الغرفة بعد خروج المضيف السابق");
                 void trackPresence(readyRef.current, true);
                 void publishSnapshot(stateRef.current, successor.id);
@@ -1913,14 +1752,27 @@ export function GameRoomsHub() {
         })
         .subscribe(async (status: string) => {
           if (status === "SUBSCRIBED") {
+            const firstSubscription = !subscribedOnce;
+            subscribedOnce = true;
+            const subscribedAt = Date.now();
+            clearJoinTimers();
             setConnecting(false);
-            setConnected(true);
-            await trackPresence(startingReady, startingHost === meRef.current.id);
-            if (mode !== "create") {
+            synchronizingRef.current = mode !== "create" || !firstSubscription;
+            setConnected(!synchronizingRef.current);
+            await trackPresence(readyRef.current, hostRef.current === meRef.current.id);
+            if (mode !== "create" || !firstSubscription) {
               await sendPacket({ kind: "request-state", senderId: meRef.current.id });
               joinTimersRef.current.push(
                 window.setTimeout(() => {
-                  void sendPacket({ kind: "request-state", senderId: meRef.current.id });
+                  if (
+                    lastSnapshotAtRef.current < subscribedAt &&
+                    hostRef.current === meRef.current.id &&
+                    !playersRef.current.some((player) => player.isHost && player.id !== meRef.current.id)
+                  ) {
+                    synchronizingRef.current = false;
+                    setConnected(true);
+                    void publishSnapshot(stateRef.current, meRef.current.id);
+                  } else void sendPacket({ kind: "request-state", senderId: meRef.current.id });
                 }, 1800),
               );
               joinTimersRef.current.push(
@@ -1932,17 +1784,17 @@ export function GameRoomsHub() {
                 }, 6500),
               );
             } else {
-              await publishSnapshot(startingState, meRef.current.id);
+              await publishSnapshot(stateRef.current, meRef.current.id);
             }
           }
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            synchronizingRef.current = true;
             setConnecting(false);
             setConnected(false);
-            toast.error("تعذر الاتصال بالغرفة، تحقق من الإنترنت وحاول مجددًا");
           }
         });
     },
-    [leaveRoom, publishSnapshot, sendPacket, trackPresence],
+    [clearJoinTimers, leaveRoom, publishSnapshot, sendPacket, trackPresence],
   );
 
   useEffect(() => {
@@ -1951,11 +1803,12 @@ export function GameRoomsHub() {
     try {
       const saved = JSON.parse(window.localStorage.getItem(SESSION_KEY) || "null");
       const fresh = saved?.savedAt && Date.now() - saved.savedAt < 8 * 60 * 60 * 1000;
-      if (fresh && cleanCode(saved.code).length === 6) {
+      if (fresh && (!saved.playerId || saved.playerId === meRef.current.id) && cleanCode(saved.code).length === 6) {
         void connectRoom(saved.code, "restore", {
           state: saved.state,
           hostId: saved.hostId,
           ready: saved.ready,
+          clockOffset: saved.clockOffset,
         });
       } else {
         window.localStorage.removeItem(SESSION_KEY);
@@ -1969,13 +1822,14 @@ export function GameRoomsHub() {
     if (!roomCode || typeof window === "undefined") return;
     window.localStorage.setItem(
       SESSION_KEY,
-      JSON.stringify({ code: roomCode, state, hostId, ready, savedAt: Date.now() }),
+      JSON.stringify({ code: roomCode, state, hostId, ready, playerId: me.id, clockOffset, savedAt: Date.now() }),
     );
-  }, [roomCode, state, hostId, ready]);
+  }, [roomCode, state, hostId, ready, me.id, clockOffset]);
 
   useEffect(() => {
     if (!connected || hostId !== me.id || state.phase !== "playing") return;
-    const currentPlayers = [...players, ...(state.bots ?? [])];
+    const live = [...players, ...(state.bots ?? [])];
+    const currentPlayers = state.game === "uno" ? getUnoParticipants(state.data, live) : live;
     const action = chooseBotAction(state, currentPlayers);
     if (!action) return;
     const bot = currentPlayers.find((player) => player.id === action.playerId && player.isBot);
@@ -1984,6 +1838,52 @@ export function GameRoomsHub() {
     }, state.game === "monopoly" ? millionaireBotDelay(state.data, botThinkDelay(bot)) : botThinkDelay(bot));
     return () => window.clearTimeout(timer);
   }, [connected, hostId, me.id, players, state, hostApply]);
+
+  // Only the elected, connected host advances an expired turn. Sequence/deadline
+  // guards in the reducer make old callbacks and delayed packets harmless.
+  useEffect(() => {
+    if (!connected || hostId !== me.id || state.game !== "uno" || state.phase !== "playing") return;
+    const tick = () => {
+      const current = stateRef.current;
+      const roster = getUnoParticipants(current.data, [...playersRef.current, ...(current.bots ?? [])]);
+      const active = roster[Number(current.data.turnIndex ?? 0) % Math.max(1, roster.length)];
+      if (!active) return;
+      if (!current.data.turnDeadline) void hostApply({ type: "uno-clock", playerId: active.id });
+      else if (Date.now() + clockOffsetRef.current >= current.data.turnDeadline) {
+        void hostApply({
+          type: "uno-timeout",
+          playerId: active.id,
+          value: { turnSequence: current.data.turnSequence, deadline: current.data.turnDeadline },
+        });
+      }
+    };
+    const interval = window.setInterval(tick, 250);
+    tick();
+    return () => window.clearInterval(interval);
+  }, [connected, hostId, me.id, state.game, state.phase, hostApply]);
+
+  useEffect(() => {
+    const offline = () => {
+      synchronizingRef.current = true;
+      setConnected(false);
+    };
+    const refresh = () => {
+      if (!channelRef.current || document.visibilityState === "hidden") return;
+      if (channelRef.current.state === "joined") {
+        if (!synchronizingRef.current) setConnected(true);
+        void trackPresence(readyRef.current);
+        void sendPacket({ kind: "request-state", senderId: meRef.current.id });
+      }
+    };
+    window.addEventListener("offline", offline);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("offline", offline);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [sendPacket, trackPresence]);
 
   useEffect(() => () => {
     const channel = channelRef.current;
@@ -2012,7 +1912,10 @@ export function GameRoomsHub() {
 
   const isHost = hostId === me.id;
   const selectedMeta = gameMeta(state.game);
-  const participants = useMemo(() => [...players, ...(state.bots ?? [])], [players, state.bots]);
+  const participants = useMemo(() => {
+    const live = [...players, ...(state.bots ?? [])];
+    return state.game === "uno" && state.phase !== "lobby" ? getUnoParticipants(state.data, live) : live;
+  }, [players, state]);
   const minimumReached = selectedMeta.exactPlayers
     ? participants.length === selectedMeta.exactPlayers
     : participants.length >= selectedMeta.minPlayers;
@@ -2069,7 +1972,7 @@ export function GameRoomsHub() {
           onBotDifficulty={(botId, difficulty) => void dispatch("set-bot-difficulty", { botId, difficulty })}
         />
       ) : state.phase === "results" ? (
-        state.game === "monopoly" ? <MillionaireResults data={state.data} players={participants} isHost={isHost} onLobby={() => void dispatch("lobby")} /> : <Results
+        state.game === "uno" ? <UnoResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("uno-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "monopoly" ? <MillionaireResults data={state.data} players={participants} isHost={isHost} onLobby={() => void dispatch("lobby")} /> : <Results
           players={participants}
           scores={state.scores}
           isHost={isHost}
@@ -2082,6 +1985,8 @@ export function GameRoomsHub() {
           me={me}
           isHost={isHost}
           now={now}
+          connected={connected}
+          clockOffset={clockOffset}
           dispatch={dispatch}
         />
       )}
@@ -2832,6 +2737,8 @@ function GameBoard({
   me,
   isHost,
   now,
+  connected = true,
+  clockOffset = 0,
   dispatch,
 }: {
   state: RoomState;
@@ -2839,6 +2746,8 @@ function GameBoard({
   me: Player;
   isHost: boolean;
   now: number;
+  connected?: boolean;
+  clockOffset?: number;
   dispatch: (type: string, value?: any) => Promise<void>;
 }) {
   const meta = gameMeta(state.game);
@@ -2995,7 +2904,7 @@ function GameBoard({
           <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
         </div>
       )}
-      {showStartingDraw && (
+      {showStartingDraw && state.game !== "uno" && (
         <div className="arena-starting-draw" role="status" aria-live="polite">
           <div className="arena-starting-draw__halo" />
           <Crown className="arena-starting-draw__crown" />
@@ -3087,6 +2996,11 @@ function GameBoard({
               onSettings={() => setShowSettings(true)}
               isHost={isHost}
               onFinish={() => void dispatch("finish")}
+              connected={connected}
+              clockOffset={clockOffset}
+              sound={preferences.sound}
+              reducedMotion={preferences.reducedMotion}
+              onToggleSound={() => toggle("sound")}
             />
           )}
           {state.game === "monopoly" && (
