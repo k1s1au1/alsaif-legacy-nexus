@@ -241,7 +241,7 @@ export function SaudiDealGameRoom({
   const data = state.data as DealData;
   const root = useRef<HTMLElement>(null);
   const anchors = useRef(new Map<string, HTMLElement>());
-  const [now, setNow] = useState(() => Date.now());
+  const [, refreshClock] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [pending, setPending] = useState<DealCard | null>(null);
   const [target, setTarget] = useState<Target | null>(null);
@@ -256,7 +256,12 @@ export function SaudiDealGameRoom({
   const active = players[Number(data.turnIndex ?? 0) % Math.max(1, players.length)];
   const seconds = Math.max(
     0,
-    Math.ceil((Number(data.turnDeadline ?? Date.now() + DEAL_TURN_MS) - now - clockOffset) / 1000),
+    Math.min(
+      DEAL_TURN_MS / 1000,
+      Math.ceil(
+        (Number(data.turnDeadline ?? Date.now() + DEAL_TURN_MS) - Date.now() - clockOffset) / 1000,
+      ),
+    ),
   );
   const myTurn = active?.id === me.id;
   const canAct = connected && myTurn && seconds > 0 && !data.needsDraw;
@@ -289,7 +294,7 @@ export function SaudiDealGameRoom({
     setOffered("");
   };
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 200);
+    const timer = window.setInterval(() => refreshClock((frame) => frame + 1), 200);
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
