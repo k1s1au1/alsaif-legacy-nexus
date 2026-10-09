@@ -873,7 +873,7 @@
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
-  transform: rotateX(-16deg) rotateY(-18deg) rotateZ(var(--dice-view)) rotateX(var(--dice-x))
+  transform: rotateX(-55deg) rotateY(var(--dice-view)) rotateX(90deg) rotateX(var(--dice-x))
     rotateY(var(--dice-y));
 }
 .millionaire-die-face {
@@ -1675,11 +1675,11 @@
 }
 @keyframes millionaire-dice-tumble {
   0% {
-    transform: rotateX(-16deg) rotateY(-18deg) rotateZ(var(--dice-view)) rotateX(720deg)
+    transform: rotateX(-55deg) rotateY(var(--dice-view)) rotateX(90deg) rotateX(720deg)
       rotateY(620deg);
   }
   100% {
-    transform: rotateX(-16deg) rotateY(-18deg) rotateZ(var(--dice-view)) rotateX(var(--dice-x))
+    transform: rotateX(-55deg) rotateY(var(--dice-view)) rotateX(90deg) rotateX(var(--dice-x))
       rotateY(var(--dice-y));
   }
 }
