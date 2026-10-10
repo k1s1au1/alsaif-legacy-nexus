@@ -1562,37 +1562,31 @@ export type Database = {
         }
         Relationships: []
       }
-      trip_preferences: {
-        Row: { trip_id: string; user_id: string; interested: boolean; destination_id: string | null; date_id: string | null; revision: number; updated_at: string }
-        Insert: { trip_id: string; user_id: string; interested?: boolean; destination_id?: string | null; date_id?: string | null; revision: number; updated_at?: string }
-        Update: { interested?: boolean; destination_id?: string | null; date_id?: string | null; revision?: number; updated_at?: string }
-        Relationships: []
-      }
       trip_attendees: {
         Row: {
-          status: string
-          companions_count: number
           approval_version: number
+          companions_count: number
           created_at: string
           id: string
+          status: string
           trip_id: string
           user_id: string
         }
         Insert: {
-          status?: string
-          companions_count?: number
           approval_version?: number
+          companions_count?: number
           created_at?: string
           id?: string
+          status?: string
           trip_id: string
           user_id: string
         }
         Update: {
-          status?: string
-          companions_count?: number
           approval_version?: number
+          companions_count?: number
           created_at?: string
           id?: string
+          status?: string
           trip_id?: string
           user_id?: string
         }
@@ -1608,38 +1602,38 @@ export type Database = {
       }
       trip_items: {
         Row: {
-          notes: string | null
+          assigned_to: string | null
           completed_at: string | null
           completed_by: string | null
-          assigned_to: string | null
           created_at: string
           created_by: string
           id: string
           name: string
+          notes: string | null
           trip_id: string
           updated_at: string
         }
         Insert: {
-          notes?: string | null
+          assigned_to?: string | null
           completed_at?: string | null
           completed_by?: string | null
-          assigned_to?: string | null
           created_at?: string
           created_by: string
           id?: string
           name: string
+          notes?: string | null
           trip_id: string
           updated_at?: string
         }
         Update: {
-          notes?: string | null
+          assigned_to?: string | null
           completed_at?: string | null
           completed_by?: string | null
-          assigned_to?: string | null
           created_at?: string
           created_by?: string
           id?: string
           name?: string
+          notes?: string | null
           trip_id?: string
           updated_at?: string
         }
@@ -1660,12 +1654,47 @@ export type Database = {
           },
         ]
       }
+      trip_preferences: {
+        Row: {
+          date_id: string | null
+          destination_id: string | null
+          interested: boolean
+          revision: number
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          date_id?: string | null
+          destination_id?: string | null
+          interested?: boolean
+          revision: number
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          date_id?: string | null
+          destination_id?: string | null
+          interested?: boolean
+          revision?: number
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_preferences_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           accommodation_type: string | null
-          planning_destinations: Json
-          planning_dates: Json
-          planning_revision: number
           approval_version: number
           approved_at: string | null
           approved_by: string | null
@@ -1678,6 +1707,9 @@ export type Database = {
           image_url: string | null
           location: string | null
           location_url: string | null
+          planning_dates: Json
+          planning_destinations: Json
+          planning_revision: number
           start_date: string | null
           status: string
           title: string
@@ -1685,9 +1717,6 @@ export type Database = {
         }
         Insert: {
           accommodation_type?: string | null
-          planning_destinations?: Json
-          planning_dates?: Json
-          planning_revision?: number
           approval_version?: number
           approved_at?: string | null
           approved_by?: string | null
@@ -1700,6 +1729,9 @@ export type Database = {
           image_url?: string | null
           location?: string | null
           location_url?: string | null
+          planning_dates?: Json
+          planning_destinations?: Json
+          planning_revision?: number
           start_date?: string | null
           status?: string
           title: string
@@ -1707,9 +1739,6 @@ export type Database = {
         }
         Update: {
           accommodation_type?: string | null
-          planning_destinations?: Json
-          planning_dates?: Json
-          planning_revision?: number
           approval_version?: number
           approved_at?: string | null
           approved_by?: string | null
@@ -1722,6 +1751,9 @@ export type Database = {
           image_url?: string | null
           location?: string | null
           location_url?: string | null
+          planning_dates?: Json
+          planning_destinations?: Json
+          planning_revision?: number
           start_date?: string | null
           status?: string
           title?: string
@@ -1776,10 +1808,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      save_trip_preference: { Args: { _trip_id: string; _interested: boolean; _destination_id: string | null; _date_id: string | null; _revision: number }; Returns: Database["public"]["Tables"]["trip_preferences"]["Row"] }
-      approve_trip_plan: { Args: { _trip_id: string; _location: string; _start_date: string; _end_date: string; _revision: number }; Returns: Database["public"]["Tables"]["trips"]["Row"] }
-      set_trip_item_state: { Args: { _item_id: string; _action: string }; Returns: Database["public"]["Tables"]["trip_items"]["Row"] }
-      set_trip_attendance: { Args: { _trip_id: string; _status: string | null; _companions: number; _version: number }; Returns: Json }
+      approve_trip_plan: {
+        Args: {
+          _end_date: string
+          _location: string
+          _revision: number
+          _start_date: string
+          _trip_id: string
+        }
+        Returns: {
+          accommodation_type: string | null
+          approval_version: number
+          approved_at: string | null
+          approved_by: string | null
+          badge: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          location: string | null
+          location_url: string | null
+          planning_dates: Json
+          planning_destinations: Json
+          planning_revision: number
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trips"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       archive_cleanup_expired: { Args: never; Returns: undefined }
       assign_user_role: {
         Args: {
@@ -1917,6 +1982,60 @@ export type Database = {
       review_profile_change_request: {
         Args: { _approve: boolean; _id: string; _note?: string }
         Returns: undefined
+      }
+      save_trip_preference: {
+        Args: {
+          _date_id: string
+          _destination_id: string
+          _interested: boolean
+          _revision: number
+          _trip_id: string
+        }
+        Returns: {
+          date_id: string | null
+          destination_id: string | null
+          interested: boolean
+          revision: number
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trip_preferences"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_trip_attendance: {
+        Args: {
+          _companions: number
+          _status: string
+          _trip_id: string
+          _version: number
+        }
+        Returns: Json
+      }
+      set_trip_item_state: {
+        Args: { _action: string; _item_id: string }
+        Returns: {
+          assigned_to: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          notes: string | null
+          trip_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trip_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       submit_profile_change_request: {
         Args: { _changes: Json; _reason?: string }

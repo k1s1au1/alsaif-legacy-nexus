@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireSupabaseAuth } from "@/lib/api/supabase-auth.middleware";
 
 /** Every public table included in the full system backup. */
 const BACKUP_TABLES = [
