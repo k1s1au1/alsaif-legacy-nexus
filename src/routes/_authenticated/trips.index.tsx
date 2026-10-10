@@ -35,6 +35,8 @@ import { sendPushNotification } from "@/lib/api/push.functions";
 import { consumeQuickCreate } from "@/lib/quick-create";
 import { isTripActive } from "@/lib/day-lifecycle";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
+import { TripStatusControl } from "@/components/trip-status-control";
+import type { EditableTripStatus } from "@/lib/trip-status";
 
 export const Route = createFileRoute("/_authenticated/trips/")({
   ssr: false,
@@ -69,17 +71,6 @@ function formatRange(start: string | null, end: string | null) {
   return `${fmt(start)} - ${fmt(end)}`;
 }
 
-function statusChip(status: string) {
-  if (status === "upcoming")
-    return {
-      label: "قادمة",
-      className: "bg-gold-primary/10 text-gold-primary border-gold-primary/20",
-    };
-  if (status === "planning")
-    return { label: "قيد التخطيط", className: "bg-blue-500/10 text-blue-400 border-blue-500/20" };
-  return { label: "سابقة", className: "bg-muted text-muted-foreground border-border" };
-}
-
 function TripsPage() {
   const [profile, setProfile] = useState<{
     name: string;
@@ -98,7 +89,7 @@ function TripsPage() {
     primaryRole,
     isLoading: rolesLoading,
   } = useUserRole();
-  const canManage = canManageSection("trips");
+  const canManage = !rolesLoading && !!userId && canManageSection("trips");
   const dynamicLogo = useSiteLogo();
   const activeDayKey = useDayBoundaryKey();
 
@@ -268,6 +259,11 @@ function TripsPage() {
                       canManage={canManage}
                       onEdit={setEditingTrip}
                       onRefresh={loadTrips}
+                      onStatusSaved={(status: EditableTripStatus) =>
+                        setTrips((items) => items.map((item) =>
+                          item.id === trip.id ? { ...item, status } : item,
+                        ))
+                      }
                     />
                   ))}
                 </div>
@@ -346,8 +342,14 @@ function TripsPage() {
   );
 }
 
-function TripCard({ trip, index, canManage, onEdit, onRefresh }: any) {
-  const chip = statusChip(trip.status);
+function TripCard({ trip, index, canManage, onEdit, onRefresh, onStatusSaved }: {
+  trip: Trip;
+  index: number;
+  canManage: boolean;
+  onEdit: (trip: Trip) => void;
+  onRefresh: () => Promise<void>;
+  onStatusSaved: (status: EditableTripStatus) => void;
+}) {
 
   return (
     <motion.article
@@ -365,14 +367,12 @@ function TripCard({ trip, index, canManage, onEdit, onRefresh }: any) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
         {/* Status Chip */}
-        <div
-          className={cn(
-            "absolute top-5 right-5 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border backdrop-blur-md shadow-lg",
-            chip.className,
-          )}
-        >
-          {chip.label}
-        </div>
+        <TripStatusControl
+          trip={trip}
+          canManage={canManage}
+          onSaved={onStatusSaved}
+          className="absolute top-5 right-5"
+        />
 
         {/* Admin Actions */}
         {canManage && (
@@ -474,7 +474,6 @@ function TripDialog({ trip, onClose, onSaved }: any) {
     start_date: trip?.start_date ?? "",
     end_date: trip?.end_date ?? "",
     description: trip?.description ?? "",
-    status: trip?.status ?? "upcoming",
   });
 
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
@@ -508,6 +507,7 @@ function TripDialog({ trip, onClose, onSaved }: any) {
     }
 
     const payload: any = { ...form, title };
+    if (!isEdit) payload.status = "upcoming";
     if (imagePath !== undefined) payload.image_url = imagePath;
 
     let error: any;
@@ -627,20 +627,6 @@ function TripDialog({ trip, onClose, onSaved }: any) {
                   <option value="رحلة بحرية">رحلة بحرية</option>
                   <option value="يوم ترفيهي">يوم ترفيهي</option>
                   <option value="أخرى">أخرى</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
-                  الحالة
-                </label>
-                <select
-                  value={form.status}
-                  onChange={(e) => update("status", e.target.value)}
-                  className="w-full h-12 md:h-14 px-5 rounded-2xl md:rounded-2xl bg-muted/40 border border-border/60 font-bold text-sm focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all text-foreground"
-                >
-                  <option value="upcoming">قادمة</option>
-                  <option value="planning">قيد التخطيط</option>
-                  <option value="past">سابقة</option>
                 </select>
               </div>
               <Field

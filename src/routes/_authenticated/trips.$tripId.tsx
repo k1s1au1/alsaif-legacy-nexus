@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
 import { addToCalendar } from "@/lib/calendar";
 import { FamilySharing } from "@/lib/native-bridge";
+import { TripStatusControl } from "@/components/trip-status-control";
 
 export const Route = createFileRoute("/_authenticated/trips/$tripId")({
   ssr: false,
@@ -41,14 +42,6 @@ export const Route = createFileRoute("/_authenticated/trips/$tripId")({
   }),
   component: TripDetail,
 });
-
-function statusLabel(status: string) {
-  if (status === "upcoming") return "قادمة";
-  if (status === "ongoing") return "جارية";
-  if (status === "completed") return "منتهية";
-  if (status === "cancelled") return "ملغاة";
-  return status;
-}
 
 type Trip = {
   id: string;
@@ -94,7 +87,7 @@ function TripDetail() {
   const [checklist, setChecklist] = useState<any[]>([]);
   const [newItemName, setNewItemName] = useState("");
   const [addingItem, setAddingItem] = useState(false);
-  const isPrivileged = canManage("trips");
+  const isPrivileged = !rolesLoading && !!userId && canManage("trips");
   const [profile, setProfile] = useState<{
     name: string;
     role: string;
@@ -313,6 +306,14 @@ function TripDetail() {
       .channel(`trip-${tripId}-realtime`)
       .on(
         "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "trips", filter: `id=eq.${tripId}` },
+        (payload) => {
+          if (cancelled) return;
+          setTrip((current) => current ? { ...current, ...payload.new } : current);
+        },
+      )
+      .on(
+        "postgres_changes",
         { event: "*", schema: "public", table: "trip_attendees", filter: `trip_id=eq.${tripId}` },
         () => {
           clearTimeout(tA);
@@ -465,23 +466,18 @@ function TripDetail() {
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10" />
             <div className="absolute bottom-0 right-0 left-0 p-8 md:p-16 z-20 space-y-6">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="h-1 w-12 bg-gold-primary rounded-full" />
                 {trip.badge && (
                   <span className="px-4 py-1.5 bg-gold-primary text-black text-[10px] font-black rounded-full uppercase tracking-[0.2em] shadow-xl">
                     {trip.badge}
                   </span>
                 )}
-                <span
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border backdrop-blur-md shadow-xl",
-                    trip.status === "upcoming"
-                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                      : "bg-white/10 text-white border-white/10",
-                  )}
-                >
-                  {statusLabel(trip.status)}
-                </span>
+                <TripStatusControl
+                  trip={trip}
+                  canManage={isPrivileged}
+                  onSaved={(status) => setTrip((current) => current ? { ...current, status } : current)}
+                />
               </div>
               <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter drop-shadow-2xl">
                 {trip.title}

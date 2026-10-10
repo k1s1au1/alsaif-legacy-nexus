@@ -35,6 +35,8 @@ jobs:
         run: npm run test:meetings
       - name: Check family occasions in quick follow-up
         run: npm run test:occasions
+      - name: Check direct trip status updates
+        run: npm run test:trip-status
       - name: Check family album pagination and search
         run: npm run test:family-album
       - name: Check vault file validation and timed documents

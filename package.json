@@ -14,6 +14,7 @@
     "test:navigation": "node --test scripts/test-navigation-preferences.mjs",
     "test:meetings": "node --test scripts/test-meeting-attendance.mjs",
     "test:occasions": "node --test scripts/test-upcoming-occasions.mjs",
+    "test:trip-status": "node --test scripts/test-trip-status.mjs",
     "test:family-album": "node --test scripts/test-family-album*.mjs",
     "test:vault": "node --test scripts/test-vault-library.mjs",
     "test:millionaire": "node scripts/test-millionaire.mjs",
