@@ -117,9 +117,9 @@ export function FamilyAgenda({
       if (!item?.id) return;
       rows.push({
         id: `trip-${item.id}`,
-        kind: "رحلة",
+        kind: item.status === "planning" ? "رحلة قيد التخطيط" : "رحلة",
         title: item.title || "رحلة عائلية",
-        date: item.start_date,
+        date: item.status === "planning" ? null : item.start_date,
         to: "/trips",
         tone: "trip",
         icon: Plane,

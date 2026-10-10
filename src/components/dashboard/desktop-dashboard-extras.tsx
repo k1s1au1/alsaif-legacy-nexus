@@ -332,10 +332,10 @@ export function DesktopDashboardExtras({
     );
     (eventsData?.trips || []).forEach((item: any) =>
       rows.push({
-        kind: "رحلة",
+        kind: item.status === "planning" ? "رحلة قيد التخطيط" : "رحلة",
         title: item.title,
-        date: item.start_date,
-        location: item.location,
+        date: item.status === "planning" ? null : item.start_date,
+        location: item.status === "planning" ? "الوجهة والموعد قيد الاختيار" : item.location,
         icon: Plane,
         cardType: "trip",
         to: "/trips",

@@ -23,6 +23,7 @@ const BACKUP_TABLES = [
   "trips",
   "trip_attendees",
   "trip_items",
+  "trip_preferences",
   "tasks",
   "majlis_posts",
   "majlis_comments",

@@ -10,26 +10,46 @@ import {
   type EditableTripStatus,
 } from "@/lib/trip-status";
 import "./trip-status-control.css";
+import { TripApprovalDialog } from "./trip-planning-panel";
+import type { PlannedTrip } from "@/lib/trip-planning";
 
 type Props = {
-  trip: { id: string; title: string; status: string };
+  trip: PlannedTrip;
   canManage: boolean;
   onSaved: (status: EditableTripStatus) => void;
   className?: string;
+  onRecordSaved?: () => void;
 };
 
-export function TripStatusControl({ trip, canManage, onSaved, className = "" }: Props) {
+export function TripStatusControl({
+  trip,
+  canManage,
+  onSaved,
+  onRecordSaved,
+  className = "",
+}: Props) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const busy = useRef(false);
+  const [approval, setApproval] = useState(false);
 
   async function changeStatus(value: string) {
     if (!canManage || busy.current || value === trip.status || !isEditableTripStatus(value)) return;
+    if (value === "upcoming" && trip.status === "planning") {
+      setApproval(true);
+      return;
+    }
+    if (
+      value === "planning" &&
+      !confirm("إرجاع الرحلة للتخطيط؟ سيُطلب تأكيد الحضور مجدداً بعد اعتماد الخطة.")
+    )
+      return;
     busy.current = true;
     setSaving(true);
     try {
       const saved = await updateTripStatus(trip.id, value);
       onSaved(saved.status);
+      onRecordSaved?.();
       toast.success("تم تحديث حالة الرحلة");
       void queryClient.invalidateQueries({ queryKey: ["upcoming-events"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard-counts"] });
@@ -70,6 +90,18 @@ export function TripStatusControl({ trip, canManage, onSaved, className = "" }: 
         </div>
       ) : (
         <span className="trip-status-control__label">{tripStatusLabel(trip.status)}</span>
+      )}
+      {approval && (
+        <TripApprovalDialog
+          trip={trip}
+          onClose={() => setApproval(false)}
+          onSaved={() => {
+            onSaved("upcoming");
+            onRecordSaved?.();
+            void queryClient.invalidateQueries({ queryKey: ["upcoming-events"] });
+            void queryClient.invalidateQueries({ queryKey: ["dashboard-counts"] });
+          }}
+        />
       )}
       <span className="sr-only" role="status">
         {saving ? "جاري حفظ حالة الرحلة" : ""}

@@ -20,7 +20,8 @@
     "test:millionaire": "node scripts/test-millionaire.mjs",
     "format": "prettier --write .",
     "test:uno": "node scripts/test-uno.mjs",
-    "test:saudi-deal": "node scripts/test-saudi-deal.mjs"
+    "test:saudi-deal": "node scripts/test-saudi-deal.mjs",
+    "test:trip-planning": "node --test scripts/test-trip-planning*.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
@@ -114,6 +115,7 @@
     "prettier": "^3.9.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.62.1",
-    "vite": "^8.1.3"
+    "vite": "^8.1.3",
+    "@electric-sql/pglite": "^0.5.8"
   }
 }

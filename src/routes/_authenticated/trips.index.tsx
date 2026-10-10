@@ -37,6 +37,7 @@ import { isTripActive } from "@/lib/day-lifecycle";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { TripStatusControl } from "@/components/trip-status-control";
 import type { EditableTripStatus } from "@/lib/trip-status";
+import { tripPhase, type PlannedTrip } from "@/lib/trip-planning";
 
 export const Route = createFileRoute("/_authenticated/trips/")({
   ssr: false,
@@ -49,7 +50,7 @@ export const Route = createFileRoute("/_authenticated/trips/")({
   component: TripsPage,
 });
 
-type Trip = {
+type Trip = PlannedTrip & {
   id: string;
   title: string;
   badge: string | null;
@@ -81,6 +82,7 @@ function TripsPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"destinations" | "games">("destinations");
+  const [tripTab, setTripTab] = useState<"upcoming" | "planning">("upcoming");
   const [showAdd, setShowAdd] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
   const {
@@ -101,7 +103,7 @@ function TripsPage() {
     if (error) {
       toast.error("تعذر تحميل بيانات الترفيه");
     } else {
-      setTrips(((data ?? []) as Trip[]).filter((trip) => isTripActive(trip)));
+      setTrips(((data ?? []) as Trip[]).filter((trip) => tripPhase(trip) !== "past"));
     }
     setLoading(false);
   }
@@ -232,12 +234,43 @@ function TripsPage() {
                 </div>
               </section>
 
+              <div
+                className="flex flex-wrap justify-center gap-3 px-4"
+                role="group"
+                aria-label="مرحلة الرحلات"
+              >
+                {(["upcoming", "planning"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    aria-pressed={tripTab === tab}
+                    onClick={() => setTripTab(tab)}
+                    className={cn(
+                      "px-5 py-3 rounded-2xl border font-black text-sm transition-colors",
+                      tripTab === tab
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card border-border text-muted-foreground",
+                    )}
+                  >
+                    {tab === "planning" ? "قيد التخطيط" : "الرحلات القادمة والحالية"}{" "}
+                    <span className="mr-2">
+                      {
+                        trips.filter(
+                          (trip) => (trip.status === "planning") === (tab === "planning"),
+                        ).length
+                      }
+                    </span>
+                  </button>
+                ))}
+              </div>
+
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-32 space-y-4 opacity-40">
                   <div className="size-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
                   <p className="font-black">جاري تحضير الوجهات الترفيهية...</p>
                 </div>
-              ) : trips.length === 0 ? (
+              ) : trips.filter((trip) => (trip.status === "planning") === (tripTab === "planning"))
+                  .length === 0 ? (
                 <div className="card-surface p-24 flex flex-col items-center text-center gap-6 border-dashed opacity-40">
                   <div className="size-20 rounded-[40px] bg-muted/50 flex items-center justify-center text-muted-foreground">
                     <Compass size={60} strokeWidth={1} />
@@ -251,21 +284,25 @@ function TripsPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 px-4 md:px-0">
-                  {trips.map((trip, i) => (
-                    <TripCard
-                      key={trip.id}
-                      trip={trip}
-                      index={i}
-                      canManage={canManage}
-                      onEdit={setEditingTrip}
-                      onRefresh={loadTrips}
-                      onStatusSaved={(status: EditableTripStatus) =>
-                        setTrips((items) => items.map((item) =>
-                          item.id === trip.id ? { ...item, status } : item,
-                        ))
-                      }
-                    />
-                  ))}
+                  {trips
+                    .filter((trip) => (trip.status === "planning") === (tripTab === "planning"))
+                    .map((trip, i) => (
+                      <TripCard
+                        key={trip.id}
+                        trip={trip}
+                        index={i}
+                        canManage={canManage}
+                        onEdit={setEditingTrip}
+                        onRefresh={loadTrips}
+                        onStatusSaved={(status: EditableTripStatus) => {
+                          if (status !== "past")
+                            setTripTab(status === "planning" ? "planning" : "upcoming");
+                          setTrips((items) =>
+                            items.map((item) => (item.id === trip.id ? { ...item, status } : item)),
+                          );
+                        }}
+                      />
+                    ))}
                 </div>
               )}
             </motion.div>
@@ -335,6 +372,7 @@ function TripsPage() {
               setEditingTrip(null);
             }}
             onSaved={loadTrips}
+            onCreated={() => setTripTab("planning")}
           />
         )}
       </AnimatePresence>
@@ -342,7 +380,14 @@ function TripsPage() {
   );
 }
 
-function TripCard({ trip, index, canManage, onEdit, onRefresh, onStatusSaved }: {
+function TripCard({
+  trip,
+  index,
+  canManage,
+  onEdit,
+  onRefresh,
+  onStatusSaved,
+}: {
   trip: Trip;
   index: number;
   canManage: boolean;
@@ -350,7 +395,6 @@ function TripCard({ trip, index, canManage, onEdit, onRefresh, onStatusSaved }: 
   onRefresh: () => Promise<void>;
   onStatusSaved: (status: EditableTripStatus) => void;
 }) {
-
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
@@ -371,6 +415,7 @@ function TripCard({ trip, index, canManage, onEdit, onRefresh, onStatusSaved }: 
           trip={trip}
           canManage={canManage}
           onSaved={onStatusSaved}
+          onRecordSaved={() => void onRefresh()}
           className="absolute top-5 right-5"
         />
 
@@ -430,7 +475,9 @@ function TripCard({ trip, index, canManage, onEdit, onRefresh, onStatusSaved }: 
           <div className="space-y-1">
             <div className="flex items-center gap-2 opacity-40">
               <Calendar className="size-3" />
-              <span className="text-[10px] font-black uppercase tracking-widest">تاريخ الرحلة</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                {trip.status === "planning" ? "الموعد الأولي" : "تاريخ الرحلة"}
+              </span>
             </div>
             <p className="text-xs font-black text-primary">
               {formatRange(trip.start_date, trip.end_date)}
@@ -450,7 +497,7 @@ function TripCard({ trip, index, canManage, onEdit, onRefresh, onStatusSaved }: 
           params={{ tripId: trip.id }}
           className="w-full h-14 rounded-2xl bg-primary/5 hover:bg-primary hover:text-white transition-all duration-300 flex items-center justify-center gap-3 text-primary font-black text-sm uppercase tracking-widest border border-primary/10 shadow-inner group/btn"
         >
-          <span>تفاصيل الوجهة</span>
+          <span>{trip.status === "planning" ? "التخطيط للرحلة" : "تفاصيل الوجهة"}</span>
           <ChevronLeft className="size-4 transition-transform group-hover/btn:-translate-x-1" />
         </Link>
       </div>
@@ -458,7 +505,7 @@ function TripCard({ trip, index, canManage, onEdit, onRefresh, onStatusSaved }: 
   );
 }
 
-function TripDialog({ trip, onClose, onSaved }: any) {
+function TripDialog({ trip, onClose, onSaved, onCreated }: any) {
   const sendPush = useServerFn(sendPushNotification);
   const isEdit = !!trip;
   const [saving, setSaving] = useState(false);
@@ -494,38 +541,89 @@ function TripDialog({ trip, onClose, onSaved }: any) {
     }
     setSaving(true);
     const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
+    if (!u.user) {
+      setSaving(false);
+      toast.error("سجل دخولك لحفظ الرحلة");
+      return;
+    }
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      setSaving(false);
+      toast.error("تاريخ النهاية يجب أن يكون بعد البداية أو في اليوم نفسه");
+      return;
+    }
 
     let imagePath: string | null | undefined = undefined;
     if (imageFile) {
       const ext = imageFile.name.split(".").pop() || "jpg";
       const path = `${u.user.id}/${crypto.randomUUID()}.${ext}`;
-      await supabase.storage.from("trip-images").upload(path, imageFile);
+      const { error: uploadError } = await supabase.storage
+        .from("trip-images")
+        .upload(path, imageFile);
+      if (uploadError) {
+        setSaving(false);
+        toast.error("تعذر رفع صورة الرحلة");
+        return;
+      }
       imagePath = path;
     } else if (isEdit && removeExistingImage) {
       imagePath = null;
     }
 
-    const payload: any = { ...form, title };
-    if (!isEdit) payload.status = "upcoming";
+    const payload: any = {
+      ...form,
+      title,
+      start_date: form.start_date || null,
+      end_date: form.end_date || null,
+    };
+    if (!isEdit) {
+      payload.status = "planning";
+      payload.planning_destinations = form.location.trim()
+        ? [{ id: crypto.randomUUID(), name: form.location.trim() }]
+        : [];
+      payload.planning_dates = form.start_date
+        ? [
+            {
+              id: crypto.randomUUID(),
+              start_date: form.start_date,
+              end_date: form.end_date || form.start_date,
+            },
+          ]
+        : [];
+    }
     if (imagePath !== undefined) payload.image_url = imagePath;
 
     let error: any;
     if (isEdit) {
-      ({ error } = await supabase.from("trips").update(payload).eq("id", trip.id));
+      ({ error } = await supabase
+        .from("trips")
+        .update(payload)
+        .eq("id", trip.id)
+        .select("id")
+        .single());
     } else {
-      ({ error } = await supabase.from("trips").insert({ ...payload, created_by: u.user.id }));
+      ({ error } = await supabase
+        .from("trips")
+        .insert({ ...payload, created_by: u.user.id })
+        .select("id")
+        .single());
     }
 
     // Keep the list usable while an older database is waiting for the migration.
     if (error?.message?.includes("accommodation_type")) {
       const { accommodation_type: _accommodationType, ...legacyPayload } = payload;
       if (isEdit) {
-        ({ error } = await supabase.from("trips").update(legacyPayload).eq("id", trip.id));
+        ({ error } = await supabase
+          .from("trips")
+          .update(legacyPayload)
+          .eq("id", trip.id)
+          .select("id")
+          .single());
       } else {
         ({ error } = await supabase
           .from("trips")
-          .insert({ ...legacyPayload, created_by: u.user.id }));
+          .insert({ ...legacyPayload, created_by: u.user.id })
+          .select("id")
+          .single());
       }
       if (!error) {
         toast.info("تم حفظ الرحلة. سيُفعّل نوع الإقامة بعد تحديث قاعدة البيانات.");
@@ -536,7 +634,7 @@ function TripDialog({ trip, onClose, onSaved }: any) {
     if (error) {
       console.error("Trip save error:", error);
       toast.error("حدث خطأ أثناء الحفظ", {
-        description: error.message || "تأكد من تعبئة الحقول المطلوبة وصلاحياتك."
+        description: error.message || "تأكد من تعبئة الحقول المطلوبة وصلاحياتك.",
       });
     } else {
       toast.success("تم الحفظ");
@@ -557,6 +655,7 @@ function TripDialog({ trip, onClose, onSaved }: any) {
         }
       }
 
+      if (!isEdit) onCreated?.();
       onSaved();
       onClose();
     }
@@ -579,7 +678,9 @@ function TripDialog({ trip, onClose, onSaved }: any) {
                 {isEdit ? "تعديل الرحلة" : "إضافة رحلة جديدة"}
               </h3>
               <p className="text-xs md:text-sm font-bold text-muted-foreground opacity-60">
-                أدخل تفاصيل الوجهة والمواعيد لرحلة العائلة.
+                {isEdit
+                  ? "أدخل تفاصيل الوجهة والمواعيد لرحلة العائلة."
+                  : "تُضاف الرحلة قيد التخطيط؛ تُعتمد الوجهة والمواعيد من واجهة الرحلة."}
               </p>
             </div>
             <button

@@ -236,7 +236,7 @@ function FamilyCalendarPage() {
         });
 
       (tripsRes.data ?? []).forEach((t: any) => {
-        if (!isTripActive(t) || !t.start_date) return;
+        if (t.status === "planning" || !isTripActive(t) || !t.start_date) return;
         const start = new Date(`${t.start_date}T00:00:00`);
         if (isNaN(start.getTime())) return;
         const end = t.end_date ? new Date(`${t.end_date}T00:00:00`) : start;

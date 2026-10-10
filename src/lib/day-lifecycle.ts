@@ -101,6 +101,8 @@ export function isTripActive(
   },
   now = new Date(),
 ) {
+  if (item.status === "planning") return true;
+  if (hasTerminalStatus(item.status)) return false;
   return item.status !== "cancelled" && !isPastLocalDay(tripLifecycleDate(item), now);
 }
 
@@ -137,6 +139,7 @@ export function isTripArchived(
   },
   now = new Date(),
 ) {
+  if (item.status === "planning") return false;
   return hasTerminalStatus(item.status) || isPastLocalDay(tripLifecycleDate(item), now);
 }
 

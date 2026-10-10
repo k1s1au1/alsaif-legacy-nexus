@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -34,6 +34,11 @@ import { useUserRole, roleLabel } from "@/hooks/use-user-role";
 import { addToCalendar } from "@/lib/calendar";
 import { FamilySharing } from "@/lib/native-bridge";
 import { TripStatusControl } from "@/components/trip-status-control";
+import { TripPlanningPanel } from "@/components/trip-planning-panel";
+import { TripPreparations } from "@/components/trip-preparations";
+import { confirmedAttendees, tripPhase, type PlannedTrip } from "@/lib/trip-planning";
+import { saveTripAttendance } from "@/lib/api/trip-planning";
+import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 
 export const Route = createFileRoute("/_authenticated/trips/$tripId")({
   ssr: false,
@@ -43,7 +48,7 @@ export const Route = createFileRoute("/_authenticated/trips/$tripId")({
   component: TripDetail,
 });
 
-type Trip = {
+type Trip = PlannedTrip & {
   id: string;
   title: string;
   badge: string | null;
@@ -75,6 +80,11 @@ function TripDetail() {
   const [attendanceStatus, setAttendanceStatus] = useState<"going" | "not_going" | null>(null);
   const [companionsCount, setCompanionsCount] = useState(0);
   const [saving, setSaving] = useState(false);
+  const attendanceBusy = useRef(false);
+  const tripRef = useRef<Trip | null>(null);
+  tripRef.current = trip;
+  const [needsReconfirmation, setNeedsReconfirmation] = useState(false);
+  const activeDayKey = useDayBoundaryKey();
   const [attendees, setAttendees] = useState<
     {
       user_id: string;
@@ -84,9 +94,6 @@ function TripDetail() {
       companions_count: number;
     }[]
   >([]);
-  const [checklist, setChecklist] = useState<any[]>([]);
-  const [newItemName, setNewItemName] = useState("");
-  const [addingItem, setAddingItem] = useState(false);
   const isPrivileged = !rolesLoading && !!userId && canManage("trips");
   const [profile, setProfile] = useState<{
     name: string;
@@ -95,27 +102,26 @@ function TripDetail() {
     avatarPath?: string | null;
   }>({ name: "عضو العائلة", role: "عضو", initial: "ص", avatarPath: null });
 
-  async function loadAttendees(tid: string) {
+  async function loadAttendees(tid: string, currentTrip = tripRef.current) {
     try {
       const { data: rows, error } = await supabase
         .from("trip_attendees")
-        .select("user_id, status, companions_count")
+        .select("user_id, status, companions_count, approval_version")
         .eq("trip_id", tid);
 
-      if (error) {
-        const { data: fallbackRows } = await supabase
-          .from("trip_attendees")
-          .select("user_id")
-          .eq("trip_id", tid);
-        processAttendees(fallbackRows || []);
-      } else {
-        const goingRows = ((rows || []) as any[]).filter(
-          (r: any) => !r.status || r.status === "going",
-        );
-        processAttendees(goingRows);
-      }
+      if (error) throw error;
+      if (!currentTrip) return;
+      const mine = (rows || []).find((row) => row.user_id === userId);
+      const valid = mine && mine.approval_version === (currentTrip.approval_version ?? 1);
+      setAttendanceStatus(valid ? mine.status : null);
+      setCompanionsCount(valid ? mine.companions_count || 0 : 0);
+      setNeedsReconfirmation(!!mine && !valid);
+      setAttendanceLoaded(true);
+      await processAttendees(confirmedAttendees(currentTrip, rows || []));
     } catch (err) {
       console.error("Load attendees error:", err);
+      setAttendanceLoaded(false);
+      toast.error("تعذر تحميل الحضور؛ حدّث الصفحة قبل تسجيل اختيارك");
     }
   }
 
@@ -147,106 +153,13 @@ function TripDetail() {
     );
   }
 
-  async function loadChecklist(tid: string) {
-    try {
-      const { data: items, error } = await supabase
-        .from("trip_items")
-        .select("id,name,assigned_to,created_by,created_at")
-        .eq("trip_id", tid)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-
-      const profileIds = Array.from(
-        new Set((items || []).flatMap((i: any) => [i.created_by, i.assigned_to]).filter(Boolean)),
-      );
-      const { data: profs } = profileIds.length
-        ? await supabase
-            .from("profiles")
-            .select("id, arabic_name, full_name, avatar_url")
-            .in("id", profileIds)
-        : { data: [] };
-      const profileMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
-
-      setChecklist(
-        (items || []).map((item: any) => ({
-          ...item,
-          creator: profileMap.get(item.created_by) ?? null,
-          assignee: item.assigned_to ? (profileMap.get(item.assigned_to) ?? null) : null,
-        })),
-      );
-    } catch (err: any) {
-      console.error("Load checklist error:", err);
+  async function reloadTrip() {
+    const { data, error } = await supabase.from("trips").select("*").eq("id", tripId).single();
+    if (error || !data) {
+      toast.error("تعذر تحديث بيانات الرحلة");
+      return;
     }
-  }
-
-  async function addItem() {
-    const name = newItemName.trim();
-    if (!name || !userId) return;
-    const tempId = `temp-${Date.now()}`;
-    setNewItemName("");
-    setChecklist((prev) => [
-      ...prev,
-      {
-        id: tempId,
-        name,
-        assigned_to: null,
-        created_by: userId,
-        created_at: new Date().toISOString(),
-        creator: { id: userId, arabic_name: profile.name, avatar_url: profile.avatarPath },
-        assignee: null,
-      },
-    ]);
-    try {
-      const { data, error } = await supabase
-        .from("trip_items")
-        .insert({ trip_id: tripId, name, created_by: userId })
-        .select("id")
-        .single();
-      if (error) throw error;
-      setChecklist((prev) => prev.map((i) => (i.id === tempId ? { ...i, id: data.id } : i)));
-      toast.success("تمت إضافة الغرض للقائمة");
-    } catch (err: any) {
-      setChecklist((prev) => prev.filter((i) => i.id !== tempId));
-      setNewItemName(name);
-      toast.error("تعذر إضافة الغرض");
-    }
-  }
-
-  async function deleteItem(id: string) {
-    if (!confirm("حذف الغرض؟")) return;
-    const snapshot = checklist;
-    setChecklist((prev) => prev.filter((item) => item.id !== id));
-    try {
-      const { error } = await supabase.from("trip_items").delete().eq("id", id);
-      if (error) throw error;
-      toast.success("تم الحذف");
-    } catch (err: any) {
-      setChecklist(snapshot);
-      toast.error("فشل الحذف");
-    }
-  }
-
-  async function toggleClaim(item: any) {
-    if (!userId) return;
-    const isMine = item.assigned_to === userId;
-    const newAssignedTo = isMine ? null : userId;
-    const me = { id: userId, arabic_name: profile.name, avatar_url: profile.avatarPath };
-    setChecklist((prev) =>
-      prev.map((i) =>
-        i.id === item.id ? { ...i, assigned_to: newAssignedTo, assignee: isMine ? null : me } : i,
-      ),
-    );
-    try {
-      const { error } = await supabase
-        .from("trip_items")
-        .update({ assigned_to: newAssignedTo })
-        .eq("id", item.id);
-      if (error) throw error;
-      toast.success(isMine ? "تم إلغاء التطوع" : "شكراً لتطوعك");
-    } catch (err: any) {
-      setChecklist((prev) => prev.map((i) => (i.id === item.id ? item : i)));
-      toast.error("فشل تحديث الحالة");
-    }
+    setTrip(data as Trip);
   }
 
   useEffect(() => {
@@ -263,12 +176,6 @@ function TripDetail() {
               .select("arabic_name, full_name, avatar_url")
               .eq("id", userId)
               .maybeSingle(),
-            supabase
-              .from("trip_attendees")
-              .select("status, companions_count")
-              .eq("trip_id", tripId)
-              .eq("user_id", userId)
-              .maybeSingle(),
           ])
         : Promise.resolve(null);
       const tripTask = supabase.from("trips").select("*").eq("id", tripId).maybeSingle();
@@ -276,7 +183,7 @@ function TripDetail() {
       const [mineRes, tripRes] = await Promise.all([profileTask, tripTask]);
       if (cancelled) return;
       if (mineRes) {
-        const [{ data: p }, { data: mine }] = mineRes;
+        const [{ data: p }] = mineRes;
         const name = p?.arabic_name?.trim() || p?.full_name?.trim() || "عضو العائلة";
         setProfile((prev) => ({
           ...prev,
@@ -284,24 +191,14 @@ function TripDetail() {
           initial: (name[0] ?? "س").toUpperCase(),
           avatarPath: p?.avatar_url ?? null,
         }));
-        if (mine) {
-          setAttendanceStatus((mine as any).status || "going");
-          setCompanionsCount((mine as any).companions_count || 0);
-        } else {
-          setAttendanceStatus(null);
-          setCompanionsCount(0);
-        }
-        setAttendanceLoaded(true);
       }
       setTrip((tripRes.data as Trip | null) ?? null);
       setLoading(false);
       // Secondary lists load in the background without blocking the page.
-      void loadAttendees(tripId);
-      void loadChecklist(tripId);
+      void loadAttendees(tripId, tripRes.data as Trip);
     })();
 
     let tA: ReturnType<typeof setTimeout> | undefined;
-    let tC: ReturnType<typeof setTimeout> | undefined;
     const channel = supabase
       .channel(`trip-${tripId}-realtime`)
       .on(
@@ -309,7 +206,7 @@ function TripDetail() {
         { event: "UPDATE", schema: "public", table: "trips", filter: `id=eq.${tripId}` },
         (payload) => {
           if (cancelled) return;
-          setTrip((current) => current ? { ...current, ...payload.new } : current);
+          setTrip((current) => (current ? { ...current, ...payload.new } : current));
         },
       )
       .on(
@@ -320,72 +217,55 @@ function TripDetail() {
           tA = setTimeout(() => loadAttendees(tripId), 300);
         },
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "trip_items", filter: `trip_id=eq.${tripId}` },
-        () => {
-          clearTimeout(tC);
-          tC = setTimeout(() => loadChecklist(tripId), 300);
-        },
-      )
       .subscribe();
     return () => {
       cancelled = true;
       clearTimeout(tA);
-      clearTimeout(tC);
       supabase.removeChannel(channel);
     };
   }, [tripId, userId]);
 
+  useEffect(() => {
+    if (trip) void loadAttendees(tripId, trip);
+  }, [trip?.approval_version, trip?.status, activeDayKey]);
+
   async function updateAttendance(
     status: "going" | "not_going",
-    companions: number = 0,
-    isExplicitClick: boolean = false,
+    companions = 0,
+    isExplicitClick = false,
   ) {
-    if (!userId || saving) return;
-    const prevStatus = attendanceStatus;
-    const prevCompanions = companionsCount;
-    const isRemoving =
-      isExplicitClick && attendanceStatus === status && companionsCount === companions;
-
-    if (!isExplicitClick && attendanceStatus === status && companionsCount === companions) return;
-
-    setAttendanceStatus(isRemoving ? null : status);
-    if (!isRemoving) setCompanionsCount(companions);
+    if (
+      !userId ||
+      !trip ||
+      attendanceBusy.current ||
+      tripPhase(trip) === "past" ||
+      trip.status === "planning"
+    )
+      return;
+    const previousStatus = attendanceStatus;
+    const isRemoving = isExplicitClick && attendanceStatus === status;
+    attendanceBusy.current = true;
     setSaving(true);
-
     try {
-      if (isRemoving || status === "not_going") {
-        await supabase.from("trip_attendees").delete().eq("trip_id", tripId).eq("user_id", userId);
-        if (status === "not_going") toast.info("تم تسجيل اعتذارك");
-        else toast.success("تم إلغاء اختيارك");
-      } else {
-        const payload: any = {
-          trip_id: tripId,
-          user_id: userId,
-          status: "going",
-          companions_count: companions,
-        };
-        const { error } = await supabase
-          .from("trip_attendees")
-          .upsert(payload, { onConflict: "trip_id,user_id" });
-        if (error) {
-          await supabase
-            .from("trip_attendees")
-            .upsert({ trip_id: tripId, user_id: userId }, { onConflict: "trip_id,user_id" });
-        }
-        if (status === "going") {
-          if (prevStatus === "going") {
-            if (prevCompanions !== companions) toast.success("تم تحديث عدد المرافقين ✨");
-          } else toast.success("تم تأكيد حضورك ✨");
-        }
-      }
-      void loadAttendees(tripId);
-    } catch (err: any) {
-      toast.error("حدث خطأ في تحديث الحضور");
-      setAttendanceStatus(prevStatus);
-      setCompanionsCount(prevCompanions);
+      const saved = await saveTripAttendance(trip, isRemoving ? null : status, companions);
+      setAttendanceStatus(saved.status as "going" | "not_going" | null);
+      setCompanionsCount(saved.companions_count || 0);
+      setNeedsReconfirmation(false);
+      await loadAttendees(tripId, trip);
+      toast.success(
+        isRemoving
+          ? "تم إلغاء اختيارك"
+          : status === "not_going"
+            ? "تم تسجيل اعتذارك"
+            : previousStatus === "going"
+              ? "تم تحديث عدد المرافقين"
+              : "تم تأكيد حضورك",
+      );
+    } catch (error: any) {
+      toast.error(error?.message || "تعذر حفظ الحضور والمرافقين");
+      await loadAttendees(tripId);
     } finally {
+      attendanceBusy.current = false;
       setSaving(false);
     }
   }
@@ -429,6 +309,10 @@ function TripDetail() {
           </Link>
           <div className="flex items-center gap-2">
             <button
+              disabled={trip.status === "planning" || !trip.start_date}
+              title={
+                trip.status === "planning" ? "يتاح بعد اعتماد الرحلة" : "إضافة إلى تقويم جهازك"
+              }
               onClick={() =>
                 trip &&
                 addToCalendar({
@@ -443,11 +327,14 @@ function TripDetail() {
               <Calendar size={14} /> إضافة للتقويم
             </button>
             <button
-              onClick={() => trip && FamilySharing.shareInvitation({
-                title: trip.title,
-                date: formatRange(trip.start_date, trip.end_date),
-                location: trip.location || "وجهة عائلية"
-              })}
+              onClick={() =>
+                trip &&
+                FamilySharing.shareInvitation({
+                  title: trip.title,
+                  date: formatRange(trip.start_date, trip.end_date),
+                  location: trip.location || "وجهة عائلية",
+                })
+              }
               className="size-10 rounded-full bg-muted/50 flex items-center justify-center hover:bg-gold-primary/20 transition-all text-gold-primary"
             >
               <Share2 size={18} />
@@ -476,7 +363,10 @@ function TripDetail() {
                 <TripStatusControl
                   trip={trip}
                   canManage={isPrivileged}
-                  onSaved={(status) => setTrip((current) => current ? { ...current, status } : current)}
+                  onSaved={(status) =>
+                    setTrip((current) => (current ? { ...current, status } : current))
+                  }
+                  onRecordSaved={() => void reloadTrip()}
                 />
               </div>
               <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter drop-shadow-2xl">
@@ -489,19 +379,41 @@ function TripDetail() {
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
                   <Calendar className="size-5 text-gold-primary" />
-                  <span>{formatRange(trip.start_date, trip.end_date)}</span>
+                  <span>
+                    {trip.status === "planning" && "موعد أولي: "}
+                    {formatRange(trip.start_date, trip.end_date)}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
+          {trip.status === "planning" && (
+            <TripPlanningPanel
+              trip={trip}
+              userId={rolesLoading || primaryRole === "guest" ? null : userId}
+              canManage={isPrivileged}
+              onSaved={() => void reloadTrip()}
+            />
+          )}
+          {needsReconfirmation && trip.status !== "planning" && (
+            <p className="trip-system trip-system__notice" role="status">
+              تغيّرت خطة الرحلة بعد تسجيلك السابق. راجع الوجهة والموعد وأكد حضورك من جديد.
+            </p>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-3 space-y-6 md:space-y-8">
               {/* MERGED PREMIUM TRIP HUB BANNER - Separated on Mobile */}
-              <div className={cn(
-                "relative overflow-hidden rounded-[32px] md:rounded-[48px] shadow-2xl border border-white/10 group md:min-h-[500px] flex flex-col-reverse md:flex-row transition-all duration-700",
-                attendanceStatus === "going" ? "bg-emerald-950" : attendanceStatus === "not_going" ? "bg-rose-950" : "bg-[#0a1a16]"
-              )}>
+              <div
+                className={cn(
+                  "relative overflow-hidden rounded-[32px] md:rounded-[48px] shadow-2xl border border-white/10 group md:min-h-[500px] flex flex-col-reverse md:flex-row transition-all duration-700",
+                  attendanceStatus === "going"
+                    ? "bg-emerald-950"
+                    : attendanceStatus === "not_going"
+                      ? "bg-rose-950"
+                      : "bg-[#0a1a16]",
+                )}
+              >
                 {/* Journey identity layer: trip image, family mark, and a quiet route motif */}
                 <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/35 pointer-events-none" />
                 {dynamicLogo && (
@@ -516,7 +428,9 @@ function TripDetail() {
                 <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 text-gold-primary/40 pointer-events-none">
                   <div className="w-16 md:w-24 border-t border-dashed border-gold-primary/30" />
                   <Navigation className="size-4 md:size-5" />
-                  <span className="text-[11px] md:text-[10px] font-black tracking-[0.3em] whitespace-nowrap">رحلة تجمعنا</span>
+                  <span className="text-[11px] md:text-[10px] font-black tracking-[0.3em] whitespace-nowrap">
+                    رحلة تجمعنا
+                  </span>
                   <div className="w-16 md:w-24 border-t border-dashed border-gold-primary/30" />
                 </div>
 
@@ -529,241 +443,254 @@ function TripDetail() {
                 </div>
 
                 {/* Left Side (or Top on Mobile): Attendance & Participants */}
-                <div className={cn(
-                  "md:w-1/3 p-6 md:p-12 flex flex-col justify-between space-y-6 md:space-y-10 relative z-10",
-                  "bg-white/5 backdrop-blur-sm md:border-l border-white/10 rounded-[28px] md:rounded-none m-2 md:m-0 shadow-xl md:shadow-none"
-                )}>
-                  <div className="space-y-4 md:space-y-6">
-                    <div className="space-y-2 md:space-y-3">
-                      <h3 className="text-2xl md:text-4xl font-black text-white leading-tight tracking-tight">هل ستنضم إلينا؟</h3>
-                      <p className="text-xs md:text-sm font-bold leading-relaxed text-emerald-100/60">أكد حضورك الآن لتساعدنا في تنظيم الرحلة بشكل أفضل.</p>
-                    </div>
+                {trip.status !== "planning" && (
+                  <div
+                    className={cn(
+                      "md:w-1/3 p-6 md:p-12 flex flex-col justify-between space-y-6 md:space-y-10 relative z-10",
+                      "bg-white/5 backdrop-blur-sm md:border-l border-white/10 rounded-[28px] md:rounded-none m-2 md:m-0 shadow-xl md:shadow-none",
+                    )}
+                  >
+                    <div className="space-y-4 md:space-y-6">
+                      <div className="space-y-2 md:space-y-3">
+                        <h3 className="text-2xl md:text-4xl font-black text-white leading-tight tracking-tight">
+                          هل ستنضم إلينا؟
+                        </h3>
+                        <p className="text-xs md:text-sm font-bold leading-relaxed text-emerald-100/60">
+                          أكد حضورك الآن لتساعدنا في تنظيم الرحلة بشكل أفضل.
+                        </p>
+                      </div>
 
-                    <div className="flex flex-col gap-3 md:gap-4">
-                      {attendanceStatus === "going" && (
-                        <div className="flex flex-col gap-2 md:gap-3 animate-fade-up bg-white/10 p-4 md:p-5 rounded-[24px] md:rounded-[32px] border border-white/10 shadow-inner">
-                          <div className="flex items-center justify-between px-1">
-                            <p className="text-[11px] md:text-[10px] font-black text-gold-primary uppercase tracking-widest">عدد المرافقين معك؟</p>
-                            <div className="text-center bg-gold-primary/20 px-2 py-0.5 md:px-3 md:py-1 rounded-lg border border-gold-primary/20">
-                              <span className="text-[12px] md:text-[14px] font-black leading-none text-gold-primary">{1 + companionsCount} حاضرين</span>
+                      <div className="flex flex-col gap-3 md:gap-4">
+                        {attendanceStatus === "going" && (
+                          <div className="flex flex-col gap-2 md:gap-3 animate-fade-up bg-white/10 p-4 md:p-5 rounded-[24px] md:rounded-[32px] border border-white/10 shadow-inner">
+                            <div className="flex items-center justify-between px-1">
+                              <p className="text-[11px] md:text-[10px] font-black text-gold-primary uppercase tracking-widest">
+                                عدد المرافقين معك؟
+                              </p>
+                              <div className="text-center bg-gold-primary/20 px-2 py-0.5 md:px-3 md:py-1 rounded-lg border border-gold-primary/20">
+                                <span className="text-[12px] md:text-[14px] font-black leading-none text-gold-primary">
+                                  {1 + companionsCount} حاضرين
+                                </span>
+                              </div>
                             </div>
+                            <input
+                              type="tel"
+                              aria-label="عدد المرافقين"
+                              disabled={saving || tripPhase(trip) === "past"}
+                              value={companionsCount === 0 ? "" : companionsCount}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, "");
+                                setCompanionsCount(val === "" ? 0 : Math.min(50, parseInt(val)));
+                              }}
+                              onBlur={() => updateAttendance("going", companionsCount)}
+                              className="w-full h-12 md:h-16 bg-black/20 border-2 border-white/10 rounded-[18px] md:rounded-[24px] px-6 font-black text-center text-2xl md:text-3xl focus:outline-none focus:border-gold-primary transition-all text-white shadow-inner"
+                              placeholder="٠"
+                            />
                           </div>
-                          <input
-                            type="tel"
-                            value={companionsCount === 0 ? "" : companionsCount}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, "");
-                              setCompanionsCount(val === "" ? 0 : parseInt(val));
-                            }}
-                            onBlur={() => updateAttendance("going", companionsCount)}
-                            className="w-full h-12 md:h-16 bg-black/20 border-2 border-white/10 rounded-[18px] md:rounded-[24px] px-6 font-black text-center text-2xl md:text-3xl focus:outline-none focus:border-gold-primary transition-all text-white shadow-inner"
-                            placeholder="٠"
+                        )}
+
+                        <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 p-1 rounded-[22px] md:rounded-[28px] grid grid-cols-2 gap-1 shadow-2xl overflow-hidden h-[60px] md:h-[70px]">
+                          <div
+                            className={cn(
+                              "absolute inset-y-1 w-[calc(50%-4px)] rounded-[18px] md:rounded-[22px] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-lg",
+                              attendanceStatus === "going"
+                                ? "right-1 bg-emerald-500 shadow-emerald-500/40"
+                                : attendanceStatus === "not_going"
+                                  ? "right-[calc(50%+1px)] bg-rose-500 shadow-rose-500/40"
+                                  : "opacity-0",
+                            )}
                           />
+                          <button
+                            aria-pressed={attendanceStatus === "going"}
+                            onClick={() => updateAttendance("going", companionsCount, true)}
+                            disabled={
+                              saving ||
+                              !userId ||
+                              !attendanceLoaded ||
+                              tripPhase(trip) === "past" ||
+                              primaryRole === "guest"
+                            }
+                            className={cn(
+                              "relative z-10 flex items-center justify-center gap-2 md:gap-3 font-black text-xs md:text-sm transition-colors duration-500",
+                              attendanceStatus === "going"
+                                ? "text-white"
+                                : "text-white/40 hover:text-white/60",
+                            )}
+                          >
+                            {saving && attendanceStatus === "going" ? (
+                              <Loader2 className="size-4 md:size-[18px] animate-spin" />
+                            ) : (
+                              <UserCheck className="size-[18px] md:size-5" />
+                            )}
+                            <span>سأحضر</span>
+                          </button>
+                          <button
+                            aria-pressed={attendanceStatus === "not_going"}
+                            onClick={() => updateAttendance("not_going", 0, true)}
+                            disabled={
+                              saving ||
+                              !userId ||
+                              !attendanceLoaded ||
+                              tripPhase(trip) === "past" ||
+                              primaryRole === "guest"
+                            }
+                            className={cn(
+                              "relative z-10 flex items-center justify-center gap-2 md:gap-3 font-black text-xs md:text-sm transition-colors duration-500",
+                              attendanceStatus === "not_going"
+                                ? "text-white"
+                                : "text-white/40 hover:text-white/60",
+                            )}
+                          >
+                            {saving && attendanceStatus === "not_going" ? (
+                              <Loader2 className="size-4 md:size-[18px] animate-spin" />
+                            ) : (
+                              <UserX className="size-[18px] md:size-5" />
+                            )}
+                            <span>أعتذر</span>
+                          </button>
                         </div>
-                      )}
-
-                      <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 p-1 rounded-[22px] md:rounded-[28px] grid grid-cols-2 gap-1 shadow-2xl overflow-hidden h-[60px] md:h-[70px]">
-                        <div
-                          className={cn(
-                            "absolute inset-y-1 w-[calc(50%-4px)] rounded-[18px] md:rounded-[22px] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-lg",
-                            attendanceStatus === "going" ? "right-1 bg-emerald-500 shadow-emerald-500/40" :
-                            attendanceStatus === "not_going" ? "right-[calc(50%+1px)] bg-rose-500 shadow-rose-500/40" : "opacity-0"
-                          )}
-                        />
-                        <button
-                          onClick={() => updateAttendance("going", companionsCount, true)}
-                          disabled={saving || !userId || !attendanceLoaded}
-                          className={cn(
-                            "relative z-10 flex items-center justify-center gap-2 md:gap-3 font-black text-xs md:text-sm transition-colors duration-500",
-                            attendanceStatus === "going" ? "text-white" : "text-white/40 hover:text-white/60"
-                          )}
-                        >
-                          {saving && attendanceStatus === "going" ? <Loader2 className="size-4 md:size-[18px] animate-spin" /> : <UserCheck className="size-[18px] md:size-5" />}
-                          <span>سأحضر</span>
-                        </button>
-                        <button
-                          onClick={() => updateAttendance("not_going", 0, true)}
-                          disabled={saving || !userId || !attendanceLoaded}
-                          className={cn(
-                            "relative z-10 flex items-center justify-center gap-2 md:gap-3 font-black text-xs md:text-sm transition-colors duration-500",
-                            attendanceStatus === "not_going" ? "text-white" : "text-white/40 hover:text-white/60"
-                          )}
-                        >
-                          {saving && attendanceStatus === "not_going" ? <Loader2 className="size-4 md:size-[18px] animate-spin" /> : <UserX className="size-[18px] md:size-5" />}
-                          <span>أعتذر</span>
-                        </button>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-3 md:space-y-4 pt-4 md:pt-0">
-                    <div className="flex items-center justify-between border-t border-white/10 pt-4 md:pt-6">
-                      <div className="flex items-center gap-2 text-gold-primary font-black uppercase tracking-[0.2em] text-[11px] md:text-[10px]">
-                        <Users className="size-3.5 md:size-4" /> المشاركون
+                    <div className="space-y-3 md:space-y-4 pt-4 md:pt-0">
+                      <div className="flex items-center justify-between border-t border-white/10 pt-4 md:pt-6">
+                        <div className="flex items-center gap-2 text-gold-primary font-black uppercase tracking-[0.2em] text-[11px] md:text-[10px]">
+                          <Users className="size-3.5 md:size-4" /> المشاركون
+                        </div>
+                        <span className="text-[11px] md:text-[10px] font-black bg-white/10 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full">
+                          {(() => {
+                            const meInList = attendees.some((a) => a.user_id === userId);
+                            const othersSum = attendees
+                              .filter((a) => a.user_id !== userId)
+                              .reduce((acc, curr) => acc + 1 + (curr.companions_count || 0), 0);
+
+                            if (attendanceStatus === "going") {
+                              return othersSum + 1 + companionsCount;
+                            }
+
+                            // If not going but was in list (unlikely with delete logic but safe)
+                            return (
+                              othersSum +
+                              (meInList
+                                ? 1 +
+                                  (attendees.find((a) => a.user_id === userId)?.companions_count ||
+                                    0)
+                                : 0)
+                            );
+                          })()}{" "}
+                          حاضرين
+                        </span>
                       </div>
-                      <span className="text-[11px] md:text-[10px] font-black bg-white/10 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full">
-                        {(() => {
-                           const meInList = attendees.some(a => a.user_id === userId);
-                           const othersSum = attendees
-                             .filter(a => a.user_id !== userId)
-                             .reduce((acc, curr) => acc + 1 + (curr.companions_count || 0), 0);
-
-                           if (attendanceStatus === "going") {
-                             return othersSum + 1 + companionsCount;
-                           }
-
-                           // If not going but was in list (unlikely with delete logic but safe)
-                           return othersSum + (meInList ? 1 + (attendees.find(a => a.user_id === userId)?.companions_count || 0) : 0);
-                        })()} حاضرين
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 md:gap-2">
-                       {attendees.slice(0, 5).map(a => (
-                         <div key={a.user_id} className="relative group/avatar">
+                      <div className="flex flex-wrap gap-1.5 md:gap-2">
+                        {attendees.slice(0, 5).map((a) => (
+                          <div key={a.user_id} className="relative group/avatar">
                             <div className="size-8 md:size-10 rounded-lg md:rounded-xl overflow-hidden ring-2 ring-white/10 shadow-lg transition-transform hover:scale-110">
-                               <UserAvatar path={a.avatarPath} name={a.name} initial={a.initial} className="size-full" userId={a.user_id} />
+                              <UserAvatar
+                                path={a.avatarPath}
+                                name={a.name}
+                                initial={a.initial}
+                                className="size-full"
+                                userId={a.user_id}
+                              />
                             </div>
                             {(a.user_id === userId ? companionsCount : a.companions_count) > 0 && (
                               <div className="absolute -top-1 -right-1 size-4 md:size-5 bg-gold-primary text-black text-[7px] md:text-[11px] font-black rounded-full flex items-center justify-center border border-emerald-950 z-10 shadow-lg">
                                 +{a.user_id === userId ? companionsCount : a.companions_count}
                               </div>
                             )}
-                         </div>
-                       ))}
-                       {attendees.length > 5 && (
-                         <div className="size-8 md:size-10 rounded-lg md:rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[11px] md:text-[10px] font-black text-white">+{attendees.length - 5}</div>
-                       )}
-                       {attendees.length === 0 && <p className="text-[11px] md:text-[10px] font-bold text-white/30 italic">لا يوجد حضور مؤكد بعد</p>}
+                          </div>
+                        ))}
+                        {attendees.length > 5 && (
+                          <div className="size-8 md:size-10 rounded-lg md:rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[11px] md:text-[10px] font-black text-white">
+                            +{attendees.length - 5}
+                          </div>
+                        )}
+                        {attendees.length === 0 && (
+                          <p className="text-[11px] md:text-[10px] font-bold text-white/30 italic">
+                            لا يوجد حضور مؤكد بعد
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-
+                )}
                 {/* Right Side (or Bottom on Mobile): Info & Description */}
-                <div className={cn(
-                  "flex-1 p-6 md:p-14 space-y-8 md:space-y-12 relative z-10",
-                  "rounded-[28px] md:rounded-none m-2 md:m-0 bg-white/[0.02] md:bg-transparent border border-white/5 md:border-none shadow-xl md:shadow-none"
-                )}>
+                <div
+                  className={cn(
+                    "flex-1 p-6 md:p-14 space-y-8 md:space-y-12 relative z-10",
+                    "rounded-[28px] md:rounded-none m-2 md:m-0 bg-white/[0.02] md:bg-transparent border border-white/5 md:border-none shadow-xl md:shadow-none",
+                  )}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                     <div className="space-y-4 md:space-y-6">
-                       <div className="flex items-center gap-3 text-gold-primary font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">
-                          <Compass className="size-4 md:size-[18px]" /> وصف الرحلة
-                       </div>
-                       <p className="text-sm md:text-xl font-medium text-emerald-50/90 leading-relaxed whitespace-pre-line drop-shadow-sm">
-                          {trip.description?.trim() || "لا يوجد وصف لهذه الرحلة."}
-                       </p>
+                      <div className="flex items-center gap-3 text-gold-primary font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">
+                        <Compass className="size-4 md:size-[18px]" /> وصف الرحلة
+                      </div>
+                      <p className="text-sm md:text-xl font-medium text-emerald-50/90 leading-relaxed whitespace-pre-line drop-shadow-sm">
+                        {trip.description?.trim() || "لا يوجد وصف لهذه الرحلة."}
+                      </p>
                     </div>
 
                     <div className="space-y-6 md:space-y-8">
-                       <div className="flex items-center gap-3 text-gold-primary font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">
-                          <Info className="size-4 md:size-[18px]" /> تفاصيل إضافية
-                       </div>
-                       <div className="grid grid-cols-1 gap-3 md:gap-6">
-                          <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10">
-                             <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary shadow-xl shrink-0"><Tent className="size-[18px] md:size-[22px]" /></div>
-                             <div>
-                                <p className="text-[10px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">نوع الإقامة</p>
-                                <p className="text-xs md:text-sm font-black text-white">{trip.accommodation_type || "غير محدد"}</p>
-                             </div>
+                      <div className="flex items-center gap-3 text-gold-primary font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">
+                        <Info className="size-4 md:size-[18px]" /> تفاصيل إضافية
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 md:gap-6">
+                        <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10">
+                          <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary shadow-xl shrink-0">
+                            <Tent className="size-[18px] md:size-[22px]" />
                           </div>
-                          <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10">
-                             <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary shadow-xl shrink-0"><Clock className="size-[18px] md:size-[22px]" /></div>
-                             <div>
-                                <p className="text-[10px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">آخر موعد للتسجيل</p>
-                                <p className="text-xs md:text-sm font-black text-white">{formatDate(trip.start_date)}</p>
-                             </div>
+                          <div>
+                            <p className="text-[10px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">
+                              نوع الإقامة
+                            </p>
+                            <p className="text-xs md:text-sm font-black text-white">
+                              {trip.accommodation_type || "غير محدد"}
+                            </p>
                           </div>
-                          {trip.location_url && (
-                            <a href={trip.location_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 md:p-5 rounded-2xl md:rounded-[28px] bg-gold-primary text-emerald-950 font-black shadow-xl hover:scale-[1.02] transition-all">
-                               <div className="flex items-center gap-3">
-                                  <MapPin className="size-[18px] md:size-[22px]" strokeWidth={2.5} />
-                                  <span className="text-xs md:text-base">موقع الوجهة على الخريطة</span>
-                               </div>
-                               <ChevronLeft className="size-4 md:size-5" strokeWidth={3} />
-                            </a>
-                          )}
-                       </div>
+                        </div>
+                        <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10">
+                          <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary shadow-xl shrink-0">
+                            <Clock className="size-[18px] md:size-[22px]" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">
+                              آخر موعد للتسجيل
+                            </p>
+                            <p className="text-xs md:text-sm font-black text-white">
+                              {formatDate(trip.start_date)}
+                            </p>
+                          </div>
+                        </div>
+                        {trip.location_url && (
+                          <a
+                            href={trip.location_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between p-3.5 md:p-5 rounded-2xl md:rounded-[28px] bg-gold-primary text-emerald-950 font-black shadow-xl hover:scale-[1.02] transition-all"
+                          >
+                            <div className="flex items-center gap-3">
+                              <MapPin className="size-[18px] md:size-[22px]" strokeWidth={2.5} />
+                              <span className="text-xs md:text-base">موقع الوجهة على الخريطة</span>
+                            </div>
+                            <ChevronLeft className="size-4 md:size-5" strokeWidth={3} />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Checklist Section Remains Separate for Clarity */}
-              <div className="card-surface p-8 md:p-12 rounded-[40px] space-y-8 border-none shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
-                  <ListChecks size={140} />
-                </div>
-                <div className="flex items-center justify-between relative z-10">
-                  <div className="flex items-center gap-3 text-gold-primary font-black uppercase tracking-[0.3em] text-xs">
-                    <ListChecks size={18} /> أغراض الرحلة (من سيحضر ماذا؟)
-                  </div>
-                </div>
-                {isPrivileged && (
-                  <div className="flex gap-3 relative z-10">
-                    <input
-                      value={newItemName}
-                      onChange={(e) => setNewItemName(e.target.value)}
-                      placeholder="أضف غرضاً مطلوباً..."
-                      className="flex-1 bg-muted/30 border border-border rounded-2xl px-6 py-4 font-bold text-sm focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all"
-                    />
-                    <button
-                      onClick={addItem}
-                      disabled={addingItem}
-                      className="btn-gold size-14 rounded-2xl flex items-center justify-center shrink-0 active:scale-95 transition-all shadow-lg"
-                    >
-                      {addingItem ? <Loader2 className="size-5 animate-spin" /> : <Plus size={24} strokeWidth={3} />}
-                    </button>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 gap-3 relative z-10">
-                  {checklist.length === 0 ? (
-                    <p className="py-10 text-center opacity-30 font-bold">لا يوجد تجهيزات مطلوبة حالياً.</p>
-                  ) : (
-                    checklist.map((item) => {
-                      const isMine = item.assigned_to === userId;
-                      const isTaken = !!item.assigned_to;
-                      return (
-                        <div
-                          key={item.id}
-                          className={cn(
-                            "group flex items-center justify-between p-4 md:p-6 rounded-3xl border transition-all duration-300",
-                            isTaken ? "bg-emerald-500/5 border-emerald-500/20" : "bg-muted/20 border-border/40"
-                          )}
-                        >
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
-                            <div className={cn("size-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm", isTaken ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground")}>
-                              {isTaken ? <UserCheck size={20} /> : <Tent size={20} />}
-                            </div>
-                            <div className="min-w-0">
-                              <p className={cn("text-base md:text-lg font-black truncate", isTaken && "text-emerald-600")}>{item.name}</p>
-                              {isTaken && (
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">سيحضره: {item.assignee?.arabic_name || "عضو"} {isMine && "(أنت)"}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {isPrivileged && (
-                              <button onClick={() => deleteItem(item.id)} className="size-10 rounded-xl hover:bg-rose-500/10 text-rose-500 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                <Trash2 size={16} />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => toggleClaim(item)}
-                              className={cn(
-                                "px-6 py-2.5 rounded-xl font-black text-xs transition-all shadow-sm active:scale-95",
-                                isMine ? "bg-rose-500 text-white hover:bg-rose-600" : isTaken ? "bg-muted text-muted-foreground cursor-not-allowed opacity-50" : "bg-emerald-500 text-white hover:bg-emerald-600"
-                              )}
-                              disabled={isTaken && !isMine}
-                            >
-                              {isMine ? "إلغاء" : isTaken ? "تم الحجز" : "سأحضره أنا"}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
+              {trip.status !== "planning" && (
+                <TripPreparations
+                  tripId={tripId}
+                  userId={rolesLoading || primaryRole === "guest" ? null : userId}
+                  canManage={isPrivileged}
+                  readOnly={tripPhase(trip) === "past"}
+                />
+              )}
             </div>
           </div>
         </article>
