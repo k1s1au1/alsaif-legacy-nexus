@@ -71,6 +71,9 @@ import { DEAL_GROUPS, initialDealData, reduceDeal, rematchDeal, getDealParticipa
 import { UnoGameRoom, UnoResults } from "./uno-game-room";
 import { initialUnoData, reduceUno, unoPlayable, getUnoParticipants, rematchUno } from "./uno-engine";
 import { BalootGameRoom, BalootResults } from "./baloot-game-room";
+import { WordDuelGameRoom, WordDuelResults, WordDuelOptions } from "./word-duel-game-room";
+import { initialWordData, reduceWordDuel, rematchWordDuel, finishWordDuel, getWordParticipants, chooseWordBotAction, normalizeWordOptions, type WordOptions } from "./word-duel-engine";
+import { ensureWordDictionary } from "./word-duel-lexicon";
 import { BALOOT_SUITS, BALOOT_SUIT_LABEL, initialBalootData, reduceBaloot, rematchBaloot, getBalootParticipants, legalBalootCards, balootCardPoints, balootCardStrength, type BalootCard, type BalootSuit, type BalootData } from "./baloot-engine";
 
 type GameKey =
@@ -105,7 +108,7 @@ type RoomState = {
   scores: Record<string, number>;
   data: Record<string, any>;
   bots: Player[];
-  gameOptions?: { unoMode?: UnoMode };
+  gameOptions?: { unoMode?: UnoMode; wordDuel?: WordOptions };
 };
 
 type RoomAction = {
@@ -151,9 +154,10 @@ const GAMES: GameMeta[] = [
   {
     id: "word-duel",
     label: "سجال الحروف",
-    short: "كلمة تبدأ بآخر حرف، والدور ينتقل بين الجوالات.",
+    short: "دفتر الحروف: ٣٠ ثانية، كلمة ونقطة، وتحدٍ بجولات.",
     icon: Zap,
     minPlayers: 2,
+    maxPlayers: 8,
   },
   {
     id: "trivia",
@@ -250,14 +254,15 @@ const WHO_AM_I_CARDS = [
   { answer: "جبل طويق", clues: ["أنا مرتفع طويل", "أحيط بنجد", "شبهت بي همة السعوديين"] },
 ];
 
-const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق", "ك", "م", "ن", "هـ", "و"];
 const SESSION_KEY = "alsaif-live-game-room-v1";
 function timedTableGame(game: GameKey) { return game === "uno" || game === "saudi-deal" || game === "baloot"; }
+function timedRoomGame(game: GameKey) { return timedTableGame(game) || game === "word-duel"; }
 function roomParticipants(state: RoomState, live: Player[]): Player[] {
   if (state.phase === "lobby") return live;
   if (state.game === "uno") return getUnoParticipants(state.data, live);
   if (state.game === "saudi-deal") return getDealParticipants(state.data, live);
   if (state.game === "baloot") return getBalootParticipants(state.data, live);
+  if (state.game === "word-duel") return getWordParticipants(state.data, live);
   return live;
 }
 
@@ -278,25 +283,7 @@ const UNO_COLOR_LABELS: Record<Exclude<UnoColor, "wild">, string> = {
 };
 
 const BOT_NAMES = ["نواف", "تركي", "سلمان", "فيصل", "مشعل", "راكان", "سعود", "بدر", "فهد", "عبدالعزيز"];
-const BOT_WORDS: Record<string, string[]> = {
-  ا: ["أمل", "أسد", "أرض"],
-  ب: ["باب", "بحر", "برق"],
-  ت: ["تمر", "تاريخ", "تفاح"],
-  ج: ["جبل", "جسر", "جميل"],
-  ح: ["حصان", "حلم", "حديقة"],
-  د: ["دار", "درب", "دليل"],
-  ر: ["رياض", "ربيع", "رمل"],
-  س: ["سيف", "سماء", "سلام"],
-  ع: ["علم", "عائلة", "عسل"],
-  ف: ["فجر", "فخر", "فرح"],
-  ق: ["قمر", "قهوة", "قلب"],
-  ك: ["كتاب", "كرم", "كنز"],
-  م: ["مجلس", "مطر", "مجد"],
-  ن: ["نجم", "نخلة", "نور"],
-  هـ: ["هدية", "هلال", "هواء"],
-  ه: ["هدية", "هلال", "هواء"],
-  و: ["وطن", "ورد", "وفاء"],
-};
+
 
 function shuffle<T>(items: T[]): T[] {
   const copy = items.slice();
@@ -357,11 +344,7 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
     case "auction":
       return { cardIndex: round % WHO_AM_I_CARDS.length, clueIndex: 0, guesses: {}, solvedBy: null, revealed: false, activeIndex: starterIndex };
     case "word-duel":
-      return {
-        currentLetter: LETTERS[Math.floor(Math.random() * LETTERS.length)],
-        turnIndex: starterIndex,
-        words: [],
-      };
+      return initialWordData(players, starterIndex, options?.wordDuel, now);
     case "baloot":
       return initialBalootData(players, [0, 0], wrappedIndex(starterIndex - 1, players.length), now);
     case "monopoly":
@@ -388,7 +371,7 @@ function makeBotPlayer(existing: Player[], difficulty: BotDifficulty): Player {
 }
 
 function startState(previous: RoomState, players: Player[], now = Date.now()): RoomState {
-  const scores = { ...previous.scores };
+  const scores = previous.game === "word-duel" ? {} as Record<string, number> : { ...previous.scores };
   players.forEach((player) => {
     if (scores[player.id] == null) scores[player.id] = 0;
   });
@@ -453,16 +436,24 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
     if (!["classic", "flip", "no-mercy"].includes(mode)) return state;
     return { ...state, gameOptions: { ...state.gameOptions, unoMode: mode } };
   }
-  if (action.type === "start" && state.phase === "lobby") return startState(state, players, now);
+  if (action.type === "set-word-options" && state.phase === "lobby" && state.game === "word-duel") {
+    return { ...state, gameOptions: { ...state.gameOptions, wordDuel: normalizeWordOptions(action.value) } };
+  }
+  if (action.type === "start" && state.phase === "lobby") {
+    if (state.game === "word-duel" && (players.length < 2 || players.length > 8)) return state;
+    return startState(state, players, now);
+  }
   if (action.type === "lobby") return { ...lobbyState(state.game, state.gameOptions), bots };
   if (action.type === "uno-rematch" && state.game === "uno") return rematchUno(state, players, now);
   if (action.type === "deal-rematch" && state.game === "saudi-deal") return rematchDeal(state, players, now);
   if (action.type === "baloot-rematch" && state.game === "baloot") return rematchBaloot(state, players, now);
-  if (action.type === "finish") return { ...state, phase: "results" };
+  if (action.type === "word-rematch" && state.game === "word-duel") return rematchWordDuel(state, players, now);
+  if (action.type === "finish") return state.game === "word-duel" ? finishWordDuel(state) : { ...state, phase: "results" };
   if (state.phase !== "playing") return state;
 
   if (state.game === "uno") return reduceUno(state, action, players, now);
   if (state.game === "saudi-deal") return reduceDeal(state, action, players, now);
+  if (state.game === "word-duel") return reduceWordDuel(state, action, players, now);
   if (state.game === "baloot") return reduceBaloot(state, action, players, now);
   if (state.game === "monopoly") return reduceMonopoly(state, action, players);
 
@@ -547,35 +538,6 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
     }
   }
 
-  if (state.game === "word-duel") {
-    const active = players[data.turnIndex % Math.max(players.length, 1)];
-    if (action.type === "word" && active?.id === action.playerId) {
-      const word = String(action.value ?? "").trim();
-      if (word.length < 2 || !word.startsWith(data.currentLetter) || data.words.some((item: { word: string }) => item.word === word)) return state;
-      const words = [...data.words, { playerId: action.playerId, word }];
-      scores[action.playerId] = scoreFor(scores, action.playerId) + 1;
-      return {
-        ...state,
-        scores,
-        data: {
-          ...data,
-          words,
-          currentLetter: word.slice(-1),
-          turnIndex: nextIndex(data.turnIndex, players.length),
-        },
-      };
-    }
-    if (action.type === "skip" && active?.id === action.playerId) {
-      return {
-        ...state,
-        data: {
-          ...data,
-          currentLetter: LETTERS[Math.floor(Math.random() * LETTERS.length)],
-          turnIndex: nextIndex(data.turnIndex, players.length),
-        },
-      };
-    }
-  }
 
   return state;
 }
@@ -860,14 +822,8 @@ function chooseBotAction(state: RoomState, players: Player[]): RoomAction | null
     const correctChance = botDifficulty(active) === "easy" ? 0.45 : botDifficulty(active) === "medium" ? 0.72 : 0.9;
     return { type: Math.random() < correctChance ? "correct" : "skip", playerId: active.id };
   }
-  if (state.game === "word-duel") {
-    const active = players[data.turnIndex % Math.max(players.length, 1)];
-    if (!active?.isBot) return null;
-    const options = BOT_WORDS[data.currentLetter] ?? [`${data.currentLetter}لام`];
-    const used = new Set((data.words ?? []).map((item: { word: string }) => item.word));
-    const word = options.find((item) => !used.has(item)) ?? `${data.currentLetter}${Math.floor(Math.random() * 99)}ار`;
-    return { type: "word", playerId: active.id, value: word };
-  }
+  if (state.game === "word-duel") return chooseWordBotAction(state, players);
+
   return null;
 }
 
@@ -1006,7 +962,7 @@ export function GameRoomsHub() {
         senderId: meRef.current.id,
         hostId: nextHostId,
         state: nextState,
-        sentAt: Date.now() + (timedTableGame(nextState.game) ? clockOffsetRef.current : 0),
+        sentAt: Date.now() + (timedRoomGame(nextState.game) ? clockOffsetRef.current : 0),
       });
     },
     [sendPacket],
@@ -1021,7 +977,7 @@ export function GameRoomsHub() {
       avatarUrl: meRef.current.avatarUrl,
       ready: nextReady,
       joinedAt: (
-        timedTableGame(stateRef.current.game) && stateRef.current.phase !== "lobby"
+        timedRoomGame(stateRef.current.game) && stateRef.current.phase !== "lobby"
           ? stateRef.current.data.roster?.find((player: Player) => player.id === meRef.current.id)?.joinedAt
           : undefined
       ) ?? meRef.current.joinedAt,
@@ -1064,9 +1020,15 @@ export function GameRoomsHub() {
   const hostApply = useCallback(
     async (action: RoomAction) => {
       if (hostRef.current !== meRef.current.id || synchronizingRef.current) return;
+      if (stateRef.current.game === "word-duel" || (action.type === "set-game" && action.value === "word-duel")) {
+        if (["set-game", "set-word-options", "start", "finish", "lobby", "word-rematch", "add-bot", "fill-bots", "remove-bot", "set-bot-difficulty"].includes(action.type) && action.playerId !== meRef.current.id) return;
+        try { await ensureWordDictionary(); } catch { if (["start", "set-game"].includes(action.type)) toast.error("تعذر تجهيز كلمات السجال. حاول مرة ثانية."); return; }
+        // Loading may overlap another packet or a host election: use the latest room afterwards.
+        if (hostRef.current !== meRef.current.id || synchronizingRef.current) return;
+      }
       const live = [...playersRef.current, ...(stateRef.current.bots ?? [])];
       const participants = roomParticipants(stateRef.current, live);
-      if (["uno-rematch", "deal-rematch", "baloot-rematch", "baloot-next-round", "baloot-collect"].includes(action.type) && action.playerId !== meRef.current.id) return;
+      if (["uno-rematch", "deal-rematch", "baloot-rematch", "baloot-next-round", "baloot-collect", "word-rematch"].includes(action.type) && action.playerId !== meRef.current.id) return;
       const next = applyRoomAction(stateRef.current, action, participants, Date.now() + clockOffsetRef.current);
       if (next === stateRef.current) return;
       stateRef.current = next;
@@ -1080,7 +1042,7 @@ export function GameRoomsHub() {
     async (type: string, value?: any) => {
       const action: RoomAction = {
         type,
-        value: timedTableGame(stateRef.current.game) && (type.startsWith("uno-") || type.startsWith("deal-") || type.startsWith("baloot-"))
+        value: timedRoomGame(stateRef.current.game) && (type.startsWith("uno-") || type.startsWith("deal-") || type.startsWith("baloot-") || type.startsWith("word-"))
           ? { ...value, turnSequence: stateRef.current.data.turnSequence, round: stateRef.current.round }
           : value,
         playerId: meRef.current.id,
@@ -1107,7 +1069,7 @@ export function GameRoomsHub() {
       synchronizingRef.current = false;
       setConnected(true);
       lastSnapshotAtRef.current = Date.now();
-      if (packet.sentAt && timedTableGame(packet.state.game)) {
+      if (packet.sentAt && timedRoomGame(packet.state.game)) {
         clockOffsetRef.current = packet.sentAt - Date.now();
         setClockOffset(clockOffsetRef.current);
       }
@@ -1119,9 +1081,9 @@ export function GameRoomsHub() {
       return;
     }
     if (packet.kind === "action") {
-      if (timedTableGame(stateRef.current.game) && (
+      if (timedRoomGame(stateRef.current.game) && (
         packet.senderId !== packet.action.playerId ||
-        ["uno-timeout", "uno-clock", "deal-timeout", "deal-clock", "baloot-timeout", "baloot-clock", "baloot-collect"].includes(packet.action.type)
+        ["uno-timeout", "uno-clock", "deal-timeout", "deal-clock", "baloot-timeout", "baloot-clock", "baloot-collect", "word-timeout", "word-clock"].includes(packet.action.type)
       )) return;
       if (hostRef.current === meRef.current.id) void hostApply(packet.action);
       return;
@@ -1301,7 +1263,7 @@ export function GameRoomsHub() {
     const currentPlayers = roomParticipants(state, live);
     const action = chooseBotAction(state, currentPlayers);
     if (!action) return;
-    if (timedTableGame(state.game)) action.value = { ...action.value, turnSequence: state.data.turnSequence, round: state.round };
+    if (timedRoomGame(state.game)) action.value = { ...action.value, turnSequence: state.data.turnSequence, round: state.round };
     const bot = currentPlayers.find((player) => player.id === action.playerId && player.isBot);
     const timer = window.setTimeout(() => {
       void hostApply(action);
@@ -1309,14 +1271,18 @@ export function GameRoomsHub() {
     return () => window.clearTimeout(timer);
   }, [connected, hostId, me.id, players, state, hostApply]);
 
+  useEffect(() => {
+    if (state.game === "word-duel") void ensureWordDictionary().catch(() => { /* The room offers a retry if the dictionary cannot load. */ });
+  }, [state.game]);
+
   // Only the elected, connected host advances an expired turn. Sequence/deadline
   // guards in the reducer make old callbacks and delayed packets harmless.
   useEffect(() => {
-    if (!connected || hostId !== me.id || !timedTableGame(state.game) || state.phase !== "playing") return;
+    if (!connected || hostId !== me.id || !timedRoomGame(state.game) || state.phase !== "playing") return;
     const tick = () => {
       const current = stateRef.current;
       const roster = roomParticipants(current, [...playersRef.current, ...(current.bots ?? [])]);
-      const prefix = current.game === "uno" ? "uno" : current.game === "baloot" ? "baloot" : "deal";
+      const prefix = current.game === "uno" ? "uno" : current.game === "baloot" ? "baloot" : current.game === "word-duel" ? "word" : "deal";
       if (current.game === "baloot") {
         if (current.data.stage === "round-end") return;
         if (current.data.pendingTrick) {
@@ -1403,7 +1369,7 @@ export function GameRoomsHub() {
   const minimumReached = selectedMeta.exactPlayers
     ? participants.length === selectedMeta.exactPlayers
     : participants.length >= selectedMeta.minPlayers;
-  const allReady = minimumReached && participants.every((player) => player.ready);
+  const allReady = minimumReached && participants.length <= (selectedMeta.maxPlayers ?? 12) && participants.every((player) => player.ready);
 
   if (booting) {
     return (
@@ -1449,6 +1415,7 @@ export function GameRoomsHub() {
           onReady={() => void toggleReady()}
           onSelectGame={(game) => void dispatch("set-game", game)}
           onSelectUnoMode={(mode) => void dispatch("set-uno-mode", mode)}
+          onWordOptions={(options) => void dispatch("set-word-options", options)}
           onStart={() => void dispatch("start")}
           onAddBot={(difficulty) => void dispatch("add-bot", difficulty)}
           onFillBots={(difficulty) => void dispatch("fill-bots", difficulty)}
@@ -1456,7 +1423,7 @@ export function GameRoomsHub() {
           onBotDifficulty={(botId, difficulty) => void dispatch("set-bot-difficulty", { botId, difficulty })}
         />
       ) : state.phase === "results" ? (
-        state.game === "uno" ? <UnoResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("uno-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "saudi-deal" ? <SaudiDealResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("deal-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "baloot" ? <BalootResults state={state} players={participants} me={me} isHost={isHost} onRematch={() => void dispatch("baloot-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "monopoly" ? <MillionaireResults data={state.data} players={participants} isHost={isHost} onLobby={() => void dispatch("lobby")} /> : <Results
+        state.game === "uno" ? <UnoResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("uno-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "saudi-deal" ? <SaudiDealResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("deal-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "baloot" ? <BalootResults state={state} players={participants} me={me} isHost={isHost} onRematch={() => void dispatch("baloot-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "word-duel" ? <WordDuelResults state={state} players={participants} me={me} isHost={isHost} connected={connected} onRematch={() => void dispatch("word-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "monopoly" ? <MillionaireResults data={state.data} players={participants} isHost={isHost} onLobby={() => void dispatch("lobby")} /> : <Results
           players={participants}
           scores={state.scores}
           isHost={isHost}
@@ -1684,6 +1651,7 @@ function Lobby({
   onReady,
   onSelectGame,
   onSelectUnoMode,
+  onWordOptions,
   onStart,
   onAddBot,
   onFillBots,
@@ -1700,6 +1668,7 @@ function Lobby({
   onReady: () => void;
   onSelectGame: (game: GameKey) => void;
   onSelectUnoMode: (mode: UnoMode) => void;
+  onWordOptions: (options: WordOptions) => void;
   onStart: () => void;
   onAddBot: (difficulty: BotDifficulty) => void;
   onFillBots: (difficulty: BotDifficulty) => void;
@@ -1788,6 +1757,7 @@ function Lobby({
             </div>
           </div>
         )}
+        {state.game === "word-duel" && <WordDuelOptions value={state.gameOptions?.wordDuel} disabled={!isHost} onChange={onWordOptions} />}
       </Surface>
 
       <div className="space-y-5">
@@ -2087,6 +2057,11 @@ const GAME_GUIDES: Partial<Record<GameKey, {
     ],
     notes: ["الحد الأعلى لليد سبع أوراق عند إنهاء الدور. إذا انتهت الـ٩٠ ثانية تُرمى الزيادة بدءًا من آخر الأوراق وينتقل الدور تلقائيًا.", "بعد اختيار ورقة اضغط زر المعلومات لشرحها. بطاقات مرفوض تصد الهجوم تلقائيًا وهي في اليد."],
   },
+  "word-duel": {
+    goal: "اجمع أعلى النقاط بكتابة كلمات تبدأ بالحرف المطلوب.",
+    steps: ["لكل لاعب ٣٠ ثانية: اكتب كلمة وأرسلها، أو تخطّ دورك. عند انتهاء الوقت ينتقل الدور تلقائيًا.", "آخر حرف من الكلمة المقبولة يبدأ كلمة اللاعب التالي، ولا يمكن إعادة كلمة استُخدمت قبل.", "لكل لاعب دور واحد في كل جولة. يختار المضيف ٣ أو ٥ أو ١٠ جولات، والسجال العادي أو فئات الكلمات.", "لك تلميح جزئي واحد في المباراة؛ يظهر داخل دورك ويستمر المؤقت."],
+    notes: ["كل كلمة مقبولة تضيف نقطة. الفوز لأعلى نتيجة، ويُعرض التعادل إذا تساوت النقاط.", "إذا لم تبقَ كلمات مناسبة للحرف، يبدأ حرف جديد ويستمر السجال.", "البوتات بثلاث صعوبات. إعادة الاتصال تحفظ الدور والوقت والنقاط، والمباراة الجديدة تحفظ اللاعبين والإعدادات."],
+  },
   baloot: {
     goal: "اكسب الأكلات وارفع نتيجة فريقك إلى 152 نقطة في نسخة البلوت داخل المجلس.",
     steps: [
@@ -2237,7 +2212,7 @@ function GameBoard({
   const meta = gameMeta(state.game);
   const GameIcon = meta.icon;
   const logoUrl = useSiteLogo();
-  const [gameMode, setGameMode] = useState(() => timedTableGame(state.game) || state.game === "monopoly");
+  const [gameMode, setGameMode] = useState(() => timedRoomGame(state.game) || state.game === "monopoly");
   const [portalReady, setPortalReady] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -2327,7 +2302,7 @@ function GameBoard({
       if (preferences.haptics && typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(isMyTurn ? [35, 30, 65] : 22);
       }
-      if (preferences.sound && state.game !== "monopoly" && state.game !== "saudi-deal" && state.game !== "baloot") playGameTone(isMyTurn ? "turn" : "move");
+      if (preferences.sound && state.game !== "monopoly" && state.game !== "saudi-deal" && state.game !== "baloot" && state.game !== "word-duel") playGameTone(isMyTurn ? "turn" : "move");
     }
     feedbackRef.current = feedbackToken;
   }, [activeIndex, feedbackToken, gameMode, me.id, players, preferences.haptics, preferences.sound, state.game]);
@@ -2384,7 +2359,7 @@ function GameBoard({
           <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : state.game === "baloot" ? "البلوت مرتبة بطاولة تجمعك مع خويّك والخصمين." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
         </div>
       )}
-      {showStartingDraw && !timedTableGame(state.game) && (
+      {showStartingDraw && !timedRoomGame(state.game) && (
         <div className="arena-starting-draw" role="status" aria-live="polite">
           <div className="arena-starting-draw__halo" />
           <Crown className="arena-starting-draw__crown" />
@@ -2393,13 +2368,13 @@ function GameBoard({
           <span>يبدأ الجولة</span>
         </div>
       )}
-      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && (state.game === "saudi-deal" || state.game === "monopoly") && "bg-transparent", gameMode && (state.game === "saudi-deal" || state.game === "baloot") && "!p-0")}>
+      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && (state.game === "saudi-deal" || state.game === "monopoly") && "bg-transparent", gameMode && (state.game === "saudi-deal" || state.game === "baloot" || state.game === "word-duel") && "!p-0", gameMode && state.game === "word-duel" && "!rounded-none")}>
         <div
           className={cn(
             "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
             gameMode && "relative mb-0 min-h-[82px] shrink-0 border-white/10 bg-[radial-gradient(circle_at_50%_0%,#0b5a48_0%,#052d26_58%,#031f1a_100%)] px-3 pb-2 text-white shadow-lg landscape:min-h-[58px] landscape:pb-1",
             gameMode && state.game === "saudi-deal" && "bg-none bg-[#032b24]/85 backdrop-blur-md",
-            gameMode && (timedTableGame(state.game) || state.game === "monopoly") && "hidden",
+            gameMode && (timedRoomGame(state.game) || state.game === "monopoly") && "hidden",
           )}
           style={gameMode ? { paddingTop: "max(.5rem, env(safe-area-inset-top))" } : undefined}
         >
@@ -2460,9 +2435,9 @@ function GameBoard({
           className={cn(
             gameMode && "min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_50%_12%,rgba(23,102,80,.32),transparent_42%),linear-gradient(#031d18,#021713)] px-2 py-2 sm:px-4",
             gameMode && state.game === "saudi-deal" && "bg-none bg-transparent",
-            gameMode && (timedTableGame(state.game) || state.game === "monopoly") && "overflow-hidden bg-none bg-transparent !p-0",
+            gameMode && (timedRoomGame(state.game) || state.game === "monopoly") && "overflow-hidden bg-none bg-transparent !p-0",
           )}
-          style={gameMode && !timedTableGame(state.game) && state.game !== "monopoly" ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
+          style={gameMode && !timedRoomGame(state.game) && state.game !== "monopoly" ? { paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" } : undefined}
         >
           {state.game === "uno" && (
             <UnoGameRoom
@@ -2503,7 +2478,7 @@ function GameBoard({
           {state.game === "judge" && <JudgeGame state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
           {state.game === "challenge30" && <ChallengeGame state={state} players={players} me={me} isHost={isHost} now={now} dispatch={dispatch} />}
           {state.game === "auction" && <AuctionRoom state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
-          {state.game === "word-duel" && <WordDuelRoom state={state} players={players} me={me} dispatch={dispatch} />}
+          {state.game === "word-duel" && <WordDuelGameRoom state={state} players={players} me={me} immersive={gameMode} dispatch={dispatch} connected={connected} clockOffset={clockOffset} sound={preferences.sound} reducedMotion={preferences.reducedMotion} onToggleSound={() => toggle("sound")} onExit={() => void leaveGameMode()} onGuide={() => setShowGuide(true)} onSettings={() => setShowSettings(true)} isHost={isHost} onFinish={() => void dispatch("finish")} />}
           {state.game === "baloot" && <BalootGameRoom state={state} players={players} me={me} isHost={isHost} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} connected={connected} clockOffset={clockOffset} sound={preferences.sound} reducedMotion={preferences.reducedMotion} onToggleSound={() => toggle("sound")} onExit={() => void leaveGameMode()} onGuide={() => setShowGuide(true)} onSettings={() => setShowSettings(true)} onFinish={() => void dispatch("finish")} />}
         </div>
       </Surface>
@@ -3347,89 +3322,6 @@ function AuctionRoom({
       )}
       {isHost && data.revealed && (
         <PrimaryAction onClick={() => void dispatch("next")}>بطاقة جديدة <ChevronLeft className="size-5" /></PrimaryAction>
-      )}
-    </div>
-  );
-}
-
-function WordDuelRoom({
-  state,
-  players,
-  me,
-  dispatch,
-}: {
-  state: RoomState;
-  players: Player[];
-  me: Player;
-  dispatch: (type: string, value?: any) => Promise<void>;
-}) {
-  const data = state.data;
-  const active = players[data.turnIndex % Math.max(players.length, 1)];
-  const amActive = active?.id === me.id;
-  const [word, setWord] = useState("");
-  const valid = word.trim().length >= 2 && word.trim().startsWith(data.currentLetter);
-
-  useEffect(() => setWord(""), [data.turnIndex]);
-
-  const submit = () => {
-    if (!valid) return;
-    void dispatch("word", word.trim());
-    setWord("");
-  };
-
-  return (
-    <div className="arena-social-stage mx-auto max-w-4xl space-y-5 text-center">
-      <div className="flex items-center justify-center gap-3 rounded-2xl border border-border bg-card/70 p-3">
-        {active && <PlayerAvatar player={active} size="lg" />}
-        <div className="text-right">
-          <p className="text-xs font-bold text-muted-foreground">الدور الآن عند</p>
-          <p className="text-xl font-black text-primary">{active?.name ?? "—"}</p>
-        </div>
-      </div>
-
-      <div className="arena-letter-stage">
-        <p className="text-sm font-black text-gold-primary">آخر حرف يبدأ التحدي التالي</p>
-        <p className="arena-letter-glyph">{data.currentLetter}</p>
-        <p className="text-xs font-bold text-white/55">لا تكرر كلمة ظهرت في السجل</p>
-      </div>
-
-      {amActive ? (
-        <div className="space-y-3">
-          <div className="flex gap-3" dir="rtl">
-            <input
-              value={word}
-              onChange={(event) => setWord(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && submit()}
-              placeholder={`كلمة تبدأ بـ ${data.currentLetter}`}
-              autoFocus
-              className="h-16 min-w-0 flex-1 rounded-2xl border-2 border-border bg-muted/30 px-5 text-lg font-black text-primary outline-none focus:border-gold-primary"
-            />
-            <button
-              type="button"
-              disabled={!valid}
-              onClick={submit}
-              className="min-w-24 rounded-2xl bg-primary px-5 font-black text-primary-foreground disabled:opacity-35"
-            >
-              إرسال
-            </button>
-          </div>
-          <button type="button" onClick={() => void dispatch("skip")} className="text-xs font-black text-muted-foreground underline underline-offset-4">
-            لا أعرف — تخطي الدور
-          </button>
-        </div>
-      ) : (
-        <p className="rounded-2xl bg-muted/40 p-4 text-sm font-bold text-muted-foreground">بانتظار كلمة {active?.name}</p>
-      )}
-
-      {data.words.length > 0 && (
-        <div className="text-right">
-          <p className="mb-3 text-xs font-black text-muted-foreground">آخر الكلمات</p>
-          <div className="arena-word-stream">
-            {data.words.slice(-10).reverse().map((item: { playerId: string; word: string }, index: number) => (
-              <div key={`${item.playerId}-${item.word}-${index}`} className="arena-word-chip"><span>{item.word}</span><small>{players.find((player) => player.id === item.playerId)?.name.split(" ")[0]}</small></div>
-            ))}
-          </div>
-        </div>
       )}
     </div>
   );
