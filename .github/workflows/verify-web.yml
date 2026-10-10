@@ -45,6 +45,8 @@ jobs:
         run: npm run test:vault
       - name: Check Saudi Deal turns, targets and rematches
         run: npm run test:saudi-deal
+      - name: Check Sijal spelling tolerance, fair rounds, timers and bots
+        run: npm run test:word-duel
       - name: Check Baloot timers, fixed teams, tricks and rematches
         run: npm run test:baloot
       - name: Check UNO turns, reconnection and rematches
