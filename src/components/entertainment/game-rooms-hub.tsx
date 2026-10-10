@@ -70,6 +70,8 @@ import { SaudiDealGameRoom, SaudiDealResults } from "./saudi-deal-game-room";
 import { DEAL_GROUPS, initialDealData, reduceDeal, rematchDeal, getDealParticipants, isProtectedDealProperty, type DealCard } from "./saudi-deal-engine";
 import { UnoGameRoom, UnoResults } from "./uno-game-room";
 import { initialUnoData, reduceUno, unoPlayable, getUnoParticipants, rematchUno } from "./uno-engine";
+import { BalootGameRoom, BalootResults } from "./baloot-game-room";
+import { BALOOT_SUITS, BALOOT_SUIT_LABEL, initialBalootData, reduceBaloot, rematchBaloot, getBalootParticipants, legalBalootCards, balootCardPoints, balootCardStrength, type BalootCard, type BalootSuit, type BalootData } from "./baloot-engine";
 
 type GameKey =
   | "uno"
@@ -250,11 +252,12 @@ const WHO_AM_I_CARDS = [
 
 const LETTERS = ["ا", "ب", "ت", "ج", "ح", "د", "ر", "س", "ع", "ف", "ق", "ك", "م", "ن", "هـ", "و"];
 const SESSION_KEY = "alsaif-live-game-room-v1";
-function timedTableGame(game: GameKey) { return game === "uno" || game === "saudi-deal"; }
+function timedTableGame(game: GameKey) { return game === "uno" || game === "saudi-deal" || game === "baloot"; }
 function roomParticipants(state: RoomState, live: Player[]): Player[] {
   if (state.phase === "lobby") return live;
   if (state.game === "uno") return getUnoParticipants(state.data, live);
   if (state.game === "saudi-deal") return getDealParticipants(state.data, live);
+  if (state.game === "baloot") return getBalootParticipants(state.data, live);
   return live;
 }
 
@@ -266,13 +269,6 @@ type UnoCard = {
   value: string;
 };
 
-type BalootSuit = "spades" | "hearts" | "diamonds" | "clubs";
-type BalootCard = {
-  id: string;
-  suit: BalootSuit;
-  rank: "7" | "8" | "9" | "J" | "Q" | "K" | "10" | "A";
-};
-
 const UNO_COLORS: Exclude<UnoColor, "wild">[] = ["red", "blue", "green", "yellow"];
 const UNO_COLOR_LABELS: Record<Exclude<UnoColor, "wild">, string> = {
   red: "أحمر",
@@ -281,14 +277,6 @@ const UNO_COLOR_LABELS: Record<Exclude<UnoColor, "wild">, string> = {
   yellow: "أصفر",
 };
 
-const BALOOT_SUITS: BalootSuit[] = ["spades", "hearts", "diamonds", "clubs"];
-const BALOOT_RANKS: BalootCard["rank"][] = ["7", "8", "9", "J", "Q", "K", "10", "A"];
-const BALOOT_SUIT_LABEL: Record<BalootSuit, string> = {
-  spades: "♠",
-  hearts: "♥",
-  diamonds: "♦",
-  clubs: "♣",
-};
 const BOT_NAMES = ["نواف", "تركي", "سلمان", "فيصل", "مشعل", "راكان", "سعود", "بدر", "فهد", "عبدالعزيز"];
 const BOT_WORDS: Record<string, string[]> = {
   ا: ["أمل", "أسد", "أرض"],
@@ -322,45 +310,6 @@ function shuffle<T>(items: T[]): T[] {
 function copyData<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
-function buildBalootDeck(): BalootCard[] {
-  let id = 0;
-  return shuffle(
-    BALOOT_SUITS.flatMap((suit) =>
-      BALOOT_RANKS.map((rank) => ({ id: `baloot-${id++}`, suit, rank })),
-    ),
-  );
-}
-
-function initialBalootData(players: Player[], matchScore: [number, number] = [0, 0], dealerIndex = 3) {
-  const deck = buildBalootDeck();
-  const hands: Record<string, BalootCard[]> = {};
-  players.forEach((player) => {
-    hands[player.id] = deck.splice(0, 5);
-  });
-  const buyCard = deck.shift()!;
-  return {
-    stage: "bidding",
-    hands,
-    drawPile: deck,
-    buyCard,
-    dealerIndex,
-    bidTurnIndex: nextIndex(dealerIndex, players.length),
-    biddingRound: 1,
-    passes: 0,
-    contract: null,
-    trick: [],
-    leaderIndex: 0,
-    turnIndex: 0,
-    teamTricks: [0, 0],
-    rawPoints: [0, 0],
-    matchScore,
-    roundPoints: null,
-    lastTrickWinnerId: null,
-    lastAction: "بدأت المزايدة على ورقة الشراء",
-  };
-}
-
-
 function gameMeta(id: GameKey) {
   return GAMES.find((game) => game.id === id) ?? GAMES[0];
 }
@@ -386,7 +335,7 @@ function nextIndex(current: number, length: number) {
   return length ? (current + 1) % length : 0;
 }
 
-function initialGameData(game: GameKey, players: Player[], round = 0, starterIndex = 0, options?: RoomState["gameOptions"]): Record<string, any> {
+function initialGameData(game: GameKey, players: Player[], round = 0, starterIndex = 0, options?: RoomState["gameOptions"], now = Date.now()): Record<string, any> {
   switch (game) {
     case "uno":
       return initialUnoData(players, starterIndex, options?.unoMode ?? "classic");
@@ -414,7 +363,7 @@ function initialGameData(game: GameKey, players: Player[], round = 0, starterInd
         words: [],
       };
     case "baloot":
-      return initialBalootData(players, [0, 0], wrappedIndex(starterIndex - 1, players.length));
+      return initialBalootData(players, [0, 0], wrappedIndex(starterIndex - 1, players.length), now);
     case "monopoly":
       return initialMonopolyData(players, starterIndex);
   }
@@ -453,7 +402,7 @@ function startState(previous: RoomState, players: Player[], now = Date.now()): R
     data: {
       ...(previous.game === "uno"
         ? initialUnoData(players, starterIndex, previous.gameOptions?.unoMode ?? "classic", now)
-        : previous.game === "saudi-deal" ? initialDealData(players, starterIndex, now) : initialGameData(previous.game, players, 0, starterIndex, previous.gameOptions)),
+        : previous.game === "saudi-deal" ? initialDealData(players, starterIndex, now) : initialGameData(previous.game, players, 0, starterIndex, previous.gameOptions, now)),
       starterId: starter?.id ?? null,
       starterName: starter?.name ?? "اللاعب الأول",
       starterIndex,
@@ -466,154 +415,6 @@ function wrappedIndex(index: number, length: number) {
   if (!length) return 0;
   return ((index % length) + length) % length;
 }
-function finishBalootBidding(data: any, players: Player[], buyerIndex: number, mode: "sun" | "hokm", trump: BalootSuit | null) {
-  players.forEach((player, index) => {
-    const extra = index === buyerIndex ? 2 : 3;
-    if (index === buyerIndex) data.hands[player.id].push(data.buyCard);
-    data.hands[player.id].push(...data.drawPile.splice(0, extra));
-  });
-  data.contract = { mode, trump, buyerId: players[buyerIndex].id, buyerIndex };
-  data.stage = "playing";
-  data.leaderIndex = buyerIndex;
-  data.turnIndex = buyerIndex;
-  data.trick = [];
-  data.teamTricks = [0, 0];
-  data.rawPoints = [0, 0];
-  data.roundPoints = null;
-  data.lastAction = `${players[buyerIndex].name} اشترى ${mode === "sun" ? "صن" : `حكم ${trump ? BALOOT_SUIT_LABEL[trump] : ""}`}`;
-  return data;
-}
-
-function balootCardStrength(card: BalootCard, leadSuit: BalootSuit, mode: "sun" | "hokm", trump: BalootSuit | null) {
-  const sunOrder: BalootCard["rank"][] = ["7", "8", "9", "J", "Q", "K", "10", "A"];
-  const hokmOrder: BalootCard["rank"][] = ["7", "8", "Q", "K", "10", "A", "9", "J"];
-  if (mode === "hokm" && trump && card.suit === trump) return 200 + hokmOrder.indexOf(card.rank);
-  if (card.suit === leadSuit) return 100 + sunOrder.indexOf(card.rank);
-  return 0;
-}
-
-function balootCardPoints(card: BalootCard, mode: "sun" | "hokm", trump: BalootSuit | null) {
-  if (mode === "hokm" && card.suit === trump) {
-    return ({ J: 20, "9": 14, A: 11, "10": 10, K: 4, Q: 3, "8": 0, "7": 0 } as Record<string, number>)[card.rank];
-  }
-  return ({ A: 11, "10": 10, K: 4, Q: 3, J: 2, "9": 0, "8": 0, "7": 0 } as Record<string, number>)[card.rank];
-}
-
-function reduceBaloot(state: RoomState, action: RoomAction, players: Player[]): RoomState {
-  if (players.length !== 4) return state;
-  const data = copyData(state.data);
-
-  if (data.stage === "round-end" && action.type === "baloot-next-round") {
-    const nextData = initialBalootData(players, data.matchScore, nextIndex(data.dealerIndex, players.length));
-    return { ...state, round: state.round + 1, data: nextData };
-  }
-
-  if (data.stage === "bidding") {
-    const bidder = players[data.bidTurnIndex];
-    if (bidder?.id !== action.playerId) return state;
-    if (action.type === "baloot-pass") {
-      data.lastAction = `${bidder.name} قال ${data.biddingRound === 1 ? "بس" : "ولا"}`;
-      data.passes += 1;
-      if (data.passes >= players.length) {
-        if (data.biddingRound === 1) {
-          data.biddingRound = 2;
-          data.passes = 0;
-          data.bidTurnIndex = nextIndex(data.dealerIndex, players.length);
-        } else {
-          return {
-            ...state,
-            data: initialBalootData(players, data.matchScore, nextIndex(data.dealerIndex, players.length)),
-          };
-        }
-      } else {
-        data.bidTurnIndex = nextIndex(data.bidTurnIndex, players.length);
-      }
-      return { ...state, data };
-    }
-    if (action.type === "baloot-bid") {
-      const mode = action.value?.mode as "sun" | "hokm";
-      if (mode !== "sun" && mode !== "hokm") return state;
-      let trump: BalootSuit | null = null;
-      if (mode === "hokm") {
-        trump = data.biddingRound === 1 ? data.buyCard.suit : action.value?.trump;
-        if (!BALOOT_SUITS.includes(trump as BalootSuit)) return state;
-        if (data.biddingRound === 2 && trump === data.buyCard.suit) return state;
-      }
-      return { ...state, data: finishBalootBidding(data, players, data.bidTurnIndex, mode, trump) };
-    }
-    return state;
-  }
-
-  if (data.stage !== "playing" || action.type !== "baloot-play") return state;
-  const active = players[data.turnIndex];
-  if (active?.id !== action.playerId) return state;
-  const hand = (data.hands[action.playerId] ?? []) as BalootCard[];
-  const cardIndex = hand.findIndex((card) => card.id === action.value);
-  if (cardIndex < 0) return state;
-  const card = hand[cardIndex];
-  const leadSuit = data.trick[0]?.card?.suit as BalootSuit | undefined;
-  if (leadSuit && hand.some((item) => item.suit === leadSuit) && card.suit !== leadSuit) return state;
-
-  hand.splice(cardIndex, 1);
-  data.hands[action.playerId] = hand;
-  data.trick.push({ playerId: action.playerId, card });
-  data.lastAction = `${active.name} لعب ${card.rank} ${BALOOT_SUIT_LABEL[card.suit]}`;
-  if (data.trick.length < 4) {
-    data.turnIndex = nextIndex(data.turnIndex, players.length);
-    return { ...state, data };
-  }
-
-  const contract = data.contract as { mode: "sun" | "hokm"; trump: BalootSuit | null; buyerId: string; buyerIndex: number };
-  const trickLead = data.trick[0].card.suit as BalootSuit;
-  const winningPlay = data.trick.reduce((best: any, play: any) =>
-    balootCardStrength(play.card, trickLead, contract.mode, contract.trump) >
-    balootCardStrength(best.card, trickLead, contract.mode, contract.trump)
-      ? play
-      : best,
-  );
-  const winnerIndex = players.findIndex((player) => player.id === winningPlay.playerId);
-  const winningTeam = winnerIndex % 2;
-  const trickPoints = data.trick.reduce(
-    (sum: number, play: any) => sum + balootCardPoints(play.card, contract.mode, contract.trump),
-    0,
-  );
-  data.rawPoints[winningTeam] += trickPoints;
-  data.teamTricks[winningTeam] += 1;
-  data.lastTrickWinnerId = winningPlay.playerId;
-  data.lastAction = `${players[winnerIndex].name} أخذ الأكلة`;
-
-  const roundFinished = players.every((player) => data.hands[player.id].length === 0);
-  if (!roundFinished) {
-    data.trick = [];
-    data.leaderIndex = winnerIndex;
-    data.turnIndex = winnerIndex;
-    return { ...state, data };
-  }
-
-  data.rawPoints[winningTeam] += 10;
-  const totalPoints = contract.mode === "sun" ? 26 : 16;
-  let teamZero = contract.mode === "sun" ? Math.round(data.rawPoints[0] / 5) : Math.round(data.rawPoints[0] / 10);
-  teamZero = Math.max(0, Math.min(totalPoints, teamZero));
-  let roundPoints: [number, number] = [teamZero, totalPoints - teamZero];
-  const buyerTeam = contract.buyerIndex % 2;
-  if (roundPoints[buyerTeam] <= roundPoints[1 - buyerTeam]) {
-    roundPoints = buyerTeam === 0 ? [0, totalPoints] : [totalPoints, 0];
-  }
-  data.roundPoints = roundPoints;
-  data.matchScore = [data.matchScore[0] + roundPoints[0], data.matchScore[1] + roundPoints[1]];
-  data.stage = "round-end";
-  data.trick = [];
-  data.lastAction = `انتهت الجولة بنتيجة ${roundPoints[0]} - ${roundPoints[1]}`;
-
-  const scores = { ...state.scores };
-  players.forEach((player, index) => {
-    scores[player.id] = data.matchScore[index % 2];
-  });
-  const matchFinished = data.matchScore[0] >= 152 || data.matchScore[1] >= 152;
-  return { ...state, phase: matchFinished ? "results" : state.phase, scores, data };
-}
-
-
 function applyRoomAction(state: RoomState, action: RoomAction, players: Player[], now = Date.now()): RoomState {
   const bots = state.bots ?? [];
   if (action.type === "add-bot" && state.phase === "lobby") {
@@ -656,12 +457,13 @@ function applyRoomAction(state: RoomState, action: RoomAction, players: Player[]
   if (action.type === "lobby") return { ...lobbyState(state.game, state.gameOptions), bots };
   if (action.type === "uno-rematch" && state.game === "uno") return rematchUno(state, players, now);
   if (action.type === "deal-rematch" && state.game === "saudi-deal") return rematchDeal(state, players, now);
+  if (action.type === "baloot-rematch" && state.game === "baloot") return rematchBaloot(state, players, now);
   if (action.type === "finish") return { ...state, phase: "results" };
   if (state.phase !== "playing") return state;
 
   if (state.game === "uno") return reduceUno(state, action, players, now);
   if (state.game === "saudi-deal") return reduceDeal(state, action, players, now);
-  if (state.game === "baloot") return reduceBaloot(state, action, players);
+  if (state.game === "baloot") return reduceBaloot(state, action, players, now);
   if (state.game === "monopoly") return reduceMonopoly(state, action, players);
 
   const data = state.data;
@@ -972,12 +774,9 @@ function balootBotAction(state: RoomState, bot: Player, players: Player[]): Room
     return { type: "baloot-pass", playerId: bot.id };
   }
 
-  if (data.stage !== "playing" || !hand.length) return null;
+  if (data.stage !== "playing" || data.pendingTrick || !hand.length) return null;
   const contract = data.contract as { mode: "sun" | "hokm"; trump: BalootSuit | null };
-  const leadSuit = data.trick[0]?.card?.suit as BalootSuit | undefined;
-  const legal = leadSuit && hand.some((card) => card.suit === leadSuit)
-    ? hand.filter((card) => card.suit === leadSuit)
-    : hand.slice();
+  const legal = legalBalootCards(data as BalootData, bot.id);
   if (!legal.length) return null;
   let card: BalootCard;
   if (difficulty === "easy") {
@@ -1009,7 +808,7 @@ function balootBotAction(state: RoomState, bot: Player, players: Player[]): Room
       card = lowest[0];
     }
   }
-  return { type: "baloot-play", playerId: bot.id, value: card.id };
+  return { type: "baloot-play", playerId: bot.id, value: { cardId: card.id } };
 }
 
 function chooseBotAction(state: RoomState, players: Player[]): RoomAction | null {
@@ -1267,7 +1066,7 @@ export function GameRoomsHub() {
       if (hostRef.current !== meRef.current.id || synchronizingRef.current) return;
       const live = [...playersRef.current, ...(stateRef.current.bots ?? [])];
       const participants = roomParticipants(stateRef.current, live);
-      if (["uno-rematch", "deal-rematch"].includes(action.type) && action.playerId !== meRef.current.id) return;
+      if (["uno-rematch", "deal-rematch", "baloot-rematch", "baloot-next-round", "baloot-collect"].includes(action.type) && action.playerId !== meRef.current.id) return;
       const next = applyRoomAction(stateRef.current, action, participants, Date.now() + clockOffsetRef.current);
       if (next === stateRef.current) return;
       stateRef.current = next;
@@ -1281,7 +1080,7 @@ export function GameRoomsHub() {
     async (type: string, value?: any) => {
       const action: RoomAction = {
         type,
-        value: timedTableGame(stateRef.current.game) && (type.startsWith("uno-") || type.startsWith("deal-"))
+        value: timedTableGame(stateRef.current.game) && (type.startsWith("uno-") || type.startsWith("deal-") || type.startsWith("baloot-"))
           ? { ...value, turnSequence: stateRef.current.data.turnSequence, round: stateRef.current.round }
           : value,
         playerId: meRef.current.id,
@@ -1322,7 +1121,7 @@ export function GameRoomsHub() {
     if (packet.kind === "action") {
       if (timedTableGame(stateRef.current.game) && (
         packet.senderId !== packet.action.playerId ||
-        ["uno-timeout", "uno-clock", "deal-timeout", "deal-clock"].includes(packet.action.type)
+        ["uno-timeout", "uno-clock", "deal-timeout", "deal-clock", "baloot-timeout", "baloot-clock", "baloot-collect"].includes(packet.action.type)
       )) return;
       if (hostRef.current === meRef.current.id) void hostApply(packet.action);
       return;
@@ -1517,8 +1316,19 @@ export function GameRoomsHub() {
     const tick = () => {
       const current = stateRef.current;
       const roster = roomParticipants(current, [...playersRef.current, ...(current.bots ?? [])]);
-      const prefix = current.game === "uno" ? "uno" : "deal";
-      const active = roster[Number(current.data.turnIndex ?? 0) % Math.max(1, roster.length)];
+      const prefix = current.game === "uno" ? "uno" : current.game === "baloot" ? "baloot" : "deal";
+      if (current.game === "baloot") {
+        if (current.data.stage === "round-end") return;
+        if (current.data.pendingTrick) {
+          if (Date.now() + clockOffsetRef.current >= current.data.pendingTrick.resolveAt) void hostApply({
+            type: "baloot-collect", playerId: meRef.current.id,
+            value: { resolveAt: current.data.pendingTrick.resolveAt, trickSequence: current.data.lastTrick?.sequence, turnSequence: current.data.turnSequence, round: current.round },
+          });
+          return;
+        }
+      }
+      const activeIndex = current.game === "baloot" && current.data.stage === "bidding" ? current.data.bidTurnIndex : current.data.turnIndex;
+      const active = roster[Number(activeIndex ?? 0) % Math.max(1, roster.length)];
       if (!active) return;
       if (!current.data.turnDeadline) void hostApply({ type: `${prefix}-clock`, playerId: active.id });
       else if (Date.now() + clockOffsetRef.current >= current.data.turnDeadline) {
@@ -1646,7 +1456,7 @@ export function GameRoomsHub() {
           onBotDifficulty={(botId, difficulty) => void dispatch("set-bot-difficulty", { botId, difficulty })}
         />
       ) : state.phase === "results" ? (
-        state.game === "uno" ? <UnoResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("uno-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "saudi-deal" ? <SaudiDealResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("deal-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "monopoly" ? <MillionaireResults data={state.data} players={participants} isHost={isHost} onLobby={() => void dispatch("lobby")} /> : <Results
+        state.game === "uno" ? <UnoResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("uno-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "saudi-deal" ? <SaudiDealResults state={state} players={participants} isHost={isHost} onRematch={() => void dispatch("deal-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "baloot" ? <BalootResults state={state} players={participants} me={me} isHost={isHost} onRematch={() => void dispatch("baloot-rematch")} onLobby={() => void dispatch("lobby")} /> : state.game === "monopoly" ? <MillionaireResults data={state.data} players={participants} isHost={isHost} onLobby={() => void dispatch("lobby")} /> : <Results
           players={participants}
           scores={state.scores}
           isHost={isHost}
@@ -2284,7 +2094,7 @@ const GAME_GUIDES: Partial<Record<GameKey, {
       "بعد الشراء يلزم اتباع نوع أول ورقة في الأكلة متى كان النوع موجودًا في يدك.",
       "الفائز بالأكلة يبدأ الأكلة التالية، وتحسب النتيجة للفريقين بعد انتهاء الأوراق.",
     ],
-    notes: ["الفريقان متقابلان حول الطاولة.", "النوع المطلوب يظهر أعلى أوراقك عندما يحين دورك."],
+    notes: ["٤٥ ثانية للشراء: عند انتهاء الوقت تُقال بس أو ولا تلقائيًا. ٣٠ ثانية للورقة: عند انتهاء الوقت تُلعب ورقة مسموحة تلقائيًا.", "اختر ورقتك ثم اضغط العب الورقة. تقدر ترتّب يدك وتراجع آخر أكلة.", "خويّك مقابلك، وتبقى الفرق والورق والمؤقت محفوظة عند إعادة الاتصال. المباراة الجديدة تحتفظ بنفس الفرق وعدّاد الفوز."],
   },
   monopoly: {
     goal: "احسم الرحلة بالاحتكار الخطي أو الثلاثي أو السياحي، أو كن آخر مستثمر بعد إفلاس المنافسين.",
@@ -2438,7 +2248,7 @@ function GameBoard({
 
   useEffect(() => setPortalReady(true), []);
 
-  const landscapeGameActive = gameMode && (state.game === "uno" || state.game === "saudi-deal" || state.game === "monopoly");
+  const landscapeGameActive = gameMode && (timedTableGame(state.game) || state.game === "monopoly");
 
   useEffect(() => {
     if (!landscapeGameActive) return;
@@ -2517,7 +2327,7 @@ function GameBoard({
       if (preferences.haptics && typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(isMyTurn ? [35, 30, 65] : 22);
       }
-      if (preferences.sound && state.game !== "monopoly" && state.game !== "saudi-deal") playGameTone(isMyTurn ? "turn" : "move");
+      if (preferences.sound && state.game !== "monopoly" && state.game !== "saudi-deal" && state.game !== "baloot") playGameTone(isMyTurn ? "turn" : "move");
     }
     feedbackRef.current = feedbackToken;
   }, [activeIndex, feedbackToken, gameMode, me.id, players, preferences.haptics, preferences.sound, state.game]);
@@ -2531,7 +2341,7 @@ function GameBoard({
     } catch {
       // iOS browsers may reject the native API; the fixed 100dvh game shell remains active.
     }
-    if (state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly") {
+    if (timedTableGame(state.game) || state.game === "monopoly") {
       const orientation = window.screen.orientation as unknown as { lock?: (value: string) => Promise<void> };
       try { await orientation?.lock?.("landscape"); } catch { /* iOS uses the rotate-device prompt below. */ }
     }
@@ -2539,7 +2349,7 @@ function GameBoard({
 
   const leaveGameMode = async () => {
     setGameMode(false);
-    if (state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly") {
+    if (timedTableGame(state.game) || state.game === "monopoly") {
       const orientation = window.screen.orientation as unknown as { unlock?: () => void };
       try { orientation?.unlock?.(); } catch { /* The operating system owns orientation state. */ }
     }
@@ -2565,13 +2375,13 @@ function GameBoard({
         gameMode && preferences.reducedMotion && "[&_*]:!animate-none [&_*]:!transition-none",
       )}
     >
-      {gameMode && (state.game === "saudi-deal" || state.game === "uno") && (
+      {gameMode && timedTableGame(state.game) && (
         <div className="fixed inset-0 z-[10050] hidden flex-col items-center justify-center bg-[#021f19]/98 px-8 text-center text-white portrait:flex xl:hidden">
           <span className="flex size-20 items-center justify-center rounded-[26px] border border-[#e8c66f]/40 bg-[#0a5948] text-[#f0cf77] shadow-[0_0_40px_rgba(232,198,111,.2)]">
             <RotateCw className="size-10 animate-pulse" />
           </span>
           <h4 className="mt-6 text-2xl font-black text-[#f0cf77]">لف الجهاز للوضع الأفقي</h4>
-          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
+          <p className="mt-2 max-w-sm text-sm font-bold leading-7 text-white/65">{state.game === "uno" ? "أونو العائلة مرتبة كطاولة حقيقية على الشاشة العريضة." : state.game === "baloot" ? "البلوت مرتبة بطاولة تجمعك مع خويّك والخصمين." : "سعودي ديل مرتبة للشاشة العريضة."} إذا لم تلتف الشاشة تلقائيًا، ألغِ قفل تدوير الجهاز ثم لفه.</p>
         </div>
       )}
       {showStartingDraw && !timedTableGame(state.game) && (
@@ -2583,7 +2393,7 @@ function GameBoard({
           <span>يبدأ الجولة</span>
         </div>
       )}
-      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && (state.game === "saudi-deal" || state.game === "monopoly") && "bg-transparent", gameMode && state.game === "saudi-deal" && "!p-0")}>
+      <Surface className={cn("min-h-[520px] overflow-hidden p-5 sm:p-8", gameMode && "flex h-full min-h-0 flex-col rounded-none border-0 bg-[#031d18] p-0 shadow-none", gameMode && (state.game === "saudi-deal" || state.game === "monopoly") && "bg-transparent", gameMode && (state.game === "saudi-deal" || state.game === "baloot") && "!p-0")}>
         <div
           className={cn(
             "mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5",
@@ -2634,7 +2444,7 @@ function GameBoard({
                   onClick={() => void enterGameMode()}
                   className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground shadow 2xl:hidden"
                 >
-                  <Maximize2 className="size-4" /> {state.game === "saudi-deal" || state.game === "uno" || state.game === "monopoly" ? "اللعب أفقيًا" : "وضع اللعبة"}
+                  <Maximize2 className="size-4" /> {timedTableGame(state.game) || state.game === "monopoly" ? "اللعب أفقيًا" : "وضع اللعبة"}
                 </button>
                 {isHost && (
                   <button type="button" onClick={() => void dispatch("finish")} className="rounded-xl bg-muted px-4 py-2 text-xs font-black text-muted-foreground">
@@ -2694,7 +2504,7 @@ function GameBoard({
           {state.game === "challenge30" && <ChallengeGame state={state} players={players} me={me} isHost={isHost} now={now} dispatch={dispatch} />}
           {state.game === "auction" && <AuctionRoom state={state} players={players} me={me} isHost={isHost} dispatch={dispatch} />}
           {state.game === "word-duel" && <WordDuelRoom state={state} players={players} me={me} dispatch={dispatch} />}
-          {state.game === "baloot" && <BalootRoom state={state} players={players} me={me} isHost={isHost} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} />}
+          {state.game === "baloot" && <BalootGameRoom state={state} players={players} me={me} isHost={isHost} logoUrl={logoUrl} immersive={gameMode} dispatch={dispatch} connected={connected} clockOffset={clockOffset} sound={preferences.sound} reducedMotion={preferences.reducedMotion} onToggleSound={() => toggle("sound")} onExit={() => void leaveGameMode()} onGuide={() => setShowGuide(true)} onSettings={() => setShowSettings(true)} onFinish={() => void dispatch("finish")} />}
         </div>
       </Surface>
 
@@ -3621,285 +3431,6 @@ function WordDuelRoom({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function BalootCardFace({
-  card,
-  compact = false,
-  mini = false,
-  active = true,
-  onClick,
-}: {
-  card: BalootCard;
-  compact?: boolean;
-  mini?: boolean;
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  const red = card.suit === "hearts" || card.suit === "diamonds";
-  const content = (
-    <>
-      <span aria-hidden className="absolute inset-1 rounded-[9px] border border-[#b69145]/30" />
-      <span className={cn("absolute right-2 top-1.5 flex flex-col items-center font-black leading-none", mini ? "text-xs" : "text-base")}><span>{card.rank}</span><span className={mini ? "text-xs" : "text-sm"}>{BALOOT_SUIT_LABEL[card.suit]}</span></span>
-      <span aria-hidden className={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b69145]/15 bg-[#fffdf7]/65", mini ? "size-8" : compact ? "size-12" : "size-16 sm:size-20")} />
-      <span className={cn("relative font-serif drop-shadow-sm", mini ? "text-2xl" : compact ? "text-4xl" : "text-6xl sm:text-7xl")}>{BALOOT_SUIT_LABEL[card.suit]}</span>
-      <span className={cn("absolute bottom-1.5 left-2 flex rotate-180 flex-col items-center font-black leading-none", mini ? "text-xs" : "text-base")}><span>{card.rank}</span><span className={mini ? "text-xs" : "text-sm"}>{BALOOT_SUIT_LABEL[card.suit]}</span></span>
-    </>
-  );
-  const className = cn(
-    "relative flex shrink-0 select-none items-center justify-center overflow-hidden rounded-[16px] border-[3px] border-[#fffdf5] bg-[radial-gradient(circle_at_45%_35%,#ffffff,#f6efdf_72%,#e6d4ad)] shadow-[0_16px_28px_-16px_rgba(0,0,0,.9)]",
-    red ? "text-red-600" : "text-slate-950",
-    mini ? "h-[70px] w-12 rounded-[11px] border-2" : compact ? "h-[106px] w-[72px]" : "h-[154px] w-[104px] sm:h-[184px] sm:w-[122px]",
-    active ? "ring-2 ring-[#f0ce76]/35" : "opacity-35 saturate-50",
-  );
-  if (!onClick) return <div className={cn(className, "arena-card-drop")}>{content}</div>;
-  return (
-    <button
-      type="button"
-      disabled={!active}
-      onClick={() => {
-        playGameTone("play");
-        onClick();
-      }}
-      aria-label={`لعب ${card.rank} ${BALOOT_SUIT_LABEL[card.suit]}`}
-      className={cn(className, active && "arena-card-hover active:scale-95")}
-    >
-      {content}
-    </button>
-  );
-}
-
-function BalootTeams({ players, data, compact = false }: { players: Player[]; data: any; compact?: boolean }) {
-  const first = players.filter((_, index) => index % 2 === 0);
-  const second = players.filter((_, index) => index % 2 === 1);
-  if (compact) {
-    return (
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[22px] border border-[#d8bc72]/30 bg-[#052d26]/95 p-2 text-white shadow-lg backdrop-blur-xl">
-        <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-emerald-400/10 px-3 py-2">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-lg font-black text-emerald-300">{data.matchScore?.[0] ?? 0}</span>
-          <div className="min-w-0"><p className="text-[10px] font-black text-emerald-300">الفريق 1</p><p className="truncate text-[9px] font-bold text-white/55">{first.map((player) => player.name.split(" ")[0]).join(" + ")}</p></div>
-        </div>
-        <span className="text-xs font-black text-[#eacb78]">152</span>
-        <div className="flex min-w-0 flex-row-reverse items-center gap-2 rounded-2xl bg-[#d7ac55]/10 px-3 py-2 text-left">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#d7ac55]/15 text-lg font-black text-[#edcb78]">{data.matchScore?.[1] ?? 0}</span>
-          <div className="min-w-0"><p className="text-[10px] font-black text-[#edcb78]">الفريق 2</p><p className="truncate text-[9px] font-bold text-white/55">{second.map((player) => player.name.split(" ")[0]).join(" + ")}</p></div>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      {[first, second].map((team, index) => (
-        <div key={index} className={cn("rounded-3xl border-2 p-4 text-center", index === 0 ? "border-emerald-500/30 bg-emerald-500/8" : "border-rose-500/30 bg-rose-500/8")}>
-          <p className={cn("text-xs font-black", index === 0 ? "text-emerald-600" : "text-rose-600")}>الفريق {index === 0 ? "الأول" : "الثاني"}</p>
-          <p className="mt-1 truncate text-xs font-bold text-muted-foreground">{team.map((player) => player.name).join(" + ")}</p>
-          <p className="mt-2 text-4xl font-black text-primary">{data.matchScore?.[index] ?? 0}</p>
-          <p className="text-[10px] font-bold text-muted-foreground">من 152</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function BalootRoom({
-  state,
-  players,
-  me,
-  isHost,
-  logoUrl,
-  immersive,
-  dispatch,
-}: {
-  state: RoomState;
-  players: Player[];
-  me: Player;
-  isHost: boolean;
-  logoUrl: string | null;
-  immersive: boolean;
-  dispatch: (type: string, value?: any) => Promise<void>;
-}) {
-  const data = state.data;
-  const hand = (data.hands[me.id] ?? []) as BalootCard[];
-  const bidder = players[data.bidTurnIndex];
-  const active = players[data.turnIndex];
-  const contract = data.contract as { mode: "sun" | "hokm"; trump: BalootSuit | null; buyerId: string } | null;
-  const seatedPlayers = useMemo(() => orderPlayersAroundMe(players, me.id), [players, me.id]);
-
-  if (data.stage === "bidding") {
-    const myBid = bidder?.id === me.id;
-    return (
-      <div className={cn("mx-auto max-w-3xl space-y-5", immersive && "space-y-3")}>
-        <BalootTeams players={players} data={data} compact={immersive} />
-        <div className={cn("flex items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-4 py-3 text-[#173e34] shadow-sm", immersive && "sticky top-0 z-40 rounded-[24px]")}>
-          {bidder && <PlayerAvatar player={bidder} size="sm" />}
-          <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">المشترى عند {bidder?.name?.split(" ")[0] ?? "—"}</p><p className="truncate text-xs font-bold text-[#173e34]/55">{data.lastAction}</p></div>
-          <span className="rounded-xl bg-[#0b5b47] px-3 py-2 text-center text-xs font-black text-[#efd07d]">اللفة {data.biddingRound === 1 ? "الأولى" : "الثانية"}</span>
-        </div>
-
-        <GameTableSurface trim="ivory" className={cn("min-h-[560px] sm:min-h-[680px]", immersive && "h-[58dvh] min-h-[500px] max-h-[680px]")}>
-          <div className={cn("relative z-10 min-h-[560px] w-full sm:min-h-[680px]", immersive && "h-full min-h-0")}>
-            {seatedPlayers.slice(0, 4).map((player, index) => (
-              <CardinalPlayerSeat
-                key={player.id}
-                player={player}
-                active={bidder?.id === player.id}
-                position={(cardinalSeatPositions(4))[index]}
-                cardCount={data.hands[player.id]?.length ?? 0}
-                team={(Math.max(0, players.findIndex((item) => item.id === player.id)) % 2) as 0 | 1}
-              />
-            ))}
-
-            <div className="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 text-center">
-              <div className="relative flex h-[235px] w-[190px] items-center justify-center sm:h-[290px] sm:w-[250px]">
-                <TableBrandSeal logoUrl={logoUrl} className="absolute right-0 top-1/2 size-20 -translate-y-1/2 opacity-90 sm:size-28" />
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 space-y-1">
-                  <BalootCardFace card={data.buyCard} compact />
-                  <span className="block text-[10px] font-black text-white/55">ورقة الشراء</span>
-                </div>
-              </div>
-              <div className="rounded-full border border-[#edcc7c]/35 bg-black/30 px-4 py-2 text-[10px] font-black text-white/70 backdrop-blur-sm sm:text-xs">
-                {data.biddingRound === 1 ? "صن أو حكم بنوع المشترى" : "صن أو حكم بنوع مختلف"}
-              </div>
-            </div>
-          </div>
-        </GameTableSurface>
-
-        <div className={cn(immersive && "sticky bottom-0 z-30 -mx-2 rounded-t-[30px] border-t border-[#dfbd66]/20 bg-[#031d18]/96 p-2 pt-3 shadow-[0_-24px_48px_-26px_rgba(0,0,0,.95)] backdrop-blur-xl")}>
-          {myBid ? (
-          <div className="mb-3 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <PrimaryAction onClick={() => void dispatch("baloot-bid", { mode: "sun" })} tone="gold">صن</PrimaryAction>
-              {data.biddingRound === 1 && (
-                <PrimaryAction onClick={() => void dispatch("baloot-bid", { mode: "hokm" })}>
-                  حكم {BALOOT_SUIT_LABEL[data.buyCard.suit as BalootSuit]}
-                </PrimaryAction>
-              )}
-            </div>
-            {data.biddingRound === 2 && (
-              <div className="grid grid-cols-4 gap-2">
-                {BALOOT_SUITS.filter((suit) => suit !== data.buyCard.suit).map((suit) => (
-                  <button
-                    key={suit}
-                    type="button"
-                    onClick={() => void dispatch("baloot-bid", { mode: "hokm", trump: suit })}
-                    className={cn("h-14 rounded-2xl bg-card text-3xl font-black shadow", suit === "hearts" || suit === "diamonds" ? "text-red-600" : "text-slate-950")}
-                  >
-                    {BALOOT_SUIT_LABEL[suit]}
-                  </button>
-                ))}
-              </div>
-            )}
-            <PrimaryAction onClick={() => void dispatch("baloot-pass")} tone="muted">{data.biddingRound === 1 ? "بس" : "ولا"}</PrimaryAction>
-          </div>
-        ) : (
-          <p className={cn("mb-3 text-center text-sm font-bold text-muted-foreground", immersive && "text-white/55")}>بانتظار قرار {bidder?.name}</p>
-        )}
-
-          <p className={cn("mb-3 text-xs font-black text-muted-foreground", immersive && "text-[#d6bd7b]/65")}>أوراقك الخاصة قبل الشراء</p>
-          <CardHandTray immersive={immersive} className={cn(immersive && "min-h-[215px] gap-0 overflow-y-hidden px-3 pb-3 pt-8")}>
-            {hand.map((card) => <div key={card.id} className={cn("shrink-0", immersive && "-ml-7 first:ml-0 sm:-ml-5")}><BalootCardFace card={card} /></div>)}
-          </CardHandTray>
-        </div>
-      </div>
-    );
-  }
-
-  if (data.stage === "round-end") {
-    const buyer = players.find((player) => player.id === contract?.buyerId);
-    return (
-      <div className="mx-auto max-w-2xl space-y-6 text-center">
-        <BalootTeams players={players} data={data} />
-        <div className="rounded-[34px] bg-gold-primary/12 p-7">
-          <Trophy className="mx-auto size-10 text-gold-primary" />
-          <h4 className="mt-3 text-2xl font-black text-primary">انتهت الجولة</h4>
-          <p className="mt-2 text-sm font-bold text-muted-foreground">
-            شراء {buyer?.name} · {contract?.mode === "sun" ? "صن" : `حكم ${contract?.trump ? BALOOT_SUIT_LABEL[contract.trump] : ""}`}
-          </p>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-card p-4"><p className="text-xs font-bold text-muted-foreground">الفريق الأول</p><p className="text-4xl font-black text-emerald-600">+{data.roundPoints?.[0] ?? 0}</p></div>
-            <div className="rounded-2xl bg-card p-4"><p className="text-xs font-bold text-muted-foreground">الفريق الثاني</p><p className="text-4xl font-black text-rose-600">+{data.roundPoints?.[1] ?? 0}</p></div>
-          </div>
-          <p className="mt-4 text-xs font-bold text-muted-foreground">الأكلات: {data.teamTricks[0]} للفريق الأول · {data.teamTricks[1]} للفريق الثاني</p>
-        </div>
-        {isHost ? (
-          <PrimaryAction onClick={() => void dispatch("baloot-next-round")} tone="gold"><RefreshCcw className="size-5" /> توزيع الجولة التالية</PrimaryAction>
-        ) : (
-          <p className="text-sm font-bold text-muted-foreground">بانتظار المضيف للتوزيع التالي</p>
-        )}
-      </div>
-    );
-  }
-
-  const leadSuit = data.trick[0]?.card?.suit as BalootSuit | undefined;
-  const mustFollow = leadSuit && hand.some((card) => card.suit === leadSuit);
-  const myTurn = active?.id === me.id;
-  return (
-    <div className={cn("space-y-5", immersive && "space-y-3")}>
-      <BalootTeams players={players} data={data} compact={immersive} />
-      <div className={cn("grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-[#dbc58d] bg-[#f7efdc] px-3 py-2.5 text-[#173e34] shadow-sm sm:px-5 sm:py-3", immersive && "sticky top-0 z-40 rounded-[24px]")}>
-        <div className="flex min-w-0 items-center gap-2.5">
-          {active && <PlayerAvatar player={active} size="sm" />}
-          <div className="min-w-0"><p className="truncate text-sm font-black sm:text-base">الدور عند {active?.name?.split(" ")[0] ?? "—"}</p><p className="truncate text-xs font-bold text-[#173e34]/55">{data.lastAction}</p></div>
-        </div>
-        <div className="rounded-xl bg-[#0b5b47] px-3 py-2 text-center text-white"><p className="text-[9px] font-bold text-white/55">المشروع</p><p className="text-sm font-black text-[#efd07d]">{contract?.mode === "sun" ? "صن" : `حكم ${contract?.trump ? BALOOT_SUIT_LABEL[contract.trump] : ""}`}</p></div>
-      </div>
-
-      <GameTableSurface trim="ivory" className={cn("min-h-[580px] sm:min-h-[700px]", immersive && "h-[60dvh] min-h-[510px] max-h-[700px]")}>
-        <div className={cn("relative z-10 min-h-[580px] w-full sm:min-h-[700px]", immersive && "h-full min-h-0")}>
-          {seatedPlayers.slice(0, 4).map((player, index) => (
-            <CardinalPlayerSeat
-              key={player.id}
-              player={player}
-              active={active?.id === player.id}
-              position={(cardinalSeatPositions(4))[index]}
-              cardCount={data.hands[player.id]?.length ?? 0}
-              team={(Math.max(0, players.findIndex((item) => item.id === player.id)) % 2) as 0 | 1}
-              badge={`أكلات ${data.teamTricks[Math.max(0, players.findIndex((item) => item.id === player.id)) % 2]}`}
-            />
-          ))}
-
-          <div className="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2">
-            <div className="relative h-[260px] w-[220px] sm:h-[310px] sm:w-[290px]">
-              <TableBrandSeal logoUrl={logoUrl} className="absolute left-1/2 top-1/2 size-20 -translate-x-1/2 -translate-y-1/2 opacity-80 sm:size-28" />
-              {data.trick.map((play: { playerId: string; card: BalootCard }) => {
-                const player = players.find((item) => item.id === play.playerId);
-                const seatIndex = Math.max(0, seatedPlayers.findIndex((item) => item.id === play.playerId));
-                const trickPositions = [
-                  "bottom-0 left-1/2 -translate-x-1/2",
-                  "left-0 top-1/2 -translate-y-1/2",
-                  "left-1/2 top-0 -translate-x-1/2",
-                  "right-0 top-1/2 -translate-y-1/2",
-                ];
-                return (
-                  <div key={play.playerId} className={cn("absolute space-y-0.5 text-center", trickPositions[seatIndex])}>
-                    <BalootCardFace card={play.card} compact mini={immersive} />
-                    <p className="max-w-16 truncate text-[9px] font-black text-white/70">{player?.name.split(" ")[0]}</p>
-                  </div>
-                );
-              })}
-              {!data.trick.length && <p className="absolute inset-x-4 top-1/2 -translate-y-1/2 text-center text-[11px] font-bold text-white/45 sm:text-sm">ارمِ ورقتك هنا<br />الفائز بالأكلة يبدأ التالية</p>}
-            </div>
-            <div className="flex gap-2 text-[10px] font-black text-white/70 sm:text-xs"><span className="rounded-full bg-emerald-400/10 px-3 py-1 text-emerald-200">فريق 1 · {data.teamTricks[0]} أكلات</span><span className="rounded-full bg-[#d8af58]/10 px-3 py-1 text-[#efd07d]">فريق 2 · {data.teamTricks[1]} أكلات</span></div>
-          </div>
-        </div>
-      </GameTableSurface>
-
-      <div className={cn(immersive && "sticky bottom-0 z-30 -mx-2 rounded-t-[30px] border-t border-[#dfbd66]/20 bg-[#031d18]/96 p-2 pt-3 shadow-[0_-24px_48px_-26px_rgba(0,0,0,.95)] backdrop-blur-xl")}>
-        <div className="mb-3 flex items-center justify-between">
-          <div><p className={cn("text-xs font-bold text-muted-foreground", immersive && "text-[#d6bd7b]/60")}>أوراقك الخاصة</p><p className={cn("font-black text-primary", immersive && "text-lg text-white")}>{hand.length} أوراق</p></div>
-          {myTurn && mustFollow && <span className="rounded-full bg-gold-primary/15 px-3 py-1 text-[11px] font-black text-gold-primary">الزم النوع {BALOOT_SUIT_LABEL[leadSuit!]}</span>}
-        </div>
-        <CardHandTray immersive={immersive} className={cn(immersive && "min-h-[220px] gap-0 overflow-y-hidden px-3 pb-3 pt-8")}>
-          {hand.map((card) => {
-            const legal = myTurn && (!mustFollow || card.suit === leadSuit);
-            return <div key={card.id} className={cn("shrink-0", immersive && "-ml-7 first:ml-0 sm:-ml-5")}><BalootCardFace card={card} active={legal} onClick={() => void dispatch("baloot-play", card.id)} /></div>;
-          })}
-        </CardHandTray>
-      </div>
-
-      {!myTurn && <p className="text-center text-sm font-bold text-muted-foreground">بانتظار رمية {active?.name}</p>}
     </div>
   );
 }

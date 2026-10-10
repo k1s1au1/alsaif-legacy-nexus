@@ -1,0 +1,5 @@
+Classic playing-card artwork by Adrian Kennard, distributed under CC0 1.0 Universal.
+Source: https://www.me.uk/cards/
+SVG source conversion: https://github.com/letele/playing-cards
+Only the 32 Baloot ranks are included. Original symbol IDs are prefixed per card in this local sprite.
+License: baloot-deck-LICENSE.txt

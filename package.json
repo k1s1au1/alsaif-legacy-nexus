@@ -21,6 +21,7 @@
     "format": "prettier --write .",
     "test:uno": "node scripts/test-uno.mjs",
     "test:saudi-deal": "node scripts/test-saudi-deal.mjs",
+    "test:baloot": "node scripts/test-baloot.mjs",
     "test:trip-planning": "node --test scripts/test-trip-planning*.mjs"
   },
   "dependencies": {

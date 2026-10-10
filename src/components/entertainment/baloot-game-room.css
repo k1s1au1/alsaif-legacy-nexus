@@ -1,0 +1,1007 @@
+.baloot-room {
+  position: relative;
+  width: 100%;
+  height: min(780px, 75vw);
+  min-height: 360px;
+  overflow: hidden;
+  isolation: isolate;
+  container-type: size;
+  color: #f8df9b;
+  background: #063628;
+  border-radius: 24px;
+  font-family: "Tajawal", sans-serif;
+  --hand-card-w: min(7.7cqw, 15.5cqh, 132px);
+  --trick-card-w: min(5.8cqw, 10cqh, 110px);
+}
+.baloot-room--immersive {
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+}
+.baloot-room button {
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.baloot-room button:disabled {
+  cursor: default;
+}
+.baloot-room button:focus-visible,
+.baloot-results button:focus-visible {
+  outline: 3px solid #ffe398;
+  outline-offset: 3px;
+}
+.baloot-table-image {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url("/assets/games/baloot-majlis-table.webp") center / 100% 100% no-repeat;
+}
+.baloot-room-title {
+  position: absolute;
+  top: 1.1%;
+  left: 40%;
+  right: 40%;
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(12px, 2.4cqh, 26px);
+  letter-spacing: 0.03em;
+  text-shadow: 0 2px 6px #000;
+}
+.baloot-utilities {
+  position: absolute;
+  z-index: 12;
+  top: 2%;
+  right: 2.3%;
+  display: flex;
+  gap: min(0.6cqw, 10px);
+}
+.baloot-utilities button {
+  width: clamp(32px, 5.8cqh, 52px);
+  height: clamp(32px, 5.8cqh, 52px);
+  display: grid;
+  place-items: center;
+  border: 1px solid #b28a46;
+  border-radius: 50%;
+  background: #041b14e8;
+  color: #edcf8a;
+  box-shadow: 0 3px 8px #0006;
+}
+.baloot-utilities svg {
+  width: 48%;
+  height: 48%;
+}
+.baloot-hud {
+  position: absolute;
+  top: 6%;
+  left: 22%;
+  right: 22%;
+  min-height: 8%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 0.8fr 1.4fr;
+  align-items: stretch;
+  border: 1px solid #b08a43;
+  border-radius: 8px;
+  background: linear-gradient(#08241d, #06130fed);
+  box-shadow: 0 5px 14px #0004;
+  overflow: hidden;
+  font-size: clamp(13px, 2.3cqh, 23px);
+  font-weight: 800;
+}
+.baloot-hud > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  padding: 0.15em 0.35em;
+  border-inline-end: 1px solid #bd954647;
+  white-space: nowrap;
+}
+.baloot-hud > div:last-child {
+  border: 0;
+}
+.baloot-hud .baloot-hud-team {
+  flex-direction: column;
+  gap: 0;
+}
+.baloot-hud-team b {
+  font-size: 1.2em;
+}
+.baloot-hud-team small {
+  font-size: 0.58em;
+  color: #e6dabe;
+}
+.baloot-hud-team--ours {
+  background: #0d62374a;
+}
+.baloot-hud-team--theirs {
+  background: #831f2855;
+}
+.baloot-center-seal {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  transform: translate(-50%, -50%);
+  width: 15%;
+  height: 12%;
+  border: 2px double #ac8a3555;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  opacity: 0.44;
+  pointer-events: none;
+}
+.baloot-center-seal img {
+  width: 88%;
+  height: 90%;
+  object-fit: contain;
+}
+.baloot-center-seal span {
+  font-size: clamp(20px, 5cqh, 48px);
+  font-weight: 900;
+  color: #c6a35f;
+}
+.baloot-seat {
+  position: absolute;
+  width: 12%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 4;
+  font-size: clamp(12px, 2.5cqh, 25px);
+  line-height: 1.1;
+}
+.baloot-seat--top {
+  left: 50%;
+  top: 19%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 1fr 1fr;
+  width: 16%;
+  gap: 0;
+  direction: ltr;
+}
+.baloot-seat--top .baloot-avatar {
+  grid-column: 1;
+  grid-row: 1 / 3;
+}
+.baloot-seat--top strong {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  align-self: end;
+  direction: rtl;
+}
+.baloot-seat--top .baloot-seat-role {
+  grid-column: 2;
+  grid-row: 2;
+  width: 100%;
+  min-width: 0;
+  align-self: start;
+}
+.baloot-seat--top .baloot-seat-offline {
+  position: absolute;
+  top: 103%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.baloot-seat--left {
+  left: 7%;
+  top: 46%;
+}
+.baloot-seat--right {
+  left: 93%;
+  top: 46%;
+}
+.baloot-seat--bottom {
+  left: 10%;
+  top: 78%;
+}
+.baloot-avatar {
+  position: relative;
+  width: clamp(34px, 8.4cqh, 92px);
+  height: clamp(34px, 8.4cqh, 92px);
+  padding: 3px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #b39349;
+  border-radius: 50%;
+  color: #f4ddac;
+  background: radial-gradient(circle at 35% 20%, #457968, #092d22);
+  box-shadow: 0 5px 12px #0008;
+  font-size: clamp(18px, 5cqh, 42px);
+  font-weight: 900;
+}
+.baloot-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.baloot-avatar svg {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 28%;
+  height: 28%;
+  padding: 2px;
+  background: #19352a;
+  border-radius: 50%;
+}
+.baloot-seat strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.2em 0.45em;
+  color: #fff8dd;
+  border: 1px solid #b1934c80;
+  border-radius: 9px 9px 0 0;
+  background: #061b15ef;
+}
+.baloot-seat-role {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 70%;
+  border: 1px solid #b3934970;
+  border-radius: 0 0 12px 12px;
+  padding: 0.16em 0.7em;
+  font-size: 0.72em;
+  background: linear-gradient(#146948, #08412c);
+  color: #eff4d9;
+}
+.baloot-seat.is-theirs .baloot-seat-role {
+  background: linear-gradient(#7d2834, #46151f);
+}
+.baloot-seat--bottom .baloot-seat-role {
+  background: linear-gradient(#ebce85, #b89148);
+  color: #1b271a;
+}
+.baloot-seat.is-active .baloot-avatar {
+  border-color: #ffdf8b;
+  box-shadow:
+    0 0 16px #dfb856b0,
+    0 5px 12px #0008;
+}
+.baloot-seat.is-disconnected {
+  opacity: 0.65;
+}
+.baloot-seat-offline {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  white-space: nowrap;
+  background: #09251ded;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+.baloot-seat-offline svg {
+  width: 12px;
+  height: 12px;
+}
+.baloot-backs {
+  position: absolute;
+  display: flex;
+  pointer-events: none;
+  direction: ltr;
+}
+.baloot-back {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: min(3.6cqw, 6.2cqh, 60px);
+  height: min(5.1cqw, 8.5cqh, 86px);
+  border: 2px solid #e7e4d6;
+  border-radius: 5px;
+  box-shadow: 1px 3px 6px #0008;
+  background-color: #243652;
+  background-image: repeating-conic-gradient(#75819c3b 0% 25%, transparent 0% 50%);
+  background-size: 6px 6px;
+}
+.baloot-back i {
+  width: 76%;
+  height: 78%;
+  border: 1px solid #d0d6ea88;
+  display: grid;
+  place-items: center;
+  color: #b8bfd8;
+  font-size: clamp(9px, 2cqh, 18px);
+  font-style: normal;
+}
+.baloot-backs--top {
+  left: 50%;
+  top: 25%;
+  transform: translateX(-50%);
+}
+.baloot-backs--top .baloot-back {
+  width: min(3.7cqw, 4.4cqh, 52px);
+  height: min(5.2cqw, 6.2cqh, 73px);
+  margin-left: min(-0.5cqw, -3px);
+}
+.baloot-backs--left,
+.baloot-backs--right {
+  top: 37%;
+  flex-direction: column;
+}
+.baloot-backs--left {
+  left: 15%;
+  transform: rotate(9deg);
+}
+.baloot-backs--right {
+  right: 15%;
+  transform: rotate(-9deg);
+}
+.baloot-backs--left .baloot-back,
+.baloot-backs--right .baloot-back {
+  margin-top: max(-4cqw, -6.6cqh);
+}
+.baloot-backs .baloot-back:first-child {
+  margin: 0;
+}
+.baloot-card-face {
+  container-type: size;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: block;
+  color: #11151a;
+  border: 1px solid #d9d1bf;
+  border-radius: clamp(4px, 0.9cqh, 10px);
+  background: linear-gradient(135deg, #fffefa, #fff 42%, #efeadf);
+  box-shadow: 0 4px 8px #0007;
+  user-select: none;
+  overflow: hidden;
+  font-family: Georgia, "Times New Roman", serif;
+}
+.baloot-card-face > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.baloot-trick {
+  position: absolute;
+  left: 30%;
+  top: 34%;
+  width: 40%;
+  height: 25%;
+}
+.baloot-trick-slot {
+  position: absolute;
+  width: var(--trick-card-w);
+  height: calc(var(--trick-card-w) * 1.42);
+  transform: translate(-50%, -50%);
+}
+.baloot-trick-slot--top {
+  left: 50%;
+  top: 24%;
+}
+.baloot-trick-slot--left {
+  left: 20%;
+  top: 49%;
+}
+.baloot-trick-slot--right {
+  left: 80%;
+  top: 49%;
+}
+.baloot-trick-slot--bottom {
+  left: 50%;
+  top: 80%;
+}
+.baloot-play-card {
+  width: 100%;
+  height: 100%;
+}
+.baloot-play-card.is-arriving {
+  animation: baloot-arrival 0.5s both;
+  animation-delay: var(--arrival-delay, 0ms);
+}
+.baloot-play-card.is-collecting {
+  animation: baloot-collection 0.43s ease-in both;
+}
+.baloot-trick-slot small {
+  display: block;
+  color: #f5e1b7;
+  font-size: clamp(10px, 1.8cqh, 14px);
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 1px 3px #000;
+  margin-top: 3px;
+}
+.baloot-buy-card {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  width: var(--hand-card-w);
+  height: calc(var(--hand-card-w) * 1.42);
+  text-align: center;
+}
+.baloot-buy-card > strong {
+  display: block;
+  white-space: nowrap;
+  font-size: clamp(11px, 2.2cqh, 21px);
+  margin-top: 0.25em;
+}
+.baloot-buy-card > span:last-child {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.3em 0.65em;
+  border: 1px solid #d1ae5c44;
+  border-radius: 20px;
+  background: #041b12ce;
+  font-size: clamp(10px, 1.9cqh, 17px);
+  white-space: nowrap;
+}
+.baloot-action-log {
+  position: absolute;
+  left: 26%;
+  right: 26%;
+  top: 58%;
+  margin: 0;
+  height: 3.5%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: clamp(11px, 2cqh, 18px);
+  text-shadow: 0 1px 4px #000;
+}
+.baloot-hand {
+  position: absolute;
+  left: 21%;
+  right: 10%;
+  top: 63%;
+  height: 23%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(2px, 0.4cqw, 7px);
+}
+.baloot-hand-card {
+  flex: 0 1 var(--hand-card-w);
+  width: var(--hand-card-w);
+  height: calc(var(--hand-card-w) * 1.42);
+  max-height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  transition:
+    transform 0.15s,
+    opacity 0.15s;
+}
+.baloot-hand-card.is-legal {
+  box-shadow:
+    0 0 0 2px #dfbb65,
+    0 0 14px #ebc4567d;
+}
+.baloot-hand-card.is-selected {
+  transform: translateY(-1.5cqh);
+  box-shadow:
+    0 0 0 3px #ffe195,
+    0 0 18px #ffc75ed9;
+}
+.baloot-hand-card.is-unavailable {
+  opacity: 0.62;
+}
+.baloot-controls {
+  position: absolute;
+  z-index: 8;
+  left: 24%;
+  right: 8%;
+  top: 87%;
+  height: 11%;
+  padding: 0.7cqh 0.8cqw;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 0.8cqw;
+  border: 1px solid #ad8740;
+  border-radius: clamp(15px, 4cqh, 38px);
+  background: linear-gradient(125deg, #081d15f2, #07120ef7);
+  box-shadow: 0 6px 18px #0008;
+}
+.baloot-timer {
+  flex: 0 0 auto;
+  width: clamp(38px, 8.2cqh, 82px);
+  height: clamp(38px, 8.2cqh, 82px);
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border-radius: 50%;
+  background: conic-gradient(#e6bd5b var(--time-progress), #42391e 0);
+  box-shadow: 0 0 14px #dbb44b4d;
+  direction: ltr;
+}
+.baloot-timer > span {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #0c1c14;
+  color: #f3d685;
+  font-size: clamp(14px, 2.8cqh, 27px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.baloot-timer svg {
+  width: 55%;
+}
+.baloot-timer.is-urgent {
+  background: conic-gradient(#ef6659 var(--time-progress), #451e17 0);
+}
+.baloot-timer.is-urgent > span {
+  color: #ff9786;
+}
+.baloot-turn-hint {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+.baloot-turn-hint strong,
+.baloot-turn-hint span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.baloot-turn-hint strong {
+  font-size: clamp(13px, 3cqh, 29px);
+  line-height: 1.2;
+  font-weight: 900;
+}
+.baloot-turn-hint span {
+  font-size: clamp(10px, 1.9cqh, 18px);
+  color: #d5bb81;
+  margin-top: 0.1em;
+}
+.baloot-primary,
+.baloot-secondary,
+.baloot-sort-button {
+  min-height: 36px;
+  padding: 0.35em 0.7em;
+  border-radius: clamp(8px, 1.6cqh, 18px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  font: inherit;
+  font-weight: 900;
+  border: 1px solid #c3a057;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.baloot-primary {
+  color: #182219;
+  background: linear-gradient(#ffe9a3, #d0a856);
+  box-shadow:
+    inset 0 0 0 2px #fff1b559,
+    0 3px 8px #0007;
+}
+.baloot-secondary,
+.baloot-sort-button {
+  color: #efdaaa;
+  background: #0a2118cc;
+}
+.baloot-controls .baloot-primary,
+.baloot-controls .baloot-secondary {
+  font-size: clamp(12px, 2.6cqh, 27px);
+  min-height: min(8.2cqh, 72px);
+}
+.baloot-play-button {
+  flex: 1.3 0 0;
+}
+.baloot-primary:disabled,
+.baloot-secondary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.baloot-sort-button {
+  flex: 0 0 auto;
+  min-width: 36px;
+  padding: 0.35em;
+  border-color: #b7a66d66;
+  flex-direction: column;
+  font-size: clamp(10px, 1.6cqh, 15px);
+}
+.baloot-sort-button svg {
+  width: clamp(16px, 2.5cqh, 24px);
+  height: clamp(16px, 2.5cqh, 24px);
+}
+.baloot-last-trick-button {
+  font-size: clamp(11px, 2.1cqh, 21px) !important;
+}
+.baloot-last-trick-button svg {
+  width: 1em;
+  height: 1em;
+}
+.baloot-bid-actions {
+  display: flex;
+  flex: 2.8 0 auto;
+  flex-direction: row-reverse;
+  gap: 0.45cqw;
+}
+.baloot-bid-actions button {
+  flex: 1;
+}
+.baloot-connection-notice {
+  position: absolute;
+  z-index: 15;
+  left: 24%;
+  right: 24%;
+  top: 15%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 9px;
+  color: #ffedc9;
+  background: #592b19ee;
+  font-size: clamp(11px, 2cqh, 18px);
+}
+.baloot-connection-notice svg {
+  width: 16px;
+}
+.baloot-sheet-backdrop,
+.baloot-round-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: #00190eda;
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+.baloot-sheet-backdrop {
+  z-index: 40;
+}
+.baloot-sheet {
+  width: min(660px, 84%);
+  max-height: 90cqh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #bb9648;
+  border-radius: 20px;
+  padding: clamp(12px, 2cqh, 24px);
+  color: #f5dfab;
+  background: linear-gradient(125deg, #16372b, #061d15);
+  box-shadow: 0 12px 50px #0008;
+  font-size: clamp(12px, 2.1cqh, 18px);
+}
+.baloot-sheet > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.baloot-sheet h3 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  font-size: clamp(18px, 3.4cqh, 29px);
+  font-weight: 900;
+}
+.baloot-sheet > header button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #b89e5f;
+  border-radius: 50%;
+  color: #efd49b;
+  background: #0a2217;
+  display: grid;
+  place-items: center;
+}
+.baloot-last-trick-summary {
+  text-align: center;
+  margin: 10px 0;
+}
+.baloot-last-trick-cards {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 12px 0;
+}
+.baloot-last-trick-cards > div {
+  position: relative;
+  width: min(14cqw, 100px);
+  height: min(20cqw, 143px);
+  margin-bottom: 32px;
+}
+.baloot-last-trick-cards strong {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  font-size: 13px;
+}
+.baloot-last-trick-cards .is-winner .baloot-card-face {
+  container-type: size;
+  outline: 2px solid #f9d271;
+}
+.baloot-last-trick-cards .is-winner > svg {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  padding: 3px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  color: #f7cb6c;
+  background: #0a2b1b;
+}
+.baloot-round-sheet {
+  text-align: center;
+}
+.baloot-round-contract {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
+}
+.baloot-round-contract strong {
+  font-size: 0.85em;
+  border-radius: 20px;
+  padding: 3px 12px;
+  border: 1px solid #549e72;
+}
+.baloot-round-contract .is-success {
+  color: #b8efc5;
+  background: #194e2d;
+}
+.baloot-round-contract .is-failure {
+  color: #ffd0b6;
+  background: #5a251b;
+  border-color: #b87451;
+}
+.baloot-score-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #b3904966;
+  border-radius: 9px;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+.baloot-score-table td,
+.baloot-score-table th {
+  padding: 5px 10px;
+  border-bottom: 1px solid #ba9a5a30;
+  text-align: center;
+}
+.baloot-score-table th {
+  font-weight: 700;
+}
+.baloot-score-table thead {
+  color: #ffe2a0;
+  background: #0a2118;
+}
+.baloot-score-award {
+  color: #ffe096;
+  background: #aa874c14;
+  font-size: 1.15em;
+  font-weight: 900;
+}
+.baloot-round-note {
+  color: #c7b89a;
+  font-size: 0.8em;
+  margin: 7px 0;
+  line-height: 1.5;
+}
+.baloot-round-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.baloot-round-actions svg {
+  width: 17px;
+  height: 17px;
+}
+.baloot-results {
+  padding: 24px 16px;
+  color: #f5dfaa;
+  border-radius: 24px;
+  background: #083c2a url("/assets/games/baloot-majlis-table.webp") center / cover;
+}
+.baloot-results-panel {
+  width: min(720px, 100%);
+  padding: 20px;
+  margin: auto;
+  border: 1px solid #bd994e;
+  border-radius: 20px;
+  background: #08271df2;
+  text-align: center;
+}
+.baloot-results h2 {
+  font-size: 28px;
+  font-weight: 900;
+  margin: 8px 0 18px;
+}
+.baloot-results-trophy {
+  margin: auto;
+  width: 48px;
+  height: 48px;
+  color: #e8c16e;
+}
+.baloot-result-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.baloot-result-teams > div {
+  padding: 12px;
+  border: 1px solid #9b85534d;
+  border-radius: 15px;
+  background: #062115;
+}
+.baloot-result-teams .is-winner {
+  border-color: #ebc36a;
+  box-shadow: 0 0 20px #ddad4b24;
+}
+.baloot-result-teams h3 {
+  font-size: 20px;
+  font-weight: 900;
+}
+.baloot-result-teams p,
+.baloot-result-teams span {
+  font-size: 13px;
+}
+.baloot-result-teams strong {
+  display: block;
+  font-size: 42px;
+  font-weight: 900;
+}
+.baloot-results .baloot-round-note {
+  font-size: 12px;
+}
+.baloot-reduced-motion *,
+.baloot-reduced-motion *::before,
+.baloot-reduced-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
+@keyframes baloot-arrival {
+  from {
+    transform: translate(var(--arrive-x), var(--arrive-y)) rotate(-14deg) scale(0.8);
+    opacity: 0.2;
+  }
+  to {
+    transform: translate(0, 0) rotate(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes baloot-collection {
+  to {
+    transform: translate(var(--take-x), var(--take-y)) scale(0.2);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .baloot-room *,
+  .baloot-room *::before,
+  .baloot-room *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+@container (height < 480px) {
+  .baloot-hud {
+    left: 19%;
+    right: 21%;
+  }
+  .baloot-utilities {
+    top: 2%;
+    gap: 3px;
+  }
+  .baloot-utilities button {
+    width: 32px;
+    height: 32px;
+  }
+  .baloot-controls {
+    left: 20%;
+    right: 4%;
+    padding: 2px 7px;
+    gap: 7px;
+    height: 12%;
+    top: 86.5%;
+  }
+  .baloot-last-trick-button svg {
+    display: none;
+  }
+  .baloot-sort-button span {
+    display: none;
+  }
+  .baloot-controls .baloot-primary,
+  .baloot-controls .baloot-secondary {
+    min-height: 36px;
+  }
+  .baloot-sort-button {
+    min-height: 36px;
+  }
+  .baloot-sheet {
+    padding: 10px 14px;
+  }
+  .baloot-round-sheet .baloot-score-table td,
+  .baloot-round-sheet .baloot-score-table th {
+    padding: 3px 8px;
+  }
+  .baloot-round-actions {
+    margin-top: 7px;
+  }
+  .baloot-round-actions button {
+    min-height: 36px;
+    font-size: 12px;
+  }
+}
+@container (width < 700px) {
+  .baloot-hud {
+    left: 15%;
+    right: 24%;
+    grid-template-columns: 1fr 1fr 0.8fr 0.8fr;
+  }
+  .baloot-buyer {
+    display: none !important;
+  }
+  .baloot-controls {
+    left: 19%;
+    right: 3%;
+    gap: 5px;
+  }
+  .baloot-turn-hint {
+    flex: 0.6 1 0;
+  }
+  .baloot-turn-hint span {
+    display: none;
+  }
+  .baloot-bid-actions button {
+    padding: 0.3em 0.4em;
+  }
+  .baloot-last-trick-button {
+    padding: 0.3em 0.4em;
+  }
+  .baloot-seat {
+    width: 14%;
+  }
+}
+
+.baloot-card-face.is-red {
+  color: #cf1824;
+}
+.baloot-card-index {
+  position: absolute;
+  top: 3%;
+  left: 4%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: Georgia, serif;
+  font-size: clamp(11px, 20cqw, 26px);
+  line-height: 0.9;
+  background: #fff;
+  padding: 1px;
+}
+.baloot-card-index b {
+  font-weight: 700;
+}
+.baloot-card-index i {
+  font-style: normal;
+  font-size: 0.9em;
+  margin-top: 1px;
+}
+.baloot-card-index--bottom {
+  top: auto;
+  left: auto;
+  right: 4%;
+  bottom: 3%;
+  transform: rotate(180deg);
+}
