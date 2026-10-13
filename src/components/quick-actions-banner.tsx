@@ -1,6 +1,7 @@
 import {
   MessageCircle, Ticket, CalendarDays, ListChecks, Newspaper, Wallet,
   BookImage, Users, Handshake, Lock, ChevronDown, ChevronUp, PartyPopper,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
@@ -36,6 +37,7 @@ const services = [
   { to: "/community", label: "ركن الأعضاء", description: "مجتمع أفراد العائلة", icon: <Handshake /> },
   { to: "/family-tree", label: "نسب وأثر", description: "أنساب العائلة وإرثها", icon: <LineageLegacyIcon /> },
   { to: "/vault", label: "الخزنة", description: "المحتوى العائلي الخاص", icon: <Lock /> },
+  { to: "/faith", label: "الصلاة ومصحفي", description: "مواقيت الصلاة ومصحفك", icon: <BookOpen /> },
 ];
 
 export function QuickActionsBanner() {

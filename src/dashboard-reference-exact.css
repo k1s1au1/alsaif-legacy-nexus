@@ -1,5 +1,27 @@
 /* Approved terrain composition: layered relief, live welcome copy and the existing council model. */
 
+/* Approved prayer/Mushafi shortcut: below Nafahat and before the welcome.
+ * Use the existing scene's upper margin; keep its model, floor and dimensions.
+ */
+html body main .has-faith-shortcuts > .dashboard-portal-card {
+  position: relative !important;
+}
+html body main .has-faith-shortcuts > .dashboard-portal-card > .faith-home-shortcuts {
+  position: absolute;
+  z-index: 6;
+  top: 8px;
+  left: 5%;
+  width: 90%;
+  padding: 8px 10px;
+  margin: 0 !important;
+  background: transparent;
+}
+@media (max-width: 699px), (max-width: 969.98px) and (orientation: portrait) {
+  html body main .has-faith-shortcuts .council-terrain-scene .council-portal-copy {
+    top: calc(5% + 68px) !important;
+  }
+}
+
 html body main .dashboard-page > .dashboard-portal-hero .dashboard-portal-layout,
 html body main .desktop-overview-shell > .desktop-portal-stage {
   container-type: inline-size;

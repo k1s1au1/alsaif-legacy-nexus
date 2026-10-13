@@ -43,6 +43,7 @@ import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { PollsPopup } from "@/components/dashboard/polls-popup";
 import { showIsland } from "@/components/dynamic-island";
 import { useWidgetUpdater } from "@/hooks/use-widget-updater";
+import { PrayerMushafShortcuts } from "@/components/dashboard/prayer-mushaf-shortcuts";
 import {
   useProfile,
   useDashboardCounts,
@@ -530,10 +531,11 @@ function Dashboard() {
 
         {/* 2. INTERACTIVE NAJDI WELCOME PAVILION */}
         <section
-          className="dashboard-hero dashboard-portal-hero animate-fade-up"
+          className="dashboard-hero dashboard-portal-hero has-faith-shortcuts animate-fade-up"
           data-transition-section
         >
           <div className="dashboard-portal-card">
+            <PrayerMushafShortcuts />
             <div className="dashboard-portal-layout">
               <HeritagePortal3D
                 logoUrl={dynamicLogo}

@@ -39,6 +39,8 @@ jobs:
         run: npm run test:account-entry
       - name: Check navigation preferences and permissions
         run: npm run test:navigation
+      - name: Check prayer rollover, official Mushaf sources and member bookmarks
+        run: npm run test:faith
       - name: Check meeting attendance and companion persistence
         run: npm run test:meetings
       - name: Check family occasions in quick follow-up
@@ -65,9 +67,17 @@ jobs:
         run: npm run build
       - name: Check desktop display on phone and tablet in Chrome
         run: node scripts/test-display-layout-browser.mjs
+      - name: Check prayer and Mushafi components on phone, iPad and desktop in Chrome
+        run: node scripts/test-faith-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: display-layout-previews
           path: test-results/display-layout
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: faith-component-previews
+          path: test-results/faith
           if-no-files-found: ignore

@@ -23,6 +23,7 @@ import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/c
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEventsRouteImport } from './routes/_authenticated/events'
+import { Route as AuthenticatedFaithRouteImport } from './routes/_authenticated/faith'
 import { Route as AuthenticatedFamilyOccasionsRouteImport } from './routes/_authenticated/family-occasions'
 import { Route as AuthenticatedFamilyTreeRouteImport } from './routes/_authenticated/family-tree'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
@@ -112,6 +113,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedEventsRoute = AuthenticatedEventsRouteImport.update({
   id: '/events',
   path: '/events',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFaithRoute = AuthenticatedFaithRouteImport.update({
+  id: '/faith',
+  path: '/faith',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFamilyOccasionsRoute =
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/events': typeof AuthenticatedEventsRoute
+  '/faith': typeof AuthenticatedFaithRoute
   '/family-occasions': typeof AuthenticatedFamilyOccasionsRoute
   '/family-tree': typeof AuthenticatedFamilyTreeRoute
   '/finance': typeof AuthenticatedFinanceRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/community': typeof AuthenticatedCommunityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/events': typeof AuthenticatedEventsRoute
+  '/faith': typeof AuthenticatedFaithRoute
   '/family-occasions': typeof AuthenticatedFamilyOccasionsRoute
   '/family-tree': typeof AuthenticatedFamilyTreeRoute
   '/finance': typeof AuthenticatedFinanceRoute
@@ -307,6 +315,7 @@ export interface FileRoutesById {
   '/_authenticated/community': typeof AuthenticatedCommunityRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/events': typeof AuthenticatedEventsRoute
+  '/_authenticated/faith': typeof AuthenticatedFaithRoute
   '/_authenticated/family-occasions': typeof AuthenticatedFamilyOccasionsRoute
   '/_authenticated/family-tree': typeof AuthenticatedFamilyTreeRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
@@ -344,6 +353,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/events'
+    | '/faith'
     | '/family-occasions'
     | '/family-tree'
     | '/finance'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/events'
+    | '/faith'
     | '/family-occasions'
     | '/family-tree'
     | '/finance'
@@ -414,6 +425,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community'
     | '/_authenticated/dashboard'
     | '/_authenticated/events'
+    | '/_authenticated/faith'
     | '/_authenticated/family-occasions'
     | '/_authenticated/family-tree'
     | '/_authenticated/finance'
@@ -545,6 +557,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events'
       preLoaderRoute: typeof AuthenticatedEventsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/faith': {
+      id: '/_authenticated/faith'
+      path: '/faith'
+      fullPath: '/faith'
+      preLoaderRoute: typeof AuthenticatedFaithRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/family-occasions': {
@@ -711,6 +730,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEventsRoute: typeof AuthenticatedEventsRoute
+  AuthenticatedFaithRoute: typeof AuthenticatedFaithRoute
   AuthenticatedFamilyOccasionsRoute: typeof AuthenticatedFamilyOccasionsRoute
   AuthenticatedFamilyTreeRoute: typeof AuthenticatedFamilyTreeRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
@@ -738,6 +758,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCommunityRoute: AuthenticatedCommunityRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEventsRoute: AuthenticatedEventsRoute,
+  AuthenticatedFaithRoute: AuthenticatedFaithRoute,
   AuthenticatedFamilyOccasionsRoute: AuthenticatedFamilyOccasionsRoute,
   AuthenticatedFamilyTreeRoute: AuthenticatedFamilyTreeRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
