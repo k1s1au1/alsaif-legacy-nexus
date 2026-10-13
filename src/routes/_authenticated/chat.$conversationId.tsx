@@ -38,7 +38,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/user-avatar";
-import { PresenceDot, usePresenceFor } from "@/lib/presence";
+import { usePresenceFor } from "@/lib/presence";
+import { useConversationRead } from "@/lib/chat-read";
 import {
   chatTimeLabel,
   conversationTitle,
@@ -269,38 +270,15 @@ function ConversationRoute() {
     };
   }, [draft, meId]);
 
-  const markedReadRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    markedReadRef.current = new Set();
-  }, [conversationId]);
-  useEffect(() => {
-    if (!meId || !messages.length) return;
-    const readSet = new Set(
-      deliveries.filter((d) => d.user_id === meId && d.read_at).map((d) => d.message_id),
-    );
-    const unreadIds = messages
-      .filter(
-        (m) =>
-          m.sender_id !== meId && !readSet.has(m.id) && !markedReadRef.current.has(m.id),
-      )
-      .map((m) => m.id);
-    if (!unreadIds.length) return;
-    unreadIds.forEach((id) => markedReadRef.current.add(id));
-    // Fire-and-forget: never cancel this upsert in cleanup. A new `deliveries`
-    // reference (background load or realtime) re-runs this effect within the
-    // 400ms window; cancelling here meant read_at was never written.
-    setTimeout(() => {
-      void supabase.from("message_deliveries").upsert(
-        unreadIds.map((mid) => ({
-          message_id: mid,
-          conversation_id: conversationId,
-          user_id: meId,
-          read_at: new Date().toISOString(),
-        })),
-        { onConflict: "message_id,user_id" },
-      );
-    }, 400);
-  }, [messages, meId, deliveries, conversationId]);
+  useConversationRead(
+    supabase,
+    meId,
+    conversationId,
+    messages,
+    deliveries,
+    !loading && conv?.id === conversationId &&
+      myParticipant?.conversation_id === conversationId,
+  );
 
   useEffect(() => {
     if (!meId) return;
@@ -614,7 +592,7 @@ function ConversationRoute() {
             aria-label={`تفاصيل ${title}`}
           >
             <div className="relative shrink-0">
-              <div className="chat-thread-avatar">
+              <div className="chat-thread-avatar chat-presence-avatar">
                 {conv?.kind === "group" ? (
                   <div className="size-full flex items-center justify-center">
                     <Users className="size-5" />
@@ -628,7 +606,7 @@ function ConversationRoute() {
                     fallbackClassName="chat-avatar-initial"
                     className="size-full object-cover rounded-full overflow-hidden"
                     userId={otherInDirect?.user_id ?? null}
-                    presenceDotClassName="absolute -bottom-1 -left-1 size-3 lg:size-4 ring-2 ring-card shadow-lg z-20"
+                    presenceVariant="ring"
                   />
                 )}
               </div>
@@ -1040,13 +1018,13 @@ function MessageBubble({
     >
       {!mine && (
         <div className="shrink-0 pt-1">
-          <div className="size-9 rounded-xl overflow-hidden border border-border shadow-sm">
+          <div className="size-9 rounded-full border border-border shadow-sm chat-presence-avatar">
             <UserAvatar
               path={profile?.avatar_url ?? null}
               name={name}
-              className="size-full"
+              className="size-full rounded-full"
               userId={m.sender_id}
-              presenceDotClassName="absolute -bottom-0.5 -left-0.5 size-2.5 ring-2 ring-card z-20"
+              presenceVariant="ring"
             />
           </div>
         </div>

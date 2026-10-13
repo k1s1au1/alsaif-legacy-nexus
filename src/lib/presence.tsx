@@ -7,6 +7,15 @@ import { cn } from "./utils";
 
 export type PresenceState = "online" | "idle" | "offline";
 
+/** Same presence ring colors as the account avatar in the app header. */
+export function presenceRingClass(state: PresenceState) {
+  return state === "online"
+    ? "ring-emerald-400/80 shadow-[0_0_14px_rgba(52,211,153,0.35)]"
+    : state === "idle"
+      ? "ring-amber-400/70"
+      : "ring-primary/10";
+}
+
 const ONLINE_MS = 2 * 60 * 1000; // < 2 min => online
 const IDLE_LOGOUT_MS = 15 * 60 * 1000; // 15 min idle => auto sign-out / offline
 const HEARTBEAT_MS = 30 * 1000;

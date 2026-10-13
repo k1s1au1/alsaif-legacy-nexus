@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -29,6 +29,7 @@ import {
 } from "@/lib/chat";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/user-avatar";
+import { CHAT_READ_EVENT, compareChatTime, isUnreadChatMessage } from "@/lib/chat-read";
 import { useChatViewport } from "@/hooks/use-chat-viewport";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -71,10 +72,14 @@ function ChatLayout() {
   const [showArchive, setShowArchive] = useState(false);
   const [showNew, setShowNew] = useState<"chat" | "group" | null>(null);
   const [loading, setLoading] = useState(true);
+  const loadVersion = useRef(0);
+  const currentUserId = useRef<string | null>(null);
 
   const load = useCallback(async () => {
+    const request = ++loadVersion.current;
     const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
+    if (!u.user || request !== loadVersion.current) return;
+    currentUserId.current = u.user.id;
     setMeId(u.user.id);
 
     const [{ data: myParts }, { data: profs }, { data: myProf }] = await Promise.all([
@@ -86,6 +91,7 @@ function ChatLayout() {
         .eq("id", u.user.id)
         .maybeSingle(),
     ]);
+    if (request !== loadVersion.current) return;
 
     const pmap: Record<string, Profile> = {};
     (profs ?? []).forEach((p) => (pmap[p.id] = p as Profile));
@@ -121,6 +127,7 @@ function ChatLayout() {
         .order("created_at", { ascending: false })
         .limit(500),
     ]);
+    if (request !== loadVersion.current) return;
 
     const partsByConv: Record<string, Participant[]> = {};
     (allParts ?? []).forEach((p) => {
@@ -138,8 +145,7 @@ function ChatLayout() {
       const myP = myPartByConv[mm.conversation_id];
       if (
         myP &&
-        mm.sender_id !== u.user!.id &&
-        new Date(mm.created_at) > new Date(myP.last_read_at)
+        isUnreadChatMessage(mm, u.user!.id, myP.last_read_at)
       ) {
         unreadByConv[mm.conversation_id] = (unreadByConv[mm.conversation_id] ?? 0) + 1;
       }
@@ -165,6 +171,28 @@ function ChatLayout() {
 
   useEffect(() => {
     load();
+    const onRead = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        userId: string; conversationId: string; readAt: string;
+      }>).detail;
+      if (!detail || detail.userId !== currentUserId.current) return;
+      setItems((previous) => previous.map((item) => {
+        if (item.conversation.id !== detail.conversationId) return item;
+        const readThroughLast = !item.lastMessage ||
+          compareChatTime(item.lastMessage.created_at, detail.readAt) <= 0;
+        return {
+          ...item,
+          unread: readThroughLast ? 0 : item.unread,
+          myParticipant: item.myParticipant ? {
+            ...item.myParticipant,
+            last_read_at: compareChatTime(item.myParticipant.last_read_at, detail.readAt) > 0
+              ? item.myParticipant.last_read_at : detail.readAt,
+          } : item.myParticipant,
+        };
+      }));
+      void load();
+    };
+    window.addEventListener(CHAT_READ_EVENT, onRead);
     const ch = supabase
       .channel("chat-list")
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => load())
@@ -178,6 +206,8 @@ function ChatLayout() {
       )
       .subscribe();
     return () => {
+      loadVersion.current++;
+      window.removeEventListener(CHAT_READ_EVENT, onRead);
       supabase.removeChannel(ch);
     };
   }, [load]);
@@ -419,7 +449,7 @@ function ConversationRow({
           aria-current={active ? "page" : undefined}
         >
           <div className="relative shrink-0">
-            <div className="chat-conversation-avatar">
+            <div className={cn("chat-conversation-avatar", other && "chat-presence-avatar")}>
               {item.conversation.kind === "group" ? (
                 <div className="size-full flex items-center justify-center">
                   <Users className="size-5" />
@@ -432,7 +462,7 @@ function ConversationRow({
                   fallbackClassName="chat-avatar-initial"
                   className="size-full rounded-full overflow-hidden"
                   userId={other?.user_id ?? null}
-                  presenceDotClassName="absolute -bottom-1 -left-1 size-3.5 ring-2 ring-card shadow-lg z-20"
+                  presenceVariant="ring"
                 />
               )}
             </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { initialOf } from "@/lib/chat";
-import { PresenceDot, usePresenceFor } from "@/lib/presence";
+import { PresenceDot, presenceLabel, presenceRingClass, usePresenceFor } from "@/lib/presence";
 import { cn } from "@/lib/utils";
 import { AchievementBadges } from "@/components/achievement-badges";
 
@@ -58,6 +58,7 @@ export function UserAvatar({
   className = "",
   fallbackClassName = "",
   userId,
+  presenceVariant = "dot",
   presenceDotClassName = "absolute -bottom-0.5 -left-0.5 z-10",
   showBadges = false,
 }: {
@@ -66,8 +67,9 @@ export function UserAvatar({
   initial?: string;
   className?: string;
   fallbackClassName?: string;
-  /** When provided, an online/idle/offline dot is overlaid on the avatar. */
+  /** When provided, show this user's current connection state. */
   userId?: string | null;
+  presenceVariant?: "dot" | "ring";
   presenceDotClassName?: string;
   showBadges?: boolean;
 }) {
@@ -120,9 +122,20 @@ export function UserAvatar({
   if (!showDot) return inner;
 
   return (
-    <div className="relative inline-flex w-full h-full items-center justify-center">
+    <div
+      className={cn(
+        "relative inline-flex w-full h-full items-center justify-center",
+        presenceVariant === "ring" && "rounded-full ring-2 transition-all duration-500",
+        presenceVariant === "ring" && presenceRingClass(presenceState),
+      )}
+      title={presenceVariant === "ring" ? presenceLabel(presenceState) : undefined}
+    >
       {inner}
-      <PresenceDot state={presenceState} className={presenceDotClassName} />
+      {presenceVariant === "dot" ? (
+        <PresenceDot state={presenceState} className={presenceDotClassName} />
+      ) : (
+        <span className="sr-only">{presenceLabel(presenceState)}</span>
+      )}
       {showBadges && userId && (
         <div className="absolute -top-1 -right-1 flex gap-0.5 pointer-events-auto">
           <AchievementBadges userId={userId} />
