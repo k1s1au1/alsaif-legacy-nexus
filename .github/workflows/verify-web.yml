@@ -27,6 +27,8 @@ jobs:
         run: npx tsc --noEmit
       - name: Check backup server connection configuration
         run: node --test scripts/test-supabase-server-clients.mjs
+      - name: Check backup file saving and retry outcomes
+        run: node --test scripts/test-backup-save.mjs
       - name: Check member post rotation
         run: npm run test:member-posts
       - name: Check approved account entry

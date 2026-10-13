@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
         // Register custom plugins before super.onCreate
         registerPlugin(WidgetPlugin.class);
         registerPlugin(SharingPlugin.class);
+        registerPlugin(FileSavePlugin.class);
         registerPlugin(ContactsPlugin.class);
         registerPlugin(BiometricPlugin.class);
         registerPlugin(DocumentScannerPlugin.class);

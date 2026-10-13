@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { createFullBackup } from "@/lib/api/backup.functions";
+import type { BackupResult } from "@/lib/api/backup.functions";
+import { saveBackupFile } from "@/lib/save-backup";
 
 type BackupRow = {
   id: string;
@@ -32,6 +34,8 @@ export function SystemBackup() {
   const runBackup = useServerFn(createFullBackup);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [readyBackup, setReadyBackup] = useState<BackupResult | null>(null);
   const [history, setHistory] = useState<BackupRow[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
 
@@ -62,6 +66,7 @@ export function SystemBackup() {
   }, [loadHistory]);
 
   const handleBackup = async () => {
+    if (busy || saving) return;
     if (!password.trim()) {
       toast.error("أدخل كلمة المرور للتأكيد قبل بدء النسخ");
       return;
@@ -78,25 +83,33 @@ export function SystemBackup() {
       toast.info("جاري تجهيز النسخة الاحتياطية، قد تستغرق دقيقة...");
       const result = await runBackup({ data: undefined as never });
 
-      const binary = atob(result.zipBase64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-      const url = URL.createObjectURL(new Blob([bytes], { type: "application/zip" }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = result.fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-
+      setReadyBackup(result);
       setPassword("");
-      toast.success(`تم تنزيل النسخة: ${result.rowsCount} سجل (${formatSize(result.bytesSize)})`);
-      loadHistory();
+      toast.info("النسخة جاهزة. اضغط حفظ النسخة على جهازي واختر مكان الحفظ.");
+      void loadHistory().catch(() => {});
     } catch (err: any) {
       toast.error(err?.message || "تعذر إنشاء النسخة الاحتياطية");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!readyBackup || busy || saving) return;
+    setSaving(true);
+    try {
+      const outcome = await saveBackupFile(readyBackup);
+      if (outcome === "saved") {
+        toast.success("تم حفظ النسخة في المكان الذي اخترته.");
+      } else if (outcome === "download-started") {
+        toast.info("بدأ تنزيل النسخة. تابع اكتمالها في تنزيلات المتصفح.");
+      } else {
+        toast.info("أُلغيت عملية الحفظ. النسخة ما زالت جاهزة لإعادة المحاولة.");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "تعذر حفظ النسخة. يمكنك إعادة المحاولة من زر الحفظ.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -126,7 +139,7 @@ export function SystemBackup() {
 
         <div className="flex items-center gap-2 text-sm font-bold text-primary">
           <ShieldCheck className="size-4" />
-          للتأكيد الأمني، أدخل كلمة مرور حسابك قبل بدء التنزيل.
+          للتأكيد الأمني، أدخل كلمة مرور حسابك قبل إنشاء النسخة.
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -137,17 +150,39 @@ export function SystemBackup() {
             placeholder="كلمة مرور حسابك"
             autoComplete="current-password"
             className="rounded-2xl font-bold"
-            disabled={busy}
+            disabled={busy || saving}
           />
           <Button
             onClick={handleBackup}
-            disabled={busy}
+            disabled={busy || saving}
             className="rounded-2xl font-black gap-2 sm:w-auto w-full"
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-            {busy ? "جاري التجهيز..." : "إنشاء وتنزيل النسخة"}
+            {busy ? "جاري التجهيز..." : "إنشاء النسخة"}
           </Button>
         </div>
+        {readyBackup && (
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3" role="status">
+            <p className="font-black text-primary">النسخة جاهزة للحفظ</p>
+            <p className="text-sm font-bold text-muted-foreground">
+              {readyBackup.rowsCount} سجل · {formatSize(readyBackup.bytesSize)}
+            </p>
+            <p className="text-xs text-muted-foreground break-all" dir="ltr">
+              {readyBackup.fileName}
+            </p>
+            <Button
+              onClick={handleSave}
+              disabled={busy || saving}
+              className="w-full rounded-2xl font-black gap-2"
+            >
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+              {saving ? "جاري الحفظ..." : "حفظ النسخة على جهازي"}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              تظل النسخة جاهزة لإعادة الحفظ ما دمت في هذه الصفحة.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -155,6 +190,9 @@ export function SystemBackup() {
           <History className="size-4 text-primary" />
           سجل عمليات النسخ الاحتياطي
         </div>
+        <p className="text-xs text-muted-foreground">
+          السجل يوثّق إنشاء النسخ. حفظ الملف على جهازك يتم من زر الحفظ بعد إنشائه.
+        </p>
         {history.length === 0 ? (
           <div className="p-10 text-center text-muted-foreground italic bg-muted/20 rounded-[28px] border-2 border-dashed">
             لم يتم تنفيذ أي نسخة احتياطية بعد.
