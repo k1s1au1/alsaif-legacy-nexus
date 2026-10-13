@@ -216,6 +216,9 @@ html[data-theme-color-mode="custom"] .chat-workspace {
   font-size: 14px;
   font-weight: 800;
 }
+.chat-workspace .chat-presence-avatar {
+  overflow: visible;
+}
 .chat-workspace .chat-avatar-initial {
   color: inherit;
 }
