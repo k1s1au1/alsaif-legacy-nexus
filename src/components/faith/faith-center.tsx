@@ -23,7 +23,7 @@ export function FaithCenter({ view, onViewChange }: { view: "prayer" | "mushaf";
   return <div className="faith-page" dir="rtl">
     <header className="faith-page-heading"><div><Link to="/dashboard">الرئيسية <ChevronLeft size={14} /></Link><h1>الصلاة ومصحفي</h1><p>مواقيت يومك، ومصحفك في مكان واحد</p></div><BookOpen size={35} aria-hidden="true" /></header>
     <section className="faith-prayer-summary" aria-label="الصلاة القادمة">
-      <div className="faith-summary-next"><Clock size={31} aria-hidden="true" /><div><small>الصلاة القادمة</small><strong>{times.prayer?.name || (times.city ? "تحميل المواقيت…" : "اختر مدينتك")}</strong>{times.prayer && <span>{times.countdown}</span>}</div></div>
+      <div className="faith-summary-next"><Clock size={31} aria-hidden="true" /><div><small>الصلاة القادمة</small><strong>{times.prayer?.name || (times.city ? times.error ? "المواقيت غير متاحة" : "تحميل المواقيت…" : "اختر مدينتك")}</strong>{times.prayer && <span>{times.countdown}</span>}</div></div>
       <label className="faith-city-selector"><span><MapPin size={15} /> المدينة</span><select value={times.city?.id || ""} onChange={(event) => setPrayerCity(event.target.value)}><option value="" disabled>اختر مدينتك</option>{PRAYER_CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
       <button type="button" className="faith-button faith-button-light" onClick={() => onViewChange("prayer")}>كل المواقيت <ChevronLeft size={16} /></button>
     </section>

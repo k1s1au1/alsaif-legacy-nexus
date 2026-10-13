@@ -60,5 +60,5 @@ export function usePrayerTimes() {
   const following = useMonth(tomorrow.month !== today.month ? city : undefined, tomorrow.year, tomorrow.month);
   const days = [...(current.data?.days || []), ...(following.data?.days || [])];
   const prayer = nextPrayer(days, now);
-  return { city, now, date: today.date, today: days.find((day) => day.date === today.date), prayer, countdown: prayer ? prayerCountdown(prayer.at, now) : "", loading: !!city && current.isPending, error: current.error, refreshing: current.isFetching, refresh: () => { void current.refetch(); if (tomorrow.month !== today.month) void following.refetch(); } };
+  return { city, now, date: today.date, today: days.find((day) => day.date === today.date), prayer, countdown: prayer ? prayerCountdown(prayer.at, now) : "", loading: !!city && (current.isPending || (tomorrow.month !== today.month && following.isPending)), error: current.error || following.error, refreshing: current.isFetching || (tomorrow.month !== today.month && following.isFetching), refresh: () => { void current.refetch(); if (tomorrow.month !== today.month) void following.refetch(); } };
 }

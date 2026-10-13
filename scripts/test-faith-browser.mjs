@@ -76,7 +76,7 @@ try {
   });
   await new Promise((resolve, reject) => { websocket.addEventListener("open", resolve, { once: true }); websocket.addEventListener("error", reject, { once: true }); });
   const evaluate = async expression => { const result = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }); if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails)); return result.result.value; };
-  const until = async expression => { for (let i = 0; i < 160; i++) { if (await evaluate(expression)) return; await new Promise(resolve => setTimeout(resolve, 40)); } throw Error(`Timed out: ${expression}`); };
+  const until = async expression => { for (let i = 0; i < 160; i++) { if (await evaluate(`Boolean(${expression})`)) return; await new Promise(resolve => setTimeout(resolve, 40)); } throw Error(`Timed out: ${expression}`); };
   const settle = () => evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,120))))");
   const navigate = async path => { await send("Page.navigate", { url: `http://127.0.0.1:${port}${path}` }); await until("window.fixtureReady && document.querySelector('.faith-page,.faith-home-shortcuts')"); await settle(); };
   const viewport = async (width, height) => { await send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: false }); await settle(); };
