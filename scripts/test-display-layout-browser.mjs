@@ -87,6 +87,21 @@ try {
     await send("Emulation.setTouchEmulationEnabled", { enabled: touch, maxTouchPoints: touch ? 5 : 1 });
   };
   const snapshot = () => evaluate(`(()=>{const ids=['desktop-preview','primary-nav','bottom-dock','legacy-preview'];const result={};for(const id of ids){const e=document.getElementById(id);const c=getComputedStyle(e);result[id]={display:c.display}}for(const selector of ['.desktop-overview-shell','.desktop-hero-card','.settings-layout','.chat-layout']){const c=getComputedStyle(document.querySelector(selector));result[selector]={display:c.display,columns:c.gridTemplateColumns,padding:c.padding,gap:c.gap,fontSize:c.fontSize}}return result})()`);
+  const compareDesktop = (actual, expected, name) => {
+    for (const [selector, properties] of Object.entries(expected)) {
+      for (const [property, value] of Object.entries(properties)) {
+        const found = actual[selector][property];
+        if (property === "columns" && value !== "none") {
+          // Chrome rounds grid tracks to device pixels after CSS zoom. Keep
+          // column count and dimensions equivalent within one logical pixel.
+          const widths = found.split(" ").map(parseFloat);
+          const baseline = value.split(" ").map(parseFloat);
+          assert.equal(widths.length, baseline.length, `${name}: ${selector} column count`);
+          baseline.forEach((width, index) => assert.ok(Math.abs(widths[index] - width) < 1, `${name}: ${selector} track ${index}: ${widths[index]} vs ${width}`));
+        } else assert.equal(found, value, `${name}: ${selector} ${property}`);
+      }
+    }
+  };
   await send("Page.enable");
   await viewport(1440, 900, false); await navigate();
   const desktopBaseline = await snapshot();
@@ -98,7 +113,7 @@ try {
     const originalCSS = await evaluate("Array.from(document.styleSheets).map(sheet=>Array.from(sheet.cssRules).map(rule=>rule.cssText).join('')).join('')");
     await evaluate("saveDisplayMode('desktop')"); await settle();
     const forced = await snapshot();
-    assert.deepEqual(forced, desktopBaseline, `${name}: forced desktop must use the existing desktop styles`);
+    compareDesktop(forced, desktopBaseline, name);
     const metrics = await evaluate(`(()=>{const scale=getDisplayScale();const body=document.body.getBoundingClientRect();const button=document.getElementById('return-auto');const r=button.getBoundingClientRect();return{width:innerWidth,scale,canvasWidth:body.width/scale,bodyWidth:body.width,buttonHeight:r.height,buttonX:r.x,buttonRight:r.right,buttonBottom:r.bottom,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===button||button.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}})()`);
     assert.ok(Math.abs(metrics.canvasWidth - 1440) < 1, `${name}: full desktop canvas width`);
     assert.ok(metrics.bodyWidth <= width + 1, `${name}: desktop canvas fits the phone/tablet`);
