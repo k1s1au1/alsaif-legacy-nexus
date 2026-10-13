@@ -70,17 +70,20 @@ export function mountDisplayLayout() {
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(sync);
   };
+  const onStylesheetLoad = (event: Event) => {
+    if ((event.target as HTMLLinkElement)?.rel === "stylesheet") schedule();
+  };
   const unsubscribe = subscribeDisplayMode(sync);
   const observer = new MutationObserver(schedule);
   observer.observe(document.head, { childList: true, subtree: true, characterData: true });
-  document.addEventListener("load", schedule, true);
+  document.addEventListener("load", onStylesheetLoad, true);
   window.addEventListener("resize", schedule);
   window.addEventListener("orientationchange", schedule);
   sync();
   return () => {
     unsubscribe();
     observer.disconnect();
-    document.removeEventListener("load", schedule, true);
+    document.removeEventListener("load", onStylesheetLoad, true);
     window.removeEventListener("resize", schedule);
     window.removeEventListener("orientationchange", schedule);
     cancelAnimationFrame(frame);
