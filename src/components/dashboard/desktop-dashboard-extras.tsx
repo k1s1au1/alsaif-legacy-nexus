@@ -1,6 +1,8 @@
 import { useDashboardOccasions } from "@/hooks/use-dashboard-occasions";
 import { occasionDateTime } from "@/lib/upcoming-occasions";
 import { useEffect, useMemo, useState } from "react";
+import { useDisplayMode } from "@/hooks/use-display-mode";
+import { getDisplayViewport } from "@/lib/display-preference";
 import { Link } from "@tanstack/react-router";
 import {
   BookImage,
@@ -242,14 +244,11 @@ export function ResponsiveDashboardExtras({
   onReportBug: () => void;
 }) {
   const [mode, setMode] = useState<DashboardExtrasMode>("hidden");
+  const displayMode = useDisplayMode();
 
   useEffect(() => {
     const syncMode = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      const isTouchDevice =
-        navigator.maxTouchPoints > 0 ||
-        window.matchMedia("(pointer: coarse)").matches;
+      const { width, height, touch: isTouchDevice } = getDisplayViewport();
       const isTabletLandscape =
         isTouchDevice &&
         width >= 970 &&
@@ -283,7 +282,7 @@ export function ResponsiveDashboardExtras({
         "data-dashboard-tablet-landscape",
       );
     };
-  }, []);
+  }, [displayMode]);
 
   if (mode === "hidden") return null;
 

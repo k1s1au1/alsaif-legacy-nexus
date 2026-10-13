@@ -1,5 +1,7 @@
 import { Link, useNavigate, useRouterState, type LinkProps } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useDisplayMode } from "@/hooks/use-display-mode";
+import { getDisplayViewport } from "@/lib/display-preference";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState, type ReactNode, type MouseEventHandler } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearOfflineData } from "@/lib/offline-data";
@@ -286,14 +288,11 @@ function AppShellChrome({
   const [showMoreHub, setShowMoreHub] = useState(false);
   const [isTabletPortrait, setIsTabletPortrait] = useState(false);
   const [useFamilySealHeader, setUseFamilySealHeader] = useState(false);
+  const displayMode = useDisplayMode();
 
   useEffect(() => {
     const syncTabletPortrait = () => {
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const isTouchDevice =
-        navigator.maxTouchPoints > 0 ||
-        window.matchMedia("(pointer: coarse)").matches;
+      const { width: viewportWidth, height: viewportHeight, touch: isTouchDevice } = getDisplayViewport();
 
       setIsTabletPortrait(
         isTouchDevice &&
@@ -312,7 +311,7 @@ function AppShellChrome({
       window.removeEventListener("resize", syncTabletPortrait);
       window.removeEventListener("orientationchange", syncTabletPortrait);
     };
-  }, []);
+  }, [displayMode]);
 
   // 1. Centralized Identity Source (Zero Redundancy)
   const { data: globalProfile, isLoading: profileLoading } = useProfile();
@@ -596,7 +595,7 @@ function AppShellChrome({
           animate={{
             y: 0,
             scale:
-              typeof window !== "undefined" && window.innerWidth < 768 && headerCompact ? 0.85 : 1,
+              displayMode !== "desktop" && typeof window !== "undefined" && window.innerWidth < 768 && headerCompact ? 0.85 : 1,
           }}
           className={cn(
             "app-shell-header-wrap z-[80] fixed top-4 inset-x-0 px-4 md:sticky md:top-0 md:inset-x-0 md:px-0 flex justify-center",
