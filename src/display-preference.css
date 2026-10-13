@@ -2,6 +2,7 @@ html[data-display-mode="desktop"] body {
   width: var(--display-width);
   min-height: var(--display-height);
   zoom: var(--display-scale);
+  transition-property: background-color, color;
 }
 
 .display-mode-return {

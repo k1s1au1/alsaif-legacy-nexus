@@ -70,7 +70,7 @@ try {
     const result = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
     if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails)); return result.result.value;
   };
-  const settle = () => evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,80))))");
+  const settle = () => evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,600))))");
   const navigate = async () => {
     await evaluate("window.fixtureReady=false");
     await send("Page.navigate", { url: `http://127.0.0.1:${port}/fixture` });
@@ -112,12 +112,14 @@ try {
     const automatic = await snapshot();
     const originalCSS = await evaluate("Array.from(document.styleSheets).map(sheet=>Array.from(sheet.cssRules).map(rule=>rule.cssText).join('')).join('')");
     await evaluate("saveDisplayMode('desktop')"); await settle();
+    const beforeChecks = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+    writeFileSync(`test-results/display-layout/${name}.png`, Buffer.from(beforeChecks.data, "base64"));
     const forced = await snapshot();
     compareDesktop(forced, desktopBaseline, name);
     const metrics = await evaluate(`(()=>{const scale=getDisplayScale();const body=document.body.getBoundingClientRect();const button=document.getElementById('return-auto');const r=button.getBoundingClientRect();return{width:innerWidth,scale,canvasWidth:body.width/scale,bodyWidth:body.width,buttonHeight:r.height,buttonX:r.x,buttonRight:r.right,buttonBottom:r.bottom,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===button||button.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}})()`);
-    assert.ok(Math.abs(metrics.canvasWidth - 1440) < 1, `${name}: full desktop canvas width`);
+    assert.ok(Math.abs(metrics.canvasWidth - 1440) < 1, `${name}: full desktop canvas width ${JSON.stringify(metrics)}`);
     assert.ok(metrics.bodyWidth <= width + 1, `${name}: desktop canvas fits the phone/tablet`);
-    assert.ok(metrics.buttonHeight >= 39 && metrics.buttonX >= 0 && metrics.buttonRight <= width && metrics.buttonBottom <= height, `${name}: escape control stays readable and on screen`);
+    assert.ok(metrics.buttonHeight >= 39 && metrics.buttonX >= 0 && metrics.buttonRight <= width && metrics.buttonBottom <= height, `${name}: escape control stays readable and on screen ${JSON.stringify(metrics)}`);
     assert.equal(metrics.hit, true, `${name}: escape control is clickable`);
     await evaluate("const popup=document.createElement('div');popup.id='popup';popup.innerHTML='<p>نافذة الإعدادات</p><button>حفظ</button>';document.body.appendChild(popup)");
     await settle();
