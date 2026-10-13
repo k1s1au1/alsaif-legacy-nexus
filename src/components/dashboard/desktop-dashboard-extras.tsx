@@ -24,6 +24,7 @@ import {
   PartyPopper,
   MessageCircle,
   Lock,
+  BookOpen,
 } from "lucide-react";
 import {
   useDashboardAnnouncements,
@@ -38,6 +39,7 @@ import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import { SpiritualQuotesWidget } from "@/components/dashboard/spiritual-quotes-widget";
 import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 import { FamilyAgenda } from "@/components/dashboard/family-agenda";
+import { PrayerMushafShortcuts } from "@/components/dashboard/prayer-mushaf-shortcuts";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -85,6 +87,7 @@ const services = [
   { to: "/community", label: "ركن الأعضاء", desc: "مجتمع أفراد العائلة", icon: Handshake },
   { to: "/family-tree", label: "نسب وأثر", desc: "أنساب العائلة وإرثها", icon: LineageLegacyIcon },
   { to: "/vault", label: "الخزنة", desc: "المحتوى العائلي الخاص", icon: Lock },
+  { to: "/faith", label: "الصلاة ومصحفي", desc: "مواقيت الصلاة ومصحفك", icon: BookOpen },
 ];
 
 type LocalOccasion = {
@@ -409,6 +412,7 @@ export function DesktopDashboardExtras({
         {!contentOnly && (
           <>
             <SpiritualQuotesWidget variant="desktop" />
+            <PrayerMushafShortcuts desktop />
 
         <section className="desktop-overview-shell">
           <div className="desktop-portal-stage">

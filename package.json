@@ -12,6 +12,7 @@
     "test:member-posts": "node --test scripts/test-member-post*.mjs",
     "test:account-entry": "node --test scripts/test-account-entry.mjs",
     "test:navigation": "node --test scripts/test-navigation-preferences.mjs",
+    "test:faith": "node --test scripts/test-faith.mjs",
     "test:meetings": "node --test scripts/test-meeting-attendance.mjs",
     "test:occasions": "node --test scripts/test-upcoming-occasions.mjs",
     "test:trip-status": "node --test scripts/test-trip-status.mjs",

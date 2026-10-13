@@ -14,8 +14,9 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 // Bump the shell caches whenever the visual application shell changes. This
 // prevents installed/PWA clients from continuing to paint an older dashboard.
-const APP_CACHE = "alsaif-app-v5";
+const APP_CACHE = "alsaif-app-v6";
 const MEDIA_CACHE = "alsaif-media-v5";
+const MUSHAF_CACHE = "alsaif-mushaf-ksu-v1";
 const USER_ROUTE_CACHE_PREFIX = "alsaif-user-routes-v1:";
 const SESSION_META_CACHE = "alsaif-offline-session-v1";
 const ACTIVE_USER_KEY = "/__alsaif_active_offline_user__";
@@ -106,7 +107,7 @@ async function putIfCacheable(cacheName, request, response) {
   if (!(response.ok || response.type === "opaque")) return response;
   const cache = await caches.open(cacheName);
   await cache.put(request, response.clone());
-  await trimCache(cacheName, cacheName === MEDIA_CACHE ? 120 : 180);
+  await trimCache(cacheName, cacheName === MUSHAF_CACHE ? 604 : cacheName === MEDIA_CACHE ? 120 : 180);
   return response;
 }
 
@@ -147,6 +148,7 @@ self.addEventListener("activate", (event) => {
                   name.startsWith("alsaif-") &&
                   name !== APP_CACHE &&
                   name !== MEDIA_CACHE &&
+                  name !== MUSHAF_CACHE &&
                   name !== SESSION_META_CACHE &&
                   !name.startsWith(USER_ROUTE_CACHE_PREFIX),
               )
@@ -252,6 +254,14 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (!["http:", "https:"].includes(url.protocol)) return;
+
+  // Preserve the official, unmodified KSU scans in their own public cache.
+  // Generic media eviction must not discard the pages a member has read.
+  const mushafPage = /^\/safahat\/png_big\/(\d+)\.png$/.exec(url.pathname);
+  if (url.origin === "https://quran.ksu.edu.sa" && mushafPage && Number(mushafPage[1]) >= 1 && Number(mushafPage[1]) <= 604 && request.destination === "image") {
+    event.respondWith(cachedResource(request, MUSHAF_CACHE));
+    return;
+  }
 
   // Connectivity probes must always reach the network and must never be cached.
   if (url.searchParams.has("__alsaif_network_probe")) return;

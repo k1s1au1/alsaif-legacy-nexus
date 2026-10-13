@@ -28,6 +28,7 @@ import {
   ListChecks,
   Wallet,
   BookImage,
+  BookOpen,
   ChevronLeft,
   Lock,
   LayoutGrid,
@@ -86,6 +87,7 @@ const desktopServiceItems: { id: NavItemKey; label: string; description: string 
   { id: "family-tree", label: "نسب وأثر", description: "أنساب العائلة وإرثها" },
   { id: "vault", label: "الخزنة", description: "المحتوى العائلي الخاص" },
   { id: "chat", label: "الدردشة", description: "تواصل خاص بالعائلة" },
+  { id: "faith", label: "الصلاة ومصحفي", description: "مواقيت الصلاة ومصحفك" },
 ];
 
 function BottomNavItem({
@@ -1361,6 +1363,13 @@ function AppShellChrome({
                     }}
                   />
                   <QuickActionItem
+                    to="/faith"
+                    label="الصلاة ومصحفي"
+                    icon={<BookOpen size={28} strokeWidth={1.8} />}
+                    tone="primary"
+                    onClick={() => setShowQuickActions(false)}
+                  />
+                  <QuickActionItem
                     to="/profile"
                     label="ملفي"
                     icon={<User size={28} strokeWidth={1.8} />}
@@ -1426,6 +1435,7 @@ const SHELL_TITLE_MAP: [RegExp, string][] = [
   [/^\/family-tree/, "نسب وأثر"],
   [/^\/family-occasions/, "مناسبات العائلة"],
   [/^\/vault/, "الخزنة"],
+  [/^\/faith/, "الصلاة ومصحفي"],
   [/^\/suggestions/, "صندوق المقترحات"],
   [/^\/notifications/, "مركز الإشعارات"],
   [/^\/chat/, "المحادثات"],
