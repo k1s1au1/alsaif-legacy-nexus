@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Smartphone, Tablet, RotateCw } from "lucide-react";
-import { useDisplayMode } from "@/hooks/use-display-mode";
 
 type DeviceKind = "mobile" | "tablet" | "desktop";
 
@@ -90,10 +89,9 @@ function forceDesktopViewport() {
 }
 
 export function DeviceOrientationGuard() {
-  const displayMode = useDisplayMode();
   const initialDesktopRequest = useMemo(() => isBrowserDesktopSiteRequest(), []);
   const [desktopRequest, setDesktopRequest] = useState(initialDesktopRequest);
-  const device = useMemo(() => displayMode === "desktop" ? "desktop" : detectDeviceKind(), [desktopRequest, displayMode]);
+  const device = useMemo(() => detectDeviceKind(), [desktopRequest]);
   const [portrait, setPortrait] = useState(true);
   const [landscapeGame, setLandscapeGame] = useState(false);
 
@@ -108,12 +106,6 @@ export function DeviceOrientationGuard() {
 
   useEffect(() => {
     const syncDesktopRequest = () => {
-      // The saved preference owns its canvas without changing browser viewport
-      // metadata or latching the browser's desktop-request flag.
-      if (displayMode === "desktop") {
-        setDesktopRequest(true);
-        return;
-      }
       const requested = isBrowserDesktopSiteRequest();
       setDesktopRequest(requested);
       if (requested) {
@@ -131,7 +123,7 @@ export function DeviceOrientationGuard() {
       window.removeEventListener("resize", syncDesktopRequest);
       window.removeEventListener("orientationchange", syncDesktopRequest);
     };
-  }, [displayMode]);
+  }, []);
 
   useEffect(() => {
     if (device === "desktop") return;

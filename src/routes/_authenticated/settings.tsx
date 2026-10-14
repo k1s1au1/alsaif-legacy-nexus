@@ -48,8 +48,6 @@ import {
 import { useProfile } from "@/hooks/use-dashboard-data";
 import { useUserRole } from "@/hooks/use-user-role";
 import { useSimpleMode } from "@/hooks/use-simple-mode";
-import { useDisplayMode } from "@/hooks/use-display-mode";
-import { saveDisplayMode } from "@/lib/display-preference";
 import { APP_FONTS as FONTS, applyAppFont } from "@/lib/typography";
 import { ThemeCustomizationDialog } from "@/components/theme-customization-dialog";
 import { HeaderNavigationDialog } from "@/components/header-navigation-dialog";
@@ -94,7 +92,6 @@ function SettingsPage() {
   const headerNavOptions = NAV_REGISTRY.filter((item) => item.id !== "dashboard" && canAccessNavItem(item, headerAccess));
   const navigationReady = !!profile && !profileLoading && !roleAccess.isLoading;
   const { simpleMode, setSimpleMode } = useSimpleMode();
-  const displayMode = useDisplayMode();
   const [darkMode, setDarkMode] = useState<"light" | "dark" | "system" | null>(null);
   const [font, setFont] = useState("Tajawal");
   const [fontStyle, setFontStyle] = useState<"modern" | "royal">("modern");
@@ -645,43 +642,6 @@ function SettingsPage() {
                     label="تلقائي"
                     icon={<Smartphone />}
                   />
-                </div>
-
-                <div className="settings-switch-card card-surface p-6 md:p-8 space-y-5">
-                  <div>
-                    <h4 className="text-lg md:text-xl font-black text-primary">طريقة العرض</h4>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      اختر واجهة تناسبك. يُحفظ اختيارك على هذا الجهاز.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3" role="group" aria-label="طريقة عرض الموقع">
-                    {([
-                      { value: "auto", label: "تلقائي", description: "واجهة مناسبة لحجم الشاشة والجهاز.", icon: Smartphone },
-                      { value: "desktop", label: "عرض الكمبيوتر", description: "تصميم الكمبيوتر الكامل، حتى على الجوال والآيباد.", icon: Monitor },
-                    ] as const).map(({ value, label, description, icon: Icon }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        aria-pressed={displayMode === value}
-                        onClick={() => {
-                          const saved = saveDisplayMode(value);
-                          if (saved) toast.success(value === "desktop" ? "تم حفظ عرض الكمبيوتر" : "تم حفظ العرض التلقائي");
-                          else toast.info("تم تطبيق طريقة العرض لهذه الجلسة");
-                        }}
-                        className={cn(
-                          "flex items-center gap-4 rounded-2xl border-2 p-4 text-right transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                          displayMode === value ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/50",
-                        )}
-                      >
-                        <Icon className="size-6 shrink-0 text-primary" aria-hidden="true" />
-                        <span className="flex-1">
-                          <span className="block font-black text-primary">{label}</span>
-                          <span className="block mt-1 text-xs leading-relaxed text-muted-foreground">{description}</span>
-                        </span>
-                        {displayMode === value && <Check className="size-5 shrink-0 text-primary" aria-hidden="true" />}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 <button

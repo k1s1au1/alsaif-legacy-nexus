@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, Users, ListChecks, Wallet } from "lucide-react";
-import { useDisplayMode } from "@/hooks/use-display-mode";
-import { getDisplayViewport } from "@/lib/display-preference";
 
 const items = [
   { to: "/family-occasions", label: "المناسبات", icon: CalendarDays },
@@ -14,13 +12,9 @@ const items = [
 
 export function DesktopSidebarQuickAccess() {
   const [target, setTarget] = useState<HTMLElement | null>(null);
-  const displayMode = useDisplayMode();
 
   useEffect(() => {
-    if (typeof window === "undefined" || getDisplayViewport().width < 1200) {
-      setTarget(null);
-      return;
-    }
+    if (typeof window === "undefined" || window.innerWidth < 1200) return;
 
     const findTarget = () => {
       const nav = document.querySelector<HTMLElement>("aside.fixed.inset-y-0.right-0.z-\\[120\\] > nav");
@@ -36,7 +30,7 @@ export function DesktopSidebarQuickAccess() {
       observer.disconnect();
       window.removeEventListener("resize", findTarget);
     };
-  }, [displayMode]);
+  }, []);
 
   if (!target) return null;
 
