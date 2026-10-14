@@ -18,12 +18,8 @@ export function useAppPermissions() {
           await Camera.requestPermissions({ permissions: ['camera', 'photos'] });
         }
 
-        // 2. Geolocation
-        const { Geolocation } = await import("@capacitor/geolocation");
-        const geoStatus = await Geolocation.checkPermissions();
-        if (geoStatus.location !== 'granted') {
-          await Geolocation.requestPermissions({ permissions: ['location'] });
-        }
+        // Location is requested by the prayer section when the member chooses
+        // “تحديد موقعي”, avoiding a second permission flow at startup.
 
         // 3. Notifications (Usually handled by useFcm, but we can ensure it here)
         const { PushNotifications } = await import("@capacitor/push-notifications");

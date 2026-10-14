@@ -23,9 +23,11 @@
 .faith-summary-next small{font-size:12px;opacity:.86}
 .faith-summary-next strong{font-size:27px;font-weight:900;line-height:1.25}
 .faith-summary-next span{font-size:13px;color:var(--gold-primary)}
-.faith-city-selector{display:flex;flex-direction:column;gap:7px;min-width:180px}
-.faith-city-selector>span{display:flex;align-items:center;gap:5px;font-size:12px}
-.faith-city-selector select{width:100%;font:inherit;color:var(--nav-fg,#fff);background:var(--nav-bg,var(--primary));border:1px solid var(--gold-primary);border-radius:12px;min-height:44px;padding:8px 12px}
+.faith-location-control{display:flex;flex-direction:column;gap:7px;min-width:180px}
+.faith-location-control>span{display:flex;align-items:center;gap:5px;font-size:12px}
+.faith-button-gps{border-color:var(--gold-primary)!important;background:transparent!important;color:inherit!important}
+.faith-location-message{display:flex;align-items:flex-start;gap:9px;padding:14px 18px;border:1px solid var(--border);border-radius:14px;margin:0 0 20px;font-size:14px;line-height:1.9;color:var(--foreground);background:var(--card)}
+.faith-location-message>svg{flex:none;margin-top:5px;color:var(--primary)}
 .faith-tabs{display:grid!important;grid-template-columns:1fr 1fr;gap:6px;height:auto!important;width:min(440px,100%);padding:5px!important;border-radius:15px!important;margin-bottom:20px;background:var(--muted)!important}
 .faith-tabs [role=tab]{display:flex;gap:8px;align-items:center;justify-content:center;min-height:46px;padding:11px 18px!important;border-radius:11px!important;font-weight:850}
 .faith-tabs [data-state=active]{background:var(--nav-bg,var(--primary))!important;color:var(--nav-fg,#fff)!important}
@@ -106,7 +108,7 @@
 @media(max-width:699px){
  .faith-home-shortcuts{gap:14px}.faith-home-link{gap:9px}.faith-home-link strong{font-size:17px}.faith-home-link small{font-size:11px}.faith-home-icon{width:27px;height:27px}
  .faith-page{padding:8px 0 80px}.faith-page-heading{margin-bottom:18px}.faith-page-heading>svg{width:28px}
- .faith-prayer-summary{padding:20px;gap:18px}.faith-summary-next{min-width:0;flex:1}.faith-summary-next strong{font-size:24px}.faith-city-selector{min-width:0;width:135px}.faith-prayer-summary>.faith-button{width:100%}
+ .faith-prayer-summary{padding:20px;gap:18px}.faith-summary-next{min-width:0;flex:1}.faith-summary-next strong{font-size:24px}.faith-location-control{min-width:0;width:145px}.faith-prayer-summary>.faith-button{width:100%}
  .faith-prayer-panel,.faith-index-panel,.mushaf-reader{padding:18px;border-radius:18px}
  .faith-prayer-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.faith-prayer-time{min-height:130px}.faith-prayer-time:last-child{grid-column:1/-1;min-height:110px}
  .faith-mushaf-overview{grid-template-columns:1fr}.faith-resume-card{padding:21px;gap:20px}.faith-mushaf-cover{width:78px;min-width:78px;height:125px}.faith-resume-copy h2{font-size:22px}

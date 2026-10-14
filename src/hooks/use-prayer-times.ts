@@ -1,42 +1,26 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { PRAYER_CITIES, PRAYER_CITY_EVENT, PRAYER_CITY_KEY, normalizePrayerCalendar, nextPrayer, prayerCacheKey, prayerCalendarUrl, prayerCountdown, readPrayerCalendar, saudiDateParts, type PrayerCity } from "@/lib/prayer-times";
+import { normalizePrayerCalendar, nextPrayer, nextPrayerDate, prayerCacheKey, prayerCalendarUrl, prayerCountdown, prayerDateParts, prayerLocationKey, readPrayerCalendar, type PrayerLocation } from "@/lib/prayer-times";
+import { usePrayerLocation } from "./use-prayer-location";
 
-let cityInMemory: string | null = null;
-function readCityId(): string {
-  if (cityInMemory !== null) return cityInMemory;
-  try { return localStorage.getItem(PRAYER_CITY_KEY) || ""; } catch { return ""; }
-}
-function subscribeCity(listener: () => void) {
-  const storage = (event: StorageEvent) => { if (event.key === PRAYER_CITY_KEY || event.key === null) { cityInMemory = null; listener(); } };
-  window.addEventListener("storage", storage);
-  window.addEventListener(PRAYER_CITY_EVENT, listener);
-  return () => { window.removeEventListener("storage", storage); window.removeEventListener(PRAYER_CITY_EVENT, listener); };
-}
-export function setPrayerCity(id: string) {
-  if (!PRAYER_CITIES.some((city) => city.id === id)) return;
-  cityInMemory = id;
-  try { localStorage.setItem(PRAYER_CITY_KEY, id); } catch { /* Stored preferences are optional. */ }
-  window.dispatchEvent(new Event(PRAYER_CITY_EVENT));
-}
-
-function useMonth(city: PrayerCity | undefined, year: number, month: number) {
+function useMonth(location: PrayerLocation | undefined, year: number, month: number) {
   return useQuery({
-    queryKey: ["prayer-calendar", city?.id, year, month],
-    enabled: !!city,
+    queryKey: ["prayer-calendar-gps", location ? prayerLocationKey(location) : "", year, month],
+    enabled: !!location,
     staleTime: 24 * 60 * 60 * 1000,
-    initialData: () => city ? readPrayerCalendar(city, year, month) : undefined,
+    initialData: () => location ? readPrayerCalendar(location, year, month) : undefined,
     queryFn: async ({ signal }) => {
-      if (!city) throw new Error("اختر مدينتك أولاً");
+      if (!location) throw new Error("حدد موقعك أولاً");
       const controller = new AbortController();
       const abort = () => controller.abort();
+      if (signal.aborted) abort();
       signal.addEventListener("abort", abort, { once: true });
       const timeout = setTimeout(abort, 15000);
       try {
-        const response = await fetch(prayerCalendarUrl(city, year, month), { signal: controller.signal });
+        const response = await fetch(prayerCalendarUrl(location, year, month), { signal: controller.signal });
         if (!response.ok) throw new Error("تعذر تحميل المواقيت");
-        const calendar = normalizePrayerCalendar(await response.json(), city, year, month);
-        try { localStorage.setItem(prayerCacheKey(city.id, year, month), JSON.stringify(calendar)); } catch { /* Keep the verified in-memory result. */ }
+        const calendar = normalizePrayerCalendar(await response.json(), location, year, month);
+        try { localStorage.setItem(prayerCacheKey(location, year, month), JSON.stringify(calendar)); } catch { /* Keep the verified in-memory result. */ }
         return calendar;
       } finally { clearTimeout(timeout); signal.removeEventListener("abort", abort); }
     },
@@ -44,8 +28,8 @@ function useMonth(city: PrayerCity | undefined, year: number, month: number) {
 }
 
 export function usePrayerTimes() {
-  const id = useSyncExternalStore(subscribeCity, readCityId, () => "");
-  const city = PRAYER_CITIES.find((item) => item.id === id);
+  const gps = usePrayerLocation();
+  const location = gps.location;
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const update = () => setNow(new Date());
@@ -54,11 +38,18 @@ export function usePrayerTimes() {
     document.addEventListener("visibilitychange", update);
     return () => { clearInterval(timer); window.removeEventListener("focus", update); document.removeEventListener("visibilitychange", update); };
   }, []);
-  const today = saudiDateParts(now);
-  const tomorrow = saudiDateParts(new Date(now.getTime() + 24 * 60 * 60 * 1000));
-  const current = useMonth(city, today.year, today.month);
-  const following = useMonth(tomorrow.month !== today.month ? city : undefined, tomorrow.year, tomorrow.month);
+  // Once verified, the location's timezone takes priority over device settings.
+  const timeZone = location?.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const today = prayerDateParts(now, timeZone);
+  const tomorrow = nextPrayerDate(today.date);
+  const current = useMonth(location, today.year, today.month);
+  const following = useMonth(tomorrow.month !== today.month ? location : undefined, tomorrow.year, tomorrow.month);
+  const verifiedZone = current.data?.timeZone;
+  const locationKey = location ? prayerLocationKey(location) : "";
+  useEffect(() => { if (verifiedZone) gps.setTimeZone(locationKey, verifiedZone); }, [locationKey, verifiedZone]);
   const days = [...(current.data?.days || []), ...(following.data?.days || [])];
-  const prayer = nextPrayer(days, now);
-  return { city, now, date: today.date, today: days.find((day) => day.date === today.date), prayer, countdown: prayer ? prayerCountdown(prayer.at, now) : "", loading: !!city && (current.isPending || (tomorrow.month !== today.month && following.isPending)), error: current.error || following.error, refreshing: current.isFetching || (tomorrow.month !== today.month && following.isFetching), refresh: () => { void current.refetch(); if (tomorrow.month !== today.month) void following.refetch(); } };
+  const prayer = location ? nextPrayer(days, now) : null;
+  const locating = gps.status === "locating";
+  const currentLocation = gps.status === "ready" && !!location && now.getTime() - location.obtainedAt < 30 * 60000;
+  return { location, locationLabel: currentLocation ? "موقعك الحالي" : "آخر موقع محدد", locating, locationError: gps.error, locate: gps.locate, timeZone: verifiedZone || timeZone, now, date: today.date, today: location ? days.find(day => day.date === today.date) : undefined, prayer, countdown: prayer ? prayerCountdown(prayer.at, now) : "", loading: !!location && (current.isPending || (tomorrow.month !== today.month && following.isPending)), error: current.error || following.error, refreshing: current.isFetching || (tomorrow.month !== today.month && following.isFetching), refresh: () => { if (!location) return; void current.refetch(); if (tomorrow.month !== today.month) void following.refetch(); } };
 }
