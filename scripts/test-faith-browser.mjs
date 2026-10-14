@@ -28,17 +28,25 @@ import {PrayerMushafShortcuts} from './src/components/dashboard/prayer-mushaf-sh
 import {HeritagePortal3D} from './src/components/dashboard/heritage-portal-3d';
 const NativeDate=Date, fixed=NativeDate.parse('2026-10-13T21:00:00+03:00');
 window.Date=class extends NativeDate {constructor(...args){super(...(args.length?args:[fixed]))}static now(){return fixed}};
+window.geoPermission='prompt';window.geoError=0;window.geoCalls=0;window.geoOptions=[];window.nativeGeo=false;window.nativeFine=true;window.nativePermissionCalls=0;
+window.mockPosition={latitude:27.010432,longitude:49.660212,accuracy:25};
+window.deliverPosition=(success,error,options)=>{window.geoCalls++;window.geoOptions.push(options);setTimeout(()=>window.geoError?error({code:window.geoError}):success({coords:window.mockPosition,timestamp:Date.now()}),8)};
+Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition:(success,error,options)=>window.deliverPosition(success,error,options)}});
+Object.defineProperty(navigator,'permissions',{configurable:true,value:{query:async()=>({state:window.geoPermission})}});
 const originalFetch=window.fetch.bind(window);window.prayerRequests=[];
 window.fetch=async (input, options)=>{const url=String(input);if(!url.startsWith('https://api.aladhan.com/'))return originalFetch(input,options);
-window.prayerRequests.push(url);const parts=new URL(url).pathname.split('/');const year=Number(parts.at(-2)),month=Number(parts.at(-1));
+window.prayerRequests.push(url);const u=new URL(url),parts=u.pathname.split('/');const year=Number(parts.at(-2)),month=Number(parts.at(-1));const latitude=Number(u.searchParams.get('latitude')),longitude=Number(u.searchParams.get('longitude'));
 return new Response(JSON.stringify({code:200,data:Array.from({length:new NativeDate(NativeDate.UTC(year,month,0)).getUTCDate()},(_,i)=>{
-const date=year+'-'+String(month).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');return{date:{gregorian:{date:String(i+1).padStart(2,'0')+'-'+String(month).padStart(2,'0')+'-'+year}},meta:{method:{id:4},timezone:'Asia/Riyadh'},timings:Object.fromEntries([['Fajr','05:00'],['Dhuhr','12:00'],['Asr','15:15'],['Maghrib','18:00'],['Isha','19:30']].map(([k,t])=>[k,date+'T'+t+':00+03:00']))}})}),{headers:{'Content-Type':'application/json'}})};
+const date=year+'-'+String(month).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');return{date:{gregorian:{date:String(i+1).padStart(2,'0')+'-'+String(month).padStart(2,'0')+'-'+year}},meta:{latitude,longitude,method:{id:4},timezone:'Asia/Riyadh'},timings:Object.fromEntries([['Fajr',latitude<26?'05:04':'05:00'],['Dhuhr','12:00'],['Asr','15:15'],['Maghrib','18:00'],['Isha','19:30']].map(([k,t])=>[k,date+'T'+t+':00+03:00']))}})}),{headers:{'Content-Type':'application/json'}})};
 function Fixture(){const [view,setView]=useState(new URLSearchParams(location.search).get('view')==='prayer'?'prayer':'mushaf');
 if(location.pathname==='/home')return <main className="app-shell-main"><div className="app-shell-content"><div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-spiritual dashboard-faith-strip"><div className="dashboard-faith-label">نفحات إيمانية</div></section><section className="dashboard-hero dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout"><HeritagePortal3D greeting="مساء الخير" name="حساب المراجعة فقط" message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className="dashboard-portal-model"/></div></div></section></div></div></main>;
 return <main style={{padding:16}}><FaithCenter view={view} onViewChange={setView}/></main>}
 createRoot(document.getElementById('app')).render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><Fixture/></QueryClientProvider>);window.fixtureReady=true;`;
 
 await build({ stdin: { contents: entry, resolveDir: process.cwd(), sourcefile: "faith-qa.tsx", loader: "tsx" }, bundle: true, format: "iife", platform: "browser", outdir: output, entryNames: "fixture", assetNames: "[name]-[hash]", publicPath: "/__qa/", loader: { ".webp": "file", ".png": "file" }, tsconfig: "tsconfig.json", plugins: [{ name: "isolated-family-profile", setup(builder) {
+  builder.onResolve({filter:/^@capacitor\/core$/},()=>({path:'native-core',namespace:'qa-native'}));
+  builder.onResolve({filter:/^@capacitor\/geolocation$/},()=>({path:'native-geolocation',namespace:'qa-native'}));
+  builder.onLoad({filter:/.*/,namespace:'qa-native'},({path})=>({contents:path==='native-core'?`export const Capacitor={isNativePlatform:()=>window.nativeGeo};`:`export const Geolocation={checkPermissions:async()=>({location:window.nativeFine?window.geoPermission:'denied',coarseLocation:window.geoPermission}),requestPermissions:async()=>{window.nativePermissionCalls++;window.geoPermission=window.geoError===1?'denied':'granted';return{location:window.nativeFine?window.geoPermission:'denied',coarseLocation:window.geoPermission}},getCurrentPosition:options=>new Promise((resolve,reject)=>window.deliverPosition(resolve,reject,options))};`,loader:'js'}));
   builder.onResolve({ filter: /^@\/hooks\/use-dashboard-data$/ }, () => ({ path: "profile", namespace: "qa" }));
   builder.onResolve({ filter: /^@tanstack\/react-router$/ }, () => ({ path: "router", namespace: "qa" }));
   builder.onLoad({ filter: /.*/, namespace: "qa" }, ({ path }) => path === "profile" ? { contents: `export const useProfile=()=>({data:{id:'qa-member'}});`, loader: "js" } : { contents: `import React from 'react';export function Link({to,search,children,...props}){return <a {...props} href={to+(search?'?'+new URLSearchParams(search):'')}>{children}</a>}`, loader: "jsx", resolveDir: process.cwd() });
@@ -100,13 +108,45 @@ try {
     assert.ok((await evaluate("document.querySelector('.faith-resume-copy').textContent")).includes("أكمل قراءتك"));
     console.log(`PASS ${name}: index, reading, verified source URL, bookmark and responsive width`);
   }
-  await viewport(425, 900); await navigate("/faith?view=prayer");
-  await evaluate("const s=document.querySelector('.faith-city-selector select');s.value='riyadh';s.dispatchEvent(new Event('change',{bubbles:true}))");
+  for (const [name,width,height] of [["prayer-phone",425,900],["prayer-small-phone",360,800],["prayer-ipad-portrait",834,1194],["prayer-ipad-landscape",1024,768],["prayer-desktop",1440,900]]) {
+    // Exercise first-use GPS at each size; earlier screens intentionally save
+    // their calendar, and a warm cache correctly avoids another HTTP request.
+    await evaluate("Object.keys(localStorage).filter(key=>key.startsWith('alsaif:prayer-calendar:')||key==='alsaif:prayer-location:v1').forEach(key=>localStorage.removeItem(key))");
+    await viewport(width,height); await navigate("/faith?view=prayer");
+    assert.equal(await evaluate("document.querySelector('select')"),null, "No city selection remains");
+    assert.equal(await evaluate("window.geoCalls"),0, "GPS is requested after first-use action");
+    await evaluate("document.querySelector('.faith-button-gps').click()");
+    await until("document.querySelectorAll('.faith-prayer-time').length===5"); await settle();
+    assert.ok((await evaluate("document.querySelector('.faith-summary-next').textContent")).includes("الفجر"));
+    const params=await evaluate("Object.fromEntries(new URL(window.prayerRequests.at(-1)).searchParams)");
+    assert.equal(params.method,"4");assert.equal(params.latitude,"27.010");assert.equal(params.longitude,"49.660");assert.equal('city' in params,false);
+    assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth+2"),true, `${name}: GPS and times must fit`);
+    assert.ok((await evaluate("document.querySelector('.faith-location-control').textContent")).includes("موقعك الحالي"));
+    await screenshot(name);console.log(`PASS ${name}: GPS coordinates, five prayer times, next-day Fajr and responsive width`);
+  }
+  await evaluate("window.mockPosition={latitude:24.714123,longitude:46.674712,accuracy:20};document.querySelector('.faith-button-gps').click()");
+  await until("new URL(window.prayerRequests.at(-1)).searchParams.get('latitude')==='24.714' && document.querySelector('.faith-prayer-time time')?.dateTime.endsWith('T05:04:00+03:00')");
+  assert.equal(await evaluate("new URL(window.prayerRequests.at(-1)).searchParams.get('longitude')"),"46.675");
+  console.log("PASS changing GPS coordinates invalidates previous-location times");
+  await evaluate("window.geoError=3;document.querySelector('.faith-button-gps').click()");
+  await until("document.querySelector('.faith-location-message')?.textContent.includes('وقتًا طويلًا')");
+  assert.ok((await evaluate("document.querySelector('.faith-location-control').textContent")).includes("آخر موقع محدد"));
+  console.log("PASS GPS timeout clearly labels the last saved location");
+  await evaluate("window.geoError=1;document.querySelector('.faith-button-gps').click()");
+  await until("document.querySelector('.faith-location-message')?.textContent.includes('إذن الموقع') && document.querySelectorAll('.faith-prayer-time').length===0");
+  assert.equal(await evaluate("localStorage.getItem('alsaif:prayer-location:v1')"),null);
+  console.log("PASS permission denial never shows another city's times");
+
+  await navigate("/faith?view=prayer");
+  await evaluate("window.nativeGeo=true;window.nativeFine=false;document.querySelector('.faith-button-gps').click()");
   await until("document.querySelectorAll('.faith-prayer-time').length===5");
-  assert.ok((await evaluate("document.querySelector('.faith-summary-next').textContent")).includes("الفجر"));
-  assert.equal(await evaluate("new URL(window.prayerRequests.at(-1)).searchParams.get('method')"), "4");
-  await screenshot("prayer-phone");
-  console.log("PASS selected city, five verified-method times and next-day Fajr after Isha");
+  assert.equal(await evaluate("window.nativePermissionCalls"),1);
+  assert.equal(await evaluate("window.geoOptions.at(-1).enableHighAccuracy"),true);
+  await evaluate("document.querySelector('.faith-button-gps').click()"); await until("window.geoCalls===2"); await settle();
+  assert.equal(await evaluate("window.nativePermissionCalls"),1, "Native approximate permission must not request permission repeatedly");
+  await evaluate("window.geoError='OS-PLUG-GLOC-0007';document.querySelector('.faith-button-gps').click()");
+  await until("document.querySelector('.faith-location-message')?.textContent.includes('متوقفة')");
+  console.log("PASS actual native adapter: runtime permission, approximate location, refresh and disabled GPS handling");
 
   await evaluate("localStorage.removeItem('alsaif:mushaf:last-page:v1:qa-member')");
   rejectScan = true; await navigate("/faith?view=mushaf");
