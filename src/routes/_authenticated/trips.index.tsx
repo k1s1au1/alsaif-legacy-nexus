@@ -421,14 +421,18 @@ function TripCard({
 
         {/* Admin Actions */}
         {canManage && (
-          <div className="absolute top-5 left-5 flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute top-5 left-5 z-10 flex items-center gap-2 opacity-100">
             <button
+              type="button"
+              aria-label={`تعديل رحلة ${trip.title}`}
               onClick={() => onEdit(trip)}
-              className="size-10 rounded-xl bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-primary transition-all flex items-center justify-center shadow-lg border border-white/20"
+              className="size-11 rounded-xl bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-primary transition-all flex items-center justify-center shadow-lg border border-white/20"
             >
               <Pencil size={18} />
             </button>
             <button
+              type="button"
+              aria-label={`حذف رحلة ${trip.title}`}
               onClick={async () => {
                 if (!confirm(`هل تريد حذف رحلة "${trip.title}"؟`)) return;
                 const { error } = await supabase.from("trips").delete().eq("id", trip.id);
@@ -438,7 +442,7 @@ function TripCard({
                   onRefresh();
                 }
               }}
-              className="size-10 rounded-xl bg-rose-500/80 backdrop-blur-md text-white hover:bg-rose-600 transition-all flex items-center justify-center shadow-lg border border-white/20"
+              className="size-11 rounded-xl bg-rose-500/80 backdrop-blur-md text-white hover:bg-rose-600 transition-all flex items-center justify-center shadow-lg border border-white/20"
             >
               <Trash2 size={18} />
             </button>
