@@ -1,10 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
-import { useDisplayMode } from "@/hooks/use-display-mode";
-import { getDisplayScale } from "@/lib/display-preference";
 
 /** Fit chat between the existing navigation bars, including the mobile keyboard. */
 export function useChatViewport() {
-  const displayMode = useDisplayMode();
   const ref = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -17,7 +14,6 @@ export function useChatViewport() {
     let frame = 0;
 
     const measure = () => {
-      const scale = getDisplayScale();
       const rect = shell.getBoundingClientRect();
       const visibleTop = viewport?.offsetTop ?? 0;
       const visibleBottom = Math.min(
@@ -25,21 +21,21 @@ export function useChatViewport() {
         visibleTop + (viewport?.height ?? window.innerHeight),
       );
       const headerBottom = header?.getBoundingClientRect().bottom ?? rect.top;
-      let bottom = visibleBottom - 10 * scale;
+      let bottom = visibleBottom - 10;
 
       if (dock && getComputedStyle(dock).display !== "none") {
         // Use the fixed dock's layout position, independent of its entrance animation.
         const dockTop =
           window.innerHeight - parseFloat(getComputedStyle(dock).bottom || "0") - dock.offsetHeight;
         if (dockTop > visibleTop && dockTop < visibleBottom)
-          bottom = Math.min(bottom, dockTop - 10 * scale);
+          bottom = Math.min(bottom, dockTop - 10);
       }
 
       shell.style.setProperty(
         "--chat-shell-top",
-        `${(Math.max(visibleTop, headerBottom) - rect.top) / scale + 10}px`,
+        `${Math.max(visibleTop, headerBottom) - rect.top + 10}px`,
       );
-      shell.style.setProperty("--chat-shell-bottom", `${Math.max(0, rect.bottom - bottom) / scale}px`);
+      shell.style.setProperty("--chat-shell-bottom", `${Math.max(0, rect.bottom - bottom)}px`);
     };
     const schedule = () => {
       cancelAnimationFrame(frame);
@@ -65,7 +61,7 @@ export function useChatViewport() {
       shell.style.removeProperty("--chat-shell-top");
       shell.style.removeProperty("--chat-shell-bottom");
     };
-  }, [displayMode]);
+  }, []);
 
   return ref;
 }
