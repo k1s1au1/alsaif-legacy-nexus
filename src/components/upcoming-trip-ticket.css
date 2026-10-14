@@ -204,7 +204,7 @@ html[data-theme-color-mode="custom"] .ticket-surface {
 }
 .upcoming-trip-ticket__actions > .trip-ticket__delete,
 .upcoming-trip-ticket__actions > .trip-ticket__delete svg {
-  color: var(--destructive);
+  color: var(--destructive, #c62828);
 }
 .upcoming-trip-ticket__actions > button:hover {
   background: color-mix(in srgb, var(--primary) 6%, transparent);

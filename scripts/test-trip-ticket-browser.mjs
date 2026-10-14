@@ -91,6 +91,7 @@ try {
     }
     await evaluate("document.documentElement.classList.remove('dark');scrollTo(0,0)");await settle();
     assert.equal(await evaluate("Array.from(document.querySelectorAll('.upcoming-trip-ticket__actions button')).every(b=>b.getBoundingClientRect().height>=44 && getComputedStyle(b).visibility==='visible')"),true,`${name}: touch actions visible`);
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.upcoming-trip-ticket__actions .trip-ticket__delete')).color"),"rgb(198, 40, 40)",`${name}: deletion keeps its red cue`);
     await evaluate("document.querySelector('.upcoming-trip-ticket__actions button').click();document.querySelector('.upcoming-trip-ticket__actions .trip-ticket__delete').click()");
     assert.equal(await evaluate("window.edits===1 && window.deletes===1"),true,`${name}: original action callbacks work`);
     assert.equal(await evaluate("document.querySelectorAll('.upcoming-trip-ticket')[2].querySelector('.upcoming-trip-ticket__actions')"),null,`${name}: member has no management actions`);

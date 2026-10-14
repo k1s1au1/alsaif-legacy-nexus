@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { CalendarDays, Clock, MapPin } from "lucide-react";
 import { TicketSurface } from "@/components/ticket-surface";
+import { tripStatusLabel } from "@/lib/trip-status";
 
 export type UpcomingTicketTrip = {
   title: string;
@@ -74,7 +75,7 @@ export function UpcomingTripTicket({
       header={
         <div className="upcoming-trip-ticket__photo">
           {image}
-          <div className="upcoming-trip-ticket__status">{statusControl || <span>قادمة</span>}</div>
+          <div className="upcoming-trip-ticket__status">{statusControl || <span>{tripStatusLabel(trip.status || "upcoming")}</span>}</div>
         </div>
       }
     >
