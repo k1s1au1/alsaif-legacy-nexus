@@ -214,17 +214,38 @@ html[data-theme-color-mode="custom"] .ticket-surface {
   outline-offset: 3px;
 }
 .upcoming-trip-ticket--compact .upcoming-trip-ticket__photo {
-  height: 180px;
+  height: 120px;
 }
 .upcoming-trip-ticket--compact .upcoming-trip-ticket__content {
-  gap: 14px;
-  padding: 20px 24px;
+  gap: 10px;
+  padding: 14px 18px;
+}
+.upcoming-trip-ticket--compact .upcoming-trip-ticket__copy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.upcoming-trip-ticket--compact h3 {
+  order: -1;
+  flex: 1;
+  min-width: 0;
+  font-size: 22px;
+}
+.upcoming-trip-ticket--compact .upcoming-trip-ticket__location {
+  align-items: flex-start;
+  max-width: 45%;
+  margin: 0;
+  font-size: 12px;
+}
+.upcoming-trip-ticket--compact .upcoming-trip-ticket__links {
+  gap: 8px;
 }
 .upcoming-trip-ticket--compact .upcoming-trip-ticket__meta {
+  gap: 6px 10px;
   font-size: 13px;
 }
 .upcoming-trip-ticket--compact .upcoming-trip-ticket__meta > span + span {
-  padding-inline-start: 14px;
+  padding-inline-start: 8px;
   border-inline-start: 1px solid var(--border);
 }
 .desktop-follow-cards > .upcoming-trip-ticket {
@@ -240,20 +261,16 @@ html[data-theme-color-mode="custom"] .ticket-surface {
     justify-content: flex-end;
   }
 }
-@media (min-width: 970px) and (max-width: 1199px) {
+@media (min-width: 600px) and (max-width: 969px) {
   .upcoming-trip-ticket--compact .upcoming-trip-ticket__photo {
-    height: 200px;
+    height: 160px;
   }
 }
 @media (max-width: 599px) {
   .upcoming-trip-ticket__photo {
     height: 220px;
   }
-  .upcoming-trip-ticket--compact .upcoming-trip-ticket__photo {
-    height: 190px;
-  }
-  .upcoming-trip-ticket__content,
-  .upcoming-trip-ticket--compact .upcoming-trip-ticket__content {
+  .upcoming-trip-ticket__content {
     padding: 20px;
   }
   .upcoming-trip-ticket__links {
