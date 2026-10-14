@@ -38,6 +38,8 @@ import { SpiritualQuotesWidget } from "@/components/dashboard/spiritual-quotes-w
 import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 import { FamilyAgenda } from "@/components/dashboard/family-agenda";
 import { PrayerMushafShortcuts } from "@/components/dashboard/prayer-mushaf-shortcuts";
+import { TripImage } from "@/components/trip-image";
+import { UpcomingTripTicket } from "@/components/upcoming-trip-ticket";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -341,6 +343,7 @@ export function DesktopDashboardExtras({
         location: item.status === "planning" ? "الوجهة والموعد قيد الاختيار" : item.location,
         icon: Plane,
         cardType: "trip",
+        trip: item,
         to: "/trips",
         actionLabel: "فتح الرحلة",
       }),
@@ -589,6 +592,17 @@ export function DesktopDashboardExtras({
               <div className="desktop-follow-cards">
                 {featuredUpcoming.map((item, index) => {
                   const Icon = item.icon;
+                  if (item.cardType === "trip" && item.trip.status !== "planning") {
+                    return (
+                      <UpcomingTripTicket
+                        key={`trip-${item.trip.id}`}
+                        trip={item.trip}
+                        image={<TripImage path={item.trip.image_url} alt={item.trip.title} />}
+                        compact
+                        details={<Link to="/trips/$tripId" params={{ tripId: item.trip.id }}>التفاصيل <ChevronLeft size={16} /></Link>}
+                      />
+                    );
+                  }
                   return (
                     <article
                       key={`${item.kind}-${item.title}-${index}`}

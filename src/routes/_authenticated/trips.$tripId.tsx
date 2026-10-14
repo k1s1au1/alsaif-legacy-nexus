@@ -7,28 +7,19 @@ import {
   Calendar,
   MapPin,
   Users,
-  CheckCircle2,
   Tent,
-  Compass,
-  Clock,
   Info,
   Share2,
-  Shield,
-  ChevronLeft,
   Loader2,
-  X,
-  ListChecks,
   Plus,
-  Trash2,
+  Minus,
+  ExternalLink,
   UserCheck,
   UserX,
-  Navigation,
 } from "lucide-react";
 import { TripImage } from "@/components/trip-image";
 import { UserAvatar } from "@/components/user-avatar";
 import { QuickActionsBanner } from "@/components/quick-actions-banner";
-import { cn } from "@/lib/utils";
-import { useSiteLogo } from "@/hooks/use-site-logo";
 import { toast } from "sonner";
 import { useUserRole, roleLabel } from "@/hooks/use-user-role";
 import { addToCalendar } from "@/lib/calendar";
@@ -39,6 +30,7 @@ import { TripPreparations } from "@/components/trip-preparations";
 import { confirmedAttendees, tripPhase, type PlannedTrip } from "@/lib/trip-planning";
 import { saveTripAttendance } from "@/lib/api/trip-planning";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
+import "@/components/trip-detail.css";
 
 export const Route = createFileRoute("/_authenticated/trips/$tripId")({
   ssr: false,
@@ -65,7 +57,11 @@ type Trip = PlannedTrip & {
 function formatRange(start: string | null, end: string | null) {
   if (!start) return "—";
   const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" });
+    new Date(iso).toLocaleDateString("ar-SA-u-ca-gregory", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   if (!end || end === start) return fmt(start);
   return `${fmt(start)} - ${fmt(end)}`;
 }
@@ -73,7 +69,6 @@ function formatRange(start: string | null, end: string | null) {
 function TripDetail() {
   const { tripId } = useParams({ from: "/_authenticated/trips/$tripId" });
   const { userId, isLoading: rolesLoading, canManage, primaryRole } = useUserRole();
-  const dynamicLogo = useSiteLogo();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [attendanceLoaded, setAttendanceLoaded] = useState(false);
@@ -292,29 +287,45 @@ function TripDetail() {
       </AppShell>
     );
 
+  const attendanceDisabled =
+    saving || !userId || !attendanceLoaded || tripPhase(trip) === "past" || primaryRole === "guest";
+  const othersCount = attendees
+    .filter((a) => a.user_id !== userId)
+    .reduce((total, a) => total + 1 + (a.companions_count || 0), 0);
+  const myAttendance = attendees.find((a) => a.user_id === userId);
+  const participantCount =
+    othersCount +
+    (attendanceStatus === "going"
+      ? 1 + companionsCount
+      : myAttendance
+        ? 1 + (myAttendance.companions_count || 0)
+        : 0);
+
+  function changeCompanions(amount: number) {
+    if (attendanceDisabled) return;
+    const next = Math.max(0, Math.min(50, companionsCount + amount));
+    setCompanionsCount(next);
+    void updateAttendance("going", next);
+  }
+
   return (
     <AppShell title={trip.title} user={profile}>
-      <div className="max-w-6xl mx-auto space-y-8 pb-32 px-4 md:px-0" dir="rtl">
+      <div className="trip-detail" dir="rtl">
         <QuickActionsBanner />
-
-        <div className="flex items-center justify-between px-2">
-          <Link
-            to="/trips"
-            className="group flex items-center gap-3 text-muted-foreground hover:text-gold-primary transition-all font-black text-xs uppercase tracking-widest"
-          >
-            <div className="size-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-gold-primary group-hover:text-black transition-all">
-              <ArrowRight className="size-4" />
-            </div>
-            العودة للترفيه
+        <div className="trip-detail__toolbar">
+          <Link to="/trips" className="trip-detail__tool">
+            <ArrowRight size={18} /> العودة للرحلات
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="trip-detail__tools">
             <button
+              type="button"
+              className="trip-detail__tool"
               disabled={trip.status === "planning" || !trip.start_date}
+              aria-label="إضافة الرحلة إلى تقويم جهازك"
               title={
                 trip.status === "planning" ? "يتاح بعد اعتماد الرحلة" : "إضافة إلى تقويم جهازك"
               }
               onClick={() =>
-                trip &&
                 addToCalendar({
                   title: trip.title,
                   description: trip.description || "",
@@ -322,44 +333,36 @@ function TripDetail() {
                   startTime: trip.start_date || new Date().toISOString(),
                 })
               }
-              className="px-4 py-2 rounded-full bg-gold-primary/10 hover:bg-gold-primary/20 text-gold-primary border border-gold-primary/20 transition-all font-black text-[10px] flex items-center gap-2"
             >
-              <Calendar size={14} /> إضافة للتقويم
+              <Calendar size={18} />
+              <span>إضافة للتقويم</span>
             </button>
             <button
+              type="button"
+              className="trip-detail__tool"
+              aria-label="مشاركة الرحلة"
               onClick={() =>
-                trip &&
                 FamilySharing.shareInvitation({
                   title: trip.title,
                   date: formatRange(trip.start_date, trip.end_date),
                   location: trip.location || "وجهة عائلية",
                 })
               }
-              className="size-10 rounded-full bg-muted/50 flex items-center justify-center hover:bg-gold-primary/20 transition-all text-gold-primary"
             >
               <Share2 size={18} />
+              <span>مشاركة</span>
             </button>
           </div>
         </div>
 
-        <article className="space-y-8">
-          {/* Hero Header - Square on Mobile */}
-          <div className="relative aspect-square md:aspect-auto md:h-[500px] w-full overflow-hidden rounded-[32px] md:rounded-[48px] shadow-2xl border-4 border-white/5 group">
-            <TripImage
-              path={trip.image_url}
-              alt={trip.title}
-              className="absolute inset-0 size-full object-cover transition-transform duration-1000 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10" />
-            <div className="absolute bottom-0 right-0 left-0 p-8 md:p-16 z-20 space-y-6">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="h-1 w-12 bg-gold-primary rounded-full" />
-                {trip.badge && (
-                  <span className="px-4 py-1.5 bg-gold-primary text-black text-[10px] font-black rounded-full uppercase tracking-[0.2em] shadow-xl">
-                    {trip.badge}
-                  </span>
-                )}
+        <section className="trip-detail__cover" aria-labelledby="trip-detail-title">
+          <div className="trip-detail__photo">
+            <TripImage path={trip.image_url} alt={trip.title} />
+          </div>
+          <div className="trip-detail__caption">
+            <div className="trip-detail__title-row">
+              <h1 id="trip-detail-title">{trip.title}</h1>
+              <div className="trip-detail__badges">
                 <TripStatusControl
                   trip={trip}
                   canManage={isPrivileged}
@@ -368,358 +371,208 @@ function TripDetail() {
                   }
                   onRecordSaved={() => void reloadTrip()}
                 />
-              </div>
-              <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter drop-shadow-2xl">
-                {trip.title}
-              </h2>
-              <div className="flex flex-wrap items-center gap-6 text-white/80 font-bold">
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                  <MapPin className="size-5 text-gold-primary" />
-                  <span>{trip.location || "وجهة عائلية"}</span>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                  <Calendar className="size-5 text-gold-primary" />
-                  <span>
-                    {trip.status === "planning" && "موعد أولي: "}
-                    {formatRange(trip.start_date, trip.end_date)}
-                  </span>
-                </div>
+                {trip.badge && <span className="trip-detail__badge">{trip.badge}</span>}
               </div>
             </div>
-          </div>
-
-          {trip.status === "planning" && (
-            <TripPlanningPanel
-              trip={trip}
-              userId={rolesLoading || primaryRole === "guest" ? null : userId}
-              canManage={isPrivileged}
-              onSaved={() => void reloadTrip()}
-            />
-          )}
-          {needsReconfirmation && trip.status !== "planning" && (
-            <p className="trip-system trip-system__notice" role="status">
-              تغيّرت خطة الرحلة بعد تسجيلك السابق. راجع الوجهة والموعد وأكد حضورك من جديد.
-            </p>
-          )}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-3 space-y-6 md:space-y-8">
-              {/* MERGED PREMIUM TRIP HUB BANNER - Separated on Mobile */}
-              <div
-                className={cn(
-                  "relative overflow-hidden rounded-[32px] md:rounded-[48px] shadow-2xl border border-white/10 group md:min-h-[500px] flex flex-col-reverse md:flex-row transition-all duration-700",
-                  attendanceStatus === "going"
-                    ? "bg-emerald-950"
-                    : attendanceStatus === "not_going"
-                      ? "bg-rose-950"
-                      : "bg-[#0a1a16]",
-                )}
-              >
-                {/* Journey identity layer: trip image, family mark, and a quiet route motif */}
-                <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/35 pointer-events-none" />
-                {dynamicLogo && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none">
-                    <img
-                      src={dynamicLogo}
-                      alt=""
-                      className="size-[18rem] md:size-[28rem] object-contain grayscale mix-blend-screen rotate-[-8deg]"
-                    />
-                  </div>
-                )}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 text-gold-primary/40 pointer-events-none">
-                  <div className="w-16 md:w-24 border-t border-dashed border-gold-primary/30" />
-                  <Navigation className="size-4 md:size-5" />
-                  <span className="text-[11px] md:text-[10px] font-black tracking-[0.3em] whitespace-nowrap">
-                    رحلة تجمعنا
-                  </span>
-                  <div className="w-16 md:w-24 border-t border-dashed border-gold-primary/30" />
-                </div>
-
-                {/* Background Decoration - Desktop Only */}
-                <div className="absolute top-0 right-0 p-12 opacity-[0.08] pointer-events-none hidden md:block">
-                  <Tent size={240} className="text-white" />
-                </div>
-                <div className="absolute bottom-0 left-0 p-12 opacity-[0.08] pointer-events-none -rotate-12 hidden md:block">
-                  <Compass size={180} className="text-white" />
-                </div>
-
-                {/* Left Side (or Top on Mobile): Attendance & Participants */}
-                {trip.status !== "planning" && (
-                  <div
-                    className={cn(
-                      "md:w-1/3 p-6 md:p-12 flex flex-col justify-between space-y-6 md:space-y-10 relative z-10",
-                      "bg-white/5 backdrop-blur-sm md:border-l border-white/10 rounded-[28px] md:rounded-none m-2 md:m-0 shadow-xl md:shadow-none",
-                    )}
-                  >
-                    <div className="space-y-4 md:space-y-6">
-                      <div className="space-y-2 md:space-y-3">
-                        <h3 className="text-2xl md:text-4xl font-black text-white leading-tight tracking-tight">
-                          هل ستنضم إلينا؟
-                        </h3>
-                        <p className="text-xs md:text-sm font-bold leading-relaxed text-emerald-100/60">
-                          أكد حضورك الآن لتساعدنا في تنظيم الرحلة بشكل أفضل.
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col gap-3 md:gap-4">
-                        {attendanceStatus === "going" && (
-                          <div className="flex flex-col gap-2 md:gap-3 animate-fade-up bg-white/10 p-4 md:p-5 rounded-[24px] md:rounded-[32px] border border-white/10 shadow-inner">
-                            <div className="flex items-center justify-between px-1">
-                              <p className="text-[11px] md:text-[10px] font-black text-gold-primary uppercase tracking-widest">
-                                عدد المرافقين معك؟
-                              </p>
-                              <div className="text-center bg-gold-primary/20 px-2 py-0.5 md:px-3 md:py-1 rounded-lg border border-gold-primary/20">
-                                <span className="text-[12px] md:text-[14px] font-black leading-none text-gold-primary">
-                                  {1 + companionsCount} حاضرين
-                                </span>
-                              </div>
-                            </div>
-                            <input
-                              type="tel"
-                              aria-label="عدد المرافقين"
-                              disabled={saving || tripPhase(trip) === "past"}
-                              value={companionsCount === 0 ? "" : companionsCount}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9]/g, "");
-                                setCompanionsCount(val === "" ? 0 : Math.min(50, parseInt(val)));
-                              }}
-                              onBlur={() => updateAttendance("going", companionsCount)}
-                              className="w-full h-12 md:h-16 bg-black/20 border-2 border-white/10 rounded-[18px] md:rounded-[24px] px-6 font-black text-center text-2xl md:text-3xl focus:outline-none focus:border-gold-primary transition-all text-white shadow-inner"
-                              placeholder="٠"
-                            />
-                          </div>
-                        )}
-
-                        <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 p-1 rounded-[22px] md:rounded-[28px] grid grid-cols-2 gap-1 shadow-2xl overflow-hidden h-[60px] md:h-[70px]">
-                          <div
-                            className={cn(
-                              "absolute inset-y-1 w-[calc(50%-4px)] rounded-[18px] md:rounded-[22px] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-lg",
-                              attendanceStatus === "going"
-                                ? "right-1 bg-emerald-500 shadow-emerald-500/40"
-                                : attendanceStatus === "not_going"
-                                  ? "right-[calc(50%+1px)] bg-rose-500 shadow-rose-500/40"
-                                  : "opacity-0",
-                            )}
-                          />
-                          <button
-                            aria-pressed={attendanceStatus === "going"}
-                            onClick={() => updateAttendance("going", companionsCount, true)}
-                            disabled={
-                              saving ||
-                              !userId ||
-                              !attendanceLoaded ||
-                              tripPhase(trip) === "past" ||
-                              primaryRole === "guest"
-                            }
-                            className={cn(
-                              "relative z-10 flex items-center justify-center gap-2 md:gap-3 font-black text-xs md:text-sm transition-colors duration-500",
-                              attendanceStatus === "going"
-                                ? "text-white"
-                                : "text-white/40 hover:text-white/60",
-                            )}
-                          >
-                            {saving && attendanceStatus === "going" ? (
-                              <Loader2 className="size-4 md:size-[18px] animate-spin" />
-                            ) : (
-                              <UserCheck className="size-[18px] md:size-5" />
-                            )}
-                            <span>سأحضر</span>
-                          </button>
-                          <button
-                            aria-pressed={attendanceStatus === "not_going"}
-                            onClick={() => updateAttendance("not_going", 0, true)}
-                            disabled={
-                              saving ||
-                              !userId ||
-                              !attendanceLoaded ||
-                              tripPhase(trip) === "past" ||
-                              primaryRole === "guest"
-                            }
-                            className={cn(
-                              "relative z-10 flex items-center justify-center gap-2 md:gap-3 font-black text-xs md:text-sm transition-colors duration-500",
-                              attendanceStatus === "not_going"
-                                ? "text-white"
-                                : "text-white/40 hover:text-white/60",
-                            )}
-                          >
-                            {saving && attendanceStatus === "not_going" ? (
-                              <Loader2 className="size-4 md:size-[18px] animate-spin" />
-                            ) : (
-                              <UserX className="size-[18px] md:size-5" />
-                            )}
-                            <span>أعتذر</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 md:space-y-4 pt-4 md:pt-0">
-                      <div className="flex items-center justify-between border-t border-white/10 pt-4 md:pt-6">
-                        <div className="flex items-center gap-2 text-gold-primary font-black uppercase tracking-[0.2em] text-[11px] md:text-[10px]">
-                          <Users className="size-3.5 md:size-4" /> المشاركون
-                        </div>
-                        <span className="text-[11px] md:text-[10px] font-black bg-white/10 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full">
-                          {(() => {
-                            const meInList = attendees.some((a) => a.user_id === userId);
-                            const othersSum = attendees
-                              .filter((a) => a.user_id !== userId)
-                              .reduce((acc, curr) => acc + 1 + (curr.companions_count || 0), 0);
-
-                            if (attendanceStatus === "going") {
-                              return othersSum + 1 + companionsCount;
-                            }
-
-                            // If not going but was in list (unlikely with delete logic but safe)
-                            return (
-                              othersSum +
-                              (meInList
-                                ? 1 +
-                                  (attendees.find((a) => a.user_id === userId)?.companions_count ||
-                                    0)
-                                : 0)
-                            );
-                          })()}{" "}
-                          حاضرين
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 md:gap-2">
-                        {attendees.slice(0, 5).map((a) => (
-                          <div key={a.user_id} className="relative group/avatar">
-                            <div className="size-8 md:size-10 rounded-lg md:rounded-xl overflow-hidden ring-2 ring-white/10 shadow-lg transition-transform hover:scale-110">
-                              <UserAvatar
-                                path={a.avatarPath}
-                                name={a.name}
-                                initial={a.initial}
-                                className="size-full"
-                                userId={a.user_id}
-                              />
-                            </div>
-                            {(a.user_id === userId ? companionsCount : a.companions_count) > 0 && (
-                              <div className="absolute -top-1 -right-1 size-4 md:size-5 bg-gold-primary text-black text-[7px] md:text-[11px] font-black rounded-full flex items-center justify-center border border-emerald-950 z-10 shadow-lg">
-                                +{a.user_id === userId ? companionsCount : a.companions_count}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {attendees.length > 5 && (
-                          <div className="size-8 md:size-10 rounded-lg md:rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[11px] md:text-[10px] font-black text-white">
-                            +{attendees.length - 5}
-                          </div>
-                        )}
-                        {attendees.length === 0 && (
-                          <p className="text-[11px] md:text-[10px] font-bold text-white/30 italic">
-                            لا يوجد حضور مؤكد بعد
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {/* Right Side (or Bottom on Mobile): Info & Description */}
-                <div
-                  className={cn(
-                    "flex-1 p-6 md:p-14 space-y-8 md:space-y-12 relative z-10",
-                    "rounded-[28px] md:rounded-none m-2 md:m-0 bg-white/[0.02] md:bg-transparent border border-white/5 md:border-none shadow-xl md:shadow-none",
-                  )}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
-                    <div className="space-y-4 md:space-y-6">
-                      <div className="flex items-center gap-3 text-gold-primary font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">
-                        <Compass className="size-4 md:size-[18px]" /> وصف الرحلة
-                      </div>
-                      <p className="text-sm md:text-xl font-medium text-emerald-50/90 leading-relaxed whitespace-pre-line drop-shadow-sm">
-                        {trip.description?.trim() || "لا يوجد وصف لهذه الرحلة."}
-                      </p>
-                    </div>
-
-                    <div className="space-y-6 md:space-y-8">
-                      <div className="flex items-center gap-3 text-gold-primary font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">
-                        <Info className="size-4 md:size-[18px]" /> تفاصيل إضافية
-                      </div>
-                      <div className="grid grid-cols-1 gap-3 md:gap-6">
-                        <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10">
-                          <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary shadow-xl shrink-0">
-                            <Tent className="size-[18px] md:size-[22px]" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">
-                              نوع الإقامة
-                            </p>
-                            <p className="text-xs md:text-sm font-black text-white">
-                              {trip.accommodation_type || "غير محدد"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10">
-                          <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-gold-primary/10 flex items-center justify-center text-gold-primary shadow-xl shrink-0">
-                            <Clock className="size-[18px] md:size-[22px]" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">
-                              آخر موعد للتسجيل
-                            </p>
-                            <p className="text-xs md:text-sm font-black text-white">
-                              {formatDate(trip.start_date)}
-                            </p>
-                          </div>
-                        </div>
-                        {trip.location_url && (
-                          <a
-                            href={trip.location_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-between p-3.5 md:p-5 rounded-2xl md:rounded-[28px] bg-gold-primary text-emerald-950 font-black shadow-xl hover:scale-[1.02] transition-all"
-                          >
-                            <div className="flex items-center gap-3">
-                              <MapPin className="size-[18px] md:size-[22px]" strokeWidth={2.5} />
-                              <span className="text-xs md:text-base">موقع الوجهة على الخريطة</span>
-                            </div>
-                            <ChevronLeft className="size-4 md:size-5" strokeWidth={3} />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {trip.status !== "planning" && (
-                <TripPreparations
-                  tripId={tripId}
-                  userId={rolesLoading || primaryRole === "guest" ? null : userId}
-                  canManage={isPrivileged}
-                  readOnly={tripPhase(trip) === "past"}
-                />
+            <div className="trip-detail__cover-meta">
+              <span>
+                <MapPin size={19} />
+                {trip.location || "وجهة عائلية"}
+              </span>
+              <span>
+                <Calendar size={19} />
+                {trip.status === "planning" && "موعد أولي: "}
+                {formatRange(trip.start_date, trip.end_date)}
+              </span>
+              {trip.accommodation_type && (
+                <span>
+                  <Tent size={19} />
+                  {trip.accommodation_type}
+                </span>
               )}
             </div>
           </div>
-        </article>
+        </section>
+
+        {trip.status === "planning" && (
+          <TripPlanningPanel
+            trip={trip}
+            userId={rolesLoading || primaryRole === "guest" ? null : userId}
+            canManage={isPrivileged}
+            onSaved={() => void reloadTrip()}
+          />
+        )}
+        {needsReconfirmation && trip.status !== "planning" && (
+          <p className="trip-system trip-system__notice" role="status">
+            تغيّرت خطة الرحلة بعد تسجيلك السابق. راجع الوجهة والموعد وأكد حضورك من جديد.
+          </p>
+        )}
+
+        <div
+          className={`trip-detail__grid${trip.status === "planning" ? " trip-detail__grid--planning" : ""}`}
+        >
+          {trip.status !== "planning" && (
+            <section className="trip-detail__attendance" aria-labelledby="trip-attendance-title">
+              <div className="trip-detail__section-heading">
+                <h2 id="trip-attendance-title">
+                  <Users size={23} />
+                  هل ستنضم إلينا؟
+                </h2>
+                <p>أخبرنا عن مشاركتك في هذه الرحلة العائلية.</p>
+              </div>
+              <div className="trip-detail__attendance-choices">
+                <button
+                  type="button"
+                  aria-pressed={attendanceStatus === "going"}
+                  onClick={() => void updateAttendance("going", companionsCount, true)}
+                  disabled={attendanceDisabled}
+                >
+                  {saving && attendanceStatus === "going" ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <UserCheck size={20} />
+                  )}
+                  سأحضر
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={attendanceStatus === "not_going"}
+                  onClick={() => void updateAttendance("not_going", 0, true)}
+                  disabled={attendanceDisabled}
+                >
+                  {saving && attendanceStatus === "not_going" ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <UserX size={20} />
+                  )}
+                  أعتذر
+                </button>
+              </div>
+              {attendanceStatus === "going" && (
+                <div className="trip-detail__companions">
+                  <label htmlFor="trip-companions">
+                    <Users size={18} />
+                    عدد المرافقين
+                  </label>
+                  <div className="trip-detail__counter" dir="ltr">
+                    <button
+                      type="button"
+                      aria-label="تقليل عدد المرافقين"
+                      disabled={attendanceDisabled || companionsCount === 0}
+                      onPointerDown={(event) => event.preventDefault()}
+                      onClick={() => changeCompanions(-1)}
+                    >
+                      <Minus size={17} />
+                    </button>
+                    <input
+                      id="trip-companions"
+                      type="tel"
+                      inputMode="numeric"
+                      disabled={attendanceDisabled}
+                      value={companionsCount}
+                      onFocus={(event) => event.target.select()}
+                      onChange={(event) => {
+                        const value = event.target.value.replace(/[^0-9]/g, "");
+                        setCompanionsCount(value === "" ? 0 : Math.min(50, parseInt(value)));
+                      }}
+                      onBlur={() => {
+                        if (companionsCount !== (myAttendance?.companions_count || 0))
+                          void updateAttendance("going", companionsCount);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      aria-label="زيادة عدد المرافقين"
+                      disabled={attendanceDisabled || companionsCount === 50}
+                      onPointerDown={(event) => event.preventDefault()}
+                      onClick={() => changeCompanions(1)}
+                    >
+                      <Plus size={17} />
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="trip-detail__participants">
+                <div className="trip-detail__participants-heading">
+                  <Users size={17} />
+                  <span>{participantCount} حاضرين</span>
+                </div>
+                <div className="trip-detail__avatars">
+                  {attendees.slice(0, 8).map((person) => (
+                    <div key={person.user_id} className="trip-detail__avatar" title={person.name}>
+                      <UserAvatar
+                        path={person.avatarPath}
+                        name={person.name}
+                        initial={person.initial}
+                        className="size-full"
+                        userId={person.user_id}
+                      />
+                      {(person.user_id === userId ? companionsCount : person.companions_count) >
+                        0 && (
+                        <span>
+                          +{person.user_id === userId ? companionsCount : person.companions_count}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {attendees.length > 8 && (
+                    <span className="trip-detail__more-attendees">+{attendees.length - 8}</span>
+                  )}
+                  {attendees.length === 0 && <p>لا يوجد حضور مؤكد بعد</p>}
+                </div>
+              </div>
+            </section>
+          )}
+
+          <section className="trip-detail__about" aria-labelledby="trip-about-title">
+            <h2 id="trip-about-title">
+              <Info size={22} />
+              عن الرحلة
+            </h2>
+            <p className="trip-detail__description">
+              {trip.description?.trim() || "لا يوجد وصف لهذه الرحلة."}
+            </p>
+            <div className="trip-detail__facts">
+              <div>
+                <MapPin size={22} />
+                <div>
+                  <span>الموقع</span>
+                  <strong>{trip.location || "غير محدد"}</strong>
+                </div>
+              </div>
+              <div>
+                <Tent size={22} />
+                <div>
+                  <span>نوع الإقامة</span>
+                  <strong>{trip.accommodation_type || "غير محدد"}</strong>
+                </div>
+              </div>
+            </div>
+            {trip.location_url && (
+              <a
+                href={trip.location_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="trip-detail__map"
+              >
+                <MapPin size={19} />
+                فتح الموقع في الخريطة
+                <ExternalLink size={18} />
+              </a>
+            )}
+          </section>
+        </div>
+        {trip.status !== "planning" && (
+          <div className="trip-detail__preparations">
+            <TripPreparations
+              tripId={tripId}
+              userId={rolesLoading || primaryRole === "guest" ? null : userId}
+              canManage={isPrivileged}
+              readOnly={tripPhase(trip) === "past"}
+            />
+          </div>
+        )}
       </div>
     </AppShell>
   );
-}
-
-function SidebarStat({ icon: Icon, label, value }: any) {
-  return (
-    <div className="flex items-start gap-4">
-      <div className="size-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary shrink-0 border border-primary/10">
-        <Icon size={20} />
-      </div>
-      <div className="space-y-0.5">
-        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
-          {label}
-        </p>
-        <p className="text-base font-black text-foreground tracking-tight">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleDateString("ar-SA", { day: "numeric", month: "long" });
-  } catch {
-    return "—";
-  }
 }
