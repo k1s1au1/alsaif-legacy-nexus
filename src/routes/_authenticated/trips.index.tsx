@@ -5,10 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import {
   MapPin,
-  Calendar,
-  Users,
   ChevronLeft,
-  Plane,
   Plus,
   X,
   Upload,
@@ -17,14 +14,12 @@ import {
   Pencil,
   Save,
   Compass,
-  Clock,
-  MapPinned,
   Loader2,
   Target,
-  Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TripImage } from "@/components/trip-image";
+import { TripTicket } from "@/components/trip-ticket";
 import { QuickActionsBanner } from "@/components/quick-actions-banner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,7 +28,6 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { GameRoomsHub } from "@/components/entertainment/game-rooms-hub";
 import { sendPushNotification } from "@/lib/api/push.functions";
 import { consumeQuickCreate } from "@/lib/quick-create";
-import { isTripActive } from "@/lib/day-lifecycle";
 import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { TripStatusControl } from "@/components/trip-status-control";
 import type { EditableTripStatus } from "@/lib/trip-status";
@@ -63,14 +57,6 @@ type Trip = PlannedTrip & {
   image_url: string | null;
   status: string;
 };
-
-function formatRange(start: string | null, end: string | null) {
-  if (!start) return "—";
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString("ar-SA", { day: "numeric", month: "long" });
-  if (!end || end === start) return fmt(start);
-  return `${fmt(start)} - ${fmt(end)}`;
-}
 
 function TripsPage() {
   const [profile, setProfile] = useState<{
@@ -152,31 +138,22 @@ function TripsPage() {
 
   return (
     <AppShell title="الترفيه" user={{ name: "", role: "", initial: "ص" }}>
-      <div className="max-w-7xl mx-auto space-y-8 pb-48 xl:pb-24" dir="rtl">
+      <div className="trips-page" dir="rtl">
         <QuickActionsBanner />
 
-        {/* Entertainment Tabs - Moved to Top for better visibility */}
-        <div className="flex items-center justify-center gap-3 px-4 md:px-0">
+        <div className="trips-section-tabs" role="group" aria-label="أقسام الترفيه">
           <button
+            type="button"
+            aria-pressed={activeTab === "destinations"}
             onClick={() => setActiveTab("destinations")}
-            className={cn(
-              "flex-1 md:flex-none md:min-w-[240px] py-5 rounded-[32px] font-black text-sm md:text-base flex items-center justify-center gap-3 transition-all border-2 shadow-xl",
-              activeTab === "destinations"
-                ? "bg-primary text-white border-primary scale-105"
-                : "bg-card text-muted-foreground border-transparent hover:bg-muted hover:scale-[1.02]",
-            )}
           >
             <Compass size={20} />
             <span>الوجهات والرحلات</span>
           </button>
           <button
+            type="button"
+            aria-pressed={activeTab === "games"}
             onClick={() => setActiveTab("games")}
-            className={cn(
-              "flex-1 md:flex-none md:min-w-[240px] py-5 rounded-[32px] font-black text-sm md:text-base flex items-center justify-center gap-3 transition-all border-2 shadow-xl",
-              activeTab === "games"
-                ? "bg-gold-primary text-black border-gold-primary scale-105 shadow-gold-primary/20"
-                : "bg-card text-muted-foreground border-transparent hover:bg-muted hover:scale-[1.02]",
-            )}
           >
             <Target size={20} />
             <span>غرف الألعاب</span>
@@ -190,70 +167,40 @@ function TripsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-12"
+              className="trips-destinations"
             >
-              {/* Alsaif Trips Header — Banner Style */}
-              <section className="animate-fade-up px-4 md:px-0">
-                <div className="relative overflow-hidden rounded-[32px] md:rounded-[48px] bg-gradient-to-br from-indigo-900 via-primary to-black p-6 md:p-12 text-white shadow-2xl border border-white/5 group">
-                  {/* Left Decorative Logo */}
-                  <div className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none z-1 transition-transform duration-1000 group-hover:scale-110 group-hover:opacity-40">
-                    <div
-                      className="size-28 md:size-64 logo-alsaif-banner"
-                      style={{ "--logo-url": dynamicLogo ? `url(${dynamicLogo})` : "none" } as any}
-                    />
-                  </div>
-
-                  <div className="absolute top-0 right-0 size-64 bg-gold-primary/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
-
-                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-10">
-                    <div className="space-y-3 md:space-y-5 text-center md:text-right">
-                      <div className="flex items-center justify-center md:justify-start gap-3">
-                        <div className="h-0.5 w-8 md:w-12 bg-gold-primary shadow-[0_0_10px_rgba(212,175,55,0.6)]" />
-                        <span className="text-[11px] md:text-xs font-black uppercase tracking-[0.4em] text-gold-primary">
-                          استكشاف السعادة
-                        </span>
-                      </div>
-                      <h2 className="text-3xl md:text-6xl font-black tracking-tighter leading-tight drop-shadow-2xl">
-                        ترفيه العائلة
-                      </h2>
-                      <p className="text-white/60 font-bold text-sm md:text-xl max-w-xl">
-                        جدول الوجهات واللقاءات الترفيهية لأعضاء عائلة السيف لتعزيز الترابط.
-                      </p>
-                    </div>
-
-                    {canManage && (
-                      <button
-                        onClick={() => setShowAdd(true)}
-                        className="btn-gold relative hidden xl:flex px-8 py-4 xl:px-12 xl:py-6 rounded-2xl xl:rounded-[32px] items-center justify-center gap-3 shadow-2xl shadow-gold-primary/30 text-sm xl:text-xl font-black group/btn self-center xl:self-auto shrink-0 active:scale-95 transition-all"
-                      >
-                        <Plus className="size-5 md:size-7" strokeWidth={3} />
-                        <span>إضافة رحلة جديدة</span>
-                      </button>
-                    )}
-                  </div>
+              <section className="trips-ticket-header" aria-labelledby="trips-heading">
+                <div
+                  className="trips-ticket-header__logo logo-alsaif-banner"
+                  aria-hidden="true"
+                  style={{ "--logo-url": dynamicLogo ? `url(${dynamicLogo})` : "none" } as any}
+                />
+                <div className="trips-ticket-header__copy">
+                  <h2 id="trips-heading">ترفيه العائلة</h2>
+                  <p>جدول الوجهات واللقاءات الترفيهية لأعضاء عائلة السيف لتعزيز الترابط.</p>
                 </div>
+                {canManage && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAdd(true)}
+                    className="trips-ticket-add"
+                  >
+                    <Plus size={21} strokeWidth={2.5} aria-hidden="true" />
+                    <span>إضافة رحلة جديدة</span>
+                  </button>
+                )}
               </section>
 
-              <div
-                className="flex flex-wrap justify-center gap-3 px-4"
-                role="group"
-                aria-label="مرحلة الرحلات"
-              >
+              <div className="trips-phase-tabs" role="group" aria-label="مرحلة الرحلات">
                 {(["upcoming", "planning"] as const).map((tab) => (
                   <button
                     key={tab}
                     type="button"
                     aria-pressed={tripTab === tab}
                     onClick={() => setTripTab(tab)}
-                    className={cn(
-                      "px-5 py-3 rounded-2xl border font-black text-sm transition-colors",
-                      tripTab === tab
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-card border-border text-muted-foreground",
-                    )}
                   >
                     {tab === "planning" ? "قيد التخطيط" : "الرحلات القادمة والحالية"}{" "}
-                    <span className="mr-2">
+                    <span>
                       {
                         trips.filter(
                           (trip) => (trip.status === "planning") === (tab === "planning"),
@@ -271,7 +218,7 @@ function TripsPage() {
                 </div>
               ) : trips.filter((trip) => (trip.status === "planning") === (tripTab === "planning"))
                   .length === 0 ? (
-                <div className="card-surface p-24 flex flex-col items-center text-center gap-6 border-dashed opacity-40">
+                <div className="trips-empty flex flex-col items-center text-center gap-6">
                   <div className="size-20 rounded-[40px] bg-muted/50 flex items-center justify-center text-muted-foreground">
                     <Compass size={60} strokeWidth={1} />
                   </div>
@@ -283,14 +230,13 @@ function TripsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 px-4 md:px-0">
+                <div className={`trips-ticket-grid trips-ticket-grid--${tripTab}`}>
                   {trips
                     .filter((trip) => (trip.status === "planning") === (tripTab === "planning"))
-                    .map((trip, i) => (
+                    .map((trip) => (
                       <TripCard
                         key={trip.id}
                         trip={trip}
-                        index={i}
                         canManage={canManage}
                         onEdit={setEditingTrip}
                         onRefresh={loadTrips}
@@ -351,18 +297,6 @@ function TripsPage() {
         </AnimatePresence>
       </div>
 
-      {canManage && activeTab === "destinations" && (
-        <button
-          type="button"
-          onClick={() => setShowAdd(true)}
-          aria-label="إضافة رحلة جديدة"
-          className="fixed bottom-[calc(8.25rem+env(safe-area-inset-bottom,0px))] sm:bottom-[calc(9rem+env(safe-area-inset-bottom,0px))] left-4 right-4 sm:left-1/2 sm:right-auto sm:w-[360px] sm:-translate-x-1/2 z-[75] xl:hidden btn-gold h-14 sm:h-16 px-6 rounded-2xl flex items-center justify-center gap-3 text-base sm:text-lg font-black shadow-2xl shadow-black/30 border border-white/15 active:scale-[0.98] transition-transform"
-        >
-          <Plus className="size-5 sm:size-6" strokeWidth={3} />
-          <span>إضافة رحلة جديدة</span>
-        </button>
-      )}
-
       <AnimatePresence>
         {(showAdd || editingTrip) && (
           <TripDialog
@@ -382,53 +316,45 @@ function TripsPage() {
 
 function TripCard({
   trip,
-  index,
   canManage,
   onEdit,
   onRefresh,
   onStatusSaved,
 }: {
   trip: Trip;
-  index: number;
   canManage: boolean;
   onEdit: (trip: Trip) => void;
   onRefresh: () => Promise<void>;
   onStatusSaved: (status: EditableTripStatus) => void;
 }) {
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="group card-surface overflow-hidden border-none shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:shadow-gold-primary/10"
-    >
-      <div className="relative h-64 overflow-hidden">
-        <TripImage
-          path={trip.image_url}
-          alt={trip.title}
-          className="absolute inset-0 size-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-        {/* Status Chip */}
+    <TripTicket
+      trip={trip}
+      image={<TripImage path={trip.image_url} alt={trip.title} />}
+      statusControl={
         <TripStatusControl
           trip={trip}
           canManage={canManage}
           onSaved={onStatusSaved}
           onRecordSaved={() => void onRefresh()}
-          className="absolute top-5 right-5"
         />
-
-        {/* Admin Actions */}
-        {canManage && (
-          <div className="absolute top-5 left-5 z-10 flex items-center gap-2 opacity-100">
+      }
+      details={
+        <Link to="/trips/$tripId" params={{ tripId: trip.id }} className="trip-ticket__details">
+          <span>عرض التفاصيل</span>
+          <ChevronLeft size={17} aria-hidden="true" />
+        </Link>
+      }
+      actions={
+        canManage ? (
+          <>
             <button
               type="button"
               aria-label={`تعديل رحلة ${trip.title}`}
               onClick={() => onEdit(trip)}
-              className="size-11 rounded-xl bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-primary transition-all flex items-center justify-center shadow-lg border border-white/20"
             >
-              <Pencil size={18} />
+              <Pencil size={20} aria-hidden="true" />
+              <span>تعديل</span>
             </button>
             <button
               type="button"
@@ -442,70 +368,15 @@ function TripCard({
                   onRefresh();
                 }
               }}
-              className="size-11 rounded-xl bg-rose-500/80 backdrop-blur-md text-white hover:bg-rose-600 transition-all flex items-center justify-center shadow-lg border border-white/20"
+              className="trip-ticket__delete"
             >
-              <Trash2 size={18} />
+              <Trash2 size={20} aria-hidden="true" />
+              <span>حذف</span>
             </button>
-          </div>
-        )}
-
-        {/* Location Overlay */}
-        {trip.location && (
-          <div className="absolute bottom-5 right-5 left-5 flex items-center gap-2 text-white">
-            <MapPin className="size-4 text-gold-primary" />
-            <span className="text-xs font-black truncate drop-shadow-md">{trip.location}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="p-8 space-y-6">
-        <div className="space-y-3">
-          {trip.badge && (
-            <span className="px-3 py-0.5 rounded-full bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10">
-              {trip.badge}
-            </span>
-          )}
-          <h3 className="text-2xl font-black text-primary leading-tight line-clamp-1">
-            {trip.title}
-          </h3>
-          {trip.description && (
-            <p className="text-sm font-bold text-muted-foreground/80 leading-relaxed line-clamp-2 italic">
-              "{trip.description}"
-            </p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 py-4 border-y border-border/40">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 opacity-40">
-              <Calendar className="size-3" />
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                {trip.status === "planning" ? "الموعد الأولي" : "تاريخ الرحلة"}
-              </span>
-            </div>
-            <p className="text-xs font-black text-primary">
-              {formatRange(trip.start_date, trip.end_date)}
-            </p>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 opacity-40">
-              <Users className="size-3" />
-              <span className="text-[10px] font-black uppercase tracking-widest">المشاركون</span>
-            </div>
-            <p className="text-xs font-black text-primary">أعضاء العائلة</p>
-          </div>
-        </div>
-
-        <Link
-          to="/trips/$tripId"
-          params={{ tripId: trip.id }}
-          className="w-full h-14 rounded-2xl bg-primary/5 hover:bg-primary hover:text-white transition-all duration-300 flex items-center justify-center gap-3 text-primary font-black text-sm uppercase tracking-widest border border-primary/10 shadow-inner group/btn"
-        >
-          <span>{trip.status === "planning" ? "التخطيط للرحلة" : "تفاصيل الوجهة"}</span>
-          <ChevronLeft className="size-4 transition-transform group-hover/btn:-translate-x-1" />
-        </Link>
-      </div>
-    </motion.article>
+          </>
+        ) : undefined
+      }
+    />
   );
 }
 
