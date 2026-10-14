@@ -109,6 +109,9 @@ try {
     console.log(`PASS ${name}: index, reading, verified source URL, bookmark and responsive width`);
   }
   for (const [name,width,height] of [["prayer-phone",425,900],["prayer-small-phone",360,800],["prayer-ipad-portrait",834,1194],["prayer-ipad-landscape",1024,768],["prayer-desktop",1440,900]]) {
+    // Exercise first-use GPS at each size; earlier screens intentionally save
+    // their calendar, and a warm cache correctly avoids another HTTP request.
+    await evaluate("Object.keys(localStorage).filter(key=>key.startsWith('alsaif:prayer-calendar:')||key==='alsaif:prayer-location:v1').forEach(key=>localStorage.removeItem(key))");
     await viewport(width,height); await navigate("/faith?view=prayer");
     assert.equal(await evaluate("document.querySelector('select')"),null, "No city selection remains");
     assert.equal(await evaluate("window.geoCalls"),0, "GPS is requested after first-use action");
