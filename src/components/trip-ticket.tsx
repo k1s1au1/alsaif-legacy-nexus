@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Calendar, MapPin } from "lucide-react";
+import { UpcomingTripTicket } from "@/components/upcoming-trip-ticket";
 import "./trip-ticket.css";
 
 type TicketTrip = {
@@ -33,26 +34,26 @@ function shortDate(date: Date) {
 /** The same trip record keeps its actions while its silhouette follows its phase. */
 export function TripTicket({ trip, image, statusControl, details, actions }: Props) {
   const planning = trip.status === "planning";
+  if (!planning) {
+    return (
+      <UpcomingTripTicket
+        trip={trip}
+        image={image}
+        statusControl={statusControl}
+        details={details}
+        actions={actions}
+      />
+    );
+  }
   const start = parseDate(trip.start_date);
   const end = parseDate(trip.end_date);
   const multipleDays = !!(start && end && trip.start_date !== trip.end_date);
   const dateRange = start
     ? `${shortDate(start)}${multipleDays ? ` — ${shortDate(end!)}` : ""}`
     : "لم يحدد بعد";
-  const fullDate = start
-    ? start.toLocaleDateString("ar-SA-u-ca-gregory", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : "لم يحدد بعد";
 
   return (
-    <article
-      className={`trip-ticket trip-ticket--${planning ? "planning" : "upcoming"}`}
-      data-trip-status={trip.status}
-      dir="rtl"
-    >
+    <article className="trip-ticket trip-ticket--planning" data-trip-status={trip.status} dir="rtl">
       {planning && <span className="trip-ticket__fold" aria-hidden="true" />}
       <div className="trip-ticket__body">
         <div className="trip-ticket__photo">{image}</div>
@@ -81,30 +82,6 @@ export function TripTicket({ trip, image, statusControl, details, actions }: Pro
             {details}
           </div>
         </div>
-
-        {!planning && (
-          <div className="trip-ticket__stub" aria-label={`تاريخ الرحلة: ${fullDate}`}>
-            <Calendar size={24} aria-hidden="true" />
-            {start ? (
-              <time dateTime={trip.start_date!.slice(0, 10)}>
-                <span className="trip-ticket__day">
-                  {start.toLocaleDateString("ar-SA-u-ca-gregory", { day: "numeric" })}
-                </span>
-                <span className="trip-ticket__month">
-                  {start.toLocaleDateString("ar-SA-u-ca-gregory", { month: "long" })}
-                </span>
-              </time>
-            ) : (
-              <span className="trip-ticket__no-date">لم يحدد بعد</span>
-            )}
-            {multipleDays && (
-              <p className="trip-ticket__end-date">
-                <span>حتى</span>
-                <time dateTime={trip.end_date!.slice(0, 10)}>{shortDate(end!)}</time>
-              </p>
-            )}
-          </div>
-        )}
       </div>
       {actions && <footer className="trip-ticket__actions">{actions}</footer>}
     </article>

@@ -65,9 +65,17 @@ jobs:
         run: npm run build
       - name: Check prayer and Mushafi components on phone, iPad and desktop in Chrome
         run: node scripts/test-faith-browser.mjs
+      - name: Check shared ticket cutouts, responsive width and touch actions in Chrome
+        run: node scripts/test-trip-ticket-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: faith-component-previews
           path: test-results/faith
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trip-ticket-component-previews
+          path: test-results/trip-tickets
           if-no-files-found: ignore

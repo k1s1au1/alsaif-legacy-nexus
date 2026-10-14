@@ -1,0 +1,273 @@
+/* Shared by home, tablets and the trip list; legacy ticket selectors never touch this template. */
+.ticket-surface {
+  --ticket-ink: var(--primary);
+  --ticket-icon: var(--identity-icon, var(--primary));
+  --ticket-accent: var(--gold-primary);
+  position: relative;
+  min-width: 0;
+  align-self: start;
+  container: trip-ticket / inline-size;
+  color: var(--ticket-ink);
+  filter: drop-shadow(0 10px 10px rgb(0 0 0 / 9%));
+}
+html[data-theme-color-mode="custom"] .ticket-surface {
+  --ticket-ink: var(--identity-text, var(--primary));
+}
+.ticket-surface__paper {
+  min-width: 0;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.4px var(--ticket-accent);
+}
+.ticket-surface__paper[style] {
+  box-shadow: none;
+}
+.ticket-surface__header {
+  padding: 10px 10px 8px;
+}
+.ticket-surface__outline {
+  position: absolute;
+  inset: 0;
+  color: var(--ticket-accent);
+  overflow: visible;
+  pointer-events: none;
+}
+.upcoming-trip-ticket__photo {
+  position: relative;
+  height: clamp(210px, 22vw, 280px);
+  overflow: hidden;
+  border-radius: 12px;
+}
+.upcoming-trip-ticket__photo > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.upcoming-trip-ticket__status {
+  position: absolute;
+  top: 12px;
+  inset-inline-start: 12px;
+}
+.upcoming-trip-ticket__status > span,
+.upcoming-trip-ticket__status .trip-status-control__field select,
+.upcoming-trip-ticket__status .trip-status-control__label {
+  display: inline-flex;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.upcoming-trip-ticket__status .trip-status-control__field select {
+  padding-inline-end: 34px;
+}
+.upcoming-trip-ticket__status .trip-status-control__field > svg {
+  color: var(--primary-foreground);
+}
+.upcoming-trip-ticket__content {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 22px 24px 20px;
+}
+.upcoming-trip-ticket__copy {
+  min-width: 0;
+}
+.upcoming-trip-ticket__location {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.upcoming-trip-ticket__location svg {
+  color: var(--ticket-icon);
+  flex-shrink: 0;
+}
+.upcoming-trip-ticket h3 {
+  margin: 0;
+  font-size: clamp(23px, 2.1vw, 30px);
+  line-height: 1.35;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.upcoming-trip-ticket__badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 8%, var(--card));
+  font-size: 12px;
+  font-weight: 700;
+}
+.upcoming-trip-ticket__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 8px 0 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.upcoming-trip-ticket__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+.upcoming-trip-ticket__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.upcoming-trip-ticket__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  overflow-wrap: anywhere;
+}
+.upcoming-trip-ticket__meta svg {
+  flex-shrink: 0;
+  color: var(--ticket-icon);
+}
+.upcoming-trip-ticket__details {
+  min-width: 0;
+}
+.upcoming-trip-ticket__details > :is(a, button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 22px;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+.upcoming-trip-ticket__details > :is(a, button):hover {
+  opacity: 0.9;
+}
+.upcoming-trip-ticket__details svg {
+  flex-shrink: 0;
+  color: var(--primary-foreground);
+}
+.upcoming-trip-ticket__actions {
+  display: flex;
+  margin: 0 24px;
+  padding: 5px 0 8px;
+  border-top: 1px solid color-mix(in srgb, var(--ticket-accent) 45%, var(--border));
+}
+.upcoming-trip-ticket__actions > button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ticket-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.upcoming-trip-ticket__actions > button + button {
+  border-inline-start: 1px solid color-mix(in srgb, var(--ticket-accent) 45%, var(--border));
+}
+.upcoming-trip-ticket__actions > button svg {
+  color: var(--ticket-icon);
+  flex-shrink: 0;
+}
+.upcoming-trip-ticket__actions > .trip-ticket__delete,
+.upcoming-trip-ticket__actions > .trip-ticket__delete svg {
+  color: var(--destructive);
+}
+.upcoming-trip-ticket__actions > button:hover {
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+.upcoming-trip-ticket :is(a, button, select):focus-visible {
+  outline: 2px solid var(--ticket-icon);
+  outline-offset: 3px;
+}
+.upcoming-trip-ticket--compact .upcoming-trip-ticket__photo {
+  height: 180px;
+}
+.upcoming-trip-ticket--compact .upcoming-trip-ticket__content {
+  gap: 14px;
+  padding: 20px 24px;
+}
+.upcoming-trip-ticket--compact .upcoming-trip-ticket__meta {
+  font-size: 13px;
+}
+.upcoming-trip-ticket--compact .upcoming-trip-ticket__meta > span + span {
+  padding-inline-start: 14px;
+  border-inline-start: 1px solid var(--border);
+}
+.desktop-follow-cards > .upcoming-trip-ticket {
+  height: auto;
+}
+@container trip-ticket (min-width: 560px) {
+  .upcoming-trip-ticket__content {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 24px;
+  }
+  .upcoming-trip-ticket__links {
+    justify-content: flex-end;
+  }
+}
+@media (min-width: 970px) and (max-width: 1199px) {
+  .upcoming-trip-ticket--compact .upcoming-trip-ticket__photo {
+    height: 200px;
+  }
+}
+@media (max-width: 599px) {
+  .upcoming-trip-ticket__photo {
+    height: 220px;
+  }
+  .upcoming-trip-ticket--compact .upcoming-trip-ticket__photo {
+    height: 190px;
+  }
+  .upcoming-trip-ticket__content,
+  .upcoming-trip-ticket--compact .upcoming-trip-ticket__content {
+    padding: 20px;
+  }
+  .upcoming-trip-ticket__links {
+    display: grid;
+    gap: 14px;
+  }
+  .upcoming-trip-ticket__details > :is(a, button) {
+    display: flex;
+    width: 100%;
+  }
+  .upcoming-trip-ticket__actions {
+    margin-inline: 20px;
+  }
+  .upcoming-trip-ticket__description {
+    font-size: 13px;
+  }
+}
