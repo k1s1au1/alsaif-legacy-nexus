@@ -83,7 +83,7 @@ try {
         const r=paper.getBoundingClientRect(),seam=r.top+head.offsetHeight;
         const inside=(x,y)=>!!document.elementFromPoint(x,y)?.closest('.ticket-surface__paper');
         ticket.scrollIntoView({block:'center'});const b=paper.getBoundingClientRect(),y=b.top+head.offsetHeight;
-        return {validClip:CSS.supports('clip-path',paper.style.clipPath),transparent:getComputedStyle(ticket).backgroundColor==='rgba(0, 0, 0, 0)',leftCut:!inside(b.left+3,y),rightCut:!inside(b.right-3,y),inner:inside(b.left+24,y),radius:ticket.querySelector('path').getAttribute('d').includes('A 14 14'),paperWidth:paper.offsetWidth,outlineWidth:Number(ticket.querySelector('svg.ticket-surface__outline').getAttribute('width'))};
+        return {validClip:CSS.supports('clip-path',paper.style.clipPath),transparent:getComputedStyle(ticket).backgroundColor==='rgba(0, 0, 0, 0)',leftCut:!inside(b.left+3,y),rightCut:!inside(b.right-3,y),inner:inside(b.left+24,y),radius:ticket.querySelector('.ticket-surface__outline > path').getAttribute('d').includes('A 14 14'),paperWidth:paper.offsetWidth,outlineWidth:Number(ticket.querySelector('svg.ticket-surface__outline').getAttribute('width'))};
       })`);
       assert.equal(cuts.length,3);
       for (const cut of cuts) { for (const key of ['validClip','transparent','leftCut','rightCut','inner','radius']) assert.equal(cut[key],true,`${name}/${dark?'dark':'light'}: ${key}`);assert.equal(cut.paperWidth,cut.outlineWidth); }
