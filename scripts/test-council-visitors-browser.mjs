@@ -423,9 +423,9 @@ try {
     assert.equal(await counterText(), "1,248");
     await evaluate("document.documentElement.classList.remove('dark')");
     await settle();
-    const identity = await evaluate(
-      `(async()=>{const scene=document.querySelector('.council-terrain-scene');scene.style.setProperty('--identity-accent','#b97946');scene.style.setProperty('--council-portal-copy','#fff3dc');await new Promise(resolve=>setTimeout(resolve,450));return {number:getComputedStyle(scene.querySelector('.council-visitor-number')).color,text:getComputedStyle(scene.querySelector('.council-visitor-counter')).color}})()`,
-    );
+    await evaluate("(()=>{const scene=document.querySelector('.council-terrain-scene');scene.style.setProperty('--identity-accent','#b97946');scene.style.setProperty('--council-portal-copy','#fff3dc')})()");
+    await until("getComputedStyle(document.querySelector('.council-visitor-number')).color==='rgb(185, 121, 70)' && getComputedStyle(document.querySelector('.council-visitor-counter')).color==='rgb(255, 243, 220)'");
+    const identity = await evaluate("({number:getComputedStyle(document.querySelector('.council-visitor-number')).color,text:getComputedStyle(document.querySelector('.council-visitor-counter')).color})");
     assert.equal(identity.number, "rgb(185, 121, 70)");
     assert.equal(identity.text, "rgb(255, 243, 220)");
     if (tablet || (width >= 970 && width < 1200)) {

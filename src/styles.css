@@ -3,8 +3,7 @@
 @source "../src";
 
 /*
- * Alsaif Design System — Royal Obsidian Edition
- * Optimized for full system-wide Dark Mode and maximum contrast.
+ * Alsaif Design System — semantic surfaces follow the selected identity.
  */
 
 @theme inline {
@@ -32,6 +31,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-nav-bg: var(--nav-bg);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 
   --font-arabic: var(--app-font, "IBM Plex Sans Arabic", "Tajawal", sans-serif);
   --font-royal: "Amiri", "Reem Kufi", serif;
@@ -61,32 +62,41 @@
   --hero-pill-border: rgba(27, 67, 50, 0.08);
   --hero-divider: rgba(27, 67, 50, 0.12);
   --hero-logo-badge: rgba(255, 255, 255, 0.92);
+  --destructive: #c62828;
+  --destructive-foreground: #ffffff;
+  --input: var(--border);
+  --ring: var(--primary);
 }
 
 .dark {
-  /* Comprehensive Dark Theme - Luxury Obsidian Edition */
-  --background: #0a0b0e; /* Even deeper, more premium dark */
-  --foreground: #f2f5f7; /* Soft Ivory White for eye comfort */
-  --card: #12151d;       /* Midnight Navy Card */
-  --card-foreground: #f2f5f7;
-  --popover: #12151d;
-  --popover-foreground: #f2f5f7;
-  --primary: #d4af37;    /* Alsaif Gold */
-  --primary-foreground: #0a0b0e;
-  --secondary: #1a1d26;
-  --secondary-foreground: #f2f5f7;
-  --muted: #161a23;
-  --muted-foreground: #cbd5e1; /* Optimized for legibility */
-  --accent: #1a1d26;
-  --accent-foreground: #f2f5f7;
-  --border: rgba(212, 175, 55, 0.12);
-  --gold-primary: #e6c25c;
-  --gold-soft: #f9e29c;
-  --hero-card: #12151d;
-  --hero-pill: rgba(0, 0, 0, 0.4);
-  --hero-pill-border: rgba(255, 255, 255, 0.1);
-  --hero-divider: rgba(255, 255, 255, 0.15);
-  --hero-logo-badge: rgba(18, 21, 29, 0.95);
+  /* Initial petroleum fallback; theme preferences derive these for every identity. */
+  color-scheme: dark;
+  --background: #0a1d1c;
+  --foreground: #ecf0e6;
+  --card: #142f2e;
+  --card-foreground: var(--foreground);
+  --popover: #173e3c;
+  --popover-foreground: var(--foreground);
+  --primary: #76b6b1;
+  --primary-foreground: #041212;
+  --secondary: var(--popover);
+  --secondary-foreground: var(--foreground);
+  --muted: #153432;
+  --muted-foreground: #bed7d2;
+  --accent: var(--popover);
+  --accent-foreground: var(--foreground);
+  --border: #3f5653;
+  --input: #6f817c;
+  --ring: var(--primary);
+  --gold-primary: var(--primary);
+  --gold-soft: #a7d1cc;
+  --hero-card: var(--card);
+  --hero-pill: var(--popover);
+  --hero-pill-border: var(--border);
+  --hero-divider: var(--border);
+  --hero-logo-badge: var(--card);
+  --destructive: #ff9292;
+  --destructive-foreground: #341313;
 }
 
 @layer base {
@@ -138,44 +148,26 @@
     }
   }
 
-  /* Dark mode legibility: ensure text remains crisp over images/glass backgrounds */
+  /* Keep the same semantic text hierarchy on every device. */
   .dark body {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
-    color: #f8fafc;
+    color: var(--foreground);
   }
-  /* Boost contrast for commonly low-opacity text in dark mode */
   .dark .text-muted-foreground {
-    color: #e2e8f0;
+    color: var(--muted-foreground);
   }
   .dark .text-foreground\/60,
   .dark .text-foreground\/70,
-  .dark .text-white\/60,
-  .dark .text-white\/70,
   .dark .text-black\/60,
   .dark .text-black\/70 {
-    color: rgba(248, 250, 252, 0.92) !important;
+    color: var(--muted-foreground) !important;
   }
   .dark .text-foreground\/40,
   .dark .text-foreground\/50,
-  .dark .text-white\/40,
-  .dark .text-white\/50,
   .dark .text-black\/40,
   .dark .text-black\/50 {
-    color: rgba(248, 250, 252, 0.82) !important;
-  }
-  /* Force any dark text utilities to light in dark mode */
-  .dark .text-black,
-  .dark .text-slate-950,
-  .dark .text-gray-900,
-  .dark .text-zinc-900,
-  .dark .text-neutral-900,
-  .dark .text-stone-950,
-  .dark .text-slate-800,
-  .dark .text-gray-800,
-  .dark .text-zinc-800,
-  .dark .text-neutral-800 {
-    color: #f8fafc !important;
+    color: var(--muted-foreground) !important;
   }
   /* Strengthen text over glass cards / image overlays */
   .dark .glass-text,
@@ -313,11 +305,11 @@
 }
 
 .dark .text-gold-primary {
-  text-shadow: 0 0 10px rgba(230, 194, 92, 0.15);
+  text-shadow: none;
 }
 
 .dark .btn-gold {
-  box-shadow: 0 8px 30px -6px rgba(139, 107, 35, 0.6), 0 0 20px rgba(212, 175, 55, 0.1);
+  box-shadow: 0 8px 24px -12px rgb(0 0 0 / 35%);
 }
 
 @keyframes alsaif-glow {
@@ -361,9 +353,7 @@
 }
 
 .dark .card-surface {
-  box-shadow:
-    0 10px 40px -10px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(212, 175, 55, 0.03);
+  box-shadow: 0 10px 30px -16px rgb(0 0 0 / 40%);
 }
 
 /* Glassmorphism 2.0 Utilities */
@@ -375,9 +365,9 @@
 }
 
 .dark .glass-surface {
-  background: rgba(18, 20, 28, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: 0 12px 30px -18px rgb(0 0 0 / 40%);
 }
 
 @utility glass-gold-surface {
@@ -388,8 +378,8 @@
 }
 
 .dark .glass-gold-surface {
-  background: rgba(212, 175, 55, 0.03);
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: var(--card);
+  border-color: var(--border);
 }
 
 @utility glass-reflection {

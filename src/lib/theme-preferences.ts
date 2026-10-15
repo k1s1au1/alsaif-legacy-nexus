@@ -1,4 +1,5 @@
 import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
+import { applyBalancedDarkTheme } from "@/lib/dark-theme";
 
 export const DEFAULT_THEME_COLOR_ID = "emerald";
 export const CUSTOM_THEME_PREFIX = "custom:";
@@ -171,6 +172,19 @@ export function applyThemePreference(preference: ThemePreference) {
   const surfaceTheme = getThemeColor(preference.surfaceId);
   const navigationTheme = getThemeColor(preference.navigationId);
   const accentTheme = getThemeColor(preference.accentId);
+
+  if (isDark) {
+    applyBalancedDarkTheme(root, {
+      text: textTheme,
+      icons: iconTheme,
+      background: backgroundTheme,
+      surfaces: surfaceTheme,
+      navigation: navigationTheme,
+      accent: accentTheme,
+    });
+    root.dataset.themeColorMode = "custom";
+    return;
+  }
 
   const text = isDark ? textTheme.darkSecondary : textTheme.navBg;
   const mutedText = isDark ? textTheme.darkSecondary : textTheme.primary;
