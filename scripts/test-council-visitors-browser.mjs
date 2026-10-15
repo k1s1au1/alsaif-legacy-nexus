@@ -46,7 +46,7 @@ window.qaTotal=1248;window.qaQueries=0;
 window.qaRelease=()=>{window.qaHold=false;window.qaWaiters.splice(0).forEach(resolve=>resolve())};
 window.qaVisit=(id)=>{const found=window.qaRows.some(row=>row.user_id===id);if(!found){window.qaRows.push({user_id:id,last_seen_at:new Date().toISOString()});window.qaTotal++}window.qaChange({eventType:found?'UPDATE':'INSERT',new:{user_id:id,last_seen_at:new Date().toISOString()}})};
 function Fixture(){const count=useRecordedVisitorCount();const online=useOnlineCount();const [name,setName]=useState('حساب المعاينة');const [show,setShow]=useState(true);window.qaSetName=setName;window.qaSetShow=setShow;
-const hero=<HeritagePortal3D greeting="مساء الخير" name={name} message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className="dashboard-portal-model" visitorCount={show?count:undefined}/>;
+const hero=<HeritagePortal3D greeting="مساء الخير" name={name} message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className={innerWidth>=1200?'desktop-portal-model':'dashboard-portal-model'} visitorCount={show?count:undefined}/>;
 const services=<div className="desktop-services-panel"><div className="desktop-section-head desktop-section-head-on-dark"><h2>خدمات العائلة</h2></div><div className="desktop-services-grid">{['الصندوق المالي','المهام','الرحلات','الاجتماعات'].map(label=><div className="desktop-service-card" key={label}><strong>{label}</strong></div>)}</div><button className="desktop-services-wide-toggle">عرض جميع الخدمات</button></div>;
 return <main className="app-shell-main relative min-h-screen"><div className="app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto max-w-7xl"><output hidden id="qa-online">{online}</output>{innerWidth>=1200?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage">{hero}</div>{services}</section></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section></div>}</div></main>}
 createRoot(document.getElementById('app')).render(<Fixture/>);window.fixtureReady=true;`;
@@ -304,8 +304,7 @@ try {
         `${name}/${longName ? "long" : "normal"}: clear distance from visible sculpture ${JSON.stringify(geometry)}`,
       );
       assert.ok(geometry.mottoGap >= 16, `${name}: welcome spacing`);
-      // The ornament must not move the desktop sculpture; its baseline layout
-      // can extend beyond this isolated component fixture's clipped viewport.
+      // The ornament must not move the existing desktop sculpture.
       if (width >= 970) {
         assert.ok(
           Math.abs(modelBefore.left - modelBaseline.left) < 1,
@@ -315,13 +314,12 @@ try {
           Math.abs(modelBefore.top - modelBaseline.top) < 1,
           `${name}: existing sculpture vertical position retained`,
         );
-      } else {
-        assert.ok(
-          geometry.tower.right <= geometry.scene.right + 1 &&
-            geometry.tower.left >= geometry.scene.left - 1,
-          `${name}: sculpture stays inside the scene`,
-        );
       }
+      assert.ok(
+        geometry.tower.right <= geometry.scene.right + 1 &&
+          geometry.tower.left >= geometry.scene.left - 1,
+        `${name}: sculpture stays inside the scene`,
+      );
       assert.ok(
         geometry.parts[0].left >= geometry.parts[1].right - 1 &&
           geometry.parts[1].left >= geometry.parts[2].right - 1,
@@ -346,11 +344,9 @@ try {
     );
     assert.equal(identity.number, "rgb(185, 121, 70)");
     assert.equal(identity.text, "rgb(255, 243, 220)");
-    const layout = await send("Page.getLayoutMetrics");
     const png = await send("Page.captureScreenshot", {
       format: "png",
-      captureBeyondViewport: true,
-      clip: { x: 0, y: 0, width, height: Math.ceil(layout.cssContentSize.height), scale: 1 },
+      captureBeyondViewport: false,
     });
     writeFileSync(`test-results/visitors/${name}.png`, Buffer.from(png.data, "base64"));
     console.log(
