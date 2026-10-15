@@ -9,7 +9,7 @@ import {
   globSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { build } from "esbuild";
@@ -33,9 +33,14 @@ const imports = new Map(
   ]),
 );
 const ordered = [...root.matchAll(/href:(\w+Css)/g)].map((m) => imports.get(m[1])).filter(Boolean);
+// Match Vite's local CSS imports (the approved curved dock is imported by theme-personalization).
+const readStyles = (path) =>
+  readFileSync(path, "utf8").replace(/@import\s+["']([^"']+\.css)["'];/g, (_, relative) =>
+    readStyles(resolve(dirname(path), relative)),
+  );
 const css = [
   readFileSync(compiled[0], "utf8"),
-  ...ordered.filter((p) => p !== "src/styles.css").map((p) => readFileSync(p, "utf8")),
+  ...ordered.filter((p) => p !== "src/styles.css").map(readStyles),
 ].join("\n");
 await build({
   entryPoints: ["scripts/fixtures/balanced-dark.tsx"],
@@ -271,11 +276,15 @@ try {
         geometry,
         `${name}/${theme}: color changes keep the approved component dimensions`,
       );
-      assert.equal(
-        await evaluate("document.documentElement.scrollWidth<=innerWidth+2"),
-        true,
-        `${name}/${theme}: no horizontal overflow`,
-      );
+      const noOverflow = await evaluate("document.documentElement.scrollWidth<=innerWidth+2");
+      if (!noOverflow)
+        console.log(
+          "OVERFLOW",
+          await evaluate(
+            "Array.from(document.querySelectorAll('body *')).map(n=>{const r=n.getBoundingClientRect();return {tag:n.tagName,cls:n.getAttribute('class'),left:r.left,right:r.right,width:r.width,position:getComputedStyle(n).position}}).filter(n=>n.left<-2||n.right>innerWidth+2).slice(-25)",
+          ),
+        );
+      assert.equal(noOverflow, true, `${name}/${theme}: no horizontal overflow`);
     }
     await evaluate("window.qaCustom()");
     await settle();
