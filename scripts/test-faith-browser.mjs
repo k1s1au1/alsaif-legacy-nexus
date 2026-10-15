@@ -161,12 +161,16 @@ try {
 
   for (const [name, width, height] of [["home-phone", 425, 900], ["home-small-phone", 360, 800], ["home-ipad-portrait", 834, 1194], ["home-ipad-landscape", 1024, 768]]) {
     await viewport(width, height); await navigate("/home");
-    const layout = await evaluate(`(()=>{const r=s=>{const b=document.querySelector(s).getBoundingClientRect();return{top:b.top,bottom:b.bottom,left:b.left,width:b.width,height:b.height}};return{shortcut:r('.faith-home-shortcuts'),copy:r('.council-portal-copy'),quote:r('.dashboard-spiritual'),model:r('.council-portal-model')}})()`);
+    const layout = await evaluate(`(()=>{const r=s=>{const b=document.querySelector(s).getBoundingClientRect();return{top:b.top,bottom:b.bottom,left:b.left,width:b.width,height:b.height}};return{shortcut:r('.faith-home-shortcuts'),shortcutInFlow:getComputedStyle(document.querySelector('.faith-home-shortcuts')).position==='relative',scene:r('.council-terrain-scene'),copy:r('.council-portal-copy'),quote:r('.dashboard-spiritual'),model:r('.council-portal-model')}})()`);
     assert.ok(layout.shortcut.top >= layout.quote.bottom - 1, `${name}: below Nafahat`);
     if (width < 970) assert.ok(layout.shortcut.bottom <= layout.copy.top + 1, `${name}: shortcuts before welcome, without overlap`);
     const baseline = await evaluate(`(()=>{const section=document.querySelector('.has-faith-shortcuts');section.classList.remove('has-faith-shortcuts');document.querySelector('.faith-home-shortcuts').style.display='none';const r=document.querySelector('.council-portal-model').getBoundingClientRect();const result={top:r.top,left:r.left,width:r.width,height:r.height};section.classList.add('has-faith-shortcuts');document.querySelector('.faith-home-shortcuts').style.display='';return result})()`);
-    for (const key of ["top", "left", "width", "height"]) assert.ok(Math.abs(baseline[key] - layout.model[key]) < 1, `${name}: unchanged approved gateway ${key}`);
-    await screenshot(name); console.log(`PASS ${name}: selected placement and unchanged gateway geometry`);
+    if (layout.shortcutInFlow) assert.ok(layout.shortcut.bottom <= layout.scene.top + 1, `${name}: reserved prayer row stays above the scene`);
+    for (const key of ["top", "left", "width", "height"]) {
+      const reservedHeight = key === "top" && layout.shortcutInFlow ? layout.shortcut.height : 0;
+      assert.ok(Math.abs(baseline[key] + reservedHeight - layout.model[key]) < 1, `${name}: approved gateway ${key} retained below the reserved shortcut row`);
+    }
+    await screenshot(name); console.log(`PASS ${name}: selected shortcut placement and preserved gateway geometry`);
   }
   assert.deepEqual(pageErrors, [], "No React/runtime exceptions in actual component fixtures");
   console.log("All faith Chrome component checks passed. Scan images were stubbed; source content has an independent official audit.");

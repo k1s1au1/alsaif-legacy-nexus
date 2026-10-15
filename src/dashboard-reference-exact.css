@@ -307,6 +307,17 @@ html body main .council-terrain-scene .council-portal-contact-shadow {
     max-width: none !important;
     margin-inline: calc(50% - 50vw) !important;
   }
+
+  /* Reserve the shortcuts' own height on landscape iPads and tablet previews.
+   * Absolute positioning painted the prayer label over the top of the tower. */
+  html body main
+    .has-faith-shortcuts > .dashboard-portal-card > .faith-home-shortcuts {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    padding: 8px 5%;
+  }
 }
 
 /* Approved visitor ornament: part of the welcome copy, with the scene's identity.

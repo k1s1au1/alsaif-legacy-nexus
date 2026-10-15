@@ -43,12 +43,15 @@ import {useRecordedVisitorCount,useOnlineCount} from './src/lib/presence';
 window.qaHold=location.pathname==='/loading';window.qaFail=location.pathname==='/error';window.qaWaiters=[];
 window.qaRows=[{user_id:'one',last_seen_at:new Date().toISOString()},{user_id:'two',last_seen_at:'2026-01-01T00:00:00Z'}];
 window.qaTotal=1248;window.qaQueries=0;
+const tabletLandscape=new URLSearchParams(location.search).has('tablet');
+document.documentElement.dataset.dashboardTabletLandscape=tabletLandscape?'true':'false';
+window.qaUnlocated=false;
 window.qaRelease=()=>{window.qaHold=false;window.qaWaiters.splice(0).forEach(resolve=>resolve())};
 window.qaVisit=(id)=>{const found=window.qaRows.some(row=>row.user_id===id);if(!found){window.qaRows.push({user_id:id,last_seen_at:new Date().toISOString()});window.qaTotal++}window.qaChange({eventType:found?'UPDATE':'INSERT',new:{user_id:id,last_seen_at:new Date().toISOString()}})};
-function Fixture(){const count=useRecordedVisitorCount();const online=useOnlineCount();const [name,setName]=useState('حساب المعاينة');const [show,setShow]=useState(true);window.qaSetName=setName;window.qaSetShow=setShow;
-const hero=<HeritagePortal3D greeting="مساء الخير" name={name} message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className={innerWidth>=1200?'desktop-portal-model':'dashboard-portal-model'} visitorCount={show?count:undefined}/>;
+function Fixture(){const count=useRecordedVisitorCount();const online=useOnlineCount();const [name,setName]=useState('حساب المعاينة');const [show,setShow]=useState(true);const [,setUnlocated]=useState(false);window.qaSetName=setName;window.qaSetShow=setShow;window.qaSetUnlocated=value=>{window.qaUnlocated=value;setUnlocated(value)};const desktop=innerWidth>=1200&&!tabletLandscape;
+const hero=<HeritagePortal3D greeting="مساء الخير" name={name} message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className={desktop?'desktop-portal-model':'dashboard-portal-model'} visitorCount={show?count:undefined}/>;
 const services=<div className="desktop-services-panel"><div className="desktop-section-head desktop-section-head-on-dark"><h2>خدمات العائلة</h2></div><div className="desktop-services-grid">{['الصندوق المالي','المهام','الرحلات','الاجتماعات'].map(label=><div className="desktop-service-card" key={label}><strong>{label}</strong></div>)}</div><button className="desktop-services-wide-toggle">عرض جميع الخدمات</button></div>;
-return <main className="app-shell-main relative min-h-screen"><div className="app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto max-w-7xl"><output hidden id="qa-online">{online}</output>{innerWidth>=1200?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage">{hero}</div>{services}</section></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section></div>}</div></main>}
+return <main className="app-shell-main relative min-h-screen"><div className="app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto max-w-7xl"><output hidden id="qa-online">{online}</output>{desktop?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage">{hero}</div>{services}</section></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section></div>}</div></main>}
 createRoot(document.getElementById('app')).render(<Fixture/>);window.fixtureReady=true;`;
 await build({
   stdin: {
@@ -89,7 +92,7 @@ await build({
             path === "supabase"
               ? `export const supabase={from:()=>({select:async(fields,options)=>{if(options?.count!=='exact')throw Error('Exact server count required');window.qaQueries++;if(window.qaHold)await new Promise(resolve=>window.qaWaiters.push(resolve));return window.qaFail?{data:null,count:null,error:{message:'unavailable'}}:{data:window.qaRows.map(row=>({...row})),count:window.qaTotal}}}),channel:()=>{const channel={on:(event,filter,callback)=>{window.qaChange=callback;return channel},subscribe:callback=>{window.qaSubscription=callback;setTimeout(()=>callback?.('SUBSCRIBED'),0);return channel}};return channel}};`
               : path === "prayer"
-                ? `export const usePrayerTimes=()=>({location:{latitude:27,longitude:49},locationLabel:'حسب موقعك',prayer:{name:'الفجر'},countdown:'باقي ٨ ساعات',loading:false});`
+                ? `export const usePrayerTimes=()=>window.qaUnlocated?({location:null,locationLabel:'حسب موقعك',prayer:null,countdown:'',loading:false}):({location:{latitude:27,longitude:49},locationLabel:'حسب موقعك',prayer:{name:'الفجر'},countdown:'باقي ٨ ساعات',loading:false});`
                 : `import React from 'react';export const useNavigate=()=>()=>{};export function Link({to,search,children,...props}){return <a {...props} href={to}>{children}</a>}`,
         }));
       },
@@ -257,11 +260,16 @@ try {
   console.log(
     "PASS saved unique visitors, first-visit realtime update, reconnect, pagination and failed reads",
   );
-  for (const [name, width, height] of [
+  for (const [name, width, height, tablet = false] of [
     ["phone-small", 320, 800],
     ["phone", 390, 844],
     ["ipad-portrait", 834, 1194],
-    ["ipad-landscape", 1024, 768],
+    ["ipad-landscape", 1024, 768, true],
+    ["ipad-landscape-reference", 1142, 782, true],
+    ["tablet-preview-landscape", 1142, 782],
+    ["ipad-air-landscape", 1180, 820, true],
+    ["ipad-pro-landscape", 1194, 834, true],
+    ["ipad-pro-large-landscape", 1366, 1024, true],
     ["desktop", 1440, 1000],
   ]) {
     await send("Emulation.setDeviceMetricsOverride", {
@@ -270,11 +278,12 @@ try {
       deviceScaleFactor: 1,
       mobile: false,
     });
-    await navigate();
+    await send("Emulation.setTouchEmulationEnabled", {
+      enabled: tablet,
+      maxTouchPoints: 5,
+    });
+    await navigate(tablet ? "/?tablet=1" : "/");
     await until("document.querySelector('.council-visitor-number').textContent==='1,248'");
-    await evaluate(
-      `document.documentElement.dataset.dashboardTabletLandscape=${JSON.stringify(width >= 970 && width < 1200 ? "true" : "false")}`,
-    );
     await settle();
     await evaluate(
       `window.qaVisibleTower=async()=>{const node=document.querySelector('.council-portal-towers image');const r=node.getBoundingClientRect();const scene=document.querySelector('.council-terrain-scene').getBoundingClientRect();return {left:r.left+r.width*70/1065,right:r.left+r.width*996/1065,top:r.top+r.height*137/1477,bottom:r.top+r.height*1227/1477,width:r.width,height:r.height,offsetLeft:r.left-scene.left,offsetTop:r.top-scene.top}}`,
@@ -293,6 +302,60 @@ try {
     );
     await evaluate("window.qaSetShow(true)");
     await settle();
+    if (tablet || (width >= 970 && width < 1200)) {
+      for (const noLocation of [true, false]) {
+        await evaluate(`window.qaSetUnlocated(${noLocation})`);
+        await settle();
+        const shortcuts = await evaluate(
+          `(async()=>{const row=document.querySelector('.faith-home-shortcuts').getBoundingClientRect();const scene=document.querySelector('.council-terrain-scene').getBoundingClientRect();const tower=await window.qaVisibleTower();return {rowBottom:row.bottom,sceneTop:scene.top,towerTop:tower.top,links:Array.from(document.querySelectorAll('.faith-home-link')).map(link=>{const r=link.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {text:link.textContent,clickable:link.contains(hit),href:link.getAttribute('href')}})}})()`,
+        );
+        assert.ok(
+          shortcuts.rowBottom <= shortcuts.sceneTop + 1,
+          `${name}: faith shortcuts reserve their own row ${JSON.stringify(shortcuts)}`,
+        );
+        assert.ok(
+          shortcuts.towerTop - shortcuts.rowBottom >= 24,
+          `${name}: prayer and sculpture have a clear gap ${JSON.stringify(shortcuts)}`,
+        );
+        assert.ok(
+          shortcuts.links.every((link) => link.clickable && link.href === "/faith"),
+          `${name}: both shortcuts remain tappable`,
+        );
+        console.log(
+          `PASS ${name}: prayer/Mushafi row clears sculpture (${noLocation ? "GPS unavailable" : "next prayer"})`,
+        );
+      }
+      if (name === "ipad-landscape") {
+        await send("Emulation.setDeviceMetricsOverride", {
+          width: 768,
+          height: 1024,
+          deviceScaleFactor: 1,
+          mobile: false,
+        });
+        await settle();
+        assert.equal(
+          await evaluate(
+            "getComputedStyle(document.querySelector('.faith-home-shortcuts')).position",
+          ),
+          "absolute",
+          "Portrait rotation retains its existing shortcut layout",
+        );
+        await send("Emulation.setDeviceMetricsOverride", {
+          width,
+          height,
+          deviceScaleFactor: 1,
+          mobile: false,
+        });
+        await settle();
+        assert.equal(
+          await evaluate(
+            "getComputedStyle(document.querySelector('.faith-home-shortcuts')).position",
+          ),
+          "relative",
+          "Landscape rotation restores the reserved shortcut row",
+        );
+      }
+    }
     for (const longName of [false, true]) {
       await evaluate(
         `window.qaSetName(${JSON.stringify(longName ? "محمد بن عبدالرحمن بن عبدالعزيز بن عبدالله السيف" : "حساب المعاينة")})`,
@@ -311,11 +374,11 @@ try {
       if (width >= 970) {
         assert.ok(
           Math.abs(modelBefore.offsetLeft - modelBaseline.offsetLeft) < 1,
-          `${name}: existing sculpture horizontal position retained ${JSON.stringify({modelBefore,modelBaseline})}`,
+          `${name}: existing sculpture horizontal position retained ${JSON.stringify({ modelBefore, modelBaseline })}`,
         );
         assert.ok(
           Math.abs(modelBefore.offsetTop - modelBaseline.offsetTop) < 1,
-          `${name}: existing sculpture vertical position retained ${JSON.stringify({modelBefore,modelBaseline})}`,
+          `${name}: existing sculpture vertical position retained ${JSON.stringify({ modelBefore, modelBaseline })}`,
         );
       }
       assert.ok(
@@ -354,6 +417,10 @@ try {
     );
     assert.equal(identity.number, "rgb(185, 121, 70)");
     assert.equal(identity.text, "rgb(255, 243, 220)");
+    if (tablet || (width >= 970 && width < 1200)) {
+      await evaluate("window.qaSetUnlocated(true)");
+      await settle();
+    }
     const png = await send("Page.captureScreenshot", {
       format: "png",
       captureBeyondViewport: false,
