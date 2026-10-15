@@ -321,7 +321,7 @@ function Fixture() {
     />
   );
   return (
-    <>
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 overflow-x-hidden">
       <main
         className="app-shell-main relative min-h-screen pb-40 md:pb-24"
         data-tablet-portrait={innerWidth >= 600 && !wide ? "true" : undefined}
@@ -374,7 +374,7 @@ function Fixture() {
         </div>
         <Dock />
       </main>
-    </>
+    </div>
   );
 }
 createRoot(document.getElementById("app")!).render(<Fixture />);
