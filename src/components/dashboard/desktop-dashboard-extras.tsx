@@ -40,7 +40,7 @@ import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
 import { FamilyAgenda } from "@/components/dashboard/family-agenda";
 import { PrayerMushafShortcuts } from "@/components/dashboard/prayer-mushaf-shortcuts";
 import { TripImage } from "@/components/trip-image";
-import { UpcomingTripTicket } from "@/components/upcoming-trip-ticket";
+import { TripTicket } from "@/components/trip-ticket";
 import { FollowupNoteCard } from "@/components/dashboard/followup-note-card";
 
 const fmtDate = (value?: string | null) => {
@@ -592,9 +592,9 @@ export function DesktopDashboardExtras({
                       />
                     );
                   }
-                  if (item.cardType === "trip" && item.trip.status !== "planning") {
+                  if (item.cardType === "trip") {
                     return (
-                      <UpcomingTripTicket
+                      <TripTicket
                         key={`trip-${item.trip.id}`}
                         trip={item.trip}
                         image={<TripImage path={item.trip.image_url} alt={item.trip.title} />}
@@ -615,21 +615,6 @@ export function DesktopDashboardExtras({
                           aria-hidden="true"
                           className="desktop-occasion-template"
                         />
-                      )}
-
-                      {item.cardType !== "occasion" && (
-                        <div
-                          className={`desktop-card-motif desktop-card-motif--${item.cardType || "default"}`}
-                          aria-hidden="true"
-                        >
-                          {item.cardType === "trip" && (
-                            <>
-                              <Plane />
-                              <span>ALS</span>
-                              <small>BOARDING</small>
-                            </>
-                          )}
-                        </div>
                       )}
 
                       <div className="desktop-next-top">

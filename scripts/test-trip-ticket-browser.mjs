@@ -32,15 +32,19 @@ const actions=<><button type="button" onClick={()=>window.edits++}><Pencil size=
 function Fixture(){return <main><h1>قالب التذاكر الموحّد</h1><p>معاينة المكونات الفعلية ببيانات تجريبية</p>
 <section className="qa-home dashboard-page integrated-hub"><h2>الرئيسية</h2><UpcomingTripTicket trip={trip} image={image} details={details} compact/></section>
 <section className="trips-page"><h2>قائمة الرحلات</h2><div className="trips-ticket-grid trips-ticket-grid--upcoming"><TripTicket trip={trip} image={image} details={details} statusControl={<span>قادمة</span>} actions={actions}/><TripTicket trip={{...trip,title:'عرض العضو',description:null}} image={image} details={details} statusControl={<span>قادمة</span>}/></div>
-<h2>قيد التخطيط — القالب الحالي</h2><TripTicket trip={{...trip,status:'planning'}} image={image} details={<a className="trip-ticket__details" href="#planning">شارك في التخطيط</a>} statusControl={<span>قيد التخطيط</span>} actions={actions}/></section></main>}
+<h2>قيد التخطيط — الورقة المطوية</h2><TripTicket trip={{...trip,status:'planning'}} image={image} details={<a className="trip-ticket__details" href="#planning">شارك في التخطيط</a>} statusControl={<span>قيد التخطيط</span>} actions={actions}/></section></main>}
 function FollowupFixture(){const [long,setLong]=React.useState(false);const [missing,setMissing]=React.useState(false);window.qaLong=setLong;window.qaMissing=setMissing;window.meetingOpens=0;
 const meeting=<FollowupNoteCard kind="meeting" title={long?'اجتماع مجلس العائلة لمراجعة المشاريع القادمة وتنظيم اللقاء السنوي لجميع أفراد العائلة':'اجتماع تدشين موقع السيف'} date={missing?'invalid':'2026-12-30T11:50:00+03:00'} location={long?'قاعة الاجتماعات الرئيسية في مخيمات العائلة بالمنطقة الشرقية':'مخيمات سابك'} action={<button type="button" onClick={()=>window.meetingOpens++}>فتح الاجتماع <ChevronLeft size={16}/></button>}/>;
 const task=<FollowupNoteCard kind="task" title={long?'إنشاء شجرة العائلة وتوثيق صلة القرابة لجميع أفراد العائلة ومراجعة المعلومات':'إنشاء شجرة العائلة'} date={missing?null:'2026-12-30'} action={<a href="/tasks">فتح المهمة <ChevronLeft size={16}/></a>}/>;
 return <main className="qa-followup-preview"><h1>الاجتماعات والمهام</h1><p>معاينة القالب الموحّد ببيانات تجريبية</p>{innerWidth<970?<div className="dashboard-page"><section className="integrated-hub"><div className="hub-mobile-slider"><div className="hub-expanded-list">{meeting}{task}</div></div></section></div>:<div className="desktop-follow-cards">{meeting}{task}</div>}</main>}
-createRoot(document.getElementById('app')).render(location.pathname==='/followup'?<FollowupFixture/>:<Fixture/>);window.fixtureReady=true;`;
+function PlanningFixture(){const [mode,setMode]=React.useState('home');const [long,setLong]=React.useState(false);const [missing,setMissing]=React.useState(false);window.qaMode=setMode;window.qaLong=setLong;window.qaMissing=setMissing;
+const sample={...trip,title:long?'رحلة العائلة لاستكشاف المعالم الطبيعية والتراثية في العلا':'العلا',location:long?'محافظة العلا والمواقع التراثية المحيطة بها':'العلا',badge:mode==='home'?null:'وسمية',description:null,start_date:missing?'invalid':'2026-10-21',end_date:missing?null:'2026-10-23'};
+const card=status=><TripTicket trip={{...sample,status}} compact={mode==='home'} image={image} details={<a href={status==='planning'?'/trips/demo-planning':'/trips/demo-upcoming'}>التفاصيل <ChevronLeft size={16}/></a>} statusControl={mode==='home'?undefined:<div className="trip-status-control"><div className="trip-status-control__field"><select aria-label="حالة الرحلة" defaultValue={status} onChange={()=>window.statusChanges=(window.statusChanges||0)+1}><option value="planning">قيد التخطيط</option><option value="upcoming">قادمة</option></select></div></div>} actions={mode==='list'?actions:undefined}/>;
+return <main className="qa-planning-preview"><h1>بطاقات الرحلات</h1><p>معاينة التنفيذ ببيانات تجريبية — {mode==='home'?'المتابعة السريعة':'قائمة الرحلات'}</p>{mode==='home'?(innerWidth<970?<div className="dashboard-page"><section className="integrated-hub"><div className="hub-mobile-slider"><div className="hub-expanded-list"><div className="hub-carousel-item">{card('planning')}</div><div className="hub-carousel-item">{card('upcoming')}</div></div></div></section></div>:<div className="desktop-follow-cards">{card('planning')}{card('upcoming')}</div>):<section className="trips-page"><div className="trips-ticket-grid">{card('planning')}{card('upcoming')}</div></section>}</main>}
+createRoot(document.getElementById('app')).render(location.pathname==='/planning'?<PlanningFixture/>:location.pathname==='/followup'?<FollowupFixture/>:<Fixture/>);window.fixtureReady=true;`;
 await build({ stdin: { contents: entry, resolveDir: process.cwd(), sourcefile: "ticket-qa.tsx", loader: "tsx" }, bundle: true, format: "iife", platform: "browser", outdir: output, entryNames: "fixture", assetNames: "[name]-[hash]", publicPath: "/__qa/", loader: { ".jpg": "file" }, tsconfig: "tsconfig.json" });
 const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}
-html,body{margin:0}body{background:var(--background);color:var(--foreground)}main{max-width:1240px;margin:auto;padding:24px;min-width:0}main>h1{font-size:30px;font-weight:900}main>p{margin:8px 0 24px}h2{margin:20px 0 16px;font-size:22px;font-weight:800}.qa-home{max-width:900px;margin:0 auto 28px;padding:20px;border-radius:24px;background:repeating-linear-gradient(45deg,var(--background) 0 12px,var(--muted) 12px 24px)}.trips-page{padding:0 0 24px}.qa-home .upcoming-trip-ticket{width:100%}.qa-followup-preview{max-width:960px}.qa-followup-preview .desktop-follow-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.qa-followup-preview .hub-expanded-list{display:grid;gap:20px;padding:12px!important}.qa-followup-preview .integrated-hub{background:var(--background)!important}</style><link rel="stylesheet" href="/__qa/fixture.css"></head><body><div id="app"></div><script src="/__qa/fixture.js"></script></body></html>`;
+html,body{margin:0}body{background:var(--background);color:var(--foreground)}main{max-width:1240px;margin:auto;padding:24px;min-width:0}main>h1{font-size:30px;font-weight:900}main>p{margin:8px 0 24px}h2{margin:20px 0 16px;font-size:22px;font-weight:800}.qa-home{max-width:900px;margin:0 auto 28px;padding:20px;border-radius:24px;background:repeating-linear-gradient(45deg,var(--background) 0 12px,var(--muted) 12px 24px)}.trips-page{padding:0 0 24px}.qa-home .upcoming-trip-ticket{width:100%}.qa-followup-preview{max-width:960px}.qa-followup-preview .desktop-follow-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.qa-followup-preview .hub-expanded-list{display:grid;gap:20px;padding:12px!important}.qa-followup-preview .integrated-hub{background:var(--background)!important}.qa-planning-preview{max-width:1240px}.qa-planning-preview>h1,.qa-planning-preview>p{color:var(--primary)}.qa-planning-preview .hub-expanded-list{display:grid;gap:20px;padding:0!important}.qa-planning-preview .integrated-hub{padding:0!important;background:transparent!important}.qa-planning-preview .hub-carousel-item{min-width:0;padding:0!important}.qa-planning-preview .dashboard-page{background:transparent!important}@media(max-width:599px){.qa-planning-preview{padding:16px}.qa-planning-preview>h1{font-size:25px}.qa-planning-preview>p{font-size:13px}} </style><link rel="stylesheet" href="/__qa/fixture.css"></head><body><div id="app"></div><script src="/__qa/fixture.js"></script></body></html>`;
 if (prepareOnly) { rmSync(temporary, { recursive: true, force: true }); console.log("Actual ticket React/CSS fixture compiled successfully"); process.exit(0); }
 const server = createServer((request, response) => {
   if (request.url.startsWith("/__qa/")) {
@@ -149,6 +153,49 @@ try {
     await until("getComputedStyle(document.querySelector('.followup-note__action button')).outlineStyle==='solid'");
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.followup-note__action button')).outlineStyle"),"solid",`${name}: keyboard focus is visible`);
     console.log(`PASS ${name}: shared meeting/task design, real dates, wrapped titles, touch actions, identity and keyboard focus`);
+  }
+  for(const [name,width,height] of [["small-phone",320,1000],["phone",390,1000],["ipad-portrait",834,1194],["ipad-landscape",1024,768],["ipad-pro-landscape",1366,1024],["desktop",1440,1000]]){
+    await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
+    await send("Emulation.setTouchEmulationEnabled",{enabled:width<1400,maxTouchPoints:5});
+    await send("Page.navigate",{url:`http://127.0.0.1:${port}/planning`});
+    await until("window.fixtureReady && document.querySelector('.trip-ticket--planning') && Array.from(document.images).every(i=>i.complete && i.naturalWidth>0)");await settle();
+    for(const mode of ['home','list']){
+      await evaluate(`window.qaMode('${mode}');scrollTo(0,0)`);await settle();
+      const dimensions=await evaluate(`Array.from(document.querySelectorAll('[data-trip-status]')).map(card=>{const r=card.getBoundingClientRect(),photo=card.querySelector('.trip-ticket__photo,.upcoming-trip-ticket__photo').getBoundingClientRect();return{status:card.dataset.tripStatus,width:r.width,height:r.height,photoHeight:photo.height,left:r.left,right:r.right}})`);
+      assert.equal(dimensions.length,2);
+      assert.ok(Math.abs(dimensions[0].width-dimensions[1].width)<2,`${name}/${mode}: planning and upcoming share the same card width ${JSON.stringify(dimensions)}`);
+      if(mode==='home'){
+        assert.ok(Math.abs(dimensions[0].photoHeight-dimensions[1].photoHeight)<1,`${name}: same compact image height`);
+        assert.ok(Math.abs(dimensions[0].height-dimensions[1].height)<=8,`${name}: comparable compact footprint ${JSON.stringify(dimensions)}`);
+      }else{
+        assert.ok(Math.abs(dimensions[0].height-dimensions[1].height)<=65,`${name}: comparable list footprint ${JSON.stringify(dimensions)}`);
+      }
+      assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth+2"),true,`${name}/${mode}: no horizontal overflow`);
+      assert.equal(await evaluate("getComputedStyle(document.querySelector('.trip-ticket--planning')).borderTopStyle"),'dashed',`${name}: planning retains the reference's dashed paper`);
+      assert.equal(await evaluate("document.querySelector('.trip-ticket__detail-link a').getAttribute('href')"),'/trips/demo-planning',`${name}: planning opens the original trip detail route`);
+      assert.match(await evaluate("document.querySelector('.trip-ticket__proposed-date').textContent"),/الموعد المقترح.*أكتوبر/,`${name}: proposed dates remain distinct from confirmed dates`);
+      const png=await send("Page.captureScreenshot",{format:'png',captureBeyondViewport:false});
+      writeFileSync(`test-results/trip-tickets/planning-${mode}-${name}.png`,Buffer.from(png.data,'base64'));
+      console.log(`PASS planning ${name}/${mode}: ${JSON.stringify(dimensions)}`);
+    }
+    await evaluate("document.querySelector('.trip-ticket__actions button').click();document.querySelector('.trip-ticket__delete').click();const select=document.querySelector('.trip-ticket__status select');select.value='upcoming';select.dispatchEvent(new Event('change',{bubbles:true}))");
+    assert.equal(await evaluate("window.edits===1 && window.deletes===1 && window.statusChanges===1"),true,`${name}: original management callbacks and status control preserved`);
+    assert.equal(await evaluate("Array.from(document.querySelectorAll('.trip-ticket__actions button,.trip-ticket__status select')).every(el=>el.getBoundingClientRect().height>=44 && getComputedStyle(el).visibility==='visible')"),true,`${name}: management actions visible on touch screens`);
+    await evaluate("window.qaMode('member')");await settle();
+    assert.equal(await evaluate("document.querySelector('.trip-ticket__actions')"),null,`${name}: actions stay permission-controlled`);
+    for(const mode of ['home','list']){
+      await evaluate(`window.qaMode('${mode}');window.qaLong(true)`);await settle();
+      assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth+2"),true,`${name}/${mode}: long Arabic titles do not overflow`);
+      assert.equal(await evaluate(`(()=>{const card=document.querySelector('.trip-ticket--planning');const nodes=['.trip-ticket__copy','.trip-ticket__links','.trip-ticket__photo'].map(sel=>card.querySelector(sel).getBoundingClientRect());const overlaps=(a,b)=>Math.min(a.right,b.right)>Math.max(a.left,b.left)+1&&Math.min(a.bottom,b.bottom)>Math.max(a.top,b.top)+1;return !overlaps(nodes[0],nodes[1])&&!overlaps(nodes[0],nodes[2])&&!overlaps(nodes[1],nodes[2])})()`),true,`${name}/${mode}: text, date and photo do not overlap`);
+    }
+    await evaluate("window.qaMissing(true);document.documentElement.classList.add('dark');document.documentElement.dataset.themeColorMode='custom';document.documentElement.style.setProperty('--identity-text','#f5ebdf')");
+    await until("getComputedStyle(document.querySelector('.trip-ticket--planning')).color==='rgb(245, 235, 223)'");
+    assert.match(await evaluate("document.querySelector('.trip-ticket__proposed-date').textContent"),/لم يحدد بعد/,`${name}: unknown date stays truthful`);
+    await send("Input.dispatchKeyEvent",{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9,nativeVirtualKeyCode:9});
+    await send("Input.dispatchKeyEvent",{type:'keyUp',key:'Tab',code:'Tab',windowsVirtualKeyCode:9,nativeVirtualKeyCode:9});
+    await evaluate("document.querySelector('.trip-ticket__detail-link a').focus()");
+    await until("getComputedStyle(document.querySelector('.trip-ticket__detail-link a')).outlineStyle==='solid'");
+    console.log(`PASS planning ${name}: long titles, missing dates, identity colors, touch actions and keyboard focus`);
   }
   assert.deepEqual(errors,[],"No React or ResizeObserver runtime errors");
   console.log("All actual ticket Chrome component checks passed");

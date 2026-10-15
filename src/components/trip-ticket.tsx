@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Calendar, MapPin } from "lucide-react";
 import { UpcomingTripTicket } from "@/components/upcoming-trip-ticket";
 import "./trip-ticket.css";
+import "./planning-trip-card.css";
 
 type TicketTrip = {
   title: string;
@@ -16,9 +17,10 @@ type TicketTrip = {
 type Props = {
   trip: TicketTrip;
   image: ReactNode;
-  statusControl: ReactNode;
+  statusControl?: ReactNode;
   details: ReactNode;
   actions?: ReactNode;
+  compact?: boolean;
 };
 
 function parseDate(value: string | null) {
@@ -32,7 +34,7 @@ function shortDate(date: Date) {
 }
 
 /** The same trip record keeps its actions while its silhouette follows its phase. */
-export function TripTicket({ trip, image, statusControl, details, actions }: Props) {
+export function TripTicket({ trip, image, statusControl, details, actions, compact = false }: Props) {
   const planning = trip.status === "planning";
   if (!planning) {
     return (
@@ -42,6 +44,7 @@ export function TripTicket({ trip, image, statusControl, details, actions }: Pro
         statusControl={statusControl}
         details={details}
         actions={actions}
+        compact={compact}
       />
     );
   }
@@ -53,13 +56,14 @@ export function TripTicket({ trip, image, statusControl, details, actions }: Pro
     : "لم يحدد بعد";
 
   return (
-    <article className="trip-ticket trip-ticket--planning" data-trip-status={trip.status} dir="rtl">
-      {planning && <span className="trip-ticket__fold" aria-hidden="true" />}
+    <article className={`trip-ticket trip-ticket--planning${compact ? " trip-ticket--compact" : ""}`} data-trip-status={trip.status} dir="rtl" aria-label={trip.title}>
+      <span className="trip-ticket__fold" aria-hidden="true" />
       <div className="trip-ticket__body">
         <div className="trip-ticket__photo">{image}</div>
-        <div className="trip-ticket__status">{statusControl}</div>
+        <div className="trip-ticket__status">{statusControl || <span className="trip-status-control__label">قيد التخطيط</span>}</div>
 
         <div className="trip-ticket__content">
+          <div className="trip-ticket__copy">
           {trip.location && (
             <p className="trip-ticket__location">
               <MapPin size={15} aria-hidden="true" />
@@ -67,10 +71,10 @@ export function TripTicket({ trip, image, statusControl, details, actions }: Pro
             </p>
           )}
           <h3>{trip.title}</h3>
-          {trip.badge && <span className="trip-ticket__badge">{trip.badge}</span>}
-          {trip.description && <p className="trip-ticket__description">{trip.description}</p>}
+          {trip.badge && !compact && <span className="trip-ticket__badge">{trip.badge}</span>}
+          {trip.description && !compact && <p className="trip-ticket__description">{trip.description}</p>}
+          </div>
           <div className="trip-ticket__links">
-            {planning && (
               <div className="trip-ticket__proposed-date">
                 <span>الموعد المقترح</span>
                 <p>
@@ -78,8 +82,7 @@ export function TripTicket({ trip, image, statusControl, details, actions }: Pro
                   <span>{dateRange}</span>
                 </p>
               </div>
-            )}
-            {details}
+            <div className="trip-ticket__detail-link">{details}</div>
           </div>
         </div>
       </div>
