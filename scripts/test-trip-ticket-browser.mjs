@@ -166,7 +166,7 @@ try {
       assert.ok(Math.abs(dimensions[0].width-dimensions[1].width)<2,`${name}/${mode}: planning and upcoming share the same card width ${JSON.stringify(dimensions)}`);
       if(mode==='home'){
         assert.ok(Math.abs(dimensions[0].photoHeight-dimensions[1].photoHeight)<1,`${name}: same compact image height`);
-        assert.ok(Math.abs(dimensions[0].height-dimensions[1].height)<=32,`${name}: comparable compact footprint ${JSON.stringify(dimensions)}`);
+        assert.ok(Math.abs(dimensions[0].height-dimensions[1].height)<=8,`${name}: comparable compact footprint ${JSON.stringify(dimensions)}`);
       }else{
         assert.ok(Math.abs(dimensions[0].height-dimensions[1].height)<=65,`${name}: comparable list footprint ${JSON.stringify(dimensions)}`);
       }

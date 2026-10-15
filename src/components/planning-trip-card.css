@@ -256,6 +256,21 @@ html[data-theme-color-mode="custom"] .trip-ticket--planning {
 .trip-ticket--compact .trip-ticket__links {
   gap: 8px;
 }
+.trip-ticket--compact .trip-ticket__proposed-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+.trip-ticket--compact .trip-ticket__proposed-date p {
+  margin: 0;
+  line-height: 20px;
+}
+@container planning-trip (max-width: 400px) {
+  .trip-ticket--compact .trip-ticket__links {
+    display: grid;
+  }
+}
 @container planning-trip (min-width: 560px) {
   .trip-ticket__content {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
