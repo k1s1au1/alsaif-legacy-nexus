@@ -123,14 +123,14 @@ try {
         return{r,title,meta,action,motif,overflow:card.scrollWidth>card.clientWidth+1};})`);
       for(const card of cards){
         assert.equal(card.overflow,false,`${name}: card has no horizontal clipping`);
+        assert.ok(card.r.left>=-1 && card.r.right<=width+1,`${name}: complete card stays inside the viewport`);
         assert.ok(card.title.bottom<=card.meta.top+1 && card.meta.bottom<=card.action.top+1,`${name}/${long}: title, metadata and action do not overlap ${JSON.stringify(card)}`);
         assert.ok(card.action.height>=44 && card.action.bottom<=card.r.bottom-8,`${name}: action remains an accessible touch target`);
         assert.ok(card.motif.right+8<=card.title.left && card.motif.right+8<=card.meta.left,`${name}: decoration stays clear of content`);
       }
       assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth+2"),true,`${name}: page stays within viewport`);
       if(!long){
-        const layout=await send("Page.getLayoutMetrics");
-        const png=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width,height:Math.ceil(layout.cssContentSize.height),scale:1}});
+        const png=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
         writeFileSync(`test-results/trip-tickets/followup-${name}.png`,Buffer.from(png.data,"base64"));
       }
     }
@@ -140,6 +140,8 @@ try {
     const original=await evaluate("getComputedStyle(document.querySelector('.followup-note--meeting')).backgroundImage");
     await evaluate("document.documentElement.classList.add('dark');document.documentElement.style.setProperty('--identity-header','#4c244a');document.documentElement.style.setProperty('--identity-accent','#d5a776');document.documentElement.style.setProperty('--identity-text-on-nav','#fff2e4');document.documentElement.style.setProperty('--identity-icon-on-nav','#e8be8e')");await settle();
     assert.notEqual(await evaluate("getComputedStyle(document.querySelector('.followup-note--meeting')).backgroundImage"),original,`${name}: shared cards follow the chosen identity`);
+    await send("Input.dispatchKeyEvent", { type:"keyDown",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9 });
+    await send("Input.dispatchKeyEvent", { type:"keyUp",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9 });
     await evaluate("document.querySelector('.followup-note__action button').focus()");
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.followup-note__action button')).outlineStyle"),"solid",`${name}: keyboard focus is visible`);
     console.log(`PASS ${name}: shared meeting/task design, real dates, wrapped titles, touch actions, identity and keyboard focus`);
