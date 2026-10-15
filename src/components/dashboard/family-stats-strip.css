@@ -9,11 +9,13 @@
   container: family-stats / inline-size;
   min-width: 0;
   width: 100%;
+  padding-inline: clamp(12px, 4vw, 20px);
   color: var(--stats-ink);
   cursor: default;
 }
 .family-stats-strip--desktop {
   margin-top: 24px;
+  padding-inline: 0;
 }
 .family-stats-strip__layout {
   display: grid;
