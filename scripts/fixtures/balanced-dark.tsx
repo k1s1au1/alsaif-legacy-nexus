@@ -337,8 +337,16 @@ function Fixture() {
               <div hidden />
               <div hidden />
               <div hidden />
-              {stats}
-              <Cards />
+              {!tablet && stats}
+              {!tablet && <Cards />}
+            </div>
+          )}
+          {tablet && (
+            <div className="tablet-landscape-desktop-content">
+              <div className="desktop-rebuild-root">
+                {stats}
+                <Cards />
+              </div>
             </div>
           )}
           <Controls />

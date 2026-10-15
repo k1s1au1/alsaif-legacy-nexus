@@ -99,6 +99,7 @@ try {
       assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth+2"),true,`${name}: no horizontal overflow`);
     }
     await evaluate("document.documentElement.classList.remove('dark');scrollTo(0,0)");await settle();
+    await until("getComputedStyle(document.querySelector('.upcoming-trip-ticket__actions .trip-ticket__delete')).color==='rgb(198, 40, 40)'");
     assert.equal(await evaluate("Array.from(document.querySelectorAll('.upcoming-trip-ticket__actions button')).every(b=>b.getBoundingClientRect().height>=44 && getComputedStyle(b).visibility==='visible')"),true,`${name}: touch actions visible`);
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.upcoming-trip-ticket__actions .trip-ticket__delete')).color"),"rgb(198, 40, 40)",`${name}: deletion keeps its red cue`);
     await evaluate("document.querySelector('.upcoming-trip-ticket__actions button').click();document.querySelector('.upcoming-trip-ticket__actions .trip-ticket__delete').click()");
