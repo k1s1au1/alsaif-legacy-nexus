@@ -1,0 +1,291 @@
+/* The approved calendar / folded-paper cards share one template on every device. */
+.followup-note {
+  --note-surface: var(--identity-header, #064e3b);
+  --note-accent: var(--identity-accent, #d6b45e);
+  --note-ink: var(--identity-text-on-nav, #fff);
+  --note-icon: var(--identity-icon-on-nav, var(--note-accent));
+  --note-gutter: 22px;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 250px;
+  height: 100%;
+  padding: var(--note-gutter);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--note-accent) 34%, transparent);
+  border-radius: 22px;
+  color: var(--note-ink);
+  text-align: right;
+  box-shadow: 0 16px 34px rgb(3 29 22 / 14%);
+}
+.followup-note::before,
+.followup-note::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+.followup-note--meeting {
+  padding-top: 42px;
+  padding-left: 122px;
+  border-radius: 20px 20px 30px 30px;
+  background:
+    radial-gradient(
+      circle at 12% 88%,
+      color-mix(in srgb, var(--note-accent) 17%, transparent),
+      transparent 29%
+    ),
+    linear-gradient(145deg, color-mix(in srgb, var(--note-surface) 80%, black), var(--note-surface));
+}
+.followup-note--meeting::before {
+  inset: 0 0 auto;
+  height: 28px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--note-accent) 80%, black),
+    var(--note-accent) 48%,
+    color-mix(in srgb, var(--note-accent) 82%, black)
+  );
+  box-shadow: 0 6px 18px rgb(2 32 24 / 20%);
+}
+.followup-note--meeting::after {
+  top: -5px;
+  right: 46px;
+  left: 46px;
+  height: 20px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 50px,
+    color-mix(in srgb, var(--note-accent) 40%, white) 50px 58px,
+    transparent 58px 106px
+  );
+  filter: drop-shadow(0 3px 2px rgb(3 28 21 / 35%));
+}
+.followup-note--task {
+  padding-left: 105px;
+  clip-path: polygon(26px 0, 100% 0, 100% 100%, 0 100%, 0 26px);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 39px,
+      color-mix(in srgb, var(--note-ink) 6%, transparent) 39px 40px
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--note-surface) 38%, black),
+      color-mix(in srgb, var(--note-surface) 65%, black)
+    );
+}
+.followup-note--task::before {
+  top: 0;
+  left: 0;
+  width: 27px;
+  height: 27px;
+  clip-path: polygon(100% 0, 0 100%, 100% 100%);
+  background: linear-gradient(
+    135deg,
+    var(--note-accent),
+    color-mix(in srgb, var(--note-accent) 65%, black)
+  );
+}
+.followup-note--task::after {
+  top: 20px;
+  bottom: 20px;
+  left: 86px;
+  border-left: 1px solid color-mix(in srgb, var(--note-accent) 26%, transparent);
+}
+.followup-note__top,
+.followup-note__title,
+.followup-note__meta,
+.followup-note__action {
+  position: relative;
+  z-index: 2;
+}
+.followup-note__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.followup-note__kind {
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--note-accent) 28%, transparent);
+  border-radius: 999px;
+  color: var(--note-accent);
+  background: rgb(0 0 0 / 15%);
+  font-size: 11px;
+  font-weight: 900;
+}
+.followup-note__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 13px;
+  color: var(--note-icon);
+  background: rgb(255 255 255 / 10%);
+}
+.followup-note .followup-note__title {
+  margin: 22px 0 12px;
+  color: inherit;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.followup-note__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 14px;
+  color: color-mix(in srgb, var(--note-ink) 76%, transparent);
+  font-size: 12px;
+  font-weight: 700;
+}
+.followup-note__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.followup-note__meta svg {
+  flex: none;
+}
+.followup-note__action {
+  display: flex;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.followup-note__action > :is(a, button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--note-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+}
+.followup-note__action > :focus-visible {
+  outline: 2px solid var(--note-accent);
+  outline-offset: 4px;
+}
+.followup-note__calendar {
+  position: absolute;
+  z-index: 1;
+  bottom: 24px;
+  left: 22px;
+  width: 82px;
+  height: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 20px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: 18px;
+  color: var(--note-surface);
+  background: var(--identity-soft, #f7f2e6);
+  box-shadow: 0 12px 24px rgb(2 30 23 / 28%);
+  pointer-events: none;
+}
+.followup-note__calendar::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 26px;
+  background: var(--note-accent);
+}
+.followup-note__calendar svg {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  width: 14px;
+  height: 14px;
+}
+.followup-note__calendar strong {
+  margin-top: 4px;
+  font-size: 32px;
+  font-weight: 950;
+  line-height: 1;
+}
+.followup-note__calendar small {
+  margin-top: 7px;
+  font-size: 11px;
+  font-weight: 900;
+}
+.followup-note__checklist {
+  position: absolute;
+  bottom: 30px;
+  left: 20px;
+  width: 62px;
+  display: grid;
+  gap: 11px;
+  pointer-events: none;
+}
+.followup-note__checklist span {
+  position: relative;
+  display: block;
+  height: 8px;
+  border-bottom: 2px solid color-mix(in srgb, var(--note-ink) 20%, transparent);
+}
+.followup-note__checklist span::before {
+  content: "✓";
+  position: absolute;
+  right: 0;
+  bottom: -3px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--note-accent) 70%, transparent);
+  border-radius: 4px;
+  color: var(--note-accent);
+  background: var(--note-surface);
+  font-size: 9px;
+  font-weight: 900;
+}
+/* Narrow cards retain both motifs, with room for wrapped Arabic titles. */
+@media (max-width: 599px) {
+  .followup-note {
+    --note-gutter: 18px;
+    min-height: 260px;
+  }
+  .followup-note--meeting {
+    padding-left: 98px;
+  }
+  .followup-note--task {
+    padding-left: 80px;
+  }
+  .followup-note__calendar {
+    left: 16px;
+    width: 66px;
+    height: 94px;
+    border-radius: 15px;
+  }
+  .followup-note__calendar strong {
+    font-size: 28px;
+  }
+  .followup-note--task::after {
+    left: 62px;
+  }
+  .followup-note__checklist {
+    left: 14px;
+    width: 44px;
+  }
+  .followup-note .followup-note__title {
+    font-size: 20px;
+    margin-top: 18px;
+  }
+}
