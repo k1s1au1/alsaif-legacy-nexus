@@ -65,6 +65,8 @@ jobs:
         run: node --check public/firebase-messaging-sw.js
       - name: Build web app
         run: npm run build
+      - name: Check balanced dark components and portals on phones, iPads and desktop in Chrome
+        run: node scripts/test-balanced-dark-browser.mjs
       - name: Check prayer and Mushafi components on phone, iPad and desktop in Chrome
         run: node scripts/test-faith-browser.mjs
       - name: Check shared ticket cutouts, responsive width and touch actions in Chrome
@@ -73,8 +75,6 @@ jobs:
         run: node scripts/test-council-visitors-browser.mjs
       - name: Check read-only family statistics on phones, iPads and desktop in Chrome
         run: node scripts/test-family-stats-browser.mjs
-      - name: Check balanced dark components and portals on phones, iPads and desktop in Chrome
-        run: node scripts/test-balanced-dark-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
