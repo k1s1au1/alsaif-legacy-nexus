@@ -307,22 +307,25 @@ try {
         await evaluate(`window.qaSetUnlocated(${noLocation})`);
         await settle();
         const shortcuts = await evaluate(
-          `(async()=>{const row=document.querySelector('.faith-home-shortcuts').getBoundingClientRect();const scene=document.querySelector('.council-terrain-scene').getBoundingClientRect();const tower=await window.qaVisibleTower();return {rowBottom:row.bottom,sceneTop:scene.top,towerTop:tower.top,links:Array.from(document.querySelectorAll('.faith-home-link')).map(link=>{const r=link.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {text:link.textContent,clickable:link.contains(hit),href:link.getAttribute('href')}})}})()`,
+          `(async()=>{const row=document.querySelector('.faith-home-shortcuts').getBoundingClientRect();const scene=document.querySelector('.council-terrain-scene').getBoundingClientRect();const copy=document.querySelector('.council-portal-copy').getBoundingClientRect();const tower=await window.qaVisibleTower();return {rowTop:row.top,rowBottom:row.bottom,rowLeft:row.left,rowRight:row.right,sceneTop:scene.top,sceneLeft:scene.left,copyTop:copy.top,towerLeft:tower.left,links:Array.from(document.querySelectorAll('.faith-home-link')).map(link=>{const r=link.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {text:link.textContent,clickable:link.contains(hit),href:link.getAttribute('href')}})}})()`,
         );
         assert.ok(
-          shortcuts.rowBottom <= shortcuts.sceneTop + 1,
-          `${name}: faith shortcuts reserve their own row ${JSON.stringify(shortcuts)}`,
+          shortcuts.rowTop >= shortcuts.sceneTop &&
+            shortcuts.rowTop <= shortcuts.sceneTop + 16 &&
+            shortcuts.rowBottom <= shortcuts.copyTop + 1,
+          `${name}: faith shortcuts stay inside the scene above the welcome ${JSON.stringify(shortcuts)}`,
         );
         assert.ok(
-          shortcuts.towerTop - shortcuts.rowBottom >= 24,
-          `${name}: prayer and sculpture have a clear gap ${JSON.stringify(shortcuts)}`,
+          shortcuts.rowLeft >= shortcuts.sceneLeft - 1 &&
+            shortcuts.towerLeft - shortcuts.rowRight >= 24,
+          `${name}: shortcut tap areas stay left of the sculpture with a clear gap ${JSON.stringify(shortcuts)}`,
         );
         assert.ok(
           shortcuts.links.every((link) => link.clickable && link.href === "/faith"),
           `${name}: both shortcuts remain tappable`,
         );
         console.log(
-          `PASS ${name}: prayer/Mushafi row clears sculpture (${noLocation ? "GPS unavailable" : "next prayer"})`,
+          `PASS ${name}: prayer/Mushafi overlay clears sculpture to its left (${noLocation ? "GPS unavailable" : "next prayer"})`,
         );
       }
       if (name === "ipad-landscape") {
@@ -340,6 +343,10 @@ try {
           "absolute",
           "Portrait rotation retains its existing shortcut layout",
         );
+        assert.ok(
+          await evaluate("document.querySelector('.faith-home-shortcuts').getBoundingClientRect().width/document.querySelector('.council-terrain-scene').getBoundingClientRect().width>0.85"),
+          "Portrait rotation restores the full-width shortcut distribution",
+        );
         await send("Emulation.setDeviceMetricsOverride", {
           width,
           height,
@@ -351,8 +358,12 @@ try {
           await evaluate(
             "getComputedStyle(document.querySelector('.faith-home-shortcuts')).position",
           ),
-          "relative",
-          "Landscape rotation restores the reserved shortcut row",
+          "absolute",
+          "Landscape rotation keeps the shortcuts inside the scene",
+        );
+        assert.ok(
+          await evaluate("document.querySelector('.faith-home-shortcuts').getBoundingClientRect().width/document.querySelector('.council-terrain-scene').getBoundingClientRect().width<0.65"),
+          "Landscape rotation restores the approved left-hand arrangement",
         );
       }
     }
