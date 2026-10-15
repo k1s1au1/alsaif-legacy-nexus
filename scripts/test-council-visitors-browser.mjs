@@ -205,6 +205,9 @@ try {
   };
   await send("Page.enable");
   await send("Runtime.enable");
+  await send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+  });
   mkdirSync("test-results/visitors", { recursive: true });
   const navigate = async (path = "/") => {
     await send("Page.navigate", { url: `http://127.0.0.1:${port}${path}` });
@@ -274,7 +277,7 @@ try {
     );
     await settle();
     await evaluate(
-      `window.qaVisibleTower=async()=>{const node=document.querySelector('.council-portal-towers image');const r=node.getBoundingClientRect();return {left:r.left+r.width*70/1065,right:r.left+r.width*996/1065,top:r.top+r.height*137/1477,bottom:r.top+r.height*1227/1477,width:r.width,height:r.height}}`,
+      `window.qaVisibleTower=async()=>{const node=document.querySelector('.council-portal-towers image');const r=node.getBoundingClientRect();const scene=document.querySelector('.council-terrain-scene').getBoundingClientRect();return {left:r.left+r.width*70/1065,right:r.left+r.width*996/1065,top:r.top+r.height*137/1477,bottom:r.top+r.height*1227/1477,width:r.width,height:r.height,offsetLeft:r.left-scene.left,offsetTop:r.top-scene.top}}`,
     );
     const modelBefore = await evaluate("window.qaVisibleTower()");
     await evaluate("window.qaSetShow(false)");
@@ -307,12 +310,12 @@ try {
       // The ornament must not move the existing desktop sculpture.
       if (width >= 970) {
         assert.ok(
-          Math.abs(modelBefore.left - modelBaseline.left) < 1,
-          `${name}: existing sculpture horizontal position retained`,
+          Math.abs(modelBefore.offsetLeft - modelBaseline.offsetLeft) < 1,
+          `${name}: existing sculpture horizontal position retained ${JSON.stringify({modelBefore,modelBaseline})}`,
         );
         assert.ok(
-          Math.abs(modelBefore.top - modelBaseline.top) < 1,
-          `${name}: existing sculpture vertical position retained`,
+          Math.abs(modelBefore.offsetTop - modelBaseline.offsetTop) < 1,
+          `${name}: existing sculpture vertical position retained ${JSON.stringify({modelBefore,modelBaseline})}`,
         );
       }
       assert.ok(
