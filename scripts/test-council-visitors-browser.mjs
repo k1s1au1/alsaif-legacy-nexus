@@ -329,6 +329,13 @@ try {
         `${name}: words and number do not overlap`,
       );
       assert.ok(geometry.contained, `${name}: count stays inside hero`);
+      const decorationSpacing = await evaluate(
+        `(()=>{const text=document.querySelector('.council-visitor-text').getBoundingClientRect();const ornaments=Array.from(document.querySelectorAll('.council-visitor-ornament')).map(n=>n.getBoundingClientRect());return {rightGap:ornaments[0].left-text.right,leftGap:text.left-ornaments[1].right}})()`,
+      );
+      assert.ok(
+        decorationSpacing.rightGap >= 6 && decorationSpacing.leftGap >= 6,
+        `${name}: both ornaments stay outside the text ${JSON.stringify(decorationSpacing)}`,
+      );
       assert.equal(geometry.overflow, false, `${name}: no horizontal overflow`);
       assert.ok(
         geometry.label.includes("1,248"),

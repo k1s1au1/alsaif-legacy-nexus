@@ -313,6 +313,7 @@ html body main .council-terrain-scene .council-portal-contact-shadow {
  * Phones and portrait tablets gain breathing room, retaining the model's size. */
 html body main .council-terrain-scene .council-visitor-counter {
   display: flex;
+  width: min(100%, 340px);
   max-width: 100%;
   align-items: center;
   justify-content: center;
@@ -326,6 +327,7 @@ html body main .council-terrain-scene .council-visitor-counter {
 
 html body main .council-terrain-scene .council-visitor-text {
   display: inline-flex;
+  flex: 0 0 auto;
   min-width: 0;
   align-items: baseline;
   justify-content: center;
