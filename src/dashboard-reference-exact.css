@@ -308,9 +308,9 @@ html body main .council-terrain-scene .council-portal-contact-shadow {
     margin-inline: calc(50% - 50vw) !important;
   }
 
-  /* Reserve the shortcuts' own height before the scene on landscape iPads.
+  /* Reserve the shortcuts' own height on landscape iPads and tablet previews.
    * Absolute positioning painted the prayer label over the top of the tower. */
-  html[data-dashboard-tablet-landscape="true"] body main
+  html body main
     .has-faith-shortcuts > .dashboard-portal-card > .faith-home-shortcuts {
     position: relative;
     top: auto;

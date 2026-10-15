@@ -266,6 +266,7 @@ try {
     ["ipad-portrait", 834, 1194],
     ["ipad-landscape", 1024, 768, true],
     ["ipad-landscape-reference", 1142, 782, true],
+    ["tablet-preview-landscape", 1142, 782],
     ["ipad-air-landscape", 1180, 820, true],
     ["ipad-pro-landscape", 1194, 834, true],
     ["ipad-pro-large-landscape", 1366, 1024, true],
@@ -301,7 +302,7 @@ try {
     );
     await evaluate("window.qaSetShow(true)");
     await settle();
-    if (tablet) {
+    if (tablet || (width >= 970 && width < 1200)) {
       for (const noLocation of [true, false]) {
         await evaluate(`window.qaSetUnlocated(${noLocation})`);
         await settle();
@@ -416,7 +417,7 @@ try {
     );
     assert.equal(identity.number, "rgb(185, 121, 70)");
     assert.equal(identity.text, "rgb(255, 243, 220)");
-    if (tablet) {
+    if (tablet || (width >= 970 && width < 1200)) {
       await evaluate("window.qaSetUnlocated(true)");
       await settle();
     }
