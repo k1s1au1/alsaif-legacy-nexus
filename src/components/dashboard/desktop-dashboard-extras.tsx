@@ -42,6 +42,7 @@ import { PrayerMushafShortcuts } from "@/components/dashboard/prayer-mushaf-shor
 import { TripImage } from "@/components/trip-image";
 import { TripTicket } from "@/components/trip-ticket";
 import { FollowupNoteCard } from "@/components/dashboard/followup-note-card";
+import { FamilyStatsStrip } from "@/components/dashboard/family-stats-strip";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -696,91 +697,13 @@ export function DesktopDashboardExtras({
           occasions={occasions}
         />
 
-        <section
-          className="desktop-stats-row dashboard-ledger-stats dashboard-ledger-stats--desktop"
-          aria-label="ملخص العائلة"
-        >
-          <Link
-            to="/finance"
-            className="dashboard-ledger-stat"
-            data-stat-tone="finance"
-            aria-label={`رصيد الصندوق: ${Number(fundBalance || 0).toLocaleString("ar-SA")} ر.س`}
-          >
-            <span className="dashboard-ledger-stat__rail" aria-hidden="true" />
-            <span className="dashboard-ledger-stat__pattern" aria-hidden="true" />
-            <span className="dashboard-ledger-stat__icon" aria-hidden="true">
-              <Wallet />
-            </span>
-            <span className="dashboard-ledger-stat__content">
-              <span className="dashboard-ledger-stat__label">رصيد الصندوق</span>
-              <span className="dashboard-ledger-stat__measure">
-                <strong>{Number(fundBalance || 0).toLocaleString("ar-SA")}</strong>
-                <small>ر.س</small>
-              </span>
-            </span>
-            <ChevronLeft className="dashboard-ledger-stat__arrow" aria-hidden="true" />
-          </Link>
-          <Link
-            to="/members"
-            className="dashboard-ledger-stat"
-            data-stat-tone="members"
-            aria-label={`أفراد العائلة: ${counts?.members || 0} عضو`}
-          >
-            <span className="dashboard-ledger-stat__rail" aria-hidden="true" />
-            <span className="dashboard-ledger-stat__pattern" aria-hidden="true" />
-            <span className="dashboard-ledger-stat__icon" aria-hidden="true">
-              <Users />
-            </span>
-            <span className="dashboard-ledger-stat__content">
-              <span className="dashboard-ledger-stat__label">أفراد العائلة</span>
-              <span className="dashboard-ledger-stat__measure">
-                <strong>{counts?.members || 0}</strong>
-                <small>عضو</small>
-              </span>
-            </span>
-            <ChevronLeft className="dashboard-ledger-stat__arrow" aria-hidden="true" />
-          </Link>
-          <Link
-            to="/trips"
-            className="dashboard-ledger-stat"
-            data-stat-tone="trips"
-            aria-label={`ترفيه عائلي: ${eventsData?.trips?.length || 0} وجهة`}
-          >
-            <span className="dashboard-ledger-stat__rail" aria-hidden="true" />
-            <span className="dashboard-ledger-stat__pattern" aria-hidden="true" />
-            <span className="dashboard-ledger-stat__icon" aria-hidden="true">
-              <Plane />
-            </span>
-            <span className="dashboard-ledger-stat__content">
-              <span className="dashboard-ledger-stat__label">ترفيه عائلي</span>
-              <span className="dashboard-ledger-stat__measure">
-                <strong>{eventsData?.trips?.length || 0}</strong>
-                <small>وجهة</small>
-              </span>
-            </span>
-            <ChevronLeft className="dashboard-ledger-stat__arrow" aria-hidden="true" />
-          </Link>
-          <Link
-            to="/tasks"
-            className="dashboard-ledger-stat"
-            data-stat-tone="tasks"
-            aria-label={`مهام قيد التنفيذ: ${counts?.tasks || 0} مهمة`}
-          >
-            <span className="dashboard-ledger-stat__rail" aria-hidden="true" />
-            <span className="dashboard-ledger-stat__pattern" aria-hidden="true" />
-            <span className="dashboard-ledger-stat__icon" aria-hidden="true">
-              <ListChecks />
-            </span>
-            <span className="dashboard-ledger-stat__content">
-              <span className="dashboard-ledger-stat__label">مهام قيد التنفيذ</span>
-              <span className="dashboard-ledger-stat__measure">
-                <strong>{counts?.tasks || 0}</strong>
-                <small>مهمة</small>
-              </span>
-            </span>
-            <ChevronLeft className="dashboard-ledger-stat__arrow" aria-hidden="true" />
-          </Link>
-        </section>
+        <FamilyStatsStrip
+          className="family-stats-strip--desktop"
+          balance={fundBalance || 0}
+          members={counts?.members || 0}
+          trips={eventsData?.trips?.length || 0}
+          tasks={counts?.tasks || 0}
+        />
 
         <section className="desktop-editorial-grid">
           <div className="desktop-side-stack">

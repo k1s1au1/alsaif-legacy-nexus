@@ -784,60 +784,6 @@
     background: var(--primary);
   }
 
-  .desktop-stats-row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-    margin-top: 22px;
-  }
-
-  .desktop-stats-row > a {
-    min-height: 122px;
-    display: grid;
-    grid-template-columns: 42px minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    column-gap: 13px;
-    align-items: center;
-    padding: 21px;
-    border-radius: 22px;
-    color: #fff;
-    background: linear-gradient(
-      145deg,
-      var(--primary),
-      color-mix(in srgb, var(--primary) 75%, #00130d)
-    );
-    box-shadow: 0 12px 30px rgba(5, 20, 16, 0.09);
-    transition: transform 0.2s ease;
-  }
-
-  .desktop-stats-row > a:hover {
-    transform: translateY(-3px);
-  }
-
-  .desktop-stats-row svg {
-    grid-row: 1 / 3;
-    width: 42px;
-    height: 42px;
-    padding: 11px;
-    border-radius: 13px;
-    color: var(--gold-primary);
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .desktop-stats-row span {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.72rem;
-    font-weight: 800;
-  }
-
-  .desktop-stats-row b {
-    overflow: hidden;
-    font-size: 1.28rem;
-    font-weight: 900;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .desktop-editorial-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(340px, 0.6fr);

@@ -7,10 +7,7 @@ import {
   Clock,
   MapPin,
   ChevronLeft,
-  Wallet,
-  Users,
   CalendarDays,
-  ListChecks,
   Plane,
   X,
   Image as ImageIcon,
@@ -26,7 +23,7 @@ import {
   DashboardSupportPanel,
   ResponsiveDashboardExtras,
 } from "@/components/dashboard/desktop-dashboard-extras";
-import { AnimatedCounter } from "@/components/dashboard/animated-counter";
+import { FamilyStatsStrip } from "@/components/dashboard/family-stats-strip";
 import { motion, AnimatePresence } from "framer-motion";
 import { QuickActionsBanner } from "@/components/quick-actions-banner";
 import {
@@ -408,48 +405,6 @@ function Dashboard() {
     return () => clearInterval(t);
   }, [statusMessages.length]);
 
-  const stats: Array<{
-    label: string;
-    value: number;
-    suffix: string;
-    tone: "finance" | "members" | "trips" | "tasks";
-    icon: React.ElementType<{ className?: string }>;
-    link: "/finance" | "/members" | "/trips" | "/tasks";
-  }> = [
-    {
-      label: "رصيد الصندوق",
-      value: fundBalance || 0,
-      suffix: "ر.س",
-      tone: "finance",
-      icon: Wallet,
-      link: "/finance",
-    },
-    {
-      label: "أفراد العائلة",
-      value: countsData?.members || 0,
-      suffix: "عضو",
-      tone: "members",
-      icon: Users,
-      link: "/members",
-    },
-    {
-      label: "ترفيه عائلي",
-      value: eventsData?.trips.length || 0,
-      suffix: "وجهة",
-      tone: "trips",
-      icon: Plane,
-      link: "/trips",
-    },
-    {
-      label: "مهام قيد التنفيذ",
-      value: countsData?.tasks || 0,
-      suffix: "مهمة",
-      tone: "tasks",
-      icon: ListChecks,
-      link: "/tasks",
-    },
-  ];
-
   const getGreeting = () => {
     const hr = new Date().getHours();
     if (hr >= 5 && hr < 12) return "صباح الخير";
@@ -690,37 +645,13 @@ function Dashboard() {
           </section>
         )}
 
-        {/* 7. STATS GRID */}
-        <section
-          className="dashboard-stats-grid dashboard-ledger-stats"
-          aria-label="ملخص العائلة"
-        >
-          {stats.map((stat) => (
-            <Link
-              key={stat.link}
-              to={stat.link}
-              className="dashboard-ledger-stat"
-              data-stat-tone={stat.tone}
-              aria-label={`${stat.label}: ${Number(stat.value || 0).toLocaleString("ar-SA")} ${stat.suffix}`}
-            >
-              <span className="dashboard-ledger-stat__rail" aria-hidden="true" />
-              <span className="dashboard-ledger-stat__pattern" aria-hidden="true" />
-              <span className="dashboard-ledger-stat__icon" aria-hidden="true">
-                {React.createElement(stat.icon)}
-              </span>
-              <span className="dashboard-ledger-stat__content">
-                <span className="dashboard-ledger-stat__label">{stat.label}</span>
-                <span className="dashboard-ledger-stat__measure">
-                  <strong>
-                    <AnimatedCounter value={stat.value} />
-                  </strong>
-                  <small>{stat.suffix}</small>
-                </span>
-              </span>
-              <ChevronLeft className="dashboard-ledger-stat__arrow" aria-hidden="true" />
-            </Link>
-          ))}
-        </section>
+        {/* 7. READ-ONLY FAMILY STATISTICS */}
+        <FamilyStatsStrip
+          balance={fundBalance || 0}
+          members={countsData?.members || 0}
+          trips={eventsData?.trips.length || 0}
+          tasks={countsData?.tasks || 0}
+        />
 
         {/* 8. SUPPORT SECTION */}
         <DashboardSupportPanel onReportBug={() => setShowBugReport(true)} />

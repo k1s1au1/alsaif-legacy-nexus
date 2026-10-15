@@ -1,0 +1,193 @@
+/* Approved continuous summary: informational content, never navigation. */
+.family-stats-strip {
+  --stats-field: var(--identity-header, var(--primary));
+  --stats-on-field: var(--identity-text-on-nav, var(--primary-foreground));
+  --stats-surface: var(--identity-soft, var(--card));
+  --stats-ink: var(--identity-text, var(--primary));
+  --stats-accent: var(--identity-accent, var(--gold-primary));
+  --stats-rule: color-mix(in srgb, var(--stats-accent) 65%, var(--border));
+  container: family-stats / inline-size;
+  min-width: 0;
+  width: 100%;
+  color: var(--stats-ink);
+  cursor: default;
+}
+.family-stats-strip--desktop {
+  margin-top: 24px;
+}
+.family-stats-strip__layout {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.family-stats-strip :is(dl, dt, dd) {
+  margin: 0;
+}
+.family-stats-strip__fund {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 22px 20px;
+  border: 1px solid var(--stats-rule);
+  border-radius: 20px;
+  background: var(--stats-field);
+  color: var(--stats-on-field);
+  text-align: center;
+}
+.family-stats-strip__wallet {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  stroke-width: 1.6;
+}
+.family-stats-strip__fund dl {
+  min-width: 0;
+  width: 100%;
+}
+.family-stats-strip__fund dt {
+  font-size: 18px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+.family-stats-strip__fund dd {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin-top: 8px;
+}
+.family-stats-strip__fund bdi {
+  max-width: 100%;
+  font-size: clamp(1rem, calc(150cqi / var(--balance-characters)), 4.5rem);
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.family-stats-strip__fund dd > span {
+  opacity: 0.8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.family-stats-strip__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--stats-rule);
+  border-radius: 20px;
+  background: var(--stats-surface);
+}
+.family-stats-strip__metric {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 18px 8px;
+  text-align: center;
+}
+.family-stats-strip__metric + .family-stats-strip__metric::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 18px;
+  border-inline-start: 1px solid var(--stats-rule);
+  pointer-events: none;
+}
+.family-stats-strip__metric dt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+.family-stats-strip__metric dt svg {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  color: var(--stats-accent);
+  stroke-width: 1.6;
+}
+.family-stats-strip__metric dt span {
+  display: grid;
+  align-items: center;
+  min-height: 34px;
+  max-width: 100%;
+  font-size: clamp(11px, 3.1cqi, 15px);
+  line-height: 1.5;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.family-stats-strip__metric dd {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.family-stats-strip__metric bdi {
+  max-width: 100%;
+  font-size: clamp(12px, calc(36cqi / var(--count-characters)), 38px);
+  line-height: 1.1;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.family-stats-strip__metric dd > span {
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.72;
+}
+@container family-stats (min-width: 760px) {
+  .family-stats-strip__layout {
+    grid-template-columns: minmax(260px, 1.5fr) minmax(0, 3fr);
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--stats-rule);
+    border-radius: 22px;
+  }
+  .family-stats-strip__fund,
+  .family-stats-strip__metrics {
+    border: 0;
+    border-radius: 0;
+  }
+  .family-stats-strip__fund {
+    padding: 28px 24px;
+  }
+  .family-stats-strip__wallet {
+    width: 42px;
+    height: 42px;
+  }
+  .family-stats-strip__fund dt {
+    font-size: 20px;
+  }
+  .family-stats-strip__metric {
+    padding: 24px 12px;
+    gap: 12px;
+  }
+  .family-stats-strip__metric dt svg {
+    width: 38px;
+    height: 38px;
+  }
+  .family-stats-strip__metric dt span {
+    min-height: 42px;
+    font-size: 16px;
+  }
+  .family-stats-strip__metric bdi {
+    font-size: clamp(12px, calc(24cqi / var(--count-characters)), 48px);
+  }
+  .family-stats-strip__metric dd > span {
+    font-size: 15px;
+  }
+  .family-stats-strip__metric + .family-stats-strip__metric::before {
+    inset-block: 28px;
+  }
+}
