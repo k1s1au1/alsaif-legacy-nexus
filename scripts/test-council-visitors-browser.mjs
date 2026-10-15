@@ -304,11 +304,24 @@ try {
         `${name}/${longName ? "long" : "normal"}: clear distance from visible sculpture ${JSON.stringify(geometry)}`,
       );
       assert.ok(geometry.mottoGap >= 16, `${name}: welcome spacing`);
-      assert.ok(
-        geometry.tower.right <= geometry.scene.right + 1 &&
-          geometry.tower.left >= geometry.scene.left - 1,
-        `${name}: sculpture remains inside its scene`,
-      );
+      // The ornament must not move the desktop sculpture; its baseline layout
+      // can extend beyond this isolated component fixture's clipped viewport.
+      if (width >= 970) {
+        assert.ok(
+          Math.abs(modelBefore.left - modelBaseline.left) < 1,
+          `${name}: existing sculpture horizontal position retained`,
+        );
+        assert.ok(
+          Math.abs(modelBefore.top - modelBaseline.top) < 1,
+          `${name}: existing sculpture vertical position retained`,
+        );
+      } else {
+        assert.ok(
+          geometry.tower.right <= geometry.scene.right + 1 &&
+            geometry.tower.left >= geometry.scene.left - 1,
+          `${name}: sculpture stays inside the scene`,
+        );
+      }
       assert.ok(
         geometry.parts[0].left >= geometry.parts[1].right - 1 &&
           geometry.parts[1].left >= geometry.parts[2].right - 1,
