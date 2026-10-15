@@ -41,6 +41,7 @@ import { FamilyAgenda } from "@/components/dashboard/family-agenda";
 import { PrayerMushafShortcuts } from "@/components/dashboard/prayer-mushaf-shortcuts";
 import { TripImage } from "@/components/trip-image";
 import { UpcomingTripTicket } from "@/components/upcoming-trip-ticket";
+import { FollowupNoteCard } from "@/components/dashboard/followup-note-card";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -52,22 +53,6 @@ const fmtDate = (value?: string | null) => {
         day: "numeric",
         month: "short",
       });
-};
-
-const fmtMeetingDay = (value?: string | null) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "—"
-    : date.toLocaleDateString("ar-SA", { day: "numeric" });
-};
-
-const fmtMeetingMonth = (value?: string | null) => {
-  if (!value) return "موعد";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "موعد"
-    : date.toLocaleDateString("ar-SA", { month: "short" });
 };
 
 const services = [
@@ -595,6 +580,18 @@ export function DesktopDashboardExtras({
               <div className="desktop-follow-cards">
                 {featuredUpcoming.map((item, index) => {
                   const Icon = item.icon;
+                  if (item.cardType === "meeting" || item.cardType === "task") {
+                    return (
+                      <FollowupNoteCard
+                        key={`${item.cardType}-${item.title}-${index}`}
+                        kind={item.cardType}
+                        title={item.title}
+                        date={item.date}
+                        location={item.location}
+                        action={<Link to={item.to}>{item.actionLabel} <ChevronLeft size={16} /></Link>}
+                      />
+                    );
+                  }
                   if (item.cardType === "trip" && item.trip.status !== "planning") {
                     return (
                       <UpcomingTripTicket
@@ -625,25 +622,11 @@ export function DesktopDashboardExtras({
                           className={`desktop-card-motif desktop-card-motif--${item.cardType || "default"}`}
                           aria-hidden="true"
                         >
-                          {item.cardType === "meeting" && (
-                            <>
-                              <CalendarDays />
-                              <strong>{fmtMeetingDay(item.date)}</strong>
-                              <small>{fmtMeetingMonth(item.date)}</small>
-                            </>
-                          )}
                           {item.cardType === "trip" && (
                             <>
                               <Plane />
                               <span>ALS</span>
                               <small>BOARDING</small>
-                            </>
-                          )}
-                          {item.cardType === "task" && (
-                            <>
-                              <span />
-                              <span />
-                              <span />
                             </>
                           )}
                         </div>

@@ -69,7 +69,7 @@
   .integrated-hub .hub-main-carousel{width:100%!important}
   .integrated-hub .hub-main-carousel-content{align-items:stretch!important}
   .integrated-hub .hub-carousel-item{flex-basis:82%!important;padding-inline:10px!important}
-  .integrated-hub .hub-carousel-item article{height:300px!important;min-height:300px!important;border-radius:28px!important}
+  .integrated-hub .hub-carousel-item article:not(.followup-note){height:300px!important;min-height:300px!important;border-radius:28px!important}
   .integrated-hub .hub-dots{margin-top:14px!important}
 
   /* iPad/tablet trip card: full-bleed photo, readable overlay, no cramped ticket split. */

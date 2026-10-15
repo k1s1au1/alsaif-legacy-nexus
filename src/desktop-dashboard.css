@@ -396,37 +396,6 @@
     pointer-events: none;
   }
 
-  .desktop-next-card--meeting {
-    padding-top: 42px;
-    padding-left: 122px;
-    border: 1px solid rgba(214, 183, 106, 0.34);
-    border-radius: 20px 20px 30px 30px;
-    background:
-      radial-gradient(circle at 12% 88%, rgba(202, 170, 92, 0.17), transparent 29%),
-      linear-gradient(145deg, #063d30, #0a5441);
-  }
-
-  .desktop-next-card--meeting::before {
-    inset: 0 0 auto;
-    height: 28px;
-    background: linear-gradient(90deg, #a9873f, #d8b966 48%, #af8c43);
-    box-shadow: 0 6px 18px rgba(2, 32, 24, 0.2);
-  }
-
-  .desktop-next-card--meeting::after {
-    top: -5px;
-    right: 46px;
-    left: 46px;
-    height: 20px;
-    background: repeating-linear-gradient(
-      90deg,
-      transparent 0 50px,
-      #f0dfae 50px 58px,
-      transparent 58px 106px
-    );
-    filter: drop-shadow(0 3px 2px rgba(3, 28, 21, 0.35));
-  }
-
   .desktop-next-card--trip {
     padding-left: 108px;
     border: 0;
@@ -465,36 +434,6 @@
         transparent 8px 16px
       ),
       rgba(4, 48, 37, 0.36);
-  }
-
-  .desktop-next-card--task {
-    padding-left: 105px;
-    border-color: rgba(201, 166, 91, 0.25);
-    border-radius: 22px;
-    clip-path: polygon(26px 0, 100% 0, 100% 100%, 0 100%, 0 26px);
-    background:
-      repeating-linear-gradient(
-        0deg,
-        transparent 0 39px,
-        rgba(255, 255, 255, 0.055) 39px 40px
-      ),
-      linear-gradient(145deg, #071f19, #0a3328);
-  }
-
-  .desktop-next-card--task::before {
-    top: 0;
-    left: 0;
-    width: 27px;
-    height: 27px;
-    clip-path: polygon(100% 0, 0 100%, 100% 100%);
-    background: linear-gradient(135deg, #d3b260, #8a713c);
-  }
-
-  .desktop-next-card--task::after {
-    top: 20px;
-    bottom: 20px;
-    left: 86px;
-    border-left: 1px solid rgba(215, 183, 104, 0.26);
   }
 
   .desktop-next-card--occasion {
@@ -540,63 +479,6 @@
     pointer-events: none;
   }
 
-  .desktop-card-motif--meeting {
-    bottom: 24px;
-    left: 22px;
-    width: 82px;
-    height: 104px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding-top: 20px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 18px;
-    color: #083b2f;
-    background: #f7f2e6;
-    box-shadow: 0 12px 24px rgba(2, 30, 23, 0.28);
-  }
-
-  .desktop-card-motif--meeting::before {
-    content: "موعد";
-    position: absolute;
-    inset: 0 0 auto;
-    height: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-inline: 9px;
-    color: #183c31;
-    background: #d6b45e;
-    font-size: 0.55rem;
-    font-weight: 950;
-  }
-
-  .desktop-card-motif--meeting svg {
-    position: absolute;
-    top: 6px;
-    left: 8px;
-    z-index: 1;
-    width: 14px;
-    height: 14px;
-    color: #183c31;
-  }
-
-  .desktop-card-motif--meeting strong {
-    margin-top: 4px;
-    font-size: 2rem;
-    font-weight: 950;
-    line-height: 1;
-  }
-
-  .desktop-card-motif--meeting small {
-    margin-top: 7px;
-    color: #7f6937;
-    font-size: 0.67rem;
-    font-weight: 900;
-  }
-
   .desktop-card-motif--trip {
     inset: 24px auto 24px 0;
     width: 91px;
@@ -627,38 +509,6 @@
     font-size: 0.48rem;
     font-weight: 800;
     letter-spacing: 0.12em;
-  }
-
-  .desktop-card-motif--task {
-    bottom: 30px;
-    left: 20px;
-    width: 62px;
-    display: grid;
-    gap: 11px;
-  }
-
-  .desktop-card-motif--task span {
-    position: relative;
-    display: block;
-    height: 8px;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .desktop-card-motif--task span::before {
-    content: "✓";
-    position: absolute;
-    right: 0;
-    bottom: -3px;
-    width: 15px;
-    height: 15px;
-    display: grid;
-    place-items: center;
-    border: 1px solid rgba(224, 195, 124, 0.7);
-    border-radius: 4px;
-    color: #e0c37c;
-    background: #0a3026;
-    font-size: 0.56rem;
-    font-weight: 900;
   }
 
   .desktop-next-top {
