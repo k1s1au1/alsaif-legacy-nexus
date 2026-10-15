@@ -48,7 +48,7 @@ window.qaVisit=(id)=>{const found=window.qaRows.some(row=>row.user_id===id);if(!
 function Fixture(){const count=useRecordedVisitorCount();const online=useOnlineCount();const [name,setName]=useState('حساب المعاينة');const [show,setShow]=useState(true);window.qaSetName=setName;window.qaSetShow=setShow;
 const hero=<HeritagePortal3D greeting="مساء الخير" name={name} message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className="dashboard-portal-model" visitorCount={show?count:undefined}/>;
 const services=<div className="desktop-services-panel"><div className="desktop-section-head desktop-section-head-on-dark"><h2>خدمات العائلة</h2></div><div className="desktop-services-grid">{['الصندوق المالي','المهام','الرحلات','الاجتماعات'].map(label=><div className="desktop-service-card" key={label}><strong>{label}</strong></div>)}</div><button className="desktop-services-wide-toggle">عرض جميع الخدمات</button></div>;
-return <main><output hidden id="qa-online">{online}</output>{innerWidth>=1200?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage">{hero}</div>{services}</section></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section></div>}</main>}
+return <main className="app-shell-main relative min-h-screen"><div className="app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto max-w-7xl"><output hidden id="qa-online">{online}</output>{innerWidth>=1200?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage">{hero}</div>{services}</section></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section></div>}</div></main>}
 createRoot(document.getElementById('app')).render(<Fixture/>);window.fixtureReady=true;`;
 await build({
   stdin: {
@@ -96,7 +96,7 @@ await build({
     },
   ],
 });
-const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}\nhtml,body{margin:0}body{background:var(--background);color:var(--foreground)}main{min-width:0}.dashboard-page{padding:0 16px}.desktop-rebuild-shell{padding-top:20px}</style><link rel="stylesheet" href="/__qa/fixture.css"></head><body><div id="app"></div><script src="/__qa/fixture.js"></script></body></html>`;
+const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}\nhtml,body{margin:0}body{background:var(--background);color:var(--foreground)}main{min-width:0}</style><link rel="stylesheet" href="/__qa/fixture.css"></head><body><div id="app"></div><script src="/__qa/fixture.js"></script></body></html>`;
 if (prepareOnly) {
   rmSync(temporary, { recursive: true, force: true });
   console.log("Actual visitor counter / presence / hero fixture compiled");
@@ -205,7 +205,6 @@ try {
   };
   await send("Page.enable");
   await send("Runtime.enable");
-  mkdirSync("test-results/trip-tickets", { recursive: true });
   mkdirSync("test-results/visitors", { recursive: true });
   const navigate = async (path = "/") => {
     await send("Page.navigate", { url: `http://127.0.0.1:${port}${path}` });
@@ -297,13 +296,24 @@ try {
       );
       await settle();
       const geometry = await evaluate(
-        `(async()=>{const r=document.querySelector('.council-visitor-counter').getBoundingClientRect(),m=document.querySelector('.council-portal-message').getBoundingClientRect(),s=document.querySelector('.council-terrain-scene').getBoundingClientRect(),t=await window.qaVisibleTower();return {gap:innerWidth<970?t.top-r.bottom:t.left-r.right,mottoGap:r.top-m.bottom,contained:r.left>=s.left&&r.right<=s.right&&r.bottom<=s.bottom,overflow:document.documentElement.scrollWidth>innerWidth+2,label:document.querySelector('.council-terrain-scene').getAttribute('aria-label')}})()`,
+        `(async()=>{const r=document.querySelector('.council-visitor-counter').getBoundingClientRect(),m=document.querySelector('.council-portal-message').getBoundingClientRect(),s=document.querySelector('.council-terrain-scene').getBoundingClientRect(),t=await window.qaVisibleTower();return {gap:innerWidth<970?t.top-r.bottom:t.left-r.right,mottoGap:r.top-m.bottom,contained:r.left>=s.left&&r.right<=s.right&&r.bottom<=s.bottom,overflow:document.documentElement.scrollWidth>innerWidth+2,label:document.querySelector('.council-terrain-scene').getAttribute('aria-label'),scene:{left:s.left,right:s.right,width:s.width},tower:t,parts:Array.from(document.querySelector('.council-visitor-text').children).map(n=>{const p=n.getBoundingClientRect();return{left:p.left,right:p.right,text:n.textContent}})}})()`,
       );
+      console.log(name, JSON.stringify(geometry));
       assert.ok(
         geometry.gap >= 32,
         `${name}/${longName ? "long" : "normal"}: clear distance from visible sculpture ${JSON.stringify(geometry)}`,
       );
       assert.ok(geometry.mottoGap >= 16, `${name}: welcome spacing`);
+      assert.ok(
+        geometry.tower.right <= geometry.scene.right + 1 &&
+          geometry.tower.left >= geometry.scene.left - 1,
+        `${name}: sculpture remains inside its scene`,
+      );
+      assert.ok(
+        geometry.parts[0].left >= geometry.parts[1].right - 1 &&
+          geometry.parts[1].left >= geometry.parts[2].right - 1,
+        `${name}: words and number do not overlap`,
+      );
       assert.ok(geometry.contained, `${name}: count stays inside hero`);
       assert.equal(geometry.overflow, false, `${name}: no horizontal overflow`);
       assert.ok(

@@ -342,6 +342,10 @@ html body main .council-terrain-scene .council-visitor-number {
   unicode-bidi: isolate;
 }
 
+html body main .council-terrain-scene .council-visitor-text > * {
+  flex-shrink: 0;
+}
+
 html body main .council-terrain-scene .council-visitor-ornament {
   display: inline-flex;
   flex: 0 1 46px;
