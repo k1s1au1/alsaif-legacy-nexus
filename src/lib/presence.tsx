@@ -140,7 +140,11 @@ export function usePresenceHeartbeat() {
 
 type PresenceMap = Record<string, string>; // user_id -> last_seen_at ISO
 
-const presenceStore: { map: PresenceMap; tick: number } = { map: {}, tick: 0 };
+const presenceStore: { map: PresenceMap; tick: number; recordedCount: number | null } = {
+  map: {},
+  tick: 0,
+  recordedCount: null,
+};
 const presenceListeners = new Set<() => void>();
 let presenceInitialized = false;
 let presenceChannel: ReturnType<typeof supabase.channel> | null = null;
@@ -152,11 +156,15 @@ function emitPresence() {
 }
 
 async function refreshPresenceAll() {
-  const { data } = await supabase.from("user_presence").select("user_id, last_seen_at");
+  const { data, count } = await supabase
+    .from("user_presence")
+    .select("user_id, last_seen_at", { count: "exact" });
   if (data) {
     const next: PresenceMap = {};
     for (const r of data) next[r.user_id] = r.last_seen_at;
     presenceStore.map = next;
+    // One saved row per account; use the server total even if rows are paginated.
+    if (count !== null && count !== undefined) presenceStore.recordedCount = count;
     emitPresence();
   }
 }
@@ -173,13 +181,18 @@ function ensurePresenceSubscription() {
         last_seen_at?: string;
       } | null;
       if (row?.user_id && row.last_seen_at) {
+        const knownVisitor = Object.hasOwn(presenceStore.map, row.user_id);
         presenceStore.map = { ...presenceStore.map, [row.user_id]: row.last_seen_at };
         emitPresence();
+        if (!knownVisitor) void refreshPresenceAll();
       } else {
         refreshPresenceAll();
       }
     })
-    .subscribe();
+    .subscribe((status) => {
+      // Catch a first visit during subscription setup, and visits while disconnected.
+      if (status === "SUBSCRIBED") void refreshPresenceAll();
+    });
   // Re-emit every 30s so dots transition online -> idle -> offline over time.
   presenceTickTimer = window.setInterval(emitPresence, 30_000);
 }
@@ -209,6 +222,15 @@ export function useOnlineCount(): number {
   return Object.values(presenceStore.map).filter(
     (lastSeen) => presenceFromLastSeen(lastSeen) === "online",
   ).length;
+}
+
+/** Saved unique visitors, including offline members. Unknown is never a fake zero. */
+export function useRecordedVisitorCount(): number | null {
+  return useSyncExternalStore(
+    subscribePresence,
+    () => presenceStore.recordedCount,
+    () => null,
+  );
 }
 
 /** Get the list of user IDs currently online (auto-refreshing). */
