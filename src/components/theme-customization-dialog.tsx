@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { THEME_COLORS } from "@/lib/themes";
+import { balancedDarkTheme } from "@/lib/dark-theme";
 import {
   applyThemePreference,
   createCustomThemePreference,
@@ -76,6 +77,28 @@ const CUSTOM_ROLES: RoleDefinition[] = [
 
 function getRoleSwatch(themeId: ThemeColorId, role: CustomRoleKey, isDark: boolean) {
   const theme = getThemeColor(themeId);
+  if (isDark) {
+    const tokens = balancedDarkTheme({
+      text: theme,
+      icons: theme,
+      background: theme,
+      surfaces: theme,
+      navigation: theme,
+      accent: theme,
+    });
+    return tokens[
+      (
+        {
+          textId: "--foreground",
+          iconId: "--identity-icon",
+          backgroundId: "--background",
+          surfaceId: "--card",
+          navigationId: "--nav-bg",
+          accentId: "--primary",
+        } as const
+      )[role]
+    ];
+  }
   switch (role) {
     case "textId":
       return isDark ? theme.darkSecondary : theme.navBg;
@@ -102,17 +125,39 @@ function PreferencePreview({ preference }: { preference: CustomThemePreference }
   const navigationTheme = getThemeColor(preference.navigationId);
   const accentTheme = getThemeColor(preference.accentId);
 
-  const colors = {
-    text: isDark ? textTheme.darkSecondary : textTheme.navBg,
-    mutedText: isDark ? textTheme.darkSecondary : textTheme.primary,
-    icon: isDark ? iconTheme.darkSecondary : iconTheme.primary,
-    iconOnNavigation: isDark ? iconTheme.darkSecondary : iconTheme.tertiary,
-    background: isDark ? backgroundTheme.darkSpace : backgroundTheme.space,
-    surface: isDark ? surfaceTheme.darkSoft : surfaceTheme.soft,
-    navigation: isDark ? navigationTheme.darkNavBg : navigationTheme.navBg,
-    accent: isDark ? accentTheme.darkPrimary : accentTheme.primary,
-    buttonText: accentTheme.foreground,
-  };
+  const darkColors = balancedDarkTheme({
+    text: textTheme,
+    icons: iconTheme,
+    background: backgroundTheme,
+    surfaces: surfaceTheme,
+    navigation: navigationTheme,
+    accent: accentTheme,
+  });
+  const colors = isDark
+    ? {
+        text: darkColors["--foreground"],
+        mutedText: darkColors["--muted-foreground"],
+        icon: darkColors["--identity-icon"],
+        iconText: darkColors["--primary-foreground"],
+        iconOnNavigation: darkColors["--identity-icon-on-nav"],
+        background: darkColors["--background"],
+        surface: darkColors["--card"],
+        navigation: darkColors["--nav-bg"],
+        accent: darkColors["--primary"],
+        buttonText: darkColors["--primary-foreground"],
+      }
+    : {
+        text: isDark ? textTheme.darkSecondary : textTheme.navBg,
+        mutedText: isDark ? textTheme.darkSecondary : textTheme.primary,
+        icon: isDark ? iconTheme.darkSecondary : iconTheme.primary,
+        iconOnNavigation: isDark ? iconTheme.darkSecondary : iconTheme.tertiary,
+        background: isDark ? backgroundTheme.darkSpace : backgroundTheme.space,
+        surface: isDark ? surfaceTheme.darkSoft : surfaceTheme.soft,
+        navigation: isDark ? navigationTheme.darkNavBg : navigationTheme.navBg,
+        accent: isDark ? accentTheme.darkPrimary : accentTheme.primary,
+        buttonText: accentTheme.foreground,
+        iconText: iconTheme.foreground,
+      };
 
   return (
     <div
@@ -132,7 +177,7 @@ function PreferencePreview({ preference }: { preference: CustomThemePreference }
         <div className="theme-customizer-preview-card" style={{ backgroundColor: colors.surface }}>
           <span
             className="theme-customizer-preview-icon"
-            style={{ backgroundColor: colors.icon, color: iconTheme.foreground }}
+            style={{ backgroundColor: colors.icon, color: colors.iconText }}
           >
             <Shapes aria-hidden="true" />
           </span>

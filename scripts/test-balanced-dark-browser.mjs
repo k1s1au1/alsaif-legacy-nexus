@@ -1,0 +1,352 @@
+import assert from "node:assert/strict";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  globSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createServer } from "node:http";
+import { spawn } from "node:child_process";
+import { build } from "esbuild";
+
+// Only CI's preinstalled Chrome runs the component browser checks. --prepare-only never starts a server/browser.
+const prepareOnly = process.argv.includes("--prepare-only");
+const chromePath =
+  process.env.CHROME_PATH ||
+  ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium"].find(existsSync);
+if (!chromePath && !prepareOnly)
+  throw Error("Preinstalled Chrome is required for dark-mode checks");
+const temporary = mkdtempSync(join(tmpdir(), "alsaif-dark-qa-"));
+const output = join(temporary, "assets");
+const compiled = [...globSync(".output/public/**/styles-*.css")];
+assert.ok(compiled.length, "Build the application before its component checks");
+const root = readFileSync("src/routes/__root.tsx", "utf8");
+const imports = new Map(
+  [...root.matchAll(/import (\w+) from "\.\.\/([^"?]+\.css)\?url";/g)].map((m) => [
+    m[1],
+    `src/${m[2]}`,
+  ]),
+);
+const ordered = [...root.matchAll(/href:(\w+Css)/g)].map((m) => imports.get(m[1])).filter(Boolean);
+const css = [
+  readFileSync(compiled[0], "utf8"),
+  ...ordered.filter((p) => p !== "src/styles.css").map((p) => readFileSync(p, "utf8")),
+].join("\n");
+await build({
+  entryPoints: ["scripts/fixtures/balanced-dark.tsx"],
+  bundle: true,
+  format: "iife",
+  platform: "browser",
+  outdir: output,
+  entryNames: "fixture",
+  assetNames: "[name]-[hash]",
+  publicPath: "/__qa/",
+  loader: { ".webp": "file", ".jpg": "file" },
+  tsconfig: "tsconfig.json",
+  plugins: [
+    {
+      name: "demo-router-and-prayer",
+      setup(builder) {
+        builder.onResolve({ filter: /^@tanstack\/react-router$/ }, () => ({
+          path: "router",
+          namespace: "qa",
+        }));
+        builder.onResolve({ filter: /^@\/hooks\/use-prayer-times$/ }, () => ({
+          path: "prayer",
+          namespace: "qa",
+        }));
+        builder.onLoad({ filter: /.*/, namespace: "qa" }, ({ path }) => ({
+          loader: "jsx",
+          resolveDir: process.cwd(),
+          contents:
+            path === "prayer"
+              ? `export const usePrayerTimes=()=>({location:null,locationLabel:'حسب موقعك',prayer:null,countdown:'',loading:false});`
+              : `import React from 'react';export function Link({to,search,children,...props}){return <a {...props} href={to}>{children}</a>}`,
+        }));
+      },
+    },
+  ],
+});
+const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="theme-color" content="#0F5A3A"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>${css}
+html,body{margin:0}.qa-avatar{display:grid;place-items:center;width:42px;height:42px;background:var(--secondary);color:var(--foreground);border-radius:50%}.qa-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:24px auto;min-width:0}.qa-controls{display:grid;gap:18px;margin-top:28px}.qa-panel{padding:22px;display:grid;gap:14px}.qa-buttons{display:flex;gap:12px;flex-wrap:wrap}.qa-panel h2{font-size:22px;font-weight:800}.qa-panel p{font-size:14px}@media(max-width:599px){.qa-card-grid{grid-template-columns:minmax(0,1fr);padding-inline:16px}.qa-controls{padding:16px}}@media(min-width:1200px){.qa-card-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.qa-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style><link rel="stylesheet" href="/__qa/fixture.css"></head><body><div id="app"></div><script src="/__qa/fixture.js"></script></body></html>`;
+if (prepareOnly) {
+  rmSync(temporary, { recursive: true, force: true });
+  console.log("Balanced dark actual-component fixture compiled successfully");
+  process.exit(0);
+}
+const server = createServer((request, response) => {
+  if (request.url === "/logo-home.png") {
+    response.setHeader("Content-Type", "image/png");
+    response.end(readFileSync("public/logo-home.png"));
+    return;
+  }
+  if (request.url.startsWith("/__qa/")) {
+    const path = join(output, request.url.slice(6));
+    if (!path.startsWith(output) || !existsSync(path)) {
+      response.writeHead(404);
+      response.end();
+      return;
+    }
+    response.setHeader(
+      "Content-Type",
+      path.endsWith(".js")
+        ? "application/javascript"
+        : path.endsWith(".css")
+          ? "text/css"
+          : path.endsWith(".jpg")
+            ? "image/jpeg"
+            : "image/webp",
+    );
+    response.end(readFileSync(path));
+    return;
+  }
+  response.setHeader("Content-Type", "text/html;charset=utf-8");
+  response.end(html);
+});
+await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+const port = server.address().port;
+const chrome = spawn(
+  chromePath,
+  [
+    "--headless=new",
+    "--no-sandbox",
+    "--disable-gpu",
+    "--remote-debugging-port=0",
+    `--user-data-dir=${join(temporary, "profile")}`,
+    "about:blank",
+  ],
+  { stdio: ["ignore", "ignore", "pipe"] },
+);
+let websocket;
+try {
+  const debuggerURL = await new Promise((resolve, reject) => {
+    let buffer = "";
+    const timeout = setTimeout(() => reject(Error("Chrome start timeout")), 20000);
+    chrome.stderr.on("data", (data) => {
+      buffer += data;
+      const match = /DevTools listening on (ws:\/\/[^\s]+)/.exec(buffer);
+      if (match) {
+        clearTimeout(timeout);
+        resolve(match[1]);
+      }
+    });
+    chrome.on("exit", (code) => {
+      clearTimeout(timeout);
+      reject(Error(`Chrome exited ${code}`));
+    });
+  });
+  const debug = new URL(debuggerURL);
+  const targets = await (await fetch(`http://${debug.host}/json/list`)).json();
+  websocket = new WebSocket(targets.find((t) => t.type === "page").webSocketDebuggerUrl);
+  let id = 0;
+  const pending = new Map();
+  const errors = [];
+  const send = (method, params = {}) =>
+    new Promise((resolve, reject) => {
+      const number = ++id;
+      pending.set(number, { resolve, reject });
+      websocket.send(JSON.stringify({ id: number, method, params }));
+    });
+  websocket.addEventListener("message", (event) => {
+    const message = JSON.parse(event.data);
+    if (message.id) {
+      const request = pending.get(message.id);
+      if (request) {
+        pending.delete(message.id);
+        message.error
+          ? request.reject(Error(JSON.stringify(message.error)))
+          : request.resolve(message.result);
+      }
+    }
+    if (message.method === "Runtime.exceptionThrown")
+      errors.push(message.params.exceptionDetails.text);
+  });
+  await new Promise((resolve) => websocket.addEventListener("open", resolve, { once: true }));
+  const evaluate = async (expression) => {
+    const result = await send("Runtime.evaluate", {
+      expression,
+      returnByValue: true,
+      awaitPromise: true,
+    });
+    if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails));
+    return result.result.value;
+  };
+  const settle = () =>
+    evaluate(
+      "new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,450))))",
+    );
+  const until = async (expression) => {
+    for (let i = 0; i < 150; i++) {
+      if (await evaluate(`Boolean(${expression})`)) return;
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+    throw Error(`Timed out: ${expression}`);
+  };
+  const shot = async (name) => {
+    const png = await send("Page.captureScreenshot", {
+      format: "png",
+      captureBeyondViewport: false,
+    });
+    writeFileSync(`test-results/dark/${name}.png`, Buffer.from(png.data, "base64"));
+  };
+  await send("Page.enable");
+  await send("Runtime.enable");
+  mkdirSync("test-results/dark", { recursive: true });
+  for (const [name, width, height, tablet] of [
+    ["small-phone", 320, 900, false],
+    ["phone", 390, 1000, false],
+    ["ipad-portrait", 834, 1194, false],
+    ["ipad-landscape", 1024, 768, true],
+    ["ipad-pro-landscape", 1366, 1024, true],
+    ["desktop", 1440, 1000, false],
+  ]) {
+    await send("Emulation.setDeviceMetricsOverride", {
+      width,
+      height,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await send("Emulation.setTouchEmulationEnabled", { enabled: width < 1400, maxTouchPoints: 5 });
+    await send("Page.navigate", { url: `http://127.0.0.1:${port}/${tablet ? "?tablet=1" : ""}` });
+    await until(
+      "window.fixtureReady && document.querySelector('#qa-primary') && Array.from(document.images).every(i=>i.complete)",
+    );
+    await settle();
+    await evaluate(
+      `window.qaLuminance=c=>{const channels=c.match(/[\\d.]+/g).slice(0,3).map(n=>Number(n)/(c.startsWith("color(srgb")?1:255)).map(n=>n<=.04045?n/12.92:((n+.055)/1.055)**2.4);return channels.reduce((s,n,i)=>s+n*[.2126,.7152,.0722][i],0)};window.qaContrast=(a,b)=>(Math.max(qaLuminance(a),qaLuminance(b))+.05)/(Math.min(qaLuminance(a),qaLuminance(b))+.05);window.qaColors=s=>{const n=document.querySelector(s),c=getComputedStyle(n);return {bg:c.backgroundColor,fg:c.color}};window.qaGeometry=()=>Array.from(document.querySelectorAll('.followup-note,.ticket-surface,.trip-ticket--planning,.family-stats-strip')).map(n=>{const r=n.getBoundingClientRect();return [n.className,Math.round(r.width),Math.round(r.height)]})`,
+    );
+    await shot(`dark-home-${name}`);
+    const geometry = await evaluate("qaGeometry()");
+    for (const theme of await evaluate("window.qaThemes")) {
+      await evaluate(`window.qaTheme(${JSON.stringify(theme)})`);
+      await settle();
+      const colors = await evaluate(
+        `['body','.settings-panel','.meetings-ledger','.family-album','.chat-workspace','.followup-note','.trip-ticket--planning','.ticket-surface__paper'].map(s=>({selector:s,...qaColors(s)}))`,
+      );
+      for (const color of colors) {
+        assert.ok(
+          await evaluate(`qaLuminance(${JSON.stringify(color.bg)})<.09`),
+          `${name}/${theme}: ${color.selector} keeps a dark surface`,
+        );
+        assert.ok(
+          await evaluate(
+            `qaContrast(${JSON.stringify(color.fg)},${JSON.stringify(color.bg)})>=4.5`,
+          ),
+          `${name}/${theme}: ${color.selector} has readable text`,
+        );
+      }
+      const primary = await evaluate("qaColors('#qa-primary')");
+      assert.ok(
+        await evaluate(
+          `qaContrast(${JSON.stringify(primary.fg)},${JSON.stringify(primary.bg)})>=4.5`,
+        ),
+        `${name}/${theme}: accent button label contrast`,
+      );
+      assert.equal(
+        await evaluate(
+          "document.querySelector('.family-stats-strip').querySelectorAll('a,button,[tabindex]').length",
+        ),
+        0,
+        "Statistics remain read-only",
+      );
+      assert.deepEqual(
+        await evaluate("qaGeometry()"),
+        geometry,
+        `${name}/${theme}: color changes keep the approved component dimensions`,
+      );
+      assert.equal(
+        await evaluate("document.documentElement.scrollWidth<=innerWidth+2"),
+        true,
+        `${name}/${theme}: no horizontal overflow`,
+      );
+    }
+    await evaluate("window.qaCustom()");
+    await settle();
+    assert.equal(await evaluate("document.documentElement.dataset.themeColorMode"), "custom");
+    assert.equal(
+      await evaluate(
+        "getComputedStyle(document.querySelector('.trip-ticket--planning')).color===getComputedStyle(document.body).color",
+      ),
+      true,
+      "Custom text color reaches trip cards",
+    );
+    await evaluate("window.qaLight()");
+    await settle();
+    assert.ok(
+      await evaluate("qaLuminance(qaColors('body').bg)>.8"),
+      "Returning to light mode clears dark overrides",
+    );
+    await evaluate(
+      "window.qaDark();document.querySelector('.family-stats-strip').scrollIntoView({block:'start'})",
+    );
+    await settle();
+    await shot(`dark-cards-${name}`);
+    await evaluate("document.querySelector('#qa-open-dialog').click()");
+    await until("document.querySelector('[role=dialog]')");
+    await settle();
+    const dialog = await evaluate("qaColors('[role=dialog]')");
+    assert.ok(
+      await evaluate(
+        `qaLuminance(${JSON.stringify(dialog.bg)})<.09 && qaContrast(${JSON.stringify(dialog.fg)},${JSON.stringify(dialog.bg)})>=4.5`,
+      ),
+      `${name}: portal dialog keeps the raised dark palette`,
+    );
+    await shot(`dark-dialog-${name}`);
+    await send("Input.dispatchKeyEvent", {
+      type: "keyDown",
+      key: "Escape",
+      code: "Escape",
+      windowsVirtualKeyCode: 27,
+      nativeVirtualKeyCode: 27,
+    });
+    await send("Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: "Escape",
+      code: "Escape",
+      windowsVirtualKeyCode: 27,
+      nativeVirtualKeyCode: 27,
+    });
+    await until("!document.querySelector('[role=dialog]')");
+    await evaluate("document.querySelector('#qa-select').focus()");
+    await send("Input.dispatchKeyEvent", {
+      type: "keyDown",
+      key: "ArrowDown",
+      code: "ArrowDown",
+      windowsVirtualKeyCode: 40,
+      nativeVirtualKeyCode: 40,
+    });
+    await send("Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: "ArrowDown",
+      code: "ArrowDown",
+      windowsVirtualKeyCode: 40,
+      nativeVirtualKeyCode: 40,
+    });
+    await until("document.querySelector('[role=listbox]')");
+    await settle();
+    const listbox = await evaluate("qaColors('[role=listbox]')");
+    assert.ok(
+      await evaluate(
+        `qaLuminance(${JSON.stringify(listbox.bg)})<.09 && qaContrast(${JSON.stringify(listbox.fg)},${JSON.stringify(listbox.bg)})>=4.5`,
+      ),
+      `${name}: select portal follows dark mode`,
+    );
+    await shot(`dark-select-${name}`);
+    console.log(
+      `PASS ${name}: 6 identities, custom roles, dark cards and portals, read-only stats, preserved geometry, light restoration and no overflow`,
+    );
+  }
+  assert.deepEqual(errors, [], "No component runtime errors");
+  console.log("All balanced dark Chrome checks passed");
+} finally {
+  websocket?.close();
+  chrome.kill("SIGTERM");
+  await new Promise((resolve) => server.close(resolve));
+  rmSync(temporary, { recursive: true, force: true });
+}

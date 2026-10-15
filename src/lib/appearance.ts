@@ -1,0 +1,2 @@
+// Run before the styles paint. Respect explicit choices without changing the site's default.
+export const APPEARANCE_BOOTSTRAP = `(function(){try{var theme=localStorage.getItem('theme');if(theme==='light'||theme==='dark'||theme==='system'){document.documentElement.classList.toggle('dark',theme==='dark'||(theme==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches));}}catch(e){}})();`;

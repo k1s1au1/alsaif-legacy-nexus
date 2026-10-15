@@ -1,0 +1,289 @@
+/* Approved option 1: color-only treatment. Geometry stays in each approved component. */
+html.dark {
+  color-scheme: dark;
+  --legacy-green: var(--primary);
+  --legacy-green-deep: var(--foreground);
+  --legacy-gold: var(--identity-accent);
+  --legacy-gold-soft: var(--identity-tertiary);
+  --legacy-ink: var(--foreground);
+  --legacy-muted: var(--muted-foreground);
+  --legacy-cream: var(--background);
+  --legacy-card: var(--card);
+  --legacy-border: var(--border);
+}
+
+html.dark body,
+html.dark body main.app-shell-main,
+html.dark body main .app-shell-content,
+html.dark body main .dashboard-page,
+html.dark body main .desktop-rebuild-root {
+  background-color: var(--background) !important;
+  color: var(--foreground);
+}
+
+/* Native fields, autofill and floating portals share the raised surface. */
+html.dark
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    textarea,
+    select
+  ) {
+  color-scheme: dark;
+  color: var(--foreground);
+  caret-color: var(--primary);
+}
+html.dark :is(input, textarea)::placeholder {
+  color: var(--muted-foreground);
+  opacity: 1;
+}
+html.dark input:is(:autofill, :-webkit-autofill) {
+  -webkit-text-fill-color: var(--foreground);
+  box-shadow: 0 0 0 1000px var(--card) inset;
+}
+html.dark
+  :is(
+    [role="dialog"],
+    [role="alertdialog"],
+    [role="listbox"],
+    [role="menu"],
+    [data-radix-popper-content-wrapper] > div,
+    .theme-customizer-dialog,
+    .member-dialog
+  ) {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border-color: var(--border);
+}
+html.dark :is([role="menuitem"], [role="option"])[data-highlighted] {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+html.dark :is(input, textarea, select, [role="combobox"]) {
+  border-color: var(--input);
+}
+html.dark :is(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline-color: var(--ring);
+}
+/* White button labels must not remain on the lighter dark-mode accent. */
+html.dark :is(.bg-primary, .bg-gold-primary).text-white,
+html.dark .bg-primary > .text-white {
+  color: var(--primary-foreground) !important;
+}
+html.dark .text-red-500,
+html.dark .text-red-600,
+html.dark .text-destructive {
+  color: var(--destructive);
+}
+
+/* Phone / portrait header and the existing desktop seal keep their shapes. */
+html.dark body main > .app-shell-header-wrap > header:not(.family-seal-header) {
+  background: var(--identity-header) !important;
+  color: var(--identity-text-on-nav) !important;
+  border-color: var(--border) !important;
+}
+html.dark .family-seal-header {
+  --seal-ink: var(--identity-text-on-nav) !important;
+  --seal-paper: var(--identity-header);
+  --seal-line: var(--border);
+  --seal-frame-ink: var(--identity-icon-on-nav);
+}
+
+/* Services: identical identity roles at phone, iPad and desktop widths. */
+html.dark body main .family-services-section,
+html.dark body main .desktop-services-panel {
+  background: var(--background) !important;
+}
+html.dark body main .dashboard-page .family-services-section .family-service-card,
+html.dark body main .family-service-card,
+html.dark body main .desktop-service-card,
+html.dark body main .family-services-toggle,
+html.dark body main .desktop-services-wide-toggle {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+html.dark body main .dashboard-page .family-services-section .family-service-label,
+html.dark body main .family-service-label,
+html.dark body main .desktop-service-card strong {
+  color: var(--foreground) !important;
+}
+html.dark body main .dashboard-page .family-services-section .family-service-description,
+html.dark body main .family-service-description,
+html.dark body main .desktop-service-card span {
+  color: var(--muted-foreground) !important;
+}
+html.dark body main .dashboard-page .family-services-section .family-service-icon,
+html.dark body main .family-service-icon,
+html.dark body main .desktop-service-icon,
+html.dark body main .desktop-service-card:nth-child(2n) .desktop-service-icon {
+  background: var(--secondary) !important;
+  color: var(--identity-icon) !important;
+}
+html.dark body main .dashboard-page .family-services-section .family-service-icon svg,
+html.dark body main .family-service-icon svg,
+html.dark body main .desktop-service-icon svg {
+  color: var(--identity-icon) !important;
+}
+
+/* Keep the approved joined statistics, paper folds, calendar tabs and ticket cutouts. */
+html.dark .ticket-surface {
+  --ticket-ink: var(--foreground);
+}
+html.dark :is(.trips-page, .trip-ticket--planning) {
+  --trip-ink: var(--foreground);
+}
+html.dark .trip-detail {
+  --detail-ink: var(--foreground);
+}
+html.dark .followup-note {
+  --note-surface: var(--card);
+  --note-ink: var(--foreground);
+  border-color: var(--border);
+}
+html.dark .followup-note--meeting {
+  background: var(--card);
+}
+html.dark .followup-note--task {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 39px,
+      color-mix(in srgb, var(--foreground) 6%, transparent) 39px 40px
+    ),
+    var(--card);
+}
+html.dark .followup-note__meta {
+  color: var(--muted-foreground);
+}
+html.dark .followup-note__calendar {
+  background: var(--popover);
+  border-color: var(--border);
+}
+html.dark .followup-note__calendar > svg {
+  color: var(--primary-foreground);
+}
+html.dark .family-stats-strip {
+  --stats-rule: var(--border);
+}
+html.dark .family-stats-strip dd > span {
+  color: var(--muted-foreground);
+}
+html.dark :is(.dashboard-news-copy, .desktop-news-feature-copy, .majlis-editorial-card) {
+  background: var(--card);
+}
+
+/* Settings, administration and the shared workspace use the same hierarchy. */
+html.dark :is(.settings-hero, .admin-executive-hero) {
+  background: var(--identity-header);
+  color: var(--identity-text-on-nav);
+  border-color: var(--border);
+}
+html.dark :is(.settings-hero-mark, .settings-hero h1, .admin-hero-main h1) {
+  color: var(--foreground);
+}
+html.dark :is(.settings-hero p, .admin-hero-main p) {
+  color: var(--muted-foreground);
+}
+html.dark .settings-identity-card {
+  background: var(--card);
+  color: var(--foreground);
+}
+html.dark .chat-workspace {
+  --chat-nav-ink: var(--identity-text-on-nav);
+  --chat-nav-icon: var(--identity-icon-on-nav);
+  --chat-incoming: var(--popover);
+  --chat-line: var(--border);
+}
+html.dark .family-album {
+  --album-paper: var(--card);
+  --album-paper-ink: var(--foreground);
+  --album-border: var(--border);
+}
+
+/* Legacy tree controls retain their artwork and layout, with readable dark surfaces. */
+html.dark
+  :is(
+    .legacy-reference-search,
+    .legacy-reference-tab,
+    .legacy-tree-side-card,
+    .legacy-branch-row,
+    .legacy-minimap-shell,
+    .legacy-minimap-head,
+    .legacy-fullscreen-button,
+    .legacy-tree-fullscreen,
+    .legacy-fullscreen-toolbar
+  ) {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+html.dark .family-tree-canvas::after {
+  background: color-mix(in srgb, var(--background) 68%, transparent) !important;
+}
+html.dark .legacy-reference-tab[data-active="true"] {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+html.dark body .dashboard-page > .dashboard-faith-strip {
+  background: var(--card) !important;
+  color: var(--foreground);
+  border-color: var(--border);
+}
+html.dark .dashboard-faith-strip > p {
+  color: var(--foreground);
+}
+html.dark .dashboard-faith-source {
+  color: var(--muted-foreground);
+}
+
+/* The desktop drawer's former white panels must also use the shared palette. */
+@media (min-width: 970px) {
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\] > div:first-child,
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\] > nav {
+    background: var(--popover) !important;
+    border-color: var(--border) !important;
+  }
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\]::after {
+    background: var(--identity-header);
+    color: var(--identity-icon-on-nav);
+  }
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\] > div:first-child :is(h3, button),
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\] > nav > a {
+    color: var(--foreground) !important;
+  }
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\] > div:first-child p,
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\] > nav::before,
+  html.dark .desktop-sidebar-quick-access-title {
+    color: var(--muted-foreground) !important;
+  }
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\] > nav > a:hover,
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\] > div:first-child button:hover {
+    background: var(--card) !important;
+  }
+  html.dark aside.fixed.inset-y-0.right-0.z-\[120\] > nav > a.bg-primary {
+    background: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+  }
+  html.dark .desktop-sidebar-quick-access-item {
+    background: var(--card);
+    color: var(--foreground);
+    border-color: var(--border);
+  }
+  html.dark .desktop-sidebar-quick-access-item:hover {
+    background: var(--background);
+  }
+  html.dark .desktop-sidebar-quick-access-item .desktop-sidebar-quick-access-icon {
+    background: var(--secondary) !important;
+    color: var(--identity-icon) !important;
+  }
+}
+
+/* The approved curved phone/iPad dock already includes safe-area padding. */
+html.dark body main > .app-shell-bottom-dock > nav {
+  --dock-line: var(--border);
+  --dock-ink: var(--identity-text-on-nav);
+  --dock-active: var(--identity-accent);
+  border-color: var(--border) !important;
+}
+
+/* Keep source images, including official Mushaf pages, in their original colors. */

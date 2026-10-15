@@ -1,3 +1,5 @@
+import { applyBalancedDarkTheme, balancedDarkTheme } from "./dark-theme";
+
 export const THEME_COLORS = [
   {
     id: "emerald",
@@ -126,6 +128,9 @@ export function applyThemeColors(colors: (typeof THEME_COLORS)[0]) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   const isDark = root.classList.contains("dark");
+  const darkRoles = { text: colors, icons: colors, background: colors, surfaces: colors, navigation: colors, accent: colors };
+  // Clear dark-only overrides when returning to light or switching identity.
+  Object.keys(balancedDarkTheme(darkRoles)).forEach((property) => root.style.removeProperty(property));
 
   const primary = isDark ? colors.darkPrimary : colors.primary;
   const accent = isDark ? (colors.darkSecondary || colors.secondary) : colors.secondary;
@@ -151,4 +156,7 @@ export function applyThemeColors(colors: (typeof THEME_COLORS)[0]) {
     root.style.setProperty("--mesh-color-1", colors.mesh[0]);
     root.style.setProperty("--mesh-color-2", colors.mesh[1]);
   }
+
+  if (isDark) applyBalancedDarkTheme(root, darkRoles);
+  else root.ownerDocument.querySelector('meta[name="theme-color"]')?.setAttribute("content", header);
 }
