@@ -188,6 +188,66 @@ html.dark .settings-identity-card {
   background: var(--card);
   color: var(--foreground);
 }
+html.dark .settings-nav-links button.is-active,
+html.dark .settings-nav-links button.is-active:is(:hover, :focus-visible),
+html.dark .settings-secondary-action:hover {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+html.dark .settings-hero-summary small,
+html.dark .admin-hero-copy p,
+html.dark .admin-hero-footer,
+html.dark .admin-role-card small {
+  color: var(--muted-foreground);
+}
+html.dark .admin-navigation {
+  background: var(--identity-header);
+}
+html.dark .admin-navigation nav > button {
+  color: var(--muted-foreground);
+}
+html.dark .admin-navigation nav > button.is-active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+html.dark .admin-navigation button.is-active :is(.admin-nav-icon, em) {
+  background: transparent;
+  color: var(--primary-foreground);
+}
+html.dark :is(.admin-content-icon, .admin-official-seal > svg) {
+  background: var(--secondary);
+  color: var(--identity-icon);
+}
+html.dark
+  :is(
+    .admin-metric-card.is-attention > div,
+    .admin-health-summary.is-degraded > div,
+    .admin-health-summary.is-degraded > em,
+    .admin-health-check.is-degraded .admin-health-check-icon,
+    .admin-health-check.is-degraded .admin-health-check-result > em
+  ) {
+  color: #f0cd85;
+}
+html.dark
+  :is(
+    .admin-health-summary > div,
+    .admin-health-summary > em,
+    .admin-health-check-icon,
+    .admin-health-check-result > em
+  ) {
+  color: #8cddb1;
+}
+html.dark
+  :is(
+    .admin-metric-card.is-alert > div,
+    .admin-health-summary.is-down > div,
+    .admin-health-summary.is-down > em,
+    .admin-health-check.is-down .admin-health-check-icon,
+    .admin-health-check.is-down .admin-health-check-result > em,
+    .admin-health-error
+  ) {
+  color: var(--destructive);
+}
 html.dark .chat-workspace {
   --chat-nav-ink: var(--identity-text-on-nav);
   --chat-nav-icon: var(--identity-icon-on-nav);
@@ -204,18 +264,53 @@ html.dark .family-album {
 html.dark
   :is(
     .legacy-reference-search,
+    .legacy-reference-tabs,
     .legacy-reference-tab,
     .legacy-tree-side-card,
     .legacy-branch-row,
+    .legacy-stat-row,
     .legacy-minimap-shell,
     .legacy-minimap-head,
+    .legacy-minimap-body,
+    .legacy-canvas-tool,
     .legacy-fullscreen-button,
     .legacy-tree-fullscreen,
-    .legacy-fullscreen-toolbar
+    .legacy-fullscreen-toolbar,
+    .legacy-heritage-hero,
+    .family-tree-canvas
   ) {
   background: var(--card) !important;
   color: var(--foreground) !important;
   border-color: var(--border) !important;
+}
+html.dark .legacy-minimap-body::after {
+  background: var(--card);
+  color: var(--muted-foreground);
+}
+html.dark .legacy-reference-search input {
+  background: var(--background);
+  color: var(--foreground);
+}
+html.dark .legacy-reference-search svg {
+  color: var(--identity-icon);
+}
+html.dark .legacy-heritage-copy p {
+  color: var(--muted-foreground) !important;
+}
+html.dark :is(.legacy-section-icon, .legacy-side-quote) {
+  background: var(--identity-header);
+  color: var(--foreground);
+}
+html.dark
+  :is(
+    .legacy-add-person,
+    .legacy-fullscreen-exit,
+    .legacy-minimap-head button,
+    .legacy-canvas-tool:hover,
+    .legacy-fullscreen-button:hover
+  ) {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
 }
 html.dark .family-tree-canvas::after {
   background: color-mix(in srgb, var(--background) 68%, transparent) !important;

@@ -39,6 +39,7 @@ const css = [
 ].join("\n");
 await build({
   entryPoints: ["scripts/fixtures/balanced-dark.tsx"],
+  external: ["/family-tree-photo-v1.webp"],
   bundle: true,
   format: "iife",
   platform: "browser",
@@ -227,7 +228,7 @@ try {
       await evaluate(`window.qaTheme(${JSON.stringify(theme)})`);
       await settle();
       const colors = await evaluate(
-        `['body','.settings-panel','.meetings-ledger','.family-album','.chat-workspace','.followup-note','.trip-ticket--planning','.ticket-surface__paper'].map(s=>({selector:s,...qaColors(s)}))`,
+        `['body','.settings-panel','.meetings-ledger','.family-album','.chat-workspace','.followup-note','.trip-ticket--planning','.ticket-surface__paper','.legacy-heritage-hero'].map(s=>({selector:s,...qaColors(s)}))`,
       );
       for (const color of colors) {
         assert.ok(
@@ -239,6 +240,15 @@ try {
             `qaContrast(${JSON.stringify(color.fg)},${JSON.stringify(color.bg)})>=4.5`,
           ),
           `${name}/${theme}: ${color.selector} has readable text`,
+        );
+      }
+      for (const selector of ["#qa-settings-active", "#qa-admin-active"]) {
+        const active = await evaluate(`qaColors(${JSON.stringify(selector)})`);
+        assert.ok(
+          await evaluate(
+            `qaContrast(${JSON.stringify(active.fg)},${JSON.stringify(active.bg)})>=4.5`,
+          ),
+          `${name}/${theme}: selected navigation has readable text`,
         );
       }
       const primary = await evaluate("qaColors('#qa-primary')");

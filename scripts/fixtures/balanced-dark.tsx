@@ -41,6 +41,9 @@ import "../../src/settings-responsive.css";
 import "../../src/chat-workspace.css";
 import "../../src/components/meetings-ledger.css";
 import "../../src/components/family-album-book.css";
+import "../../src/admin-executive.css";
+import "../../src/components/legacy-reference.css";
+import "../../src/components/legacy-reference-fixes.css";
 
 const win = window as any;
 const tablet = new URLSearchParams(location.search).has("tablet");
@@ -158,6 +161,24 @@ function Services({ desktop = false }) {
 function Controls() {
   return (
     <section className="qa-controls settings-page" id="qa-controls">
+      <div className="settings-nav-links qa-panel">
+        <button className="is-active" id="qa-settings-active">
+          المظهر والهوية
+        </button>
+      </div>
+      <div className="admin-navigation qa-panel">
+        <nav>
+          <button className="is-active" id="qa-admin-active">
+            الإدارة
+          </button>
+        </nav>
+      </div>
+      <div className="legacy-heritage-hero qa-panel">
+        <div className="legacy-heritage-copy">
+          <h2>نسب وأثر</h2>
+          <p>إرث العائلة</p>
+        </div>
+      </div>
       <div className="settings-panel card-surface qa-panel">
         <h2>معاينة الوضع الداكن</h2>
         <p className="text-muted-foreground">مكوّنات فعلية · بيانات تجريبية</p>
