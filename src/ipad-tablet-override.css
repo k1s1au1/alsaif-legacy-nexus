@@ -69,26 +69,10 @@
   .integrated-hub .hub-main-carousel{width:100%!important}
   .integrated-hub .hub-main-carousel-content{align-items:stretch!important}
   .integrated-hub .hub-carousel-item{flex-basis:82%!important;padding-inline:10px!important}
-  .integrated-hub .hub-carousel-item article:not(.followup-note){height:300px!important;min-height:300px!important;border-radius:28px!important}
+  .integrated-hub .hub-carousel-item article:not(.followup-note):not(.trip-ticket):not(.ticket-surface){height:300px!important;min-height:300px!important;border-radius:28px!important}
   .integrated-hub .hub-dots{margin-top:14px!important}
 
   /* iPad/tablet trip card: full-bleed photo, readable overlay, no cramped ticket split. */
-  .integrated-hub .hub-trip-ticket{display:block!important;position:relative!important;direction:rtl!important;overflow:hidden!important;background:#0b3c31!important}
-  .integrated-hub .hub-trip-ticket .hub-card-bg{display:block!important;position:absolute!important;inset:0!important;opacity:1!important;z-index:0!important}
-  .integrated-hub .hub-trip-ticket .hub-card-bg img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important}
-  .integrated-hub .hub-trip-ticket .hub-card-bg:after{content:""!important;position:absolute!important;inset:0!important;background:linear-gradient(90deg,rgba(4,34,27,.20) 0%,rgba(4,34,27,.45) 38%,rgba(3,28,23,.88) 100%)!important}
-  .integrated-hub .hub-trip-main{position:absolute!important;z-index:3!important;right:0!important;top:0!important;bottom:0!important;width:58%!important;padding:34px 40px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-start!important;text-align:right!important;background:transparent!important}
-  .integrated-hub .hub-trip-main .hub-card-kicker{font-size:12px!important;margin-bottom:9px!important}
-  .integrated-hub .hub-trip-main h3{font-size:clamp(34px,4vw,46px)!important;line-height:1.08!important;margin:0 0 14px!important;text-shadow:0 3px 14px rgba(0,0,0,.42)!important}
-  .integrated-hub .hub-trip-main .hub-card-meta{margin-bottom:16px!important;gap:10px!important}
-  .integrated-hub .hub-trip-main .hub-card-meta span{font-size:11px!important;color:rgba(255,255,255,.86)!important}
-  .integrated-hub .hub-trip-main .hub-outline-action{min-height:42px!important;padding:0 18px!important;background:rgba(4,34,27,.48)!important;backdrop-filter:blur(8px)!important;border-color:color-mix(in srgb,var(--gold-primary) 58%,transparent)!important}
-  .integrated-hub .hub-ticket-stub{position:absolute!important;left:28px!important;top:50%!important;transform:translateY(-50%)!important;z-index:4!important;width:100px!important;height:auto!important;min-height:112px!important;border:1px dashed color-mix(in srgb,var(--gold-primary) 70%,transparent)!important;border-radius:20px!important;background:rgba(5,34,28,.72)!important;backdrop-filter:blur(10px)!important;padding:12px 8px!important;display:flex!important;align-items:center!important;justify-content:center!important}
-  .integrated-hub .hub-ticket-stub:before,.integrated-hub .hub-ticket-stub:after{display:none!important}
-  .integrated-hub .hub-ticket-stub .hub-watermark-icon{display:none!important}
-  .integrated-hub .hub-ticket-stub .hub-countdown{width:78px!important;margin:0!important;padding:10px 4px!important;background:transparent!important;border:0!important}
-  .integrated-hub .hub-ticket-stub .hub-countdown span:first-child{font-size:30px!important}
-  .integrated-hub .hub-ticket-stub .hub-countdown span:last-child{font-size:9px!important}
 
   main>div.md\:hidden.fixed.bottom-8.inset-x-6.z-\[70\]{display:flex!important;left:clamp(64px,11vw,160px)!important;right:clamp(64px,11vw,160px)!important;bottom:24px!important;justify-content:center!important;z-index:70!important}
   main>div.md\:hidden.fixed.bottom-8.inset-x-6.z-\[70\]>nav{width:100%!important;max-width:720px!important;height:72px!important;padding-inline:32px!important;border-radius:999px!important}
@@ -100,5 +84,4 @@
   .family-services-grid{gap:18px!important}
   .family-service-card{min-height:205px!important}
   .integrated-hub .hub-carousel-item{flex-basis:78%!important}
-  .integrated-hub .hub-trip-main{width:60%!important;padding-right:44px!important}
 }

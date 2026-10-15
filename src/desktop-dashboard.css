@@ -396,46 +396,6 @@
     pointer-events: none;
   }
 
-  .desktop-next-card--trip {
-    padding-left: 108px;
-    border: 0;
-    border-radius: 18px;
-    clip-path: polygon(
-      0 0,
-      100% 0,
-      100% 41%,
-      calc(100% - 12px) 50%,
-      100% 59%,
-      100% 100%,
-      0 100%,
-      0 59%,
-      12px 50%,
-      0 41%
-    );
-    background:
-      linear-gradient(115deg, rgba(255, 255, 255, 0.04), transparent 42%),
-      linear-gradient(145deg, #5f5a3e, #897956);
-  }
-
-  .desktop-next-card--trip::before {
-    top: 18px;
-    bottom: 18px;
-    left: 91px;
-    border-left: 1px dashed rgba(255, 255, 255, 0.42);
-  }
-
-  .desktop-next-card--trip::after {
-    inset: 0 auto 0 0;
-    width: 91px;
-    background:
-      repeating-linear-gradient(
-        -45deg,
-        rgba(255, 255, 255, 0.06) 0 8px,
-        transparent 8px 16px
-      ),
-      rgba(4, 48, 37, 0.36);
-  }
-
   .desktop-next-card--occasion {
     border: 2px solid rgba(220, 188, 109, 0.55);
     border-radius: 58px 20px 58px 20px;
@@ -477,38 +437,6 @@
     position: absolute;
     z-index: 1;
     pointer-events: none;
-  }
-
-  .desktop-card-motif--trip {
-    inset: 24px auto 24px 0;
-    width: 91px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    color: #f1d487;
-    text-align: center;
-  }
-
-  .desktop-card-motif--trip svg {
-    width: 28px;
-    height: 28px;
-    margin-bottom: 7px;
-    transform: rotate(-18deg);
-  }
-
-  .desktop-card-motif--trip span {
-    font-size: 0.72rem;
-    font-weight: 950;
-    letter-spacing: 0.18em;
-  }
-
-  .desktop-card-motif--trip small {
-    color: rgba(255, 255, 255, 0.58);
-    font-size: 0.48rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
   }
 
   .desktop-next-top {
