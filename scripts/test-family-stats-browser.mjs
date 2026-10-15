@@ -22,7 +22,7 @@ const entry = `import React from 'react';import {createRoot} from 'react-dom/cli
 import {FamilyStatsStrip} from './src/components/dashboard/family-stats-strip';
 const tablet=new URLSearchParams(location.search).has('tablet');document.documentElement.dataset.dashboardTabletLandscape=tablet?'true':'false';
 function Fixture(){const [values,setValues]=React.useState({balance:125000,members:24,trips:3,tasks:5});window.qaValues=setValues;
-return <><header className="qa-stats-heading"><h1>الشريط المتصل</h1><p>معاينة ببيانات تجريبية · إحصائيات للعرض فقط</p></header><button id="qa-before" className="qa-focus-sentinel">قبل الملخص</button><main className="app-shell-main"><div className="app-shell-content p-4 md:p-8 lg:p-12 mx-auto max-w-7xl"><div className="dashboard-page max-w-6xl mx-auto space-y-12"><FamilyStatsStrip {...values}/></div>{innerWidth>=970&&<div className={tablet?'tablet-landscape-desktop-content':'desktop-rebuild-shell'}><div className="desktop-rebuild-root"><FamilyStatsStrip {...values} className="family-stats-strip--desktop"/></div></div>}</div></main><button id="qa-after" className="qa-focus-sentinel">بعد الملخص</button></>}
+return <><header className="qa-stats-heading"><h1>الشريط المتصل</h1><p>معاينة ببيانات تجريبية · إحصائيات للعرض فقط</p></header><button id="qa-before" className="qa-focus-sentinel">قبل الملخص</button><main className="app-shell-main"><div className="app-shell-content p-4 md:p-8 lg:p-12 mx-auto max-w-7xl"><div className="dashboard-page max-w-6xl mx-auto space-y-12">{Array.from({length:6},(_,i)=><div key={i} hidden/>)}<FamilyStatsStrip {...values}/></div>{innerWidth>=970&&<div className={tablet?'tablet-landscape-desktop-content':'desktop-rebuild-shell'}><div className="desktop-rebuild-root"><FamilyStatsStrip {...values} className="family-stats-strip--desktop"/></div></div>}</div></main><button id="qa-after" className="qa-focus-sentinel">بعد الملخص</button></>}
 createRoot(document.getElementById('app')).render(<Fixture/>);window.fixtureReady=true;`;
 await build({stdin:{contents:entry,resolveDir:process.cwd(),sourcefile:'stats-qa.tsx',loader:'tsx'},bundle:true,format:'iife',platform:'browser',outdir:output,entryNames:'fixture',tsconfig:'tsconfig.json'});
 const html=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}
@@ -69,6 +69,7 @@ try {
     await send('Page.navigate',{url:`http://127.0.0.1:${port}/${tablet?'?tablet=1':''}`});
     await until("window.fixtureReady && document.querySelector('.family-stats-strip')");await settle();
     await evaluate("window.qaVisible=()=>Array.from(document.querySelectorAll('.family-stats-strip')).filter(n=>n.getClientRects().length>0);window.qaStrip=()=>window.qaVisible()[0]");
+    const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`test-results/stats/stats-${name}.png`,Buffer.from(png.data,'base64'));
     assert.equal(await evaluate('window.qaVisible().length'),1,`${name}: exactly one statistics summary is visible`);
     assert.equal(await evaluate("window.qaStrip().classList.contains('family-stats-strip--desktop')"),width>=970,`${name}: the original responsive dashboard branch stays in use`);
     assert.equal(await evaluate("window.qaStrip().querySelectorAll('a,button,input,select,textarea,[role=button],[tabindex]').length"),0,`${name}: the summary has no navigation or focusable actions`);
@@ -78,7 +79,6 @@ try {
     if(layout.root.width>=760){assert.ok(layout.fund.x>layout.metrics.x,`${name}: balance stays on the right of the connected strip`);assert.ok(Math.abs(layout.fund.bottom-layout.metrics.bottom)<=1,`${name}: the connected fields share one baseline`)}else{assert.ok(layout.fund.bottom+10<=layout.metrics.y,`${name}: small screens place the balance above the three metrics`)}
     assert.ok(layout.cells.every(c=>Math.abs(c.y-layout.cells[0].y)<1),`${name}: the three secondary metrics remain one row`);
     assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),true,`${name}: no horizontal page overflow`);
-    const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`test-results/stats/stats-${name}.png`,Buffer.from(png.data,'base64'));
     const before=await evaluate("({url:location.href,transform:getComputedStyle(window.qaStrip()).transform,background:getComputedStyle(window.qaStrip().querySelector('.family-stats-strip__fund')).backgroundColor})");
     await evaluate("window.qaStrip().querySelector('.family-stats-strip__metric').click();window.qaStrip().scrollIntoView({block:'center'})");
     const target=await evaluate("(()=>{const r=window.qaStrip().querySelector('.family-stats-strip__metric').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()");
