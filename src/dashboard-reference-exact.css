@@ -335,7 +335,7 @@ html body main .council-terrain-scene .council-visitor-text {
 
 html body main .council-terrain-scene .council-visitor-number {
   min-width: 2ch;
-  color: var(--council-portal-accent);
+  color: var(--identity-accent, var(--council-portal-accent));
   font-size: clamp(18px, 1.5cqw, 22px);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -346,7 +346,7 @@ html body main .council-terrain-scene .council-visitor-ornament {
   display: inline-flex;
   flex: 0 1 46px;
   align-items: center;
-  color: var(--council-portal-accent);
+  color: var(--identity-accent, var(--council-portal-accent));
 }
 
 html body main .council-terrain-scene .council-visitor-ornament::before {
