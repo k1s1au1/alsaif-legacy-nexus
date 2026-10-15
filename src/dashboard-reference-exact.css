@@ -308,3 +308,111 @@ html body main .council-terrain-scene .council-portal-contact-shadow {
     margin-inline: calc(50% - 50vw) !important;
   }
 }
+
+/* Approved visitor ornament: part of the welcome copy, with the scene's identity.
+ * Phones and portrait tablets gain breathing room, retaining the model's size. */
+html body main .council-terrain-scene .council-visitor-counter {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(7px, 0.7cqw, 12px);
+  margin: clamp(18px, 1.8cqw, 26px) 0 0;
+  color: var(--council-portal-copy);
+  font-size: clamp(12px, 1cqw, 15px);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+html body main .council-terrain-scene .council-visitor-text {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.45em;
+  white-space: nowrap;
+}
+
+html body main .council-terrain-scene .council-visitor-number {
+  min-width: 2ch;
+  color: var(--council-portal-accent);
+  font-size: clamp(18px, 1.5cqw, 22px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  unicode-bidi: isolate;
+}
+
+html body main .council-terrain-scene .council-visitor-ornament {
+  display: inline-flex;
+  flex: 0 1 46px;
+  align-items: center;
+  color: var(--council-portal-accent);
+}
+
+html body main .council-terrain-scene .council-visitor-ornament::before {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: currentColor;
+}
+
+html body main .council-terrain-scene .council-visitor-ornament:last-child {
+  flex-direction: row-reverse;
+}
+
+html body main .council-terrain-scene .council-visitor-ornament > svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+}
+
+@media (max-width: 699px), (max-width: 969.98px) and (orientation: portrait) {
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene.has-council-visitor-counter {
+    --visitor-scene-base: clamp(500px, 136cqw, 660px);
+    --terrain-height: calc(var(--visitor-scene-base) + 80px);
+    --terrain-model-height: calc(var(--visitor-scene-base) * 0.6);
+    display: flex !important;
+    flex-direction: column;
+    height: auto !important;
+    min-height: var(--terrain-height) !important;
+    padding-top: clamp(25px, 5cqw, 42px);
+    container-type: inline-size;
+  }
+
+  html body main .has-faith-shortcuts .council-terrain-scene.has-council-visitor-counter {
+    padding-top: calc(68px + clamp(25px, 5cqw, 42px));
+  }
+
+  html body main .council-terrain-scene.has-council-visitor-counter .council-portal-copy {
+    position: relative;
+    top: auto !important;
+    left: auto !important;
+    flex: 0 0 auto;
+    margin-inline: auto;
+    transform: none !important;
+  }
+
+  html body main .council-terrain-scene.has-council-visitor-counter .council-portal-model {
+    position: relative;
+    right: auto !important;
+    bottom: auto !important;
+    flex: 0 0 auto;
+    margin: 12px 9% 0 auto;
+    transform: none !important;
+  }
+
+  html body main .council-terrain-scene .council-visitor-counter {
+    margin-top: 18px;
+    font-size: clamp(12px, 3.2cqw, 15px);
+  }
+}
+
+@media (min-width: 700px) and (max-width: 969.98px) and (orientation: portrait) {
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero
+    .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene.has-council-visitor-counter {
+    --visitor-scene-base: clamp(740px, 102cqw, 840px);
+    --terrain-height: calc(var(--visitor-scene-base) + 80px);
+    --terrain-model-height: calc(var(--visitor-scene-base) * 0.62);
+  }
+}

@@ -67,11 +67,19 @@ jobs:
         run: node scripts/test-faith-browser.mjs
       - name: Check shared ticket cutouts, responsive width and touch actions in Chrome
         run: node scripts/test-trip-ticket-browser.mjs
+      - name: Check saved visitor count and welcome spacing on all devices in Chrome
+        run: node scripts/test-council-visitors-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: faith-component-previews
           path: test-results/faith
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: council-visitor-component-previews
+          path: test-results/visitors
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()

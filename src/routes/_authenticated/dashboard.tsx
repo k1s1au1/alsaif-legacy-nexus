@@ -20,6 +20,7 @@ import {
   Send,
 } from "lucide-react";
 import { useSiteLogo } from "@/hooks/use-site-logo";
+import { useRecordedVisitorCount } from "@/lib/presence";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import {
   DashboardSupportPanel,
@@ -294,6 +295,7 @@ const SPIRITUAL_QUOTES = [
 ];
 
 function Dashboard() {
+  const visitorCount = useRecordedVisitorCount();
   const { simpleMode, disableSimpleMode } = useSimpleMode();
   const { data: profileData, isLoading: profileLoading } = useProfile();
   const { data: countsData } = useDashboardCounts();
@@ -543,6 +545,7 @@ function Dashboard() {
                 name={safeProfile.name}
                 message={statusMessages[statusIndex]}
                 className="dashboard-portal-model"
+                visitorCount={visitorCount}
               />
             </div>
           </div>

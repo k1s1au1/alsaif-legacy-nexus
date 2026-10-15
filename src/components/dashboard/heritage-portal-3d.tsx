@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { CouncilVisitorCounter, visitorCountLabel } from "./council-visitor-counter";
 import councilSandyGround from "@/assets/council-sandy-ground-v1.webp";
 import councilTerrainWide from "@/assets/council-terrain-wide-v1.webp";
 import councilTerrainPortrait from "@/assets/council-terrain-portrait-v2.webp";
@@ -13,6 +14,7 @@ type HeritagePortal3DProps = {
   message: string;
   className?: string;
   welcomeIntro?: boolean;
+  visitorCount?: number | null;
 };
 
 export function HeritagePortal3D({
@@ -21,6 +23,7 @@ export function HeritagePortal3D({
   message,
   className = "",
   welcomeIntro = false,
+  visitorCount,
 }: HeritagePortal3DProps) {
   const colorFilterId = `council-portal-colors-${useId().replace(/:/g, "")}`;
   const terrainFilterId = `${colorFilterId}-terrain`;
@@ -32,6 +35,7 @@ export function HeritagePortal3D({
         "heritage-portal-3d",
         "heritage-pavilion-reference",
         "council-terrain-scene",
+        visitorCount !== undefined && "has-council-visitor-counter",
         className,
       ]
         .filter(Boolean)
@@ -44,7 +48,8 @@ export function HeritagePortal3D({
         message,
         "مجلس السيف",
         "تأسس عام ١٤٤٨ هجري",
-      ].join(". ")}
+        visitorCount === undefined ? "" : visitorCountLabel(visitorCount),
+      ].filter(Boolean).join(". ")}
     >
       <svg
         className="council-terrain-definitions"
@@ -152,6 +157,7 @@ export function HeritagePortal3D({
         <p className="council-portal-message" key={message}>
           {message}
         </p>
+        {visitorCount !== undefined && <CouncilVisitorCounter count={visitorCount} />}
       </div>
 
       <div className="council-portal-model" aria-hidden="true">
