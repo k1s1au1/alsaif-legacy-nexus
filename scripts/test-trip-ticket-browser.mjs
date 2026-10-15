@@ -140,6 +140,8 @@ try {
     const original=await evaluate("getComputedStyle(document.querySelector('.followup-note--meeting')).backgroundImage");
     await evaluate("document.documentElement.classList.add('dark');document.documentElement.style.setProperty('--identity-header','#4c244a');document.documentElement.style.setProperty('--identity-accent','#d5a776');document.documentElement.style.setProperty('--identity-text-on-nav','#fff2e4');document.documentElement.style.setProperty('--identity-icon-on-nav','#e8be8e')");await settle();
     assert.notEqual(await evaluate("getComputedStyle(document.querySelector('.followup-note--meeting')).backgroundImage"),original,`${name}: shared cards follow the chosen identity`);
+    await evaluate("document.documentElement.style.setProperty('--identity-soft','#211923');document.documentElement.style.setProperty('--identity-text','#f5ebdf')");
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.followup-note__calendar')).color"),"rgb(245, 235, 223)",`${name}: date tile retains readable identity text in dark mode`);
     await send("Input.dispatchKeyEvent", { type:"keyDown",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9 });
     await send("Input.dispatchKeyEvent", { type:"keyUp",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9 });
     await evaluate("document.querySelector('.followup-note__action button').focus()");

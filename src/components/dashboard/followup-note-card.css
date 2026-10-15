@@ -195,7 +195,7 @@
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 70%);
   border-radius: 18px;
-  color: var(--note-surface);
+  color: var(--identity-text, var(--note-surface));
   background: var(--identity-soft, #f7f2e6);
   box-shadow: 0 12px 24px rgb(2 30 23 / 28%);
   pointer-events: none;
