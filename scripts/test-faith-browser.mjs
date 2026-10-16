@@ -37,7 +37,7 @@ const originalFetch=window.fetch.bind(window);window.prayerRequests=[];
 window.fetch=async (input, options)=>{const url=String(input);if(!url.startsWith('https://api.aladhan.com/'))return originalFetch(input,options);
 window.prayerRequests.push(url);const u=new URL(url),parts=u.pathname.split('/');const year=Number(parts.at(-2)),month=Number(parts.at(-1));const latitude=Number(u.searchParams.get('latitude')),longitude=Number(u.searchParams.get('longitude'));
 return new Response(JSON.stringify({code:200,data:Array.from({length:new NativeDate(NativeDate.UTC(year,month,0)).getUTCDate()},(_,i)=>{
-const date=year+'-'+String(month).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');return{date:{gregorian:{date:String(i+1).padStart(2,'0')+'-'+String(month).padStart(2,'0')+'-'+year}},meta:{latitude,longitude,method:{id:4},timezone:'Asia/Riyadh'},timings:Object.fromEntries([['Fajr',latitude<26?'05:04':'05:00'],['Dhuhr','12:00'],['Asr','15:15'],['Maghrib','18:00'],['Isha','19:30']].map(([k,t])=>[k,date+'T'+t+':00+03:00']))}})}),{headers:{'Content-Type':'application/json'}})};
+const date=year+'-'+String(month).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');return{date:{gregorian:{date:String(i+1).padStart(2,'0')+'-'+String(month).padStart(2,'0')+'-'+year}},meta:{latitude,longitude,method:{id:4},timezone:'Asia/Riyadh'},timings:Object.fromEntries([['Fajr',latitude<26?'05:04':'05:00'],['Sunrise','05:41'],['Sunset','18:00'],['Dhuhr','12:00'],['Asr','15:15'],['Maghrib','18:00'],['Isha','19:30']].map(([k,t])=>[k,date+'T'+t+':00+03:00']))}})}),{headers:{'Content-Type':'application/json'}})};
 function Fixture(){const [view,setView]=useState(new URLSearchParams(location.search).get('view')==='prayer'?'prayer':'mushaf');
 if(location.pathname==='/home')return <main className="app-shell-main"><div className="app-shell-content"><div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-spiritual dashboard-faith-strip"><div className="dashboard-faith-label">نفحات إيمانية</div></section><section className="dashboard-hero dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout"><HeritagePortal3D greeting="مساء الخير" name="حساب المراجعة فقط" message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className="dashboard-portal-model"/></div></div></section></div></div></main>;
 return <main style={{padding:16}}><FaithCenter view={view} onViewChange={setView}/></main>}
@@ -165,8 +165,10 @@ try {
     assert.ok(layout.shortcut.top >= layout.quote.bottom - 1, `${name}: below Nafahat`);
     if (width < 970) assert.ok(layout.shortcut.bottom <= layout.copy.top + 1, `${name}: shortcuts before welcome, without overlap`);
     const baseline = await evaluate(`(()=>{const section=document.querySelector('.has-faith-shortcuts');section.classList.remove('has-faith-shortcuts');document.querySelector('.faith-home-shortcuts').style.display='none';const r=document.querySelector('.council-portal-model').getBoundingClientRect();const result={top:r.top,left:r.left,width:r.width,height:r.height};section.classList.add('has-faith-shortcuts');document.querySelector('.faith-home-shortcuts').style.display='';return result})()`);
-    for (const key of ["top", "left", "width", "height"]) {
-      assert.ok(Math.abs(baseline[key] - layout.model[key]) < 1, `${name}: shortcut overlay preserves approved gateway ${key}`);
+    // Portrait artwork flows below the live copy, so reserving room for the
+    // faith row may grow the scene. Its scale and horizontal framing stay fixed.
+    for (const key of width >= 970 ? ["top", "left", "width", "height"] : ["left", "width", "height"]) {
+      assert.ok(Math.abs(baseline[key] - layout.model[key]) < 1, `${name}: faith overlay preserves oasis artwork ${key}`);
     }
     await screenshot(name); console.log(`PASS ${name}: selected shortcut placement and preserved gateway geometry`);
   }

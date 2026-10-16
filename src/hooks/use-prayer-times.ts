@@ -7,7 +7,9 @@ function useMonth(location: PrayerLocation | undefined, year: number, month: num
   return useQuery({
     queryKey: ["prayer-calendar-gps", location ? prayerLocationKey(location) : "", year, month],
     enabled: !!location,
-    staleTime: 24 * 60 * 60 * 1000,
+    // Refresh legacy calendars in the background, retaining their verified
+    // prayer times while sunrise/sunset metadata is obtained (or offline).
+    staleTime: query => query.state.data?.days.every(day => day.sunrise && day.sunset) ? 24 * 60 * 60 * 1000 : 0,
     initialData: () => location ? readPrayerCalendar(location, year, month) : undefined,
     queryFn: async ({ signal }) => {
       if (!location) throw new Error("حدد موقعك أولاً");
