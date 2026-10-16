@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
+import { TripImageUploadError, uploadTripImage } from "@/lib/trip-image-upload";
 
 export type QuickCreateTarget = "meeting" | "trip" | "task" | "occasion" | "community";
 
@@ -249,12 +250,7 @@ function TripQuickForm({ userId, onClose, onSaved }: QuickCreateDialogProps) {
     try {
       let imagePath: string | undefined;
       if (imageFile) {
-        const extension = imageFile.name.split(".").pop() || "jpg";
-        imagePath = `${userId}/${crypto.randomUUID()}.${extension}`;
-        const { error: uploadError } = await supabase.storage
-          .from("trip-images")
-          .upload(imagePath, imageFile);
-        if (uploadError) throw uploadError;
+        imagePath = await uploadTripImage(imageFile, userId);
       }
 
       const payload: TripInsertWithAccommodation = {
@@ -276,7 +272,16 @@ function TripQuickForm({ userId, onClose, onSaved }: QuickCreateDialogProps) {
       await onSaved("trip");
       onClose();
     } catch (error) {
-      toast.error("تعذّر حفظ الرحلة", { description: errorDescription(error) });
+      if (error instanceof TripImageUploadError) {
+        console.error("Trip image upload failed:", error.cause);
+      }
+      toast.error(
+        error instanceof TripImageUploadError ? "تعذّر رفع صورة الرحلة" : "تعذّر حفظ الرحلة",
+        {
+          description:
+            error instanceof TripImageUploadError ? error.message : errorDescription(error),
+        },
+      );
     } finally {
       setSaving(false);
     }
