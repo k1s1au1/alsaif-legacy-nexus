@@ -812,8 +812,8 @@ html body main .oasis-family-services .oasis-services-heading {
   .oasis-services-extra { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .oasis-services-extra .oasis-service-link::before,
   .oasis-services-extra .oasis-service-link::after { display: none; }
-  .oasis-services-extra .oasis-service-link:not(:nth-child(3n+1))::before { display: block; }
-  .oasis-services-extra .oasis-service-link:nth-child(n+4)::after { display: block; }
+  .oasis-services-extra .oasis-service-link:not(:nth-child(3n+1))::before { display: block; inset-block: 14px 18px; inset-inline-start: 0; width: 1px; }
+  .oasis-services-extra .oasis-service-link:nth-child(n+4)::after { display: block; inset-block-start: 0; inset-inline: 12px; height: 1px; }
 }
 @media (min-width: 600px) {
   html body main .oasis-family-services > .oasis-services-glass { padding: 18px 18px 16px; border-radius: 28px; }
