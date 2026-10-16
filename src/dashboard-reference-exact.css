@@ -579,3 +579,178 @@ html body main .desktop-portal-stage > .faith-home-shortcuts-desktop {
   html body main :is(.dashboard-portal-card, .desktop-portal-stage):has(.council-oasis-scene) > .faith-home-shortcuts,
   html body main :is(.dashboard-portal-card, .desktop-portal-stage):has(.council-oasis-scene) > .faith-home-shortcuts * { transition: none !important; }
 }
+
+/* Approved joined services: the large surface follows the existing oasis,
+ * while icons and fine dividers retain the member's independent identity roles.
+ * Reading the scene's data attribute also keeps both sections on one clock. */
+html body main :is(.dashboard-page, .desktop-overview-shell):has(.council-oasis-scene) {
+  --oasis-services-background: #f6f0e3;
+  --oasis-services-ink: #152e2c;
+  --oasis-services-muted: #536159;
+  --oasis-services-icon-base: #0c2f27;
+  --oasis-services-icon-weight: 45%;
+  --oasis-services-line-weight: 30%;
+}
+html body main :is(.dashboard-page, .desktop-overview-shell):has(.council-oasis-scene[data-oasis-period="night"]) {
+  --oasis-services-background: #071f2f;
+  --oasis-services-ink: #fff3dc;
+  --oasis-services-muted: #c8cec9;
+  --oasis-services-icon-base: #fff2d6;
+  --oasis-services-icon-weight: 45%;
+  --oasis-services-line-weight: 45%;
+}
+html body main .oasis-family-services {
+  --oasis-service-icon: color-mix(in srgb, var(--identity-icon, var(--identity-accent, #114e4d)) var(--oasis-services-icon-weight, 45%), var(--oasis-services-icon-base, #0c2f27));
+  --oasis-service-line: color-mix(in srgb, var(--identity-accent, #2a7f7b) var(--oasis-services-line-weight, 30%), transparent);
+}
+html body main :is(
+  .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section,
+  .desktop-rebuild-shell .desktop-overview-shell > .desktop-services-panel
+).oasis-family-services {
+  position: relative !important;
+  display: block !important;
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin-block: 0 !important;
+  padding: clamp(18px, 2.1vw, 28px) !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 0 22px 22px !important;
+  background: var(--oasis-services-background, #f6f0e3) !important;
+  color: var(--oasis-services-ink, #152e2c) !important;
+  box-shadow: none !important;
+  transition: background-color 800ms ease, color 800ms ease;
+}
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section.oasis-family-services {
+  width: 100vw !important;
+  margin-inline: calc(50% - 50vw) !important;
+  border-radius: 0 !important;
+}
+html body main .desktop-overview-shell:has(> .oasis-family-services) {
+  background: var(--oasis-services-background, #f6f0e3) !important;
+  border-color: color-mix(in srgb, var(--identity-accent, #2a7f7b) 25%, transparent) !important;
+}
+html body main .oasis-family-services .oasis-services-heading {
+  margin: 0 0 12px;
+  color: var(--oasis-services-ink, #152e2c);
+  font-size: clamp(18px, 1.6vw, 23px);
+  font-weight: 850;
+  line-height: 1.4;
+  text-align: start;
+}
+.oasis-services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  min-width: 0;
+}
+.oasis-service-link {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 104px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--oasis-services-ink, #152e2c);
+  text-align: center;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 800ms ease, background-color 160ms ease;
+}
+.oasis-service-link::before,
+.oasis-service-link::after {
+  position: absolute;
+  display: none;
+  content: "";
+  background: var(--oasis-service-line);
+  pointer-events: none;
+}
+.oasis-service-link:nth-child(even)::before {
+  inset-block: 18px;
+  inset-inline-start: 0;
+  display: block;
+  width: 1px;
+}
+.oasis-service-link:nth-child(n+3)::after {
+  inset-block-start: 0;
+  inset-inline: 12px;
+  display: block;
+  height: 1px;
+}
+.oasis-service-link > strong {
+  max-width: 100%;
+  color: inherit;
+  font-size: clamp(15px, 1.3vw, 18px);
+  font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  transition: none;
+}
+.oasis-service-link > .oasis-service-icon {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  color: var(--oasis-service-icon);
+  transition: color 800ms ease;
+}
+.oasis-service-description {
+  max-width: 100%;
+  color: var(--oasis-services-muted, #536159);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.oasis-services-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px 16px;
+  border: 1px solid var(--oasis-service-line);
+  border-radius: 24px;
+  background: transparent;
+  color: var(--oasis-services-ink, #152e2c);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.oasis-services-toggle > svg { width: 20px; height: 20px; color: var(--oasis-service-icon); }
+.oasis-service-link:focus-visible,
+.oasis-services-toggle:focus-visible { outline: 2px solid var(--oasis-service-icon); outline-offset: -4px; }
+.oasis-services-extra { margin-top: 16px; }
+.oasis-services-extra[hidden] { display: none !important; }
+@media (hover: hover) {
+  .oasis-service-link:hover,
+  .oasis-services-toggle:hover { background: color-mix(in srgb, var(--oasis-service-icon) 7%, transparent); }
+}
+@media (max-width: 599px) {
+  .oasis-service-description { display: none; }
+}
+@media (min-width: 970px) {
+  .oasis-services-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .oasis-service-link { min-height: 124px; }
+  .oasis-service-link:nth-child(n)::before { display: block; inset-block: 18px; inset-inline-start: 0; width: 1px; }
+  .oasis-service-link:nth-child(4n+1)::before { display: none; }
+  .oasis-service-link:nth-child(n)::after { display: none; }
+  .oasis-service-link:nth-child(n+5)::after { display: block; inset-block-start: 0; inset-inline: 12px; height: 1px; }
+}
+@media (min-width: 1200px) {
+  html body:has(.desktop-rebuild-shell) main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section.oasis-family-services { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html body main .oasis-family-services,
+  html body main .oasis-family-services * { transition: none !important; }
+}
