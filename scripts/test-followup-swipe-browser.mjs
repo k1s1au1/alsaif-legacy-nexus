@@ -3,7 +3,8 @@ import { existsSync, readFileSync, mkdtempSync, rmSync, globSync } from "node:fs
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createServer } from "node:http";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 // Exercise the real dashboard component with native touch input in CI's Chrome.
@@ -13,6 +14,28 @@ const chromePath =
   process.env.CHROME_PATH ||
   ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium"].find(existsSync);
 if (!chromePath && !prepareOnly) throw Error("Preinstalled Chrome is required for swipe checks");
+const devices = [
+  ["ipad-landscape", 1024, 768],
+  ["ipad-air-landscape", 1180, 820],
+  ["ipad-pro-landscape", 1366, 1024],
+];
+const requested = process.argv.find((arg) => arg.startsWith("--device="))?.slice(9);
+const selectedDevices = requested ? devices.filter(([name]) => name === requested) : devices;
+assert.ok(selectedDevices.length, "Unknown touch device profile");
+// Native touch emulation retains browser-window state across metric changes.
+// Use a fresh, correctly sized browser for each physical input profile.
+if (!prepareOnly && !requested) {
+  for (const [name] of devices) {
+    const result = spawnSync(
+      process.execPath,
+      [fileURLToPath(import.meta.url), `--device=${name}`],
+      { stdio: "inherit", timeout: 120000 },
+    );
+    assert.equal(result.status, 0, `${name}: isolated touch check failed`);
+  }
+  console.log("All isolated iPad follow-up touch checks passed");
+  process.exit(0);
+}
 const temporary = mkdtempSync(join(tmpdir(), "alsaif-followup-touch-"));
 const output = join(temporary, "assets");
 const compiled = [...globSync(".output/public/**/styles-*.css")];
@@ -110,6 +133,7 @@ const chrome = spawn(
     "--headless=new",
     "--no-sandbox",
     "--disable-gpu",
+    `--window-size=${selectedDevices[0][1]},${selectedDevices[0][2]}`,
     "--remote-debugging-port=0",
     `--user-data-dir=${join(temporary, "profile")}`,
     "about:blank",
@@ -225,11 +249,7 @@ try {
   await send("Page.enable");
   await send("Runtime.enable");
   await send("Emulation.setFocusEmulationEnabled", { enabled: true });
-  for (const [name, width, height] of [
-    ["ipad-landscape", 1024, 768],
-    ["ipad-air-landscape", 1180, 820],
-    ["ipad-pro-landscape", 1366, 1024],
-  ]) {
+  for (const [name, width, height] of selectedDevices) {
     // Each device starts with a fresh native input/viewport state. Screen metrics
     // must match the layout metrics when dispatching physical touch coordinates.
     await send("Emulation.setTouchEmulationEnabled", { enabled: false });
