@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { HeritagePortal3D } from "../../src/components/dashboard/heritage-portal-3d";
 import { PrayerMushafShortcuts } from "../../src/components/dashboard/prayer-mushaf-shortcuts";
-import { OasisFamilyServices } from "../../src/components/dashboard/oasis-family-services";
 import { FamilyStatsStrip } from "../../src/components/dashboard/family-stats-strip";
 import { FollowupNoteCard } from "../../src/components/dashboard/followup-note-card";
 import { FamilySealHeader } from "../../src/components/family-seal-header";
@@ -72,6 +71,12 @@ win.qaDark = () => {
 };
 win.qaThemes = THEME_COLORS.map((theme) => theme.id);
 win.qaTheme("emerald");
+const services = [
+  [Wallet, "الصندوق المالي"],
+  [ListChecks, "المهام"],
+  [Plane, "الرحلات"],
+  [Users, "الاجتماعات"],
+] as const;
 const trip = {
   title: "رحلة العلا العائلية",
   status: "upcoming",
@@ -125,7 +130,34 @@ function Cards() {
     </div>
   );
 }
-function Services({ desktop = false }) { return <OasisFamilyServices desktop={desktop} />; }
+function Services({ desktop = false }) {
+  return (
+    <section className={desktop ? "desktop-services-panel" : "family-services-section"}>
+      <div
+        className={
+          desktop ? "desktop-section-head desktop-section-head-on-dark" : "family-services-heading"
+        }
+      >
+        <h3>خدمات العائلة</h3>
+      </div>
+      <div className={desktop ? "desktop-services-grid" : "family-services-grid"}>
+        {services.map(([Icon, label]) => (
+          <a
+            href="#service"
+            key={label}
+            className={desktop ? "desktop-service-card" : "family-service-card"}
+          >
+            <span className={desktop ? "desktop-service-icon" : "family-service-icon"}>
+              <Icon size={23} />
+            </span>
+            <strong className={desktop ? "" : "family-service-label"}>{label}</strong>
+            <span className={desktop ? "" : "family-service-description"}>خدمات العائلة</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
 function Controls() {
   return (
     <section className="qa-controls settings-page" id="qa-controls">
@@ -299,8 +331,9 @@ function Fixture() {
           {desktop ? (
             <div className="desktop-rebuild-shell">
               <div className="desktop-rebuild-root">
+                <PrayerMushafShortcuts desktop />
                 <section className="desktop-overview-shell">
-                  <div className="desktop-portal-stage"><PrayerMushafShortcuts desktop />{hero}</div>
+                  <div className="desktop-portal-stage">{hero}</div>
                   <Services desktop />
                 </section>
                 {stats}
