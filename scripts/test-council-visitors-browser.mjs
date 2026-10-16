@@ -217,6 +217,7 @@ try {
   };
   await send("Page.enable");
   await send("Runtime.enable");
+  await send("Emulation.setTimezoneOverride", { timezoneId: "Asia/Riyadh" });
   await send("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-motion", value: "reduce" }],
   });
@@ -459,6 +460,11 @@ try {
       await evaluate(`window.qaSetClock('2026-10-16T${time}+03:00')`);
       await until(`document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='${period}'`);
     }
+    await evaluate("window.qaSetClock('2026-10-16T17:11:59.900+03:00')");
+    await until("document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='day'");
+    // Let the real scheduled boundary update the scene without focus or a reload.
+    await evaluate("window.qaNow=Date.parse('2026-10-16T17:12:00+03:00')");
+    await until("document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='night'");
     await evaluate("window.qaSetClock('2026-10-16T05:50:00+03:00')");
     await until("document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='day'");
     await evaluate("window.qaSetUnlocated(true)");
