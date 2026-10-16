@@ -43,6 +43,7 @@ import { TripImage } from "@/components/trip-image";
 import { TripTicket } from "@/components/trip-ticket";
 import { FollowupNoteCard } from "@/components/dashboard/followup-note-card";
 import { FamilyStatsStrip } from "@/components/dashboard/family-stats-strip";
+import { useRtlSwipeNavigation } from "@/hooks/use-rtl-swipe-navigation";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -370,6 +371,11 @@ export function DesktopDashboardExtras({
       .slice(0, 12);
   }, [eventsData, occasions]);
 
+  const followSwipe = useRtlSwipeNavigation(
+    contentOnly && !followExpanded && upcoming.length > 1,
+    (step) => setFollowIndex((index) => (index + step + upcoming.length) % upcoming.length),
+  );
+
   useEffect(() => {
     if (followIndex >= upcoming.length) setFollowIndex(0);
   }, [upcoming.length, followIndex]);
@@ -578,7 +584,7 @@ export function DesktopDashboardExtras({
             </div>
           ) : featuredUpcoming.length ? (
             <div className="desktop-follow-carousel">
-              <div className="desktop-follow-cards">
+              <div className="desktop-follow-cards" {...followSwipe}>
                 {featuredUpcoming.map((item, index) => {
                   const Icon = item.icon;
                   if (item.cardType === "meeting" || item.cardType === "task") {
