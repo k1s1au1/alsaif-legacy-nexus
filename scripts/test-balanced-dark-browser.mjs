@@ -302,6 +302,12 @@ try {
       await evaluate("qaLuminance(qaColors('body').bg)>.8"),
       "Returning to light mode clears dark overrides",
     );
+    // Capture the approved neutral services colours using the same responsive fixture.
+    for (const identity of ["emerald", "muted-palm"]) {
+      await evaluate(`window.qaTheme(${JSON.stringify(identity)});document.querySelector('.family-services-section,.desktop-services-panel').scrollIntoView({block:'center'})`);
+      await settle();
+      await shot(`light-services-${identity}-${name}`);
+    }
     await evaluate(
       "window.qaDark();document.querySelector('.family-stats-strip').scrollIntoView({block:'start'})",
     );
