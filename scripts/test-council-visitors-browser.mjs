@@ -295,7 +295,18 @@ try {
   assert.equal(await counterText(), "1", "A returning account is counted again on a new day, once only");
   console.log("PASS daily unique visitors, late old-day response, Saudi rollover, repeated visits, reconnect and failed reads");
   const serviceLayout = () => evaluate(`(()=>{const root=document.querySelector('.oasis-family-services'),box=n=>{const r=n.getBoundingClientRect();return{top:r.top+scrollY,bottom:r.bottom+scrollY,left:r.left,right:r.right,width:r.width,height:r.height}};const extra=root.querySelector('.oasis-services-extra');return{root:box(root),hero:box(document.querySelector('.council-oasis-scene')),primary:box(root.querySelector('.oasis-services-primary')),toggle:box(root.querySelector('.oasis-services-toggle')),after:box(document.getElementById('qa-after-services')),extra:box(extra),expanded:root.querySelector('button').getAttribute('aria-expanded'),extraHidden:extra.hidden,scrollY,overflow:document.documentElement.scrollWidth>innerWidth+2,visiblePanels:Array.from(document.querySelectorAll('.oasis-family-services')).filter(n=>n.getBoundingClientRect().height>0).length,links:Array.from(root.querySelectorAll('.oasis-service-link')).filter(n=>n.getBoundingClientRect().height>0).map(n=>({href:n.getAttribute('href'),label:n.querySelector('strong').textContent,...box(n)}))}})()`);
-  const servicePalette = () => evaluate(`(()=>{const root=document.querySelector('.oasis-family-services'),ctx=document.createElement('canvas').getContext('2d');const pixel=color=>{ctx.clearRect(0,0,1,1);ctx.fillStyle=color;ctx.fillRect(0,0,1,1);return Array.from(ctx.getImageData(0,0,1,1).data)};const lum=rgb=>rgb.slice(0,3).map(c=>c/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);const bg=pixel(getComputedStyle(root).backgroundColor),ink=pixel(getComputedStyle(root.querySelector('.oasis-service-link strong')).color),desc=pixel(getComputedStyle(root.querySelector('.oasis-service-description')).color),icon=pixel(getComputedStyle(root.querySelector('.oasis-service-icon')).color),line=pixel(getComputedStyle(root.querySelector('.oasis-service-link'),'::before').backgroundColor);const contrast=fg=>(Math.max(lum(fg),lum(bg))+.05)/(Math.min(lum(fg),lum(bg))+.05);return{bg,ink,icon,line,description:desc,contrast:[contrast(ink),contrast(desc),contrast(icon)]}})()`);
+  const servicePalette = () => evaluate(`(()=>{
+    const root=document.querySelector('.oasis-family-services'),glass=root.querySelector('.oasis-services-glass'),ctx=document.createElement('canvas').getContext('2d');
+    const pixel=color=>{ctx.clearRect(0,0,1,1);ctx.fillStyle=color;ctx.fillRect(0,0,1,1);return Array.from(ctx.getImageData(0,0,1,1).data)};
+    const lum=rgb=>rgb.slice(0,3).map(c=>c/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
+    const composite=(fg,bg)=>fg.slice(0,3).map((c,i)=>Math.round(c*fg[3]/255+bg[i]*(1-fg[3]/255)));
+    const surface=pixel(getComputedStyle(glass).backgroundColor),bg=composite(surface,pixel(getComputedStyle(root).backgroundColor));
+    const ink=pixel(getComputedStyle(root.querySelector('.oasis-service-link strong')).color),desc=pixel(getComputedStyle(root.querySelector('.oasis-service-description')).color),icon=pixel(getComputedStyle(root.querySelector('.oasis-service-icon')).color),line=pixel(getComputedStyle(root.querySelector('.oasis-service-link'),'::before').backgroundColor);
+    // Bound contrast even when a reflection behind the glass is black or white.
+    const backdrops=[[0,0,0],[255,255,255]].map(rgb=>composite(surface,rgb));
+    const contrast=fg=>Math.min(...backdrops.map(b=>(Math.max(lum(fg),lum(b))+.05)/(Math.min(lum(fg),lum(b))+.05)));
+    return{bg,surface,ink,icon,line,description:desc,contrast:[contrast(ink),contrast(desc),contrast(icon)]};
+  })()`);
   const clickServiceToggle = async () => {
     await evaluate("document.querySelector('.oasis-services-toggle').scrollIntoView({block:'center'})"); await settle();
     const point=await evaluate("(()=>{const r=document.querySelector('.oasis-services-toggle').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()");
@@ -420,6 +431,12 @@ try {
     assert.equal(serviceBefore.links.length,4,`${name}: the four primary services appear first`);
     assert.deepEqual(serviceBefore.links.map(link=>link.href),['/finance','/tasks','/trips','/meetings']);
     assert.equal(serviceBefore.extraHidden,true);
+    const primaryGeometry=await evaluate("(()=>{const root=document.querySelector('.oasis-family-services'),glass=root.querySelector('.oasis-services-glass'),links=Array.from(root.querySelectorAll('.oasis-services-primary .oasis-service-link'));return{tops:links.map(n=>n.getBoundingClientRect().top),glass:getComputedStyle(glass).backdropFilter,frame:parseFloat(getComputedStyle(glass).borderTopWidth),medallions:links.map(n=>{const m=n.querySelector('.oasis-service-medallion').getBoundingClientRect();return{width:m.width,height:m.height}})}})()");
+    assert.ok(Math.max(...primaryGeometry.tops)-Math.min(...primaryGeometry.tops)<1, `${name}: all four primary services share one compact row`);
+    assert.ok(primaryGeometry.frame>0&&primaryGeometry.glass!=='none', `${name}: copper frame and real glass backdrop are present`);
+    assert.ok(primaryGeometry.medallions.every(m=>Math.abs(m.width-m.height)<1&&m.width>=44), `${name}: icon medallions fit the compact row`);
+    if(width<600)assert.ok(serviceBefore.root.height<=250, `${name}: collapsed services stay compact on mobile (${serviceBefore.root.height}px)`);
+
     await clickServiceToggle();
     const serviceExpanded=await serviceLayout();
     assert.equal(serviceExpanded.expanded,'true'); assert.equal(serviceExpanded.links.length,13);

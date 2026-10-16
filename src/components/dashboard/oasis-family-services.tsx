@@ -27,7 +27,9 @@ function ServiceLink({ item }: { item: (typeof services)[number] }) {
   const Icon = item.icon;
   return (
     <Link to={item.to} className="oasis-service-link">
-      <Icon className="oasis-service-icon" strokeWidth={1.65} aria-hidden="true" />
+      <span className="oasis-service-medallion" aria-hidden="true">
+        <Icon className="oasis-service-icon" strokeWidth={1.65} />
+      </span>
       <strong>{item.label}</strong>
       <span className="oasis-service-description">{item.desc}</span>
     </Link>
@@ -46,23 +48,25 @@ export function OasisFamilyServices({ desktop = false }: { desktop?: boolean }) 
       dir="rtl"
       aria-labelledby={`${id}-heading`}
     >
-      <h2 id={`${id}-heading`} className="oasis-services-heading">خدمات العائلة</h2>
-      <div className="oasis-services-grid oasis-services-primary">
-        {services.slice(0, 4).map(item => <ServiceLink key={item.to} item={item} />)}
-      </div>
-      <button
-        type="button"
-        className="oasis-services-toggle"
-        aria-expanded={expanded}
-        aria-controls={extraId}
-        onClick={() => setExpanded(value => !value)}
-      >
-        <span>{expanded ? "إخفاء الخدمات الإضافية" : "عرض جميع الخدمات"}</span>
-        {expanded ? <ChevronUp aria-hidden="true" /> : <ChevronDown aria-hidden="true" />}
-      </button>
-      {/* Additional rows follow the trigger, so expansion is always downwards. */}
-      <div id={extraId} className="oasis-services-grid oasis-services-extra" hidden={!expanded}>
-        {services.slice(4).map(item => <ServiceLink key={item.to} item={item} />)}
+      <div className="oasis-services-glass">
+        <h2 id={`${id}-heading`} className="oasis-services-heading">خدمات العائلة</h2>
+        <div className="oasis-services-grid oasis-services-primary">
+          {services.slice(0, 4).map(item => <ServiceLink key={item.to} item={item} />)}
+        </div>
+        <button
+          type="button"
+          className="oasis-services-toggle"
+          aria-expanded={expanded}
+          aria-controls={extraId}
+          onClick={() => setExpanded(value => !value)}
+        >
+          <span>{expanded ? "إخفاء الخدمات الإضافية" : "عرض جميع الخدمات"}</span>
+          {expanded ? <ChevronUp aria-hidden="true" /> : <ChevronDown aria-hidden="true" />}
+        </button>
+        {/* Additional rows follow the trigger, so expansion is always downwards. */}
+        <div id={extraId} className="oasis-services-grid oasis-services-extra" hidden={!expanded}>
+          {services.slice(4).map(item => <ServiceLink key={item.to} item={item} />)}
+        </div>
       </div>
     </section>
   );
