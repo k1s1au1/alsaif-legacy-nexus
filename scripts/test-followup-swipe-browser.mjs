@@ -34,7 +34,7 @@ const css = [
   ...ordered.filter((p) => p !== "src/styles.css").map(readStyles),
 ].join("\n");
 const entry = `import React from 'react';import {createRoot} from 'react-dom/client';import {ResponsiveDashboardExtras} from './src/components/dashboard/desktop-dashboard-extras';
-window.qaActions=[];window.qaEvents={meetings:[{id:'meeting',title:'اجتماع العائلة',scheduled_at:'2099-01-01T17:00:00',location:'المجلس'}],tasks:[{id:'task',title:'تجهيز المجلس',due_date:'2099-01-02'}],trips:[{id:'trip',title:'رحلة العلا',status:'upcoming',location:'العلا',start_date:'2099-01-03',end_date:'2099-01-04',image_url:null},{id:'plan',title:'رحلة قيد التخطيط',status:'planning',start_date:null,end_date:null}]};window.qaAllEvents=window.qaEvents;window.qaOccasions=[];
+window.qaNativeClicks=0;document.addEventListener('click',event=>{if(event.isTrusted)window.qaNativeClicks++},true);window.qaActions=[];window.qaEvents={meetings:[{id:'meeting',title:'اجتماع العائلة',scheduled_at:'2099-01-01T17:00:00',location:'المجلس'}],tasks:[{id:'task',title:'تجهيز المجلس',due_date:'2099-01-02'}],trips:[{id:'trip',title:'رحلة العلا',status:'upcoming',location:'العلا',start_date:'2099-01-03',end_date:'2099-01-04',image_url:null},{id:'plan',title:'رحلة قيد التخطيط',status:'planning',start_date:null,end_date:null}]};window.qaAllEvents=window.qaEvents;window.qaOccasions=[];
 function Fixture(){const [,render]=React.useReducer(x=>x+1,0);window.qaChangeEvents=value=>{window.qaEvents=value;render()};return <div className="relative min-h-screen overflow-x-hidden"><main className="app-shell-main"><div className="app-shell-content p-4 md:p-8 lg:p-12 mx-auto max-w-7xl"><ResponsiveDashboardExtras onReportBug={()=>{}}/></div></main><footer style={{height:1000}}/></div>}
 createRoot(document.getElementById('app')).render(<Fixture/>);window.fixtureReady=true;`;
 await build({
@@ -204,8 +204,13 @@ try {
   };
   const tap = async (selector) => {
     const p = await center(selector);
+    const clicks = await evaluate("window.qaNativeClicks");
     await touch("touchStart", [{ ...p, id: 1 }]);
+    // A real finger rests for at least a few frames; a zero-duration injected
+    // contact can be discarded by Chrome before it generates the native click.
+    await new Promise((resolve) => setTimeout(resolve, 45));
     await touch("touchEnd", []);
+    await until(`window.qaNativeClicks>${clicks}`);
     await settle();
   };
   await send("Page.enable");
@@ -255,6 +260,7 @@ try {
       "A ghost click immediately after a swipe is swallowed",
     );
     await tap(".desktop-follow-cards a");
+    await until("window.qaActions.length===1");
     assert.equal(
       await evaluate("window.qaActions.length"),
       1,
