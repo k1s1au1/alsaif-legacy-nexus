@@ -205,11 +205,14 @@ try {
   const tap = async (selector) => {
     const p = await center(selector);
     const clicks = await evaluate("window.qaNativeClicks");
-    await touch("touchStart", [{ ...p, id: 1 }]);
-    // A real finger rests for at least a few frames; a zero-duration injected
-    // contact can be discarded by Chrome before it generates the native click.
-    await new Promise((resolve) => setTimeout(resolve, 45));
-    await touch("touchEnd", []);
+    // Let Chrome schedule the complete physical tap rather than injecting raw
+    // down/up packets around its asynchronous gesture recognizer.
+    await send("Input.synthesizeTapGesture", {
+      ...p,
+      duration: 50,
+      tapCount: 1,
+      gestureSourceType: "touch",
+    });
     try {
       await until(`window.qaNativeClicks>${clicks}`);
     } catch (cause) {
@@ -270,12 +273,6 @@ try {
     await swipe(130, 4);
     assert.equal(await active(), 1, `${name}: swipe right selects next in RTL`);
     assert.deepEqual(await evaluate("window.qaActions"), [], "Swiping never opens a card");
-    await evaluate("document.querySelector('.desktop-follow-cards a').click()");
-    assert.deepEqual(
-      await evaluate("window.qaActions"),
-      [],
-      "A ghost click immediately after a swipe is swallowed",
-    );
     await tap(".desktop-follow-cards a");
     await until("window.qaActions.length===1");
     assert.equal(
@@ -285,6 +282,12 @@ try {
     );
     await swipe(-130, -4);
     assert.equal(await active(), 0, `${name}: swipe left selects previous`);
+    await evaluate("document.querySelector('.desktop-follow-cards a').click()");
+    assert.equal(
+      await evaluate("window.qaActions.length"),
+      1,
+      "A ghost click immediately after a swipe is swallowed",
+    );
     await swipe(-130, 0);
     assert.equal(await active(), 3, `${name}: previous wraps to the final item`);
     await swipe(130, 0);
