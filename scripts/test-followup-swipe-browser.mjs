@@ -227,6 +227,7 @@ try {
   };
   await send("Page.enable");
   await send("Runtime.enable");
+  await send("Emulation.setFocusEmulationEnabled", { enabled: true });
   for (const [name, width, height] of [
     ["ipad-landscape", 1024, 768],
     ["ipad-air-landscape", 1180, 820],
@@ -248,6 +249,7 @@ try {
     await until(
       "document.readyState==='complete' && window.fixtureReady && document.querySelector('.desktop-follow-cards')",
     );
+    await send("Page.bringToFront");
     await send("Emulation.resetPageScaleFactor");
     assert.equal(
       await evaluate("document.documentElement.dataset.dashboardTabletLandscape"),
@@ -270,8 +272,16 @@ try {
     );
     assert.equal(geometry.display, "grid");
     assert.equal(geometry.columns, 3, "The approved three-card layout remains in place");
+    await evaluate("window.qaRetainedTaskLink=document.querySelector('.followup-note--task a')");
     await swipe(130, 4);
     assert.equal(await active(), 1, `${name}: swipe right selects next in RTL`);
+    assert.equal(
+      await evaluate(
+        "document.querySelector('.followup-note--task a')===window.qaRetainedTaskLink",
+      ),
+      true,
+      "Visible card actions keep their DOM identity while the row advances",
+    );
     assert.deepEqual(await evaluate("window.qaActions"), [], "Swiping never opens a card");
     await tap(".desktop-follow-cards a");
     await until("window.qaActions.length===1");

@@ -314,6 +314,7 @@ export function DesktopDashboardExtras({
 
     (eventsData?.meetings || []).forEach((item: any) =>
       rows.push({
+        id: `meeting-${item.id}`,
         kind: "اجتماع",
         title: item.title,
         date: item.scheduled_at,
@@ -326,6 +327,7 @@ export function DesktopDashboardExtras({
     );
     (eventsData?.trips || []).forEach((item: any) =>
       rows.push({
+        id: `trip-${item.id}`,
         kind: item.status === "planning" ? "رحلة قيد التخطيط" : "رحلة",
         title: item.title,
         date: item.status === "planning" ? null : item.start_date,
@@ -339,6 +341,7 @@ export function DesktopDashboardExtras({
     );
     (eventsData?.tasks || []).forEach((item: any) =>
       rows.push({
+        id: `task-${item.id}`,
         kind: "مهمة",
         title: item.title,
         date: item.due_date,
@@ -350,6 +353,7 @@ export function DesktopDashboardExtras({
     );
     occasions.forEach((item) =>
       rows.push({
+        id: `occasion-${item.id}`,
         kind: occasionLabels[item.type || ""] || "مناسبة عائلية",
         title: item.title || occasionLabels[item.type || ""] || "مناسبة عائلية",
         date: occasionDateTime(item),
@@ -554,10 +558,10 @@ export function DesktopDashboardExtras({
           {followExpanded ? (
             <div className="desktop-follow-list">
               {upcoming.length ? (
-                upcoming.map((item, index) => {
+                upcoming.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={`${item.kind}-${index}`} className="desktop-follow-row">
+                    <div key={item.id} className="desktop-follow-row">
                       <div className="desktop-next-icon">
                         <Icon size={20} />
                       </div>
@@ -585,12 +589,12 @@ export function DesktopDashboardExtras({
           ) : featuredUpcoming.length ? (
             <div className="desktop-follow-carousel">
               <div className="desktop-follow-cards" {...followSwipe}>
-                {featuredUpcoming.map((item, index) => {
+                {featuredUpcoming.map((item) => {
                   const Icon = item.icon;
                   if (item.cardType === "meeting" || item.cardType === "task") {
                     return (
                       <FollowupNoteCard
-                        key={`${item.cardType}-${item.title}-${index}`}
+                        key={item.id}
                         kind={item.cardType}
                         title={item.title}
                         date={item.date}
@@ -602,7 +606,7 @@ export function DesktopDashboardExtras({
                   if (item.cardType === "trip") {
                     return (
                       <TripTicket
-                        key={`trip-${item.trip.id}`}
+                        key={item.id}
                         trip={item.trip}
                         image={<TripImage path={item.trip.image_url} alt={item.trip.title} />}
                         compact
@@ -612,7 +616,7 @@ export function DesktopDashboardExtras({
                   }
                   return (
                     <article
-                      key={`${item.kind}-${item.title}-${index}`}
+                      key={item.id}
                       className={`desktop-next-card desktop-next-card--${item.cardType || "default"}`}
                     >
                       {item.cardType === "occasion" && item.templateUrl && (
