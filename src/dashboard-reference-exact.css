@@ -648,6 +648,15 @@ html body main .oasis-family-services .oasis-services-heading {
   gap: 0;
   min-width: 0;
 }
+html body main :is(
+  .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .family-services-section,
+  .desktop-rebuild-shell .desktop-overview-shell > .desktop-services-panel
+).oasis-family-services .oasis-services-grid {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
 .oasis-service-link {
   position: relative;
   display: flex;

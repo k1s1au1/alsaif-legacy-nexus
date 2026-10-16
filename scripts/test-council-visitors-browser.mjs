@@ -300,6 +300,7 @@ try {
     await send('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
     await settle();
   };
+  const deviceFailures=[];
   for (const [name, width, height, tablet = false] of [
     ["phone-small", 320, 800],
     ["phone", 390, 844],
@@ -312,6 +313,7 @@ try {
     ["ipad-pro-large-landscape", 1366, 1024, true],
     ["desktop", 1440, 1000],
   ]) {
+    try {
     await send("Emulation.setDeviceMetricsOverride", {
       width,
       height,
@@ -427,6 +429,7 @@ try {
     assert.deepEqual(serviceExpanded.links.map(link=>link.href),['/finance','/tasks','/trips','/meetings','/family-occasions','/majlis','/archive','/calendar','/chat','/community','/family-tree','/vault','/faith']);
     const accordion=await evaluate("(()=>{const button=document.querySelector('.oasis-services-toggle'),extra=document.getElementById(button.getAttribute('aria-controls'));return{exists:!!extra,hidden:extra.hidden,overflow:getComputedStyle(extra).overflowY}})()");
     assert.equal(accordion.exists,true); assert.equal(accordion.hidden,false); assert.equal(accordion.overflow,'visible');
+    assert.ok(serviceExpanded.links.every(link=>link.bottom<=serviceExpanded.root.bottom),`${name}: every additional service stays inside the growing panel`);
     const expandedShot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:Math.max(0,serviceExpanded.root.top-140),width,height:serviceExpanded.root.height+180,scale:1}});
     writeFileSync(`test-results/visitors/${name}-services-expanded.png`,Buffer.from(expandedShot.data,'base64'));
     await clickServiceToggle();
@@ -563,7 +566,16 @@ try {
     const finalTower = await evaluate("window.qaVisibleTower()");
     assert.equal(finalTower.portrait, width < 970, `${name}: correct landscape or portrait artwork without distortion`);
     console.log(`PASS ${name}: day/night images and joined services, six identities, custom roles, readable contrast, sunrise/sunset and no-GPS fallback`);
+    } catch(error) {
+      deviceFailures.push({name,error:String(error)});
+      console.error(`FAIL ${name}:`,error.stack||error);
+      try {
+        const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+        writeFileSync(`test-results/visitors/${name}-failure.png`,Buffer.from(png.data,'base64'));
+      } catch { /* Preserve the original assertion if Chrome has already stopped. */ }
+    }
   }
+  assert.deepEqual(deviceFailures,[],"Every services/oasis viewport must pass");
   assert.deepEqual(errors, [], "No visitor/presence/React runtime exceptions");
   console.log("All actual visitor-counter Chrome checks passed");
 } finally {
