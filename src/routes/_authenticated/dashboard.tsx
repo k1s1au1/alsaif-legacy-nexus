@@ -17,7 +17,7 @@ import {
   Send,
 } from "lucide-react";
 import { useSiteLogo } from "@/hooks/use-site-logo";
-import { useRecordedVisitorCount } from "@/lib/presence";
+import { useTodayVisitorCount } from "@/hooks/use-today-site-visits";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import {
   DashboardSupportPanel,
@@ -292,7 +292,7 @@ const SPIRITUAL_QUOTES = [
 ];
 
 function Dashboard() {
-  const visitorCount = useRecordedVisitorCount();
+  const visitorCount = useTodayVisitorCount();
   const { simpleMode, disableSimpleMode } = useSimpleMode();
   const { data: profileData, isLoading: profileLoading } = useProfile();
   const { data: countsData } = useDashboardCounts();

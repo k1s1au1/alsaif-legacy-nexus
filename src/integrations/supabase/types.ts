@@ -1761,6 +1761,12 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_site_visits: {
+        Row: { visit_date: string; user_id: string; recorded_at: string }
+        Insert: { visit_date: string; user_id: string; recorded_at?: string }
+        Update: { visit_date?: string; user_id?: string; recorded_at?: string }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           last_seen_at: string
@@ -1952,6 +1958,7 @@ export type Database = {
       }
       is_council_leadership: { Args: { _u: string }; Returns: boolean }
       is_family_member: { Args: { _u: string }; Returns: boolean }
+      get_today_site_visit_count: { Args: Record<PropertyKey, never>; Returns: Json }
       is_guest: { Args: { _user_id: string }; Returns: boolean }
       is_technical_admin: { Args: { _u: string }; Returns: boolean }
       is_vice_chairman: { Args: { _u: string }; Returns: boolean }

@@ -82,7 +82,7 @@ await build({
           "@/hooks/use-dashboard-data": `const news=[];export const useUpcomingEvents=()=>({data:window.qaEvents});export const useDashboardAnnouncements=()=>({data:news});export const useDashboardCounts=()=>({data:{members:12,tasks:1}});export const useFundBalance=()=>({data:125000});export const useHeritageSnippet=()=>({data:null});export const useProfile=()=>({data:{realName:'عضو تجريبي'}});`,
           "@/hooks/use-dashboard-occasions": `export const useDashboardOccasions=()=>({data:window.qaOccasions});`,
           "@/hooks/use-site-logo": `export const useSiteLogo=()=>null;`,
-          "@/lib/presence": `export const useRecordedVisitorCount=()=>12;`,
+          "@/hooks/use-today-site-visits": `export const useTodayVisitorCount=()=>12;`,
           "@/components/trip-image": `import React from 'react';export const TripImage=({alt})=><div role="img" aria-label={alt}/>;`,
           "@/components/dashboard/heritage-portal-3d": `export const HeritagePortal3D=()=>null;`,
           "@/components/dashboard/spiritual-quotes-widget": `export const SpiritualQuotesWidget=()=>null;`,
