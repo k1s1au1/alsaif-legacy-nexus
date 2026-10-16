@@ -34,7 +34,7 @@ const css = [
   ...ordered.filter((p) => p !== "src/styles.css").map(readStyles),
 ].join("\n");
 const entry = `import React from 'react';import {createRoot} from 'react-dom/client';import {ResponsiveDashboardExtras} from './src/components/dashboard/desktop-dashboard-extras';
-window.qaNativeClicks=0;document.addEventListener('click',event=>{if(event.isTrusted)window.qaNativeClicks++},true);window.qaActions=[];window.qaEvents={meetings:[{id:'meeting',title:'اجتماع العائلة',scheduled_at:'2099-01-01T17:00:00',location:'المجلس'}],tasks:[{id:'task',title:'تجهيز المجلس',due_date:'2099-01-02'}],trips:[{id:'trip',title:'رحلة العلا',status:'upcoming',location:'العلا',start_date:'2099-01-03',end_date:'2099-01-04',image_url:null},{id:'plan',title:'رحلة قيد التخطيط',status:'planning',start_date:null,end_date:null}]};window.qaAllEvents=window.qaEvents;window.qaOccasions=[];
+window.qaInputTrace=[];for(const type of ['touchstart','touchend','touchcancel','click'])document.addEventListener(type,event=>{const point=event.touches?.[0]||event.changedTouches?.[0];const item={type,trusted:event.isTrusted,target:event.target.tagName,link:event.target.closest?.('a')?.getAttribute('href'),x:point?.clientX,y:point?.clientY};window.qaInputTrace.push(item);window.qaInputTrace=window.qaInputTrace.slice(-20);queueMicrotask(()=>item.prevented=event.defaultPrevented)},true);window.qaNativeClicks=0;document.addEventListener('click',event=>{if(event.isTrusted)window.qaNativeClicks++},true);window.qaActions=[];window.qaEvents={meetings:[{id:'meeting',title:'اجتماع العائلة',scheduled_at:'2099-01-01T17:00:00',location:'المجلس'}],tasks:[{id:'task',title:'تجهيز المجلس',due_date:'2099-01-02'}],trips:[{id:'trip',title:'رحلة العلا',status:'upcoming',location:'العلا',start_date:'2099-01-03',end_date:'2099-01-04',image_url:null},{id:'plan',title:'رحلة قيد التخطيط',status:'planning',start_date:null,end_date:null}]};window.qaAllEvents=window.qaEvents;window.qaOccasions=[];
 function Fixture(){const [,render]=React.useReducer(x=>x+1,0);window.qaChangeEvents=value=>{window.qaEvents=value;render()};return <div className="relative min-h-screen overflow-x-hidden"><main className="app-shell-main"><div className="app-shell-content p-4 md:p-8 lg:p-12 mx-auto max-w-7xl"><ResponsiveDashboardExtras onReportBug={()=>{}}/></div></main><footer style={{height:1000}}/></div>}
 createRoot(document.getElementById('app')).render(<Fixture/>);window.fixtureReady=true;`;
 await build({
@@ -210,7 +210,16 @@ try {
     // contact can be discarded by Chrome before it generates the native click.
     await new Promise((resolve) => setTimeout(resolve, 45));
     await touch("touchEnd", []);
-    await until(`window.qaNativeClicks>${clicks}`);
+    try {
+      await until(`window.qaNativeClicks>${clicks}`);
+    } catch (cause) {
+      const state = await evaluate(
+        `({point:${JSON.stringify(p)},viewport:{width:innerWidth,height:innerHeight,scale:visualViewport.scale,visualWidth:visualViewport.width},hit:document.elementFromPoint(${p.x},${p.y})?.outerHTML.slice(0,240),trace:window.qaInputTrace})`,
+      );
+      throw Error(`Native tap was not delivered for ${selector}: ${JSON.stringify(state)}`, {
+        cause,
+      });
+    }
     await settle();
   };
   await send("Page.enable");
@@ -220,15 +229,23 @@ try {
     ["ipad-air-landscape", 1180, 820],
     ["ipad-pro-landscape", 1366, 1024],
   ]) {
+    // Each device starts with a fresh native input/viewport state. Screen metrics
+    // must match the layout metrics when dispatching physical touch coordinates.
+    await send("Emulation.setTouchEmulationEnabled", { enabled: false });
     await send("Emulation.setDeviceMetricsOverride", {
       width,
       height,
+      screenWidth: width,
+      screenHeight: height,
       deviceScaleFactor: 1,
       mobile: false,
     });
     await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
-    await send("Page.navigate", { url: `http://127.0.0.1:${port}/` });
-    await until("window.fixtureReady && document.querySelector('.desktop-follow-cards')");
+    await send("Page.navigate", { url: `http://127.0.0.1:${port}/?device=${name}` });
+    await until(
+      "document.readyState==='complete' && window.fixtureReady && document.querySelector('.desktop-follow-cards')",
+    );
+    await send("Emulation.resetPageScaleFactor");
     assert.equal(
       await evaluate("document.documentElement.dataset.dashboardTabletLandscape"),
       "true",
