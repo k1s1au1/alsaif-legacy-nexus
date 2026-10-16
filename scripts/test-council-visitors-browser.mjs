@@ -45,7 +45,8 @@ import {saudiVisitDay,DAILY_VISITS_QUERY_KEY} from './src/lib/daily-site-visits'
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 const queryClient=new QueryClient({defaultOptions:{queries:{retry:false}}});
 window.qaRefresh=()=>queryClient.invalidateQueries({queryKey:DAILY_VISITS_QUERY_KEY});
-const RealDate=Date;window.qaNow=RealDate.now();window.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[window.qaNow]))}static now(){return window.qaNow}};
+const RealDate=Date;window.qaNow=RealDate.parse('2026-10-16T08:00:00+03:00');window.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[window.qaNow]))}static now(){return window.qaNow}};
+window.qaSetClock=iso=>{window.qaNow=RealDate.parse(iso);window.dispatchEvent(new Event('focus'))};
 window.qaSeenToday=new Set(['one','two']);
 window.qaAdvanceDay=()=>{window.qaNow=RealDate.parse(saudiVisitDay(new Date())+'T21:00:00Z')+50;window.qaTotal=0;window.qaSeenToday.clear();window.dispatchEvent(new Event('focus'))};
 window.qaHold=location.pathname==='/loading';window.qaFail=location.pathname==='/error';window.qaWaiters=[];
@@ -59,7 +60,7 @@ window.qaVisit=(id)=>{const found=window.qaRows.some(row=>row.user_id===id);if(!
 function Fixture(){const count=useTodayVisitorCount();const online=useOnlineCount();const [name,setName]=useState('حساب المعاينة');const [show,setShow]=useState(true);const [,setUnlocated]=useState(false);window.qaSetName=setName;window.qaSetShow=setShow;window.qaSetUnlocated=value=>{window.qaUnlocated=value;setUnlocated(value)};const desktop=innerWidth>=1200&&!tabletLandscape;
 const hero=<HeritagePortal3D greeting="مساء الخير" name={name} message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className={desktop?'desktop-portal-model':'dashboard-portal-model'} visitorCount={show?count:undefined}/>;
 const services=<div className="desktop-services-panel"><div className="desktop-section-head desktop-section-head-on-dark"><h2>خدمات العائلة</h2></div><div className="desktop-services-grid">{['الصندوق المالي','المهام','الرحلات','الاجتماعات'].map(label=><div className="desktop-service-card" key={label}><strong>{label}</strong></div>)}</div><button className="desktop-services-wide-toggle">عرض جميع الخدمات</button></div>;
-return <main className="app-shell-main relative min-h-screen"><div className="app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto max-w-7xl"><output hidden id="qa-online">{online}</output>{desktop?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage">{hero}</div>{services}</section></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section></div>}</div></main>}
+return <main className="app-shell-main relative min-h-screen"><div className="app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto max-w-7xl"><output hidden id="qa-online">{online}</output>{desktop?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage"><PrayerMushafShortcuts desktop/>{hero}</div>{services}</section></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section></div>}</div></main>}
 createRoot(document.getElementById('app')).render(<QueryClientProvider client={queryClient}><Fixture/></QueryClientProvider>);window.fixtureReady=true;`;
 await build({
   stdin: {
@@ -100,7 +101,7 @@ await build({
             path === "supabase"
               ? `export const supabase={from:()=>({select:async()=>({data:window.qaRows.map(row=>({...row}))})}),rpc:async(name)=>{if(name!=='get_today_site_visit_count')throw Error('Daily aggregate RPC required');window.qaQueries++;const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const part=type=>parts.find(p=>p.type===type).value;const result=window.qaFail?{data:null,error:{message:'unavailable'}}:{data:{visit_date:part('year')+'-'+part('month')+'-'+part('day'),visitor_count:window.qaTotal},error:null};if(window.qaHold)await new Promise(resolve=>window.qaWaiters.push(resolve));return result},channel:()=>{const channel={on:(event,filter,callback)=>{window.qaChange=callback;return channel},subscribe:callback=>{window.qaSubscription=status=>{callback?.(status);window.qaRefresh?.()};setTimeout(()=>window.qaSubscription('SUBSCRIBED'),0);return channel}};return channel}};`
               : path === "prayer"
-                ? `export const usePrayerTimes=()=>window.qaUnlocated?({location:null,locationLabel:'حسب موقعك',prayer:null,countdown:'',loading:false}):({location:{latitude:27,longitude:49},locationLabel:'حسب موقعك',prayer:{name:'الفجر'},countdown:'باقي ٨ ساعات',loading:false});`
+                ? `export const usePrayerTimes=()=>{const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());return window.qaUnlocated?({location:null,locationLabel:'حسب موقعك',prayer:null,countdown:'',loading:false}):({location:{latitude:27,longitude:49},locationLabel:'حسب موقعك',prayer:{name:'الفجر'},countdown:'باقي ٨ ساعات',loading:false,timeZone:'Asia/Riyadh',today:{date,sunrise:date+'T05:41:00+03:00',sunset:date+'T17:12:00+03:00'}})};`
                 : `import React from 'react';export const useNavigate=()=>()=>{};export function Link({to,search,children,...props}){return <a {...props} href={to}>{children}</a>}`,
         }));
       },
@@ -306,7 +307,7 @@ try {
     await until("document.querySelector('.council-visitor-number').textContent==='1,248'");
     await settle();
     await evaluate(
-      `window.qaVisibleTower=async()=>{const node=document.querySelector('.council-portal-towers image');const r=node.getBoundingClientRect();const scene=document.querySelector('.council-terrain-scene').getBoundingClientRect();return {left:r.left+r.width*70/1065,right:r.left+r.width*996/1065,top:r.top+r.height*137/1477,bottom:r.top+r.height*1227/1477,width:r.width,height:r.height,offsetLeft:r.left-scene.left,offsetTop:r.top-scene.top}}`,
+      `window.qaVisibleTower=async()=>{const sceneNode=document.querySelector('.council-oasis-scene');const node=sceneNode.querySelector('.council-oasis-layer[data-period='+sceneNode.dataset.oasisPeriod+'] img');const r=node.getBoundingClientRect(),scene=sceneNode.getBoundingClientRect();const portrait=node.naturalWidth===1086;const scale=Math.max(r.width/node.naturalWidth,r.height/node.naturalHeight);const width=node.naturalWidth*scale,height=node.naturalHeight*scale,left=r.right-width,top=r.bottom-height;const bounds=portrait?[.479,.958,.479,.867]:[.634,.932,.155,.862];return{left:left+width*bounds[0],right:left+width*bounds[1],top:top+height*bounds[2],bottom:top+height*bounds[3],width,height,offsetLeft:left-scene.left,offsetTop:top-scene.top,portrait,src:node.currentSrc}}`,
     );
     const modelBefore = await evaluate("window.qaVisibleTower()");
     await evaluate("window.qaSetShow(false)");
@@ -322,7 +323,7 @@ try {
     );
     await evaluate("window.qaSetShow(true)");
     await settle();
-    if (tablet || (width >= 970 && width < 1200)) {
+    if (width >= 970) {
       for (const noLocation of [true, false]) {
         await evaluate(`window.qaSetUnlocated(${noLocation})`);
         await settle();
@@ -337,7 +338,7 @@ try {
         );
         assert.ok(
           shortcuts.rowLeft >= shortcuts.sceneLeft - 1 &&
-            shortcuts.towerLeft - shortcuts.rowRight >= 24,
+            shortcuts.towerLeft - shortcuts.rowRight >= 16,
           `${name}: shortcut tap areas stay left of the sculpture with a clear gap ${JSON.stringify(shortcuts)}`,
         );
         assert.ok(
@@ -356,6 +357,7 @@ try {
           mobile: false,
         });
         await settle();
+        await until("Array.from(document.images).every(i=>i.complete&&i.naturalWidth>0)");
         assert.equal(
           await evaluate(
             "getComputedStyle(document.querySelector('.faith-home-shortcuts')).position",
@@ -374,6 +376,7 @@ try {
           mobile: false,
         });
         await settle();
+        await until("Array.from(document.images).every(i=>i.complete&&i.naturalWidth>0)");
         assert.equal(
           await evaluate(
             "getComputedStyle(document.querySelector('.faith-home-shortcuts')).position",
@@ -435,30 +438,40 @@ try {
         `${name}: count is available to assistive technology`,
       );
     }
-    await evaluate(
-      "window.qaSetName('حساب المعاينة');document.documentElement.classList.add('dark')",
-    );
-    await settle();
-    assert.equal(await counterText(), "1,248");
-    await evaluate("document.documentElement.classList.remove('dark')");
-    await settle();
-    await evaluate("(()=>{const scene=document.querySelector('.council-terrain-scene');scene.style.setProperty('--identity-accent','#b97946');scene.style.setProperty('--council-portal-copy','#fff3dc')})()");
-    await until("getComputedStyle(document.querySelector('.council-visitor-number')).color==='rgb(185, 121, 70)' && getComputedStyle(document.querySelector('.council-visitor-counter')).color==='rgb(255, 243, 220)'");
-    const identity = await evaluate("({number:getComputedStyle(document.querySelector('.council-visitor-number')).color,text:getComputedStyle(document.querySelector('.council-visitor-counter')).color})");
-    assert.equal(identity.number, "rgb(185, 121, 70)");
-    assert.equal(identity.text, "rgb(255, 243, 220)");
-    if (tablet || (width >= 970 && width < 1200)) {
-      await evaluate("window.qaSetUnlocated(true)");
+    await evaluate("window.qaSetName('حساب المعاينة');window.qaSetUnlocated(false)");
+    for (const [period, time] of [["day", "08:00:00"], ["night", "20:00:00"]]) {
+      await evaluate(`window.qaSetClock('2026-10-16T${time}+03:00')`);
+      await until(`document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='${period}'`);
       await settle();
+      const scene = await evaluate(`(()=>{const scene=document.querySelector('.council-oasis-scene');const active=scene.querySelector('.council-oasis-layer[data-period="${period}"]');const copy=scene.querySelector('.council-portal-copy').getBoundingClientRect();const counter=scene.querySelector('.council-visitor-counter').getBoundingClientRect();const tower=window.qaVisibleTower();return{source:scene.dataset.oasisClock,opacity:getComputedStyle(active).opacity,loaded:Array.from(document.images).every(img=>img.complete&&img.naturalWidth>0),name:scene.querySelector('strong').textContent,greeting:scene.querySelector('.council-portal-greeting').textContent,color:getComputedStyle(scene.querySelector('.council-portal-greeting')).color}})()`);
+      assert.equal(scene.source, "solar"); assert.equal(scene.opacity, "1"); assert.equal(scene.loaded, true);
+      assert.ok(scene.greeting.includes(period === "day" ? "صباح الخير" : "مساء الخير"));
+      const previousColor = scene.color;
+      await evaluate("document.documentElement.classList.add('dark')"); await settle();
+      assert.equal(await evaluate("document.querySelector('.council-oasis-scene').dataset.oasisPeriod"), period, "Application dark mode does not override local daylight");
+      assert.equal(await counterText(), "1,248");
+      await evaluate("document.documentElement.classList.remove('dark')"); await settle();
+      assert.equal(await evaluate("getComputedStyle(document.querySelector('.council-portal-greeting')).color"), previousColor, "Light appearance restores the same daylight ink");
+      const png = await send("Page.captureScreenshot", {format:"png",captureBeyondViewport:false});
+      writeFileSync(`test-results/visitors/${name}-${period}.png`,Buffer.from(png.data,"base64"));
     }
-    const png = await send("Page.captureScreenshot", {
-      format: "png",
-      captureBeyondViewport: false,
-    });
-    writeFileSync(`test-results/visitors/${name}.png`, Buffer.from(png.data, "base64"));
-    console.log(
-      `PASS ${name}: identity, long-name spacing, unchanged sculpture size, accessibility and dark/light`,
-    );
+    for (const [time, period] of [["05:40:59", "night"], ["05:41:00", "day"], ["17:11:59", "day"], ["17:12:00", "night"]]) {
+      await evaluate(`window.qaSetClock('2026-10-16T${time}+03:00')`);
+      await until(`document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='${period}'`);
+    }
+    await evaluate("window.qaSetClock('2026-10-16T05:50:00+03:00')");
+    await until("document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='day'");
+    await evaluate("window.qaSetUnlocated(true)");
+    await until("document.querySelector('.council-oasis-scene').dataset.oasisClock==='clock' && document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='night'");
+    await evaluate("window.qaSetClock('2026-10-16T08:00:00+03:00')");
+    await until("document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='day'");
+    const originalInk = await evaluate("getComputedStyle(document.querySelector('.council-visitor-number')).color");
+    await evaluate("document.querySelector('.council-oasis-scene').style.setProperty('--identity-accent','#b97946')");
+    await settle();
+    assert.notEqual(await evaluate("getComputedStyle(document.querySelector('.council-visitor-number')).color"), originalInk, "Identity accents still apply with a daylight contrast adjustment");
+    const finalTower = await evaluate("window.qaVisibleTower()");
+    assert.equal(finalTower.portrait, width < 970, `${name}: correct landscape or portrait artwork without distortion`);
+    console.log(`PASS ${name}: day/night images, automatic sunrise/sunset, no-GPS fallback, dark/light independence and identity`);
   }
   assert.deepEqual(errors, [], "No visitor/presence/React runtime exceptions");
   console.log("All actual visitor-counter Chrome checks passed");

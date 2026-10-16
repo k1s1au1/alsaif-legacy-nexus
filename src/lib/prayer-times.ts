@@ -2,7 +2,7 @@ export const PRAYER_NAMES = { Fajr: "الفجر", Dhuhr: "الظهر", Asr: "ا�
 export type PrayerKey = keyof typeof PRAYER_NAMES;
 export const PRAYER_KEYS = Object.keys(PRAYER_NAMES) as PrayerKey[];
 export type PrayerLocation = { latitude: number; longitude: number; accuracy: number; obtainedAt: number; timeZone?: string };
-export type PrayerDay = { date: string; timings: Record<PrayerKey, string> };
+export type PrayerDay = { date: string; timings: Record<PrayerKey, string>; sunrise?: string; sunset?: string };
 export type PrayerCalendar = { locationKey: string; year: number; month: number; method: 4; timeZone: string; days: PrayerDay[] };
 
 export function validTimeZone(value: unknown): value is string {
@@ -63,7 +63,18 @@ export function normalizePrayerCalendar(payload: unknown, location: PrayerLocati
       if (`${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}` !== value.slice(0, 16)) throw new Error("ورد توقيت لا يطابق موقعك");
       timings[key] = value;
     }
-    return { date, timings };
+    // Solar metadata is optional: older caches and missing fields must not
+    // prevent the five verified prayer times from loading.
+    const solarTime = (value: unknown): value is string => {
+      if (typeof value !== "string" || !new RegExp(`^${date}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}$`).test(value) || !Number.isFinite(Date.parse(value))) return false;
+      const parts = localTime.formatToParts(new Date(value));
+      const part = (name: string) => parts.find(item => item.type === name)?.value;
+      return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}` === value.slice(0, 16);
+    };
+    const sunrise = item.timings?.Sunrise;
+    const sunset = item.timings?.Sunset;
+    const daylight = solarTime(sunrise) && solarTime(sunset) && Date.parse(sunrise) < Date.parse(sunset) ? { sunrise, sunset } : {};
+    return { date, timings, ...daylight };
   });
   return { locationKey: prayerLocationKey(location), year, month, method: 4, timeZone, days };
 }
@@ -96,6 +107,6 @@ export function readPrayerCalendar(location: PrayerLocation, year: number, month
   try {
     const saved = JSON.parse(localStorage.getItem(prayerCacheKey(location, year, month)) || "null") as PrayerCalendar | null;
     if (!saved || saved.locationKey !== prayerLocationKey(location) || saved.year !== year || saved.month !== month || saved.method !== 4 || !validTimeZone(saved.timeZone)) return undefined;
-    return normalizePrayerCalendar({ code: 200, data: saved.days.map((day) => ({ timings: day.timings, date: { gregorian: { date: day.date.split("-").reverse().join("-") } }, meta: { latitude: location.latitude, longitude: location.longitude, method: { id: 4 }, timezone: saved.timeZone } })) }, location, year, month);
+    return normalizePrayerCalendar({ code: 200, data: saved.days.map((day) => ({ timings: { ...day.timings, ...(day.sunrise ? { Sunrise: day.sunrise } : {}), ...(day.sunset ? { Sunset: day.sunset } : {}) }, date: { gregorian: { date: day.date.split("-").reverse().join("-") } }, meta: { latitude: location.latitude, longitude: location.longitude, method: { id: 4 }, timezone: saved.timeZone } })) }, location, year, month);
   } catch { return undefined; }
 }

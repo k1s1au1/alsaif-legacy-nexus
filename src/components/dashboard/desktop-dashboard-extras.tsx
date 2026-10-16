@@ -414,10 +414,9 @@ export function DesktopDashboardExtras({
         {!contentOnly && (
           <>
             <SpiritualQuotesWidget variant="desktop" />
-            <PrayerMushafShortcuts desktop />
-
         <section className="desktop-overview-shell">
           <div className="desktop-portal-stage">
+            <PrayerMushafShortcuts desktop />
             <HeritagePortal3D
               logoUrl={logo}
               greeting={`${greeting}، يا أهل الوفاء`}

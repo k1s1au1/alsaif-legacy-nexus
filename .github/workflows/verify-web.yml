@@ -41,6 +41,8 @@ jobs:
         run: npm run test:navigation
       - name: Check prayer rollover, official Mushaf sources and member bookmarks
         run: npm run test:faith
+      - name: Check oasis sunrise, sunset, timezone fallback and legacy prayer caches
+        run: node --test scripts/test-council-oasis.mjs
       - name: Check meeting attendance and companion persistence
         run: npm run test:meetings
       - name: Check family occasions in quick follow-up
@@ -77,7 +79,7 @@ jobs:
         run: node scripts/test-faith-browser.mjs
       - name: Check shared ticket cutouts, responsive width and touch actions in Chrome
         run: node scripts/test-trip-ticket-browser.mjs
-      - name: Check daily visitor count, rollover and welcome spacing on all devices in Chrome
+      - name: Check oasis day and night, prayer placement and daily visitors on all devices in Chrome
         run: node scripts/test-council-visitors-browser.mjs
       - name: Check read-only family statistics on phones, iPads and desktop in Chrome
         run: node scripts/test-family-stats-browser.mjs
