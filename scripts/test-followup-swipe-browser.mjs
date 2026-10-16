@@ -272,7 +272,9 @@ try {
     );
     assert.equal(geometry.display, "grid");
     assert.equal(geometry.columns, 3, "The approved three-card layout remains in place");
-    await evaluate("window.qaRetainedTaskLink=document.querySelector('.followup-note--task a')");
+    await evaluate(
+      "window.qaRetainedTaskLink=document.querySelector('.followup-note--task a');true",
+    );
     await swipe(130, 4);
     assert.equal(await active(), 1, `${name}: swipe right selects next in RTL`);
     assert.equal(
