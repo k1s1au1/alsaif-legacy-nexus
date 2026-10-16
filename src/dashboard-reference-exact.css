@@ -573,8 +573,9 @@ html body main .desktop-portal-stage > .faith-home-shortcuts-desktop {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .council-oasis-layer,
+  html body main .council-oasis-scene,
   html body main .council-oasis-scene::before,
-  html body main .council-oasis-scene :is(.council-portal-greeting, .council-portal-identity span, .council-portal-identity strong, .council-portal-message),
-  html body main :is(.dashboard-portal-card, .desktop-portal-stage):has(.council-oasis-scene) > .faith-home-shortcuts { transition: none !important; }
+  html body main .council-oasis-scene *,
+  html body main :is(.dashboard-portal-card, .desktop-portal-stage):has(.council-oasis-scene) > .faith-home-shortcuts,
+  html body main :is(.dashboard-portal-card, .desktop-portal-stage):has(.council-oasis-scene) > .faith-home-shortcuts * { transition: none !important; }
 }

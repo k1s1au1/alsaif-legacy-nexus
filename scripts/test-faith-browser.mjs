@@ -165,8 +165,10 @@ try {
     assert.ok(layout.shortcut.top >= layout.quote.bottom - 1, `${name}: below Nafahat`);
     if (width < 970) assert.ok(layout.shortcut.bottom <= layout.copy.top + 1, `${name}: shortcuts before welcome, without overlap`);
     const baseline = await evaluate(`(()=>{const section=document.querySelector('.has-faith-shortcuts');section.classList.remove('has-faith-shortcuts');document.querySelector('.faith-home-shortcuts').style.display='none';const r=document.querySelector('.council-portal-model').getBoundingClientRect();const result={top:r.top,left:r.left,width:r.width,height:r.height};section.classList.add('has-faith-shortcuts');document.querySelector('.faith-home-shortcuts').style.display='';return result})()`);
-    for (const key of ["top", "left", "width", "height"]) {
-      assert.ok(Math.abs(baseline[key] - layout.model[key]) < 1, `${name}: shortcut overlay preserves approved gateway ${key}`);
+    // Portrait artwork flows below the live copy, so reserving room for the
+    // faith row may grow the scene. Its scale and horizontal framing stay fixed.
+    for (const key of width >= 970 ? ["top", "left", "width", "height"] : ["left", "width", "height"]) {
+      assert.ok(Math.abs(baseline[key] - layout.model[key]) < 1, `${name}: faith overlay preserves oasis artwork ${key}`);
     }
     await screenshot(name); console.log(`PASS ${name}: selected shortcut placement and preserved gateway geometry`);
   }

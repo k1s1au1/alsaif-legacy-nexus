@@ -218,6 +218,7 @@ try {
   await send("Page.enable");
   await send("Runtime.enable");
   await send("Emulation.setTimezoneOverride", { timezoneId: "Asia/Riyadh" });
+  const contrastCheck = `(()=>{const c=document.createElement('canvas').getContext('2d');const luminance=color=>{c.fillStyle=color;c.fillRect(0,0,1,1);const channels=Array.from(c.getImageData(0,0,1,1).data).slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return channels.reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0)};const scene=document.querySelector('.council-oasis-scene');const bg=luminance(getComputedStyle(scene).getPropertyValue('--oasis-sky'));return ['.council-portal-greeting','.council-visitor-number'].map(selector=>{const value=luminance(getComputedStyle(scene.querySelector(selector)).color);return(Math.max(value,bg)+.05)/(Math.min(value,bg)+.05)})})()`;
   await send("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-motion", value: "reduce" }],
   });
@@ -446,6 +447,8 @@ try {
       await settle();
       const scene = await evaluate(`(()=>{const scene=document.querySelector('.council-oasis-scene');const active=scene.querySelector('.council-oasis-layer[data-period="${period}"]');const copy=scene.querySelector('.council-portal-copy').getBoundingClientRect();const counter=scene.querySelector('.council-visitor-counter').getBoundingClientRect();const tower=window.qaVisibleTower();return{source:scene.dataset.oasisClock,opacity:getComputedStyle(active).opacity,loaded:Array.from(document.images).every(img=>img.complete&&img.naturalWidth>0),name:scene.querySelector('strong').textContent,greeting:scene.querySelector('.council-portal-greeting').textContent,color:getComputedStyle(scene.querySelector('.council-portal-greeting')).color}})()`);
       assert.equal(scene.source, "solar"); assert.equal(scene.opacity, "1"); assert.equal(scene.loaded, true);
+      const contrast = await evaluate(contrastCheck);
+      assert.ok(contrast.every(ratio => ratio >= 4.5), `${name}/${period}: welcome and count remain readable against the scene sky ${JSON.stringify(contrast)}`);
       assert.ok(scene.greeting.includes(period === "day" ? "صباح الخير" : "مساء الخير"));
       const previousColor = scene.color;
       await evaluate("document.documentElement.classList.add('dark')"); await settle();
