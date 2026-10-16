@@ -1,9 +1,9 @@
 import { CouncilVisitorCounter, visitorCountLabel } from "./council-visitor-counter";
 import { useCouncilOasis } from "@/hooks/use-council-oasis";
-import oasisDayWide from "@/assets/council-oasis-day-wide-v1.webp";
-import oasisNightWide from "@/assets/council-oasis-night-wide-v1.webp";
-import oasisDayPortrait from "@/assets/council-oasis-day-portrait-v1.webp";
-import oasisNightPortrait from "@/assets/council-oasis-night-portrait-v1.webp";
+import oasisDayWide from "@/assets/council-oasis-day-wide-v2.webp";
+import oasisNightWide from "@/assets/council-oasis-night-wide-v2.webp";
+import oasisDayPortrait from "@/assets/council-oasis-day-portrait-v2.webp";
+import oasisNightPortrait from "@/assets/council-oasis-night-portrait-v2.webp";
 import "./heritage-portal-3d.css";
 import "@/dashboard-reference-exact.css";
 
