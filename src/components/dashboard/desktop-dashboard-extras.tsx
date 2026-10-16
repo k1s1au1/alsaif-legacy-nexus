@@ -33,7 +33,7 @@ import {
   useProfile,
 } from "@/hooks/use-dashboard-data";
 import { useSiteLogo } from "@/hooks/use-site-logo";
-import { useRecordedVisitorCount } from "@/lib/presence";
+import { useTodayVisitorCount } from "@/hooks/use-today-site-visits";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import { SpiritualQuotesWidget } from "@/components/dashboard/spiritual-quotes-widget";
 import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
@@ -302,7 +302,7 @@ export function DesktopDashboardExtras({
   const { data: heritage } = useHeritageSnippet();
   const { data: profile } = useProfile();
   const logo = useSiteLogo();
-  const visitorCount = useRecordedVisitorCount();
+  const visitorCount = useTodayVisitorCount();
   const [servicesExpanded, setServicesExpanded] = useState(false);
   const [followExpanded, setFollowExpanded] = useState(false);
   const [followIndex, setFollowIndex] = useState(0);

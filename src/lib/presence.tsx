@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "./utils";
+import { DAILY_VISITS_QUERY_KEY } from "./daily-site-visits";
 
 export type PresenceState = "online" | "idle" | "offline";
 
@@ -113,12 +114,13 @@ export function usePresenceHeartbeat() {
       if (document.visibilityState === "visible" && idleFor < ONLINE_MS) {
         const { data: u } = await supabase.auth.getUser();
         if (u.user) {
-          await supabase
+          const { error } = await supabase
             .from("user_presence")
             .upsert(
               { user_id: u.user.id, last_seen_at: new Date().toISOString(), status: "online" },
               { onConflict: "user_id" },
             );
+          if (!error) void queryClient.invalidateQueries({ queryKey: DAILY_VISITS_QUERY_KEY });
         }
       }
     }
@@ -140,10 +142,9 @@ export function usePresenceHeartbeat() {
 
 type PresenceMap = Record<string, string>; // user_id -> last_seen_at ISO
 
-const presenceStore: { map: PresenceMap; tick: number; recordedCount: number | null } = {
+const presenceStore: { map: PresenceMap; tick: number } = {
   map: {},
   tick: 0,
-  recordedCount: null,
 };
 const presenceListeners = new Set<() => void>();
 let presenceInitialized = false;
@@ -156,15 +157,13 @@ function emitPresence() {
 }
 
 async function refreshPresenceAll() {
-  const { data, count } = await supabase
+  const { data } = await supabase
     .from("user_presence")
-    .select("user_id, last_seen_at", { count: "exact" });
+    .select("user_id, last_seen_at");
   if (data) {
     const next: PresenceMap = {};
     for (const r of data) next[r.user_id] = r.last_seen_at;
     presenceStore.map = next;
-    // One saved row per account; use the server total even if rows are paginated.
-    if (count !== null && count !== undefined) presenceStore.recordedCount = count;
     emitPresence();
   }
 }
@@ -222,15 +221,6 @@ export function useOnlineCount(): number {
   return Object.values(presenceStore.map).filter(
     (lastSeen) => presenceFromLastSeen(lastSeen) === "online",
   ).length;
-}
-
-/** Saved unique visitors, including offline members. Unknown is never a fake zero. */
-export function useRecordedVisitorCount(): number | null {
-  return useSyncExternalStore(
-    subscribePresence,
-    () => presenceStore.recordedCount,
-    () => null,
-  );
 }
 
 /** Get the list of user IDs currently online (auto-refreshing). */

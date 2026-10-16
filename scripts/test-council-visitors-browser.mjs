@@ -39,7 +39,15 @@ const css = [
 const entry = `import React,{useState} from 'react';import {createRoot} from 'react-dom/client';
 import {HeritagePortal3D} from './src/components/dashboard/heritage-portal-3d';
 import {PrayerMushafShortcuts} from './src/components/dashboard/prayer-mushaf-shortcuts';
-import {useRecordedVisitorCount,useOnlineCount} from './src/lib/presence';
+import {useOnlineCount} from './src/lib/presence';
+import {useTodayVisitorCount} from './src/hooks/use-today-site-visits';
+import {saudiVisitDay,DAILY_VISITS_QUERY_KEY} from './src/lib/daily-site-visits';
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
+const queryClient=new QueryClient({defaultOptions:{queries:{retry:false}}});
+window.qaRefresh=()=>queryClient.invalidateQueries({queryKey:DAILY_VISITS_QUERY_KEY});
+const RealDate=Date;window.qaNow=RealDate.now();window.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[window.qaNow]))}static now(){return window.qaNow}};
+window.qaSeenToday=new Set(['one','two']);
+window.qaAdvanceDay=()=>{window.qaNow=RealDate.parse(saudiVisitDay(new Date())+'T21:00:00Z')+50;window.qaTotal=0;window.qaSeenToday.clear();window.dispatchEvent(new Event('focus'))};
 window.qaHold=location.pathname==='/loading';window.qaFail=location.pathname==='/error';window.qaWaiters=[];
 window.qaRows=[{user_id:'one',last_seen_at:new Date().toISOString()},{user_id:'two',last_seen_at:'2026-01-01T00:00:00Z'}];
 window.qaTotal=1248;window.qaQueries=0;
@@ -47,12 +55,12 @@ const tabletLandscape=new URLSearchParams(location.search).has('tablet');
 document.documentElement.dataset.dashboardTabletLandscape=tabletLandscape?'true':'false';
 window.qaUnlocated=false;
 window.qaRelease=()=>{window.qaHold=false;window.qaWaiters.splice(0).forEach(resolve=>resolve())};
-window.qaVisit=(id)=>{const found=window.qaRows.some(row=>row.user_id===id);if(!found){window.qaRows.push({user_id:id,last_seen_at:new Date().toISOString()});window.qaTotal++}window.qaChange({eventType:found?'UPDATE':'INSERT',new:{user_id:id,last_seen_at:new Date().toISOString()}})};
-function Fixture(){const count=useRecordedVisitorCount();const online=useOnlineCount();const [name,setName]=useState('حساب المعاينة');const [show,setShow]=useState(true);const [,setUnlocated]=useState(false);window.qaSetName=setName;window.qaSetShow=setShow;window.qaSetUnlocated=value=>{window.qaUnlocated=value;setUnlocated(value)};const desktop=innerWidth>=1200&&!tabletLandscape;
+window.qaVisit=(id)=>{const found=window.qaRows.some(row=>row.user_id===id);if(!found)window.qaRows.push({user_id:id,last_seen_at:new Date().toISOString()});if(!window.qaSeenToday.has(id)){window.qaSeenToday.add(id);window.qaTotal++}window.qaChange({eventType:found?'UPDATE':'INSERT',new:{user_id:id,last_seen_at:new Date().toISOString()}});window.qaRefresh()};
+function Fixture(){const count=useTodayVisitorCount();const online=useOnlineCount();const [name,setName]=useState('حساب المعاينة');const [show,setShow]=useState(true);const [,setUnlocated]=useState(false);window.qaSetName=setName;window.qaSetShow=setShow;window.qaSetUnlocated=value=>{window.qaUnlocated=value;setUnlocated(value)};const desktop=innerWidth>=1200&&!tabletLandscape;
 const hero=<HeritagePortal3D greeting="مساء الخير" name={name} message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className={desktop?'desktop-portal-model':'dashboard-portal-model'} visitorCount={show?count:undefined}/>;
 const services=<div className="desktop-services-panel"><div className="desktop-section-head desktop-section-head-on-dark"><h2>خدمات العائلة</h2></div><div className="desktop-services-grid">{['الصندوق المالي','المهام','الرحلات','الاجتماعات'].map(label=><div className="desktop-service-card" key={label}><strong>{label}</strong></div>)}</div><button className="desktop-services-wide-toggle">عرض جميع الخدمات</button></div>;
 return <main className="app-shell-main relative min-h-screen"><div className="app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto max-w-7xl"><output hidden id="qa-online">{online}</output>{desktop?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage">{hero}</div>{services}</section></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section></div>}</div></main>}
-createRoot(document.getElementById('app')).render(<Fixture/>);window.fixtureReady=true;`;
+createRoot(document.getElementById('app')).render(<QueryClientProvider client={queryClient}><Fixture/></QueryClientProvider>);window.fixtureReady=true;`;
 await build({
   stdin: {
     contents: entry,
@@ -90,7 +98,7 @@ await build({
           resolveDir: process.cwd(),
           contents:
             path === "supabase"
-              ? `export const supabase={from:()=>({select:async(fields,options)=>{if(options?.count!=='exact')throw Error('Exact server count required');window.qaQueries++;if(window.qaHold)await new Promise(resolve=>window.qaWaiters.push(resolve));return window.qaFail?{data:null,count:null,error:{message:'unavailable'}}:{data:window.qaRows.map(row=>({...row})),count:window.qaTotal}}}),channel:()=>{const channel={on:(event,filter,callback)=>{window.qaChange=callback;return channel},subscribe:callback=>{window.qaSubscription=callback;setTimeout(()=>callback?.('SUBSCRIBED'),0);return channel}};return channel}};`
+              ? `export const supabase={from:()=>({select:async()=>({data:window.qaRows.map(row=>({...row}))})}),rpc:async(name)=>{if(name!=='get_today_site_visit_count')throw Error('Daily aggregate RPC required');window.qaQueries++;const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const part=type=>parts.find(p=>p.type===type).value;const result=window.qaFail?{data:null,error:{message:'unavailable'}}:{data:{visit_date:part('year')+'-'+part('month')+'-'+part('day'),visitor_count:window.qaTotal},error:null};if(window.qaHold)await new Promise(resolve=>window.qaWaiters.push(resolve));return result},channel:()=>{const channel={on:(event,filter,callback)=>{window.qaChange=callback;return channel},subscribe:callback=>{window.qaSubscription=status=>{callback?.(status);window.qaRefresh?.()};setTimeout(()=>window.qaSubscription('SUBSCRIBED'),0);return channel}};return channel}};`
               : path === "prayer"
                 ? `export const usePrayerTimes=()=>window.qaUnlocated?({location:null,locationLabel:'حسب موقعك',prayer:null,countdown:'',loading:false}):({location:{latitude:27,longitude:49},locationLabel:'حسب موقعك',prayer:{name:'الفجر'},countdown:'باقي ٨ ساعات',loading:false});`
                 : `import React from 'react';export const useNavigate=()=>()=>{};export function Link({to,search,children,...props}){return <a {...props} href={to}>{children}</a>}`,
@@ -239,7 +247,7 @@ try {
   assert.equal(
     await counterText(),
     "1,248",
-    "All saved visitors, not online count or paginated row count",
+    "All unique visitors today, not online count or paginated presence rows",
   );
   await evaluate("window.qaVisit('one');window.qaVisit('one')");
   await settle();
@@ -257,9 +265,21 @@ try {
   assert.equal(await counterText(), "1,252", "Transient failure retains the last valid count");
   await navigate("/error");
   assert.equal(await counterText(), "—", "Failed first request does not invent zero");
-  console.log(
-    "PASS saved unique visitors, first-visit realtime update, reconnect, pagination and failed reads",
-  );
+  await navigate("/");
+  await until("document.querySelector('.council-visitor-number').textContent==='1,248'");
+  await evaluate("window.qaHold=true;window.qaRefresh();true");
+  await settle();
+  await evaluate("window.qaAdvanceDay()");
+  await settle();
+  assert.equal(await counterText(), "—", "Yesterday's count disappears immediately while the new Saudi day loads");
+  await evaluate("window.qaRelease()");
+  await until("document.querySelector('.council-visitor-number').textContent==='0'");
+  await evaluate("window.qaVisit('one')");
+  await until("document.querySelector('.council-visitor-number').textContent==='1'");
+  await evaluate("window.qaVisit('one');window.qaVisit('one')");
+  await settle();
+  assert.equal(await counterText(), "1", "A returning account is counted again on a new day, once only");
+  console.log("PASS daily unique visitors, late old-day response, Saudi rollover, repeated visits, reconnect and failed reads");
   for (const [name, width, height, tablet = false] of [
     ["phone-small", 320, 800],
     ["phone", 390, 844],
@@ -398,8 +418,7 @@ try {
         `${name}: sculpture stays inside the scene`,
       );
       assert.ok(
-        geometry.parts[0].left >= geometry.parts[1].right - 1 &&
-          geometry.parts[1].left >= geometry.parts[2].right - 1,
+        geometry.parts.slice(1).every((part, index) => geometry.parts[index].left >= part.right - 1),
         `${name}: words and number do not overlap`,
       );
       assert.ok(geometry.contained, `${name}: count stays inside hero`);

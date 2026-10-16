@@ -1,7 +1,7 @@
 const visitorNumber = new Intl.NumberFormat("en-US");
 
 export function visitorCountLabel(count: number | null) {
-  return count === null ? "" : `شرّف مجلسنا ${visitorNumber.format(count)} زائرًا`;
+  return count === null ? "" : `زوار المجلس اليوم ${visitorNumber.format(count)}`;
 }
 
 function VisitorOrnament() {
@@ -14,21 +14,20 @@ function VisitorOrnament() {
   );
 }
 
-/** The approved, quiet welcome ornament; the number comes from saved visits. */
+/** The approved welcome ornament, showing unique accounts for this Saudi day. */
 export function CouncilVisitorCounter({ count }: { count: number | null }) {
   return (
     <div
       className="council-visitor-counter"
       dir="rtl"
-      title="عدد الحسابات التي زارت المجلس؛ يُحسب الحساب مرة واحدة عبر أجهزته"
+      title="زوار المجلس اليوم؛ يُحسب الحساب مرة واحدة في اليوم عبر أجهزته، بتوقيت السعودية"
     >
       <VisitorOrnament />
       <span className="council-visitor-text">
-        <span>شرّف مجلسنا</span>
+        <span>زوار المجلس اليوم</span>
         <bdi className="council-visitor-number" dir="ltr">
           {count === null ? "—" : visitorNumber.format(count)}
         </bdi>
-        <span>زائرًا</span>
       </span>
       <VisitorOrnament />
     </div>
