@@ -32,6 +32,7 @@ import { useDayBoundaryKey } from "@/hooks/use-day-boundary";
 import { TripStatusControl } from "@/components/trip-status-control";
 import type { EditableTripStatus } from "@/lib/trip-status";
 import { tripPhase, type PlannedTrip } from "@/lib/trip-planning";
+import { TripImageUploadError, uploadTripImage } from "@/lib/trip-image-upload";
 
 export const Route = createFileRoute("/_authenticated/trips/")({
   ssr: false,
@@ -415,124 +416,123 @@ function TripDialog({ trip, onClose, onSaved, onCreated }: any) {
       return;
     }
     setSaving(true);
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) {
-      setSaving(false);
-      toast.error("سجل دخولك لحفظ الرحلة");
-      return;
-    }
-    if (form.start_date && form.end_date && form.end_date < form.start_date) {
-      setSaving(false);
-      toast.error("تاريخ النهاية يجب أن يكون بعد البداية أو في اليوم نفسه");
-      return;
-    }
-
-    let imagePath: string | null | undefined = undefined;
-    if (imageFile) {
-      const ext = imageFile.name.split(".").pop() || "jpg";
-      const path = `${u.user.id}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("trip-images")
-        .upload(path, imageFile);
-      if (uploadError) {
-        setSaving(false);
-        toast.error("تعذر رفع صورة الرحلة");
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) {
+        toast.error("سجل دخولك لحفظ الرحلة");
         return;
       }
-      imagePath = path;
-    } else if (isEdit && removeExistingImage) {
-      imagePath = null;
-    }
+      if (form.start_date && form.end_date && form.end_date < form.start_date) {
+        toast.error("تاريخ النهاية يجب أن يكون بعد البداية أو في اليوم نفسه");
+        return;
+      }
 
-    const payload: any = {
-      ...form,
-      title,
-      start_date: form.start_date || null,
-      end_date: form.end_date || null,
-    };
-    if (!isEdit) {
-      payload.status = "planning";
-      payload.planning_destinations = form.location.trim()
-        ? [{ id: crypto.randomUUID(), name: form.location.trim() }]
-        : [];
-      payload.planning_dates = form.start_date
-        ? [
-            {
-              id: crypto.randomUUID(),
-              start_date: form.start_date,
-              end_date: form.end_date || form.start_date,
-            },
-          ]
-        : [];
-    }
-    if (imagePath !== undefined) payload.image_url = imagePath;
+      let imagePath: string | null | undefined = undefined;
+      if (imageFile) {
+        imagePath = await uploadTripImage(imageFile, u.user.id);
+      } else if (isEdit && removeExistingImage) {
+        imagePath = null;
+      }
 
-    let error: any;
-    if (isEdit) {
-      ({ error } = await supabase
-        .from("trips")
-        .update(payload)
-        .eq("id", trip.id)
-        .select("id")
-        .single());
-    } else {
-      ({ error } = await supabase
-        .from("trips")
-        .insert({ ...payload, created_by: u.user.id })
-        .select("id")
-        .single());
-    }
+      const payload: any = {
+        ...form,
+        title,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+      };
+      if (!isEdit) {
+        payload.status = "planning";
+        payload.planning_destinations = form.location.trim()
+          ? [{ id: crypto.randomUUID(), name: form.location.trim() }]
+          : [];
+        payload.planning_dates = form.start_date
+          ? [
+              {
+                id: crypto.randomUUID(),
+                start_date: form.start_date,
+                end_date: form.end_date || form.start_date,
+              },
+            ]
+          : [];
+      }
+      if (imagePath !== undefined) payload.image_url = imagePath;
 
-    // Keep the list usable while an older database is waiting for the migration.
-    if (error?.message?.includes("accommodation_type")) {
-      const { accommodation_type: _accommodationType, ...legacyPayload } = payload;
+      let error: any;
       if (isEdit) {
         ({ error } = await supabase
           .from("trips")
-          .update(legacyPayload)
+          .update(payload)
           .eq("id", trip.id)
           .select("id")
           .single());
       } else {
         ({ error } = await supabase
           .from("trips")
-          .insert({ ...legacyPayload, created_by: u.user.id })
+          .insert({ ...payload, created_by: u.user.id })
           .select("id")
           .single());
       }
-      if (!error) {
-        toast.info("تم حفظ الرحلة. سيُفعّل نوع الإقامة بعد تحديث قاعدة البيانات.");
-      }
-    }
 
-    setSaving(false);
-    if (error) {
-      console.error("Trip save error:", error);
-      toast.error("حدث خطأ أثناء الحفظ", {
-        description: error.message || "تأكد من تعبئة الحقول المطلوبة وصلاحياتك.",
-      });
-    } else {
-      toast.success("تم الحفظ");
-
-      if (!isEdit) {
-        // Trigger FCM for new trip
-        try {
-          await sendPush({
-            data: {
-              title: "فعالية جديدة",
-              body: "تمت إضافة فعالية جديدة في قسم الترفيه.",
-              type: "entertainment",
-              route: "/trips",
-            },
-          });
-        } catch (fcmErr) {
-          console.warn("Push broadcast failed:", fcmErr);
+      // Keep the list usable while an older database is waiting for the migration.
+      if (error?.message?.includes("accommodation_type")) {
+        const { accommodation_type: _accommodationType, ...legacyPayload } = payload;
+        if (isEdit) {
+          ({ error } = await supabase
+            .from("trips")
+            .update(legacyPayload)
+            .eq("id", trip.id)
+            .select("id")
+            .single());
+        } else {
+          ({ error } = await supabase
+            .from("trips")
+            .insert({ ...legacyPayload, created_by: u.user.id })
+            .select("id")
+            .single());
+        }
+        if (!error) {
+          toast.info("تم حفظ الرحلة. سيُفعّل نوع الإقامة بعد تحديث قاعدة البيانات.");
         }
       }
 
-      if (!isEdit) onCreated?.();
-      onSaved();
-      onClose();
+      if (error) {
+        console.error("Trip save error:", error);
+        toast.error("حدث خطأ أثناء الحفظ", {
+          description: error.message || "تأكد من تعبئة الحقول المطلوبة وصلاحياتك.",
+        });
+      } else {
+        toast.success("تم الحفظ");
+
+        if (!isEdit) {
+          // Trigger FCM for new trip
+          try {
+            await sendPush({
+              data: {
+                title: "فعالية جديدة",
+                body: "تمت إضافة فعالية جديدة في قسم الترفيه.",
+                type: "entertainment",
+                route: "/trips",
+              },
+            });
+          } catch (fcmErr) {
+            console.warn("Push broadcast failed:", fcmErr);
+          }
+        }
+
+        if (!isEdit) onCreated?.();
+        onSaved();
+        onClose();
+      }
+    } catch (error) {
+      if (error instanceof TripImageUploadError) {
+        console.error("Trip image upload failed:", error.cause);
+        toast.error("تعذّر رفع صورة الرحلة", { description: error.message });
+      } else {
+        console.error("Trip save failed:", error);
+        toast.error("تعذّر حفظ الرحلة. تحقق من الاتصال وأعد المحاولة.");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
