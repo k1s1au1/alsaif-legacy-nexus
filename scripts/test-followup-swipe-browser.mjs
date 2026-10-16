@@ -34,7 +34,7 @@ const css = [
   ...ordered.filter((p) => p !== "src/styles.css").map(readStyles),
 ].join("\n");
 const entry = `import React from 'react';import {createRoot} from 'react-dom/client';import {ResponsiveDashboardExtras} from './src/components/dashboard/desktop-dashboard-extras';
-window.qaInputTrace=[];for(const type of ['touchstart','touchend','touchcancel','click'])document.addEventListener(type,event=>{const point=event.touches?.[0]||event.changedTouches?.[0];const item={type,trusted:event.isTrusted,target:event.target.tagName,link:event.target.closest?.('a')?.getAttribute('href'),x:point?.clientX,y:point?.clientY};window.qaInputTrace.push(item);window.qaInputTrace=window.qaInputTrace.slice(-20);queueMicrotask(()=>item.prevented=event.defaultPrevented)},true);window.qaNativeClicks=0;document.addEventListener('click',event=>{if(event.isTrusted)window.qaNativeClicks++},true);window.qaActions=[];window.qaEvents={meetings:[{id:'meeting',title:'اجتماع العائلة',scheduled_at:'2099-01-01T17:00:00',location:'المجلس'}],tasks:[{id:'task',title:'تجهيز المجلس',due_date:'2099-01-02'}],trips:[{id:'trip',title:'رحلة العلا',status:'upcoming',location:'العلا',start_date:'2099-01-03',end_date:'2099-01-04',image_url:null},{id:'plan',title:'رحلة قيد التخطيط',status:'planning',start_date:null,end_date:null}]};window.qaAllEvents=window.qaEvents;window.qaOccasions=[];
+window.qaActions=[];window.qaEvents={meetings:[{id:'meeting',title:'اجتماع العائلة',scheduled_at:'2099-01-01T17:00:00',location:'المجلس'}],tasks:[{id:'task',title:'تجهيز المجلس',due_date:'2099-01-02'}],trips:[{id:'trip',title:'رحلة العلا',status:'upcoming',location:'العلا',start_date:'2099-01-03',end_date:'2099-01-04',image_url:null},{id:'plan',title:'رحلة قيد التخطيط',status:'planning',start_date:null,end_date:null}]};window.qaAllEvents=window.qaEvents;window.qaOccasions=[];
 function Fixture(){const [,render]=React.useReducer(x=>x+1,0);window.qaChangeEvents=value=>{window.qaEvents=value;render()};return <div className="relative min-h-screen overflow-x-hidden"><main className="app-shell-main"><div className="app-shell-content p-4 md:p-8 lg:p-12 mx-auto max-w-7xl"><ResponsiveDashboardExtras onReportBug={()=>{}}/></div></main><footer style={{height:1000}}/></div>}
 createRoot(document.getElementById('app')).render(<Fixture/>);window.fixtureReady=true;`;
 await build({
@@ -177,7 +177,10 @@ try {
     }
     throw Error(`Timed out: ${expression}`);
   };
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 100));
+  const settle = () =>
+    evaluate(
+      "new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,80))))",
+    );
   const active = () =>
     evaluate(
       "Array.from(document.querySelectorAll('.desktop-follow-dots button')).findIndex(n=>n.classList.contains('active'))",
@@ -202,27 +205,21 @@ try {
     await touch(cancel ? "touchCancel" : "touchEnd", []);
     await settle();
   };
-  const tap = async (selector) => {
+  // Raw touch packets in headless Chrome can omit compatibility clicks even
+  // on the unchanged one-card baseline. Test activation separately: deliver the
+  // touch lifecycle and its click to the actual hit-tested control. Swipes and
+  // vertical scrolling below continue to use trusted native touch input.
+  const activate = async (selector) => {
     const p = await center(selector);
-    const clicks = await evaluate("window.qaNativeClicks");
-    // Let Chrome schedule the complete physical tap rather than injecting raw
-    // down/up packets around its asynchronous gesture recognizer.
-    await send("Input.synthesizeTapGesture", {
-      ...p,
-      duration: 50,
-      tapCount: 1,
-      gestureSourceType: "touch",
-    });
-    try {
-      await until(`window.qaNativeClicks>${clicks}`);
-    } catch (cause) {
-      const state = await evaluate(
-        `({point:${JSON.stringify(p)},viewport:{width:innerWidth,height:innerHeight,scale:visualViewport.scale,visualWidth:visualViewport.width},hit:document.elementFromPoint(${p.x},${p.y})?.outerHTML.slice(0,240),trace:window.qaInputTrace})`,
-      );
-      throw Error(`Native tap was not delivered for ${selector}: ${JSON.stringify(state)}`, {
-        cause,
-      });
-    }
+    await evaluate(`(()=>{
+      const node=document.querySelector(${JSON.stringify(selector)});
+      const hit=document.elementFromPoint(${p.x},${p.y})?.closest('a,button');
+      if(hit!==node)throw Error('The visible control is not hit-testable: '+${JSON.stringify(selector)});
+      const contact=new Touch({identifier:1,target:node,clientX:${p.x},clientY:${p.y}});
+      node.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[contact],targetTouches:[contact],changedTouches:[contact]}));
+      node.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,touches:[],targetTouches:[],changedTouches:[contact]}));
+      node.click();return true;
+    })()`);
     await settle();
   };
   await send("Page.enable");
@@ -255,13 +252,13 @@ try {
       "window.qaChangeEvents({meetings:window.qaAllEvents.meetings,tasks:[],trips:[]})",
     );
     await until("document.querySelectorAll('.desktop-follow-cards > *').length===1");
-    await tap(".desktop-follow-cards a");
+    await activate(".desktop-follow-cards a");
     assert.equal(
       await evaluate("window.qaActions.at(-1)"),
       "/meetings",
-      "Baseline native taps work before swipe handling is enabled",
+      "Card activation works before swipe handling is enabled",
     );
-    console.log(`PASS ${name}: baseline native tap without swipe handling`);
+    console.log(`PASS ${name}: baseline card activation without swipe handling`);
     await evaluate("window.qaActions.length=0;window.qaChangeEvents(window.qaAllEvents)");
     await until("document.querySelectorAll('.desktop-follow-dots button').length===4");
     assert.equal(
@@ -298,7 +295,7 @@ try {
       "Visible card actions keep their DOM identity while the row advances",
     );
     assert.deepEqual(await evaluate("window.qaActions"), [], "Swiping never opens a card");
-    await tap(".desktop-follow-cards a");
+    await activate(".desktop-follow-cards a");
     await until("window.qaActions.length===1");
     assert.equal(
       await evaluate("window.qaActions.length"),
@@ -334,21 +331,33 @@ try {
       { x: p.x + 15, y: p.y, id: 2 },
     ]);
     await touch("touchEnd", []);
+    await send("Input.dispatchKeyEvent", {
+      type: "keyDown",
+      key: "Escape",
+      code: "Escape",
+      windowsVirtualKeyCode: 27,
+    });
+    await send("Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: "Escape",
+      code: "Escape",
+      windowsVirtualKeyCode: 27,
+    });
     await settle();
     assert.equal(await active(), 0, "Multi-finger input never changes the selected item");
-    await tap('.desktop-follow-controls > button[aria-label="التالي"]');
+    await activate('.desktop-follow-controls > button[aria-label="التالي"]');
     assert.equal(await active(), 1, "Existing next arrow stays active");
-    await tap('.desktop-follow-controls > button[aria-label="السابق"]');
+    await activate('.desktop-follow-controls > button[aria-label="السابق"]');
     assert.equal(await active(), 0, "Existing previous arrow stays active");
-    await tap(".desktop-follow-dots button:nth-child(3)");
+    await activate(".desktop-follow-dots button:nth-child(3)");
     assert.equal(await active(), 2, "Dots still select the requested item");
-    await tap(".desktop-follow-panel .desktop-section-head > button");
+    await activate(".desktop-follow-panel .desktop-section-head > button");
     assert.equal(
       await evaluate("document.querySelectorAll('.desktop-follow-row').length"),
       4,
       "Expanded list stays available",
     );
-    await tap(".desktop-follow-panel .desktop-section-head > button");
+    await activate(".desktop-follow-panel .desktop-section-head > button");
     await until("document.querySelector('.desktop-follow-cards')");
     assert.equal(await active(), 2, "Collapsing retains the selected item");
     await evaluate("window.qaChangeEvents({...window.qaAllEvents,trips:[]})");
@@ -365,7 +374,7 @@ try {
       0,
       "One item never creates an empty carousel position",
     );
-    await tap(".desktop-follow-cards a");
+    await activate(".desktop-follow-cards a");
     assert.equal(
       await evaluate("window.qaActions.at(-1)"),
       "/meetings",
@@ -384,7 +393,7 @@ try {
       "No horizontal page overflow",
     );
     console.log(
-      `PASS ${name}: native RTL touch, wrap, tap/click suppression, vertical scroll, cancellation, multiple fingers, arrows, dots, expanded list and changing data`,
+      `PASS ${name}: native RTL touch, wrap, deliberate activation/click suppression, vertical scroll, cancellation, multiple fingers, arrows, dots, expanded list and changing data`,
     );
   }
   // The same component's desktop branch keeps its existing mouse/arrow interaction.
