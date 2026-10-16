@@ -43,6 +43,7 @@ import { TripImage } from "@/components/trip-image";
 import { TripTicket } from "@/components/trip-ticket";
 import { FollowupNoteCard } from "@/components/dashboard/followup-note-card";
 import { FamilyStatsStrip } from "@/components/dashboard/family-stats-strip";
+import { useRtlSwipeNavigation } from "@/hooks/use-rtl-swipe-navigation";
 
 const fmtDate = (value?: string | null) => {
   if (!value) return "بدون موعد";
@@ -313,6 +314,7 @@ export function DesktopDashboardExtras({
 
     (eventsData?.meetings || []).forEach((item: any) =>
       rows.push({
+        id: `meeting-${item.id}`,
         kind: "اجتماع",
         title: item.title,
         date: item.scheduled_at,
@@ -325,6 +327,7 @@ export function DesktopDashboardExtras({
     );
     (eventsData?.trips || []).forEach((item: any) =>
       rows.push({
+        id: `trip-${item.id}`,
         kind: item.status === "planning" ? "رحلة قيد التخطيط" : "رحلة",
         title: item.title,
         date: item.status === "planning" ? null : item.start_date,
@@ -338,6 +341,7 @@ export function DesktopDashboardExtras({
     );
     (eventsData?.tasks || []).forEach((item: any) =>
       rows.push({
+        id: `task-${item.id}`,
         kind: "مهمة",
         title: item.title,
         date: item.due_date,
@@ -349,6 +353,7 @@ export function DesktopDashboardExtras({
     );
     occasions.forEach((item) =>
       rows.push({
+        id: `occasion-${item.id}`,
         kind: occasionLabels[item.type || ""] || "مناسبة عائلية",
         title: item.title || occasionLabels[item.type || ""] || "مناسبة عائلية",
         date: occasionDateTime(item),
@@ -369,6 +374,11 @@ export function DesktopDashboardExtras({
       )
       .slice(0, 12);
   }, [eventsData, occasions]);
+
+  const followSwipe = useRtlSwipeNavigation(
+    contentOnly && !followExpanded && upcoming.length > 1,
+    (step) => setFollowIndex((index) => (index + step + upcoming.length) % upcoming.length),
+  );
 
   useEffect(() => {
     if (followIndex >= upcoming.length) setFollowIndex(0);
@@ -548,10 +558,10 @@ export function DesktopDashboardExtras({
           {followExpanded ? (
             <div className="desktop-follow-list">
               {upcoming.length ? (
-                upcoming.map((item, index) => {
+                upcoming.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={`${item.kind}-${index}`} className="desktop-follow-row">
+                    <div key={item.id} className="desktop-follow-row">
                       <div className="desktop-next-icon">
                         <Icon size={20} />
                       </div>
@@ -578,13 +588,13 @@ export function DesktopDashboardExtras({
             </div>
           ) : featuredUpcoming.length ? (
             <div className="desktop-follow-carousel">
-              <div className="desktop-follow-cards">
-                {featuredUpcoming.map((item, index) => {
+              <div className="desktop-follow-cards" {...followSwipe}>
+                {featuredUpcoming.map((item) => {
                   const Icon = item.icon;
                   if (item.cardType === "meeting" || item.cardType === "task") {
                     return (
                       <FollowupNoteCard
-                        key={`${item.cardType}-${item.title}-${index}`}
+                        key={item.id}
                         kind={item.cardType}
                         title={item.title}
                         date={item.date}
@@ -596,7 +606,7 @@ export function DesktopDashboardExtras({
                   if (item.cardType === "trip") {
                     return (
                       <TripTicket
-                        key={`trip-${item.trip.id}`}
+                        key={item.id}
                         trip={item.trip}
                         image={<TripImage path={item.trip.image_url} alt={item.trip.title} />}
                         compact
@@ -606,7 +616,7 @@ export function DesktopDashboardExtras({
                   }
                   return (
                     <article
-                      key={`${item.kind}-${item.title}-${index}`}
+                      key={item.id}
                       className={`desktop-next-card desktop-next-card--${item.cardType || "default"}`}
                     >
                       {item.cardType === "occasion" && item.templateUrl && (
