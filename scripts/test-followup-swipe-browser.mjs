@@ -251,6 +251,19 @@ try {
     );
     await send("Page.bringToFront");
     await send("Emulation.resetPageScaleFactor");
+    await evaluate(
+      "window.qaChangeEvents({meetings:window.qaAllEvents.meetings,tasks:[],trips:[]})",
+    );
+    await until("document.querySelectorAll('.desktop-follow-cards > *').length===1");
+    await tap(".desktop-follow-cards a");
+    assert.equal(
+      await evaluate("window.qaActions.at(-1)"),
+      "/meetings",
+      "Baseline native taps work before swipe handling is enabled",
+    );
+    console.log(`PASS ${name}: baseline native tap without swipe handling`);
+    await evaluate("window.qaActions.length=0;window.qaChangeEvents(window.qaAllEvents)");
+    await until("document.querySelectorAll('.desktop-follow-dots button').length===4");
     assert.equal(
       await evaluate("document.documentElement.dataset.dashboardTabletLandscape"),
       "true",

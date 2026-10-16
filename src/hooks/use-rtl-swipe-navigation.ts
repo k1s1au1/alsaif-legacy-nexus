@@ -39,7 +39,8 @@ export function useRtlSwipeNavigation(enabled: boolean, onStep: (step: number) =
       const dy = touch.clientY - start.y;
       if (Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
       suppressClickUntil.current = Date.now() + 400;
-      onStep(dx > 0 ? 1 : -1);
+      // Finish the native touch sequence before replacing any card DOM.
+      requestAnimationFrame(() => onStep(dx > 0 ? 1 : -1));
     },
     onTouchCancel() {
       origin.current = null;
