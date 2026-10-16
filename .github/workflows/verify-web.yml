@@ -84,7 +84,7 @@ jobs:
       - name: Check shared ticket cutouts, responsive width and touch actions in Chrome
         if: ${{ !cancelled() && steps.web_build.outcome == 'success' }}
         run: node scripts/test-trip-ticket-browser.mjs
-      - name: Check oasis services, downward expansion, identity roles, prayer and daily visitors in Chrome
+      - name: Check oasis day and night, prayer placement and daily visitors on all devices in Chrome
         if: ${{ !cancelled() && steps.web_build.outcome == 'success' }}
         run: node scripts/test-council-visitors-browser.mjs
       - name: Check read-only family statistics on phones, iPads and desktop in Chrome

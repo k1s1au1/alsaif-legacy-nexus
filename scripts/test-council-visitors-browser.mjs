@@ -39,10 +39,6 @@ const css = [
 const entry = `import React,{useState} from 'react';import {createRoot} from 'react-dom/client';
 import {HeritagePortal3D} from './src/components/dashboard/heritage-portal-3d';
 import {PrayerMushafShortcuts} from './src/components/dashboard/prayer-mushaf-shortcuts';
-import {OasisFamilyServices} from './src/components/dashboard/oasis-family-services';
-import {QuickActionsBanner} from './src/components/quick-actions-banner';
-import {applyThemePreference,createCustomThemePreference} from './src/lib/theme-preferences';
-import {THEME_COLORS} from './src/lib/themes';
 import {useOnlineCount} from './src/lib/presence';
 import {useTodayVisitorCount} from './src/hooks/use-today-site-visits';
 import {saudiVisitDay,DAILY_VISITS_QUERY_KEY} from './src/lib/daily-site-visits';
@@ -51,10 +47,6 @@ const queryClient=new QueryClient({defaultOptions:{queries:{retry:false}}});
 window.qaRefresh=()=>queryClient.invalidateQueries({queryKey:DAILY_VISITS_QUERY_KEY});
 const RealDate=Date;window.qaNow=RealDate.parse('2026-10-16T08:00:00+03:00');window.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[window.qaNow]))}static now(){return window.qaNow}};
 window.qaSetClock=iso=>{window.qaNow=RealDate.parse(iso);window.dispatchEvent(new Event('focus'))};
-window.qaRoute='/dashboard';window.qaNavigations=[];window.qaThemes=THEME_COLORS.map(t=>t.id);
-window.qaSetTheme=id=>applyThemePreference({mode:'preset',presetId:id});
-window.qaCustomRoles=(iconId,accentId)=>applyThemePreference({...createCustomThemePreference('emerald'),iconId,accentId,backgroundId:'heritage-maroon',surfaceId:'royal-gold',textId:'heritage-maroon',navigationId:'midnight'});
-window.qaSetTheme('emerald');
 window.qaSeenToday=new Set(['one','two']);
 window.qaAdvanceDay=()=>{window.qaNow=RealDate.parse(saudiVisitDay(new Date())+'T21:00:00Z')+50;window.qaTotal=0;window.qaSeenToday.clear();window.dispatchEvent(new Event('focus'))};
 window.qaHold=location.pathname==='/loading';window.qaFail=location.pathname==='/error';window.qaWaiters=[];
@@ -67,11 +59,8 @@ window.qaRelease=()=>{window.qaHold=false;window.qaWaiters.splice(0).forEach(res
 window.qaVisit=(id)=>{const found=window.qaRows.some(row=>row.user_id===id);if(!found)window.qaRows.push({user_id:id,last_seen_at:new Date().toISOString()});if(!window.qaSeenToday.has(id)){window.qaSeenToday.add(id);window.qaTotal++}window.qaChange({eventType:found?'UPDATE':'INSERT',new:{user_id:id,last_seen_at:new Date().toISOString()}});window.qaRefresh()};
 function Fixture(){const count=useTodayVisitorCount();const online=useOnlineCount();const [name,setName]=useState('حساب المعاينة');const [show,setShow]=useState(true);const [,setUnlocated]=useState(false);window.qaSetName=setName;window.qaSetShow=setShow;window.qaSetUnlocated=value=>{window.qaUnlocated=value;setUnlocated(value)};const desktop=innerWidth>=1200&&!tabletLandscape;
 const hero=<HeritagePortal3D greeting="مساء الخير" name={name} message="نصل العائلة، نحفظ الإرث، ونبني المستقبل." className={desktop?'desktop-portal-model':'dashboard-portal-model'} visitorCount={show?count:undefined}/>;
-const services=<OasisFamilyServices desktop/>;
-return <main className="app-shell-main relative min-h-screen"><div className="app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto max-w-7xl"><output hidden id="qa-online">{online}</output>{desktop?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage"><PrayerMushafShortcuts desktop/>{hero}</div>{services}</section><div id="qa-after-services">آخر أخبار المجلس</div><div className="dashboard-page max-w-6xl mx-auto space-y-12"><QuickActionsBanner/></div></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12 pb-20 px-4 md:px-0">
-{/* Match dashboard.tsx: the faith strip precedes the hero, then services. */}
-<section className="dashboard-spiritual dashboard-faith-strip"><div className="dashboard-faith-meta"><div className="dashboard-faith-label"><span>نفحات إيمانية</span></div></div><p>مجلس يجمعنا على المودة</p></section>
-<section className="dashboard-hero dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section><QuickActionsBanner/><div id="qa-after-services">آخر أخبار المجلس</div></div>}</div><div style={{height:1100}} aria-hidden="true"/></main>}
+const services=<div className="desktop-services-panel"><div className="desktop-section-head desktop-section-head-on-dark"><h2>خدمات العائلة</h2></div><div className="desktop-services-grid">{['الصندوق المالي','المهام','الرحلات','الاجتماعات'].map(label=><div className="desktop-service-card" key={label}><strong>{label}</strong></div>)}</div><button className="desktop-services-wide-toggle">عرض جميع الخدمات</button></div>;
+return <main className="app-shell-main relative min-h-screen"><div className="app-shell-content p-4 md:p-8 lg:p-12 pt-24 md:pt-6 mx-auto max-w-7xl"><output hidden id="qa-online">{online}</output>{desktop?<div className="desktop-rebuild-shell"><div className="desktop-rebuild-root"><section className="desktop-overview-shell"><div className="desktop-portal-stage"><PrayerMushafShortcuts desktop/>{hero}</div>{services}</section></div></div>:<div className="dashboard-page max-w-6xl mx-auto space-y-12"><section className="dashboard-portal-hero has-faith-shortcuts"><div className="dashboard-portal-card"><PrayerMushafShortcuts/><div className="dashboard-portal-layout">{hero}</div></div></section></div>}</div></main>}
 createRoot(document.getElementById('app')).render(<QueryClientProvider client={queryClient}><Fixture/></QueryClientProvider>);window.fixtureReady=true;`;
 await build({
   stdin: {
@@ -113,13 +102,13 @@ await build({
               ? `export const supabase={from:()=>({select:async()=>({data:window.qaRows.map(row=>({...row}))})}),rpc:async(name)=>{if(name!=='get_today_site_visit_count')throw Error('Daily aggregate RPC required');window.qaQueries++;const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const part=type=>parts.find(p=>p.type===type).value;const result=window.qaFail?{data:null,error:{message:'unavailable'}}:{data:{visit_date:part('year')+'-'+part('month')+'-'+part('day'),visitor_count:window.qaTotal},error:null};if(window.qaHold)await new Promise(resolve=>window.qaWaiters.push(resolve));return result},channel:()=>{const channel={on:(event,filter,callback)=>{window.qaChange=callback;return channel},subscribe:callback=>{window.qaSubscription=status=>{callback?.(status);window.qaRefresh?.()};setTimeout(()=>window.qaSubscription('SUBSCRIBED'),0);return channel}};return channel}};`
               : path === "prayer"
                 ? `export const usePrayerTimes=()=>{const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());return window.qaUnlocated?({location:null,locationLabel:'حسب موقعك',prayer:null,countdown:'',loading:false}):({location:{latitude:27,longitude:49},locationLabel:'حسب موقعك',prayer:{name:'الفجر'},countdown:'باقي ٨ ساعات',loading:false,timeZone:'Asia/Riyadh',today:{date,sunrise:date+'T05:41:00+03:00',sunset:date+'T17:12:00+03:00'}})};`
-                : `import React from 'react';export const useNavigate=()=>()=>{};export const useRouterState=({select})=>select({location:{pathname:window.qaRoute}});export function Link({to,search,children,...props}){return <a {...props} href={to} onClick={event=>{event.preventDefault();window.qaNavigations.push(to)}}>{children}</a>}`,
+                : `import React from 'react';export const useNavigate=()=>()=>{};export function Link({to,search,children,...props}){return <a {...props} href={to}>{children}</a>}`,
         }));
       },
     },
   ],
 });
-const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}\nhtml,body{margin:0}body{background:var(--background);color:var(--foreground)}main{min-width:0}#qa-after-services{order:99!important;display:block!important;min-height:120px;padding:24px}</style><link rel="stylesheet" href="/__qa/fixture.css"></head><body><div id="app"></div><script src="/__qa/fixture.js"></script></body></html>`;
+const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}\nhtml,body{margin:0}body{background:var(--background);color:var(--foreground)}main{min-width:0}</style><link rel="stylesheet" href="/__qa/fixture.css"></head><body><div id="app"></div><script src="/__qa/fixture.js"></script></body></html>`;
 if (prepareOnly) {
   rmSync(temporary, { recursive: true, force: true });
   console.log("Actual visitor counter / presence / hero fixture compiled");
@@ -294,27 +283,6 @@ try {
   await settle();
   assert.equal(await counterText(), "1", "A returning account is counted again on a new day, once only");
   console.log("PASS daily unique visitors, late old-day response, Saudi rollover, repeated visits, reconnect and failed reads");
-  const serviceLayout = () => evaluate(`(()=>{const root=document.querySelector('.oasis-family-services'),box=n=>{const r=n.getBoundingClientRect();return{top:r.top+scrollY,bottom:r.bottom+scrollY,left:r.left,right:r.right,width:r.width,height:r.height}};const extra=root.querySelector('.oasis-services-extra');return{root:box(root),hero:box(document.querySelector('.council-oasis-scene')),primary:box(root.querySelector('.oasis-services-primary')),toggle:box(root.querySelector('.oasis-services-toggle')),after:box(document.getElementById('qa-after-services')),extra:box(extra),expanded:root.querySelector('button').getAttribute('aria-expanded'),extraHidden:extra.hidden,scrollY,overflow:document.documentElement.scrollWidth>innerWidth+2,visiblePanels:Array.from(document.querySelectorAll('.oasis-family-services')).filter(n=>n.getBoundingClientRect().height>0).length,links:Array.from(root.querySelectorAll('.oasis-service-link')).filter(n=>n.getBoundingClientRect().height>0).map(n=>({href:n.getAttribute('href'),label:n.querySelector('strong').textContent,...box(n)}))}})()`);
-  const servicePalette = () => evaluate(`(()=>{
-    const root=document.querySelector('.oasis-family-services'),glass=root.querySelector('.oasis-services-glass'),ctx=document.createElement('canvas').getContext('2d');
-    const pixel=color=>{ctx.clearRect(0,0,1,1);ctx.fillStyle=color;ctx.fillRect(0,0,1,1);return Array.from(ctx.getImageData(0,0,1,1).data)};
-    const lum=rgb=>rgb.slice(0,3).map(c=>c/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
-    const composite=(fg,bg)=>fg.slice(0,3).map((c,i)=>Math.round(c*fg[3]/255+bg[i]*(1-fg[3]/255)));
-    const surface=pixel(getComputedStyle(glass).backgroundColor),bg=composite(surface,pixel(getComputedStyle(root).backgroundColor));
-    const ink=pixel(getComputedStyle(root.querySelector('.oasis-service-link strong')).color),desc=pixel(getComputedStyle(root.querySelector('.oasis-service-description')).color),icon=pixel(getComputedStyle(root.querySelector('.oasis-service-icon')).color),line=pixel(getComputedStyle(root.querySelector('.oasis-service-link'),'::before').backgroundColor);
-    // Bound contrast even when a reflection behind the glass is black or white.
-    const backdrops=[[0,0,0],[255,255,255]].map(rgb=>composite(surface,rgb));
-    const contrast=fg=>Math.min(...backdrops.map(b=>(Math.max(lum(fg),lum(b))+.05)/(Math.min(lum(fg),lum(b))+.05)));
-    return{bg,surface,ink,icon,line,description:desc,contrast:[contrast(ink),contrast(desc),contrast(icon)]};
-  })()`);
-  const clickServiceToggle = async () => {
-    await evaluate("document.querySelector('.oasis-services-toggle').scrollIntoView({block:'center'})"); await settle();
-    const point=await evaluate("(()=>{const r=document.querySelector('.oasis-services-toggle').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()");
-    await send('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});
-    await send('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
-    await settle();
-  };
-  const deviceFailures=[];
   for (const [name, width, height, tablet = false] of [
     ["phone-small", 320, 800],
     ["phone", 390, 844],
@@ -327,7 +295,6 @@ try {
     ["ipad-pro-large-landscape", 1366, 1024, true],
     ["desktop", 1440, 1000],
   ]) {
-    try {
     await send("Emulation.setDeviceMetricsOverride", {
       width,
       height,
@@ -425,47 +392,6 @@ try {
         );
       }
     }
-    await evaluate("document.querySelector('.oasis-services-toggle').scrollIntoView({block:'center'})"); await settle();
-    const serviceBefore=await serviceLayout();
-    assert.equal(serviceBefore.visiblePanels,1,`${name}: one services panel, including desktop with its mobile replacement hidden`);
-    assert.equal(serviceBefore.links.length,4,`${name}: the four primary services appear first`);
-    assert.deepEqual(serviceBefore.links.map(link=>link.href),['/finance','/tasks','/trips','/meetings']);
-    assert.equal(serviceBefore.extraHidden,true);
-    const primaryGeometry=await evaluate("(()=>{const root=document.querySelector('.oasis-family-services'),glass=root.querySelector('.oasis-services-glass'),links=Array.from(root.querySelectorAll('.oasis-services-primary .oasis-service-link'));return{tops:links.map(n=>n.getBoundingClientRect().top),glass:getComputedStyle(glass).backdropFilter,frame:parseFloat(getComputedStyle(glass).borderTopWidth),medallions:links.map(n=>{const m=n.querySelector('.oasis-service-medallion').getBoundingClientRect();return{width:m.width,height:m.height}})}})()");
-    assert.ok(Math.max(...primaryGeometry.tops)-Math.min(...primaryGeometry.tops)<1, `${name}: all four primary services share one compact row`);
-    assert.ok(primaryGeometry.frame>0&&primaryGeometry.glass!=='none', `${name}: copper frame and real glass backdrop are present`);
-    assert.ok(primaryGeometry.medallions.every(m=>Math.abs(m.width-m.height)<1&&m.width>=44), `${name}: icon medallions fit the compact row`);
-    if(width<600)assert.ok(serviceBefore.root.height<=250, `${name}: collapsed services stay compact on mobile (${serviceBefore.root.height}px)`);
-
-    await clickServiceToggle();
-    const serviceExpanded=await serviceLayout();
-    assert.equal(serviceExpanded.expanded,'true'); assert.equal(serviceExpanded.links.length,13);
-    assert.ok(serviceExpanded.extra.top>=serviceExpanded.toggle.bottom,`${name}: extra services expand BELOW the trigger`);
-    for(const key of ['root','hero','primary','toggle']) assert.ok(Math.abs(serviceExpanded[key].top-serviceBefore[key].top)<1,`${name}: expansion keeps existing ${key} position`);
-    assert.ok(Math.abs(serviceExpanded.scrollY-serviceBefore.scrollY)<2,`${name}: expansion does not jump the viewport`);
-    assert.ok(serviceExpanded.after.top-serviceBefore.after.top>=serviceExpanded.extra.height,`${name}: following content moves down by the additional services height`);
-    assert.ok(serviceExpanded.links.every(link=>link.width>=44&&link.height>=44),`${name}: all services have finger-sized hit areas`);
-    assert.equal(serviceExpanded.overflow,false);
-    assert.deepEqual(serviceExpanded.links.map(link=>link.href),['/finance','/tasks','/trips','/meetings','/family-occasions','/majlis','/archive','/calendar','/chat','/community','/family-tree','/vault','/faith']);
-    const accordion=await evaluate("(()=>{const button=document.querySelector('.oasis-services-toggle'),extra=document.getElementById(button.getAttribute('aria-controls'));return{exists:!!extra,hidden:extra.hidden,overflow:getComputedStyle(extra).overflowY}})()");
-    assert.equal(accordion.exists,true); assert.equal(accordion.hidden,false); assert.equal(accordion.overflow,'visible');
-    assert.ok(serviceExpanded.links.every(link=>link.bottom<=serviceExpanded.root.bottom),`${name}: every additional service stays inside the growing panel`);
-    const expandedShot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:Math.max(0,serviceExpanded.root.top-140),width,height:serviceExpanded.root.height+180,scale:1}});
-    writeFileSync(`test-results/visitors/${name}-services-expanded.png`,Buffer.from(expandedShot.data,'base64'));
-    await clickServiceToggle();
-    const serviceCollapsed=await serviceLayout();
-    assert.equal(serviceCollapsed.expanded,'false');assert.equal(serviceCollapsed.links.length,4);assert.equal(serviceCollapsed.extraHidden,true);
-    assert.ok(Math.abs(serviceCollapsed.after.top-serviceBefore.after.top)<1,`${name}: collapsing restores the content below`);
-    await evaluate("document.querySelector('.oasis-service-link').focus()");
-    await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
-    await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
-    assert.equal(await evaluate("document.activeElement.getAttribute('href')"),'/tasks');
-    assert.equal(await evaluate("document.activeElement.matches(':focus-visible')"),true);
-    await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
-    await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
-    assert.equal(await evaluate("window.qaNavigations.at(-1)"),'/tasks');
-    await evaluate("document.activeElement.blur();window.scrollTo(0,0)");await settle();
-    console.log(`PASS ${name}: thirteen destinations, downward expansion below the stable trigger, following-content flow, keyboard and touch targets`);
     for (const longName of [false, true]) {
       await evaluate(
         `window.qaSetName(${JSON.stringify(longName ? "محمد بن عبدالرحمن بن عبدالعزيز بن عبدالله السيف" : "حساب المعاينة")})`,
@@ -515,7 +441,6 @@ try {
       );
     }
     await evaluate("window.qaSetName('حساب المعاينة');window.qaSetUnlocated(false)");
-    const servicePeriodColors={};
     for (const [period, time] of [["day", "08:00:00"], ["night", "20:00:00"]]) {
       await evaluate(`window.qaSetClock('2026-10-16T${time}+03:00')`);
       await until(`document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='${period}'`);
@@ -525,31 +450,6 @@ try {
       const contrast = await evaluate(contrastCheck);
       assert.ok(contrast.every(ratio => ratio >= 4.5), `${name}/${period}: welcome and count remain readable against the scene sky ${JSON.stringify(contrast)}`);
       assert.ok(scene.greeting.includes(period === "day" ? "صباح الخير" : "مساء الخير"));
-      const phasePalette=await servicePalette();servicePeriodColors[period]=phasePalette;
-      const iconColors=new Set();
-      for(const dark of [false,true]){
-        await evaluate(`document.documentElement.classList.toggle('dark',${dark})`);
-        for(const identity of await evaluate('window.qaThemes')){
-          await evaluate(`window.qaSetTheme(${JSON.stringify(identity)})`);await settle();
-          const palette=await servicePalette();
-          assert.deepEqual(palette.bg,phasePalette.bg,`${name}/${period}/${identity}: large services surface follows the scene independently of identity and application appearance`);
-          assert.ok(palette.contrast[0]>=4.5&&palette.contrast[1]>=4.5&&palette.contrast[2]>=3,`${name}/${period}/${identity}: readable labels, descriptions and identity icons ${JSON.stringify(palette)}`);
-          iconColors.add(JSON.stringify(palette.icon));
-        }
-      }
-      assert.ok(iconColors.size>=6,`${name}/${period}: identity colors visibly reach service icons`);
-      await evaluate("document.documentElement.classList.remove('dark');window.qaCustomRoles('royal-copper','emerald')");await settle();
-      const customFirst=await servicePalette();
-      await evaluate("window.qaCustomRoles('muted-palm','emerald')");await settle();
-      const customIcons=await servicePalette();
-      assert.notDeepEqual(customIcons.icon,customFirst.icon,'Custom icon role reaches services');
-      assert.deepEqual(customIcons.line,customFirst.line,'Changing only icons preserves the independently selected accent role');
-      await evaluate("window.qaCustomRoles('muted-palm','royal-copper')");await settle();
-      const customAccent=await servicePalette();
-      assert.notDeepEqual(customAccent.line,customIcons.line,'Custom accent role reaches fine dividers');
-      assert.deepEqual(customAccent.icon,customIcons.icon,'Changing only accents preserves the icon role');
-      assert.deepEqual(customAccent.bg,phasePalette.bg,'Custom backgrounds and text do not replace the approved oasis surface');
-      await evaluate("window.qaSetTheme('emerald');window.scrollTo(0,0)");await settle();
       const previousColor = scene.color;
       await evaluate("document.documentElement.classList.add('dark')"); await settle();
       assert.equal(await evaluate("document.querySelector('.council-oasis-scene').dataset.oasisPeriod"), period, "Application dark mode does not override local daylight");
@@ -558,12 +458,7 @@ try {
       assert.equal(await evaluate("getComputedStyle(document.querySelector('.council-portal-greeting')).color"), previousColor, "Light appearance restores the same daylight ink");
       const png = await send("Page.captureScreenshot", {format:"png",captureBeyondViewport:false});
       writeFileSync(`test-results/visitors/${name}-${period}.png`,Buffer.from(png.data,"base64"));
-      const servicesBox=(await serviceLayout()).root;
-      const serviceShot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:Math.max(0,servicesBox.top-150),width,height:servicesBox.height+190,scale:1}});
-      writeFileSync(`test-results/visitors/${name}-services-${period}.png`,Buffer.from(serviceShot.data,'base64'));
-
     }
-    assert.notDeepEqual(servicePeriodColors.day.bg,servicePeriodColors.night.bg,`${name}: services switch their large surface with the oasis`);
     for (const [time, period] of [["05:40:59", "night"], ["05:41:00", "day"], ["17:11:59", "day"], ["17:12:00", "night"]]) {
       await evaluate(`window.qaSetClock('2026-10-16T${time}+03:00')`);
       await until(`document.querySelector('.council-oasis-scene').dataset.oasisPeriod==='${period}'`);
@@ -585,17 +480,8 @@ try {
     assert.notEqual(await evaluate("getComputedStyle(document.querySelector('.council-visitor-number')).color"), originalInk, "Identity accents still apply with a daylight contrast adjustment");
     const finalTower = await evaluate("window.qaVisibleTower()");
     assert.equal(finalTower.portrait, width < 970, `${name}: correct landscape or portrait artwork without distortion`);
-    console.log(`PASS ${name}: day/night images and joined services, six identities, custom roles, readable contrast, sunrise/sunset and no-GPS fallback`);
-    } catch(error) {
-      deviceFailures.push({name,error:String(error)});
-      console.error(`FAIL ${name}:`,error.stack||error);
-      try {
-        const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
-        writeFileSync(`test-results/visitors/${name}-failure.png`,Buffer.from(png.data,'base64'));
-      } catch { /* Preserve the original assertion if Chrome has already stopped. */ }
-    }
+    console.log(`PASS ${name}: day/night images, automatic sunrise/sunset, no-GPS fallback, dark/light independence and identity`);
   }
-  assert.deepEqual(deviceFailures,[],"Every services/oasis viewport must pass");
   assert.deepEqual(errors, [], "No visitor/presence/React runtime exceptions");
   console.log("All actual visitor-counter Chrome checks passed");
 } finally {

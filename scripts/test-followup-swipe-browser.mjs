@@ -72,9 +72,6 @@ await build({
   platform: "browser",
   outdir: output,
   entryNames: "fixture",
-  assetNames: "[name]-[hash]",
-  publicPath: "/__qa/",
-  loader: { ".webp": "file" },
   tsconfig: "tsconfig.json",
   plugins: [
     {
@@ -120,7 +117,7 @@ const server = createServer((request, response) => {
     }
     response.setHeader(
       "Content-Type",
-      path.endsWith(".js") ? "application/javascript" : path.endsWith(".css") ? "text/css" : "image/webp",
+      path.endsWith(".js") ? "application/javascript" : "text/css",
     );
     response.end(readFileSync(path));
     return;
