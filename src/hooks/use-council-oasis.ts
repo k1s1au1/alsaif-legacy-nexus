@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { councilOasisClock } from "@/lib/council-oasis";
-import { usePrayerTimes } from "./use-prayer-times";
+import { usePrayerTimes } from "@/hooks/use-prayer-times";
 
 export function useCouncilOasis() {
   const { today, timeZone } = usePrayerTimes();
