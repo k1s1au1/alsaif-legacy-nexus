@@ -431,6 +431,20 @@ html body main .council-terrain-scene .council-visitor-ornament > svg {
   }
 }
 
+/* The breathing room below Nafahat uses the page surface, not the legacy
+ * portal colour. Paint only the wrappers; retain their existing spacing and
+ * the oasis scene's independent day/night sky.
+ */
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero:has(.council-oasis-scene),
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero:has(.council-oasis-scene)::before,
+html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12
+  > .dashboard-portal-hero:has(.council-oasis-scene)
+  :is(.dashboard-portal-card, .dashboard-portal-layout) {
+  background: var(--identity-space, var(--background)) !important;
+}
+
 /* Approved Alsaif Oasis: scene-only artwork, with live welcome and faith links.
  * Daylight is independent of the member's saved light/dark application mode. */
 html body main .council-oasis-scene[data-oasis-period="day"],

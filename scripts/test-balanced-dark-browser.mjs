@@ -308,6 +308,9 @@ try {
       await settle();
       await shot(`light-services-${identity}-${name}`);
     }
+    await evaluate("window.qaTheme('royal-copper');window.scrollTo(0,0)");
+    await settle();
+    await shot(`light-faith-gap-copper-${name}`);
     await evaluate(
       "window.qaDark();document.querySelector('.family-stats-strip').scrollIntoView({block:'start'})",
     );
