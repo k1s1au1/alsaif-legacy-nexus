@@ -516,6 +516,7 @@ function AppShellChrome({
         initial={false}
         animate={{ x: sidebarOpen ? 0 : 350 }}
         transition={{ type: "spring", damping: 32, stiffness: 320 }}
+        style={{ top: "env(safe-area-inset-top, 0px)" }}
         className={cn(
           "fixed inset-y-0 right-0 z-[120] flex flex-col bg-card border-l border-border shadow-2xl",
           "w-[85vw] max-w-[320px] rounded-l-[32px] touch-pan-y",
@@ -549,6 +550,8 @@ function AppShellChrome({
             </p>
           </div>
           <button
+            type="button"
+            aria-label="إغلاق القائمة"
             onClick={() => setSidebarOpen(false)}
             className="absolute top-4 left-4 p-2 text-primary"
           >
