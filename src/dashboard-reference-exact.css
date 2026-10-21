@@ -495,7 +495,9 @@ html body main .council-oasis-scene .council-portal-model.council-oasis-art {
   pointer-events: none;
 }
 .council-oasis-layer,
-.council-oasis-layer > img {
+.council-oasis-picture,
+.council-oasis-picture > img,
+.council-oasis-inscription {
   position: absolute;
   inset: 0;
   display: block;
@@ -505,7 +507,17 @@ html body main .council-oasis-scene .council-portal-model.council-oasis-art {
   user-select: none;
   pointer-events: none;
 }
-.council-oasis-layer > img { object-fit: cover; object-position: right bottom; }
+.council-oasis-picture > img { object-fit: cover; object-position: right bottom; }
+.council-oasis-inscription { overflow: hidden; }
+.council-oasis-inscription text {
+  fill: #33200f;
+  font-family: "Amiri", "Tajawal", serif;
+  font-size: 35px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-shadow: 0.6px 0.8px 0.6px #180c0873, -0.35px -0.35px 0 #f4c67a88;
+}
+.council-oasis-inscription--portrait { display: none; }
 .council-oasis-layer { opacity: 0; transition: opacity 800ms ease; }
 .council-oasis-scene[data-oasis-period="day"] .council-oasis-layer[data-period="day"],
 .council-oasis-scene[data-oasis-period="night"] .council-oasis-layer[data-period="night"] { opacity: 1; }
@@ -545,6 +557,8 @@ html body main .desktop-portal-stage > .faith-home-shortcuts-desktop {
   background: transparent;
 }
 @media (max-width: 699px), (max-width: 969.98px) and (orientation: portrait) {
+  .council-oasis-inscription--wide { display: none; }
+  .council-oasis-inscription--portrait { display: block; }
   html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 > .dashboard-portal-hero .dashboard-portal-model.heritage-pavilion-reference.council-terrain-scene.council-oasis-scene {
     --oasis-portrait-lower-height: 70cqw;
     display: flex !important;

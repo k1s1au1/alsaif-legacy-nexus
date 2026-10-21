@@ -1,5 +1,6 @@
 import { CouncilVisitorCounter, visitorCountLabel } from "./council-visitor-counter";
 import { useCouncilOasis } from "@/hooks/use-council-oasis";
+import { CouncilTowerInscription } from "./council-tower-inscription";
 import oasisDayWide from "@/assets/council-oasis-day-wide-v2.webp";
 import oasisNightWide from "@/assets/council-oasis-night-wide-v2.webp";
 import oasisDayPortrait from "@/assets/council-oasis-day-portrait-v2.webp";
@@ -47,10 +48,14 @@ export function HeritagePortal3D({ greeting, name, message, className = "", welc
           { period: "day", wide: oasisDayWide, portrait: oasisDayPortrait },
           { period: "night", wide: oasisNightWide, portrait: oasisNightPortrait },
         ].map(art => (
-          <picture key={art.period} className="council-oasis-layer" data-period={art.period}>
-            <source media="(max-width: 699px), (max-width: 969.98px) and (orientation: portrait)" srcSet={art.portrait} />
-            <img src={art.wide} width="1939" height="811" alt="" draggable={false} decoding="async" />
-          </picture>
+          <div key={art.period} className="council-oasis-layer" data-period={art.period}>
+            <picture className="council-oasis-picture">
+              <source media="(max-width: 699px), (max-width: 969.98px) and (orientation: portrait)" srcSet={art.portrait} />
+              <img src={art.wide} width="1939" height="811" alt="" draggable={false} decoding="async" />
+            </picture>
+            <CouncilTowerInscription source={art.wide} portrait={false} />
+            <CouncilTowerInscription source={art.portrait} portrait />
+          </div>
         ))}
       </div>
     </div>
