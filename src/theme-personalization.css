@@ -29,7 +29,7 @@ html[data-theme-color-mode="custom"] .integrated-hub .hub-tabs button {
 }
 
 html[data-theme-color-mode="custom"] .family-service-icon {
-  color: var(--primary-foreground) !important;
+  color: var(--identity-icon-foreground, var(--primary-foreground)) !important;
   background: var(--identity-icon) !important;
 }
 
@@ -42,6 +42,6 @@ html[data-theme-color-mode="custom"] .settings-page .settings-panel h4 {
 }
 
 html[data-theme-color-mode="custom"] .desktop-sidebar-quick-access-icon {
-  color: var(--primary-foreground) !important;
+  color: var(--identity-icon-foreground, var(--primary-foreground)) !important;
   background: var(--identity-icon) !important;
 }

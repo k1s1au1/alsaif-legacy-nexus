@@ -1,5 +1,5 @@
 // Actual shared components, with demo data and the existing responsive shell classes.
-import React from "react";
+import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Bell,
@@ -34,7 +34,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../src/components/ui/select";
-import { applyThemePreference, createCustomThemePreference } from "../../src/lib/theme-preferences";
+import {
+  applyThemePreference,
+  createCustomThemePreference,
+  parseThemePreference,
+  serializeThemePreference,
+  type ThemePreference,
+} from "../../src/lib/theme-preferences";
+import { ThemeCustomizationDialog } from "../../src/components/theme-customization-dialog";
 import { THEME_COLORS } from "../../src/lib/themes";
 import tripPhoto from "../../src/assets/trip-alula.jpg";
 import "../../src/settings-responsive.css";
@@ -159,8 +166,26 @@ function Services({ desktop = false }) {
   );
 }
 function Controls() {
+  const [customizing, setCustomizing] = useState(false);
+  const [savedTheme, setSavedTheme] = useState<ThemePreference>(() =>
+    createCustomThemePreference(),
+  );
   return (
     <section className="qa-controls settings-page" id="qa-controls">
+      <Button id="qa-open-theme" onClick={() => setCustomizing(true)}>
+        تخصيص الألوان
+      </Button>
+      {customizing && (
+        <ThemeCustomizationDialog
+          preference={savedTheme}
+          onClose={() => setCustomizing(false)}
+          onSave={(preference) => {
+            win.qaSavedTheme = serializeThemePreference(preference);
+            setSavedTheme(parseThemePreference(win.qaSavedTheme));
+            setCustomizing(false);
+          }}
+        />
+      )}
       <div className="settings-nav-links qa-panel">
         <button className="is-active" id="qa-settings-active">
           المظهر والهوية
