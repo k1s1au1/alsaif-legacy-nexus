@@ -1,5 +1,5 @@
-import { THEME_COLORS, applyThemeColors } from "@/lib/themes";
-import { applyBalancedDarkTheme } from "@/lib/dark-theme";
+import { FAMILY_SERVICES_IVORY, THEME_COLORS, applyThemeColors } from "@/lib/themes";
+import { balancedDarkTheme } from "@/lib/dark-theme";
 
 export const DEFAULT_THEME_COLOR_ID = "emerald";
 export const CUSTOM_THEME_PREFIX = "custom:";
@@ -23,6 +23,17 @@ export type CustomThemePreference = {
 };
 
 export type ThemePreference = PresetThemePreference | CustomThemePreference;
+
+export type CustomThemeRole = Exclude<keyof CustomThemePreference, "mode" | "baseId">;
+
+export const CUSTOM_ROLE_PROPERTIES = {
+  textId: "--foreground",
+  iconId: "--identity-icon",
+  backgroundId: "--background",
+  surfaceId: "--card",
+  navigationId: "--nav-bg",
+  accentId: "--primary",
+} as const;
 
 type StoredCustomThemePreference = {
   v: 1;
@@ -51,6 +62,7 @@ const customStyleProperties = [
   "--identity-text-on-nav",
   "--identity-icon",
   "--identity-icon-on-nav",
+  "--identity-icon-foreground",
 ] as const;
 
 const themeIds = new Set(THEME_COLORS.map((theme) => theme.id));
@@ -76,15 +88,16 @@ export function createCustomThemePreference(
   baseId: string = DEFAULT_THEME_COLOR_ID,
 ): CustomThemePreference {
   const validBaseId = getThemeColor(baseId).id;
+  const inkId = validBaseId === "family-ivory" ? DEFAULT_THEME_COLOR_ID : validBaseId;
   return {
     mode: "custom",
     baseId: validBaseId,
-    textId: validBaseId,
-    iconId: validBaseId,
+    textId: inkId,
+    iconId: inkId,
     backgroundId: validBaseId,
     surfaceId: validBaseId,
-    navigationId: validBaseId,
-    accentId: validBaseId,
+    navigationId: inkId,
+    accentId: inkId,
   };
 }
 
@@ -151,84 +164,119 @@ function clearCustomThemeProperties(root: HTMLElement) {
   customStyleProperties.forEach((property) => root.style.removeProperty(property));
 }
 
+/** Shared by advanced swatches, the preview and the applied account preference. */
+export function getCustomThemeTokens(
+  preference: CustomThemePreference,
+  isDark: boolean,
+): Record<string, string> {
+  const text = getThemeColor(preference.textId);
+  const icons = getThemeColor(preference.iconId);
+  const background = getThemeColor(preference.backgroundId);
+  const surfaces = getThemeColor(preference.surfaceId);
+  const navigation = getThemeColor(preference.navigationId);
+  const accent = getThemeColor(preference.accentId);
+  const tokens: Record<string, string> = isDark
+    ? balancedDarkTheme({ text, icons, background, surfaces, navigation, accent })
+    : {
+        "--foreground": text.navBg,
+        "--card-foreground": text.navBg,
+        "--popover-foreground": text.navBg,
+        "--secondary-foreground": text.navBg,
+        "--muted-foreground": text.primary,
+        "--identity-text": text.navBg,
+        "--identity-text-on-nav": text.tertiary,
+        "--identity-icon": icons.primary,
+        "--identity-icon-on-nav": icons.tertiary,
+        "--background": background.space,
+        "--identity-space": background.space,
+        "--card": surfaces.soft,
+        "--popover": surfaces.soft,
+        "--secondary": surfaces.space,
+        "--muted": surfaces.space,
+        "--accent": surfaces.space,
+        "--accent-foreground": text.navBg,
+        "--identity-soft": surfaces.soft,
+        "--identity-panel": surfaces.panel,
+        "--nav-bg": navigation.navBg,
+        "--identity-header": navigation.navBg,
+        "--primary": accent.primary,
+        "--primary-foreground": accent.foreground,
+        "--gold-primary": accent.secondary,
+        "--identity-accent": accent.secondary,
+        "--identity-tertiary": accent.tertiary,
+      };
+
+  // In advanced customization this choice means the actual services ivory,
+  // including text/icons/bars, rather than the ready-made identity's petrol ink.
+  const ivoryRoles: Record<CustomThemeRole, string[]> = {
+    textId: [
+      "--foreground",
+      "--card-foreground",
+      "--popover-foreground",
+      "--secondary-foreground",
+      "--muted-foreground",
+      "--accent-foreground",
+      "--identity-text",
+      "--identity-text-on-nav",
+    ],
+    iconId: ["--identity-icon", "--identity-icon-on-nav"],
+    backgroundId: ["--background", "--identity-space", "--navy-base"],
+    surfaceId: [
+      "--card",
+      "--popover",
+      "--secondary",
+      "--muted",
+      "--accent",
+      "--identity-soft",
+      "--identity-panel",
+      "--hero-card",
+      "--hero-pill",
+      "--navy-card",
+    ],
+    navigationId: ["--nav-bg", "--identity-header", "--hero-logo-badge"],
+    accentId: [
+      "--primary",
+      "--gold-primary",
+      "--gold-soft",
+      "--identity-accent",
+      "--identity-tertiary",
+      "--ring",
+    ],
+  };
+  for (const role of Object.keys(ivoryRoles) as CustomThemeRole[]) {
+    if (preference[role] === "family-ivory") {
+      for (const property of ivoryRoles[role]) tokens[property] = FAMILY_SERVICES_IVORY;
+    }
+  }
+  const ivoryInk = getThemeColor(DEFAULT_THEME_COLOR_ID).navBg;
+  if (preference.iconId === "family-ivory") tokens["--identity-icon-foreground"] = ivoryInk;
+  if (preference.accentId === "family-ivory") tokens["--primary-foreground"] = ivoryInk;
+  if (preference.navigationId === "family-ivory") {
+    tokens["--identity-text-on-nav"] = text.navBg;
+    tokens["--nav-fg"] = text.navBg;
+    tokens["--identity-icon-on-nav"] = icons.primary;
+  }
+  return tokens;
+}
+
+export function getCustomRoleSwatch(themeId: ThemeColorId, role: CustomThemeRole, isDark: boolean) {
+  const preference = { ...createCustomThemePreference(themeId), [role]: themeId };
+  return getCustomThemeTokens(preference, isDark)[CUSTOM_ROLE_PROPERTIES[role]];
+}
+
 export function applyThemePreference(preference: ThemePreference) {
   if (typeof document === "undefined") return;
-
   const root = document.documentElement;
   const baseTheme = getThemeColor(getThemePreferenceBaseId(preference));
   clearCustomThemeProperties(root);
   applyThemeColors(baseTheme);
   root.dataset.themeColorBase = baseTheme.id;
+  root.dataset.themeColorMode = preference.mode;
+  if (preference.mode === "preset") return;
 
-  if (preference.mode === "preset") {
-    root.dataset.themeColorMode = "preset";
-    return;
-  }
-
-  const isDark = root.classList.contains("dark");
-  const textTheme = getThemeColor(preference.textId);
-  const iconTheme = getThemeColor(preference.iconId);
-  const backgroundTheme = getThemeColor(preference.backgroundId);
-  const surfaceTheme = getThemeColor(preference.surfaceId);
-  const navigationTheme = getThemeColor(preference.navigationId);
-  const accentTheme = getThemeColor(preference.accentId);
-
-  if (isDark) {
-    applyBalancedDarkTheme(root, {
-      text: textTheme,
-      icons: iconTheme,
-      background: backgroundTheme,
-      surfaces: surfaceTheme,
-      navigation: navigationTheme,
-      accent: accentTheme,
-    });
-    root.dataset.themeColorMode = "custom";
-    return;
-  }
-
-  const text = isDark ? textTheme.darkSecondary : textTheme.navBg;
-  const mutedText = isDark ? textTheme.darkSecondary : textTheme.primary;
-  const textOnNavigation = isDark ? textTheme.darkSecondary : textTheme.tertiary;
-  const icon = isDark ? iconTheme.darkSecondary : iconTheme.primary;
-  const iconOnNavigation = isDark ? iconTheme.darkSecondary : iconTheme.tertiary;
-  const background = isDark ? backgroundTheme.darkSpace : backgroundTheme.space;
-  const surface = isDark ? surfaceTheme.darkSoft : surfaceTheme.soft;
-  const mutedSurface = isDark ? surfaceTheme.darkPanel : surfaceTheme.space;
-  const navigation = isDark ? navigationTheme.darkNavBg : navigationTheme.navBg;
-  const primary = isDark ? accentTheme.darkPrimary : accentTheme.primary;
-  const accent = isDark ? accentTheme.darkSecondary : accentTheme.secondary;
-
-  root.style.setProperty("--foreground", text);
-  root.style.setProperty("--card-foreground", text);
-  root.style.setProperty("--popover-foreground", text);
-  root.style.setProperty("--secondary-foreground", text);
-  root.style.setProperty("--muted-foreground", mutedText);
-  root.style.setProperty("--identity-text", text);
-  root.style.setProperty("--identity-text-on-nav", textOnNavigation);
-
-  root.style.setProperty("--identity-icon", icon);
-  root.style.setProperty("--identity-icon-on-nav", iconOnNavigation);
-
-  root.style.setProperty("--background", background);
-  root.style.setProperty("--identity-space", background);
-
-  root.style.setProperty("--card", surface);
-  root.style.setProperty("--popover", surface);
-  root.style.setProperty("--secondary", mutedSurface);
-  root.style.setProperty("--muted", mutedSurface);
-  root.style.setProperty("--accent", mutedSurface);
-  root.style.setProperty("--accent-foreground", text);
-  root.style.setProperty("--identity-soft", surface);
-  root.style.setProperty("--identity-panel", isDark ? surfaceTheme.darkPanel : surfaceTheme.panel);
-
-  root.style.setProperty("--nav-bg", navigation);
-  root.style.setProperty("--identity-header", navigation);
-
-  root.style.setProperty("--primary", primary);
-  root.style.setProperty("--primary-foreground", accentTheme.foreground);
-  root.style.setProperty("--gold-primary", accent);
-  root.style.setProperty("--identity-accent", accent);
-  root.style.setProperty("--identity-tertiary", accentTheme.tertiary);
-
-  root.dataset.themeColorMode = "custom";
+  const tokens = getCustomThemeTokens(preference, root.classList.contains("dark"));
+  for (const [name, value] of Object.entries(tokens)) root.style.setProperty(name, value);
+  root.ownerDocument
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", tokens["--nav-bg"]);
 }

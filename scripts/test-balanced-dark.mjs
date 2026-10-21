@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 
 const bundle = await build({
   stdin: {
-    contents: `export {balancedDarkTheme} from './src/lib/dark-theme';export {THEME_COLORS} from './src/lib/themes';export {applyThemePreference,createCustomThemePreference} from './src/lib/theme-preferences';export {APPEARANCE_BOOTSTRAP} from './src/lib/appearance';`,
+    contents: `export {balancedDarkTheme} from './src/lib/dark-theme';export {THEME_COLORS} from './src/lib/themes';export {applyThemePreference,createCustomThemePreference,getCustomRoleSwatch,parseThemePreference,serializeThemePreference,CUSTOM_ROLE_PROPERTIES} from './src/lib/theme-preferences';export {APPEARANCE_BOOTSTRAP} from './src/lib/appearance';`,
     resolveDir: process.cwd(),
   },
   bundle: true,
@@ -39,6 +39,10 @@ const {
   balancedDarkTheme,
   applyThemePreference,
   createCustomThemePreference,
+  getCustomRoleSwatch,
+  parseThemePreference,
+  serializeThemePreference,
+  CUSTOM_ROLE_PROPERTIES,
   APPEARANCE_BOOTSTRAP,
 } = context.module.exports;
 const luminance = (hex) =>
@@ -135,6 +139,53 @@ assert.equal(properties.get("--background"), selected(custom.backgroundId).space
 assert.equal(properties.get("--foreground"), selected(custom.textId).navBg);
 assert.equal(properties.get("--card"), selected(custom.surfaceId).soft);
 assert.equal(properties.has("--input"), false, "Dark field border removed in custom light mode");
+for (const isDark of [false, true]) {
+  dark = isDark;
+  for (const [role, property] of Object.entries(CUSTOM_ROLE_PROPERTIES)) {
+    const draft = { ...createCustomThemePreference(), [role]: "family-ivory" };
+    const restored = parseThemePreference(serializeThemePreference(draft));
+    assert.equal(restored[role], "family-ivory", `${role}: saved ivory choice restored`);
+    assert.equal(
+      getCustomRoleSwatch("family-ivory", role, isDark),
+      "#F5F1E8",
+      `${role}: swatch shows the actual services ivory`,
+    );
+    applyThemePreference(restored);
+    assert.equal(
+      properties.get(property),
+      "#F5F1E8",
+      `${role}: applied color matches the displayed swatch`,
+    );
+    if (role === "accentId")
+      assert.ok(
+        contrast(properties.get("--primary"), properties.get("--primary-foreground")) >= 4.5,
+        "Ivory buttons retain readable labels",
+      );
+    if (role === "navigationId")
+      assert.ok(
+        contrast(properties.get("--nav-bg"), properties.get("--identity-text-on-nav")) >= 4.5,
+        "Ivory bars retain readable labels",
+      );
+    applyThemePreference(createCustomThemePreference());
+    assert.notEqual(
+      properties.get(property),
+      "#F5F1E8",
+      `${role}: cancelling restores the saved account color`,
+    );
+    assert.equal(
+      properties.has("--identity-icon-foreground"),
+      false,
+      "Temporary ivory icon labels cleared",
+    );
+  }
+}
+const ivoryBase = createCustomThemePreference("family-ivory");
+assert.equal(ivoryBase.textId, "emerald", "Starting from the ivory preset keeps its readable ink");
+assert.equal(
+  ivoryBase.backgroundId,
+  "family-ivory",
+  "Starting from the ivory preset retains its background",
+);
 for (const saved of ["dark", "light", "system", null])
   for (const osDark of [true, false]) {
     let active = false;

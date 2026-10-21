@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { motion } from "framer-motion";
 import {
   Check,
@@ -14,20 +14,21 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { THEME_COLORS } from "@/lib/themes";
-import { balancedDarkTheme } from "@/lib/dark-theme";
 import {
   applyThemePreference,
   createCustomThemePreference,
   createPresetThemePreference,
-  getThemeColor,
+  getCustomRoleSwatch,
+  getCustomThemeTokens,
   getThemePreferenceBaseId,
   type CustomThemePreference,
+  type CustomThemeRole,
   type ThemeColorId,
   type ThemePreference,
 } from "@/lib/theme-preferences";
 import "@/theme-customization-dialog.css";
 
-type CustomRoleKey = Exclude<keyof CustomThemePreference, "mode" | "baseId">;
+type CustomRoleKey = CustomThemeRole;
 
 type RoleDefinition = {
   key: CustomRoleKey;
@@ -75,89 +76,23 @@ const CUSTOM_ROLES: RoleDefinition[] = [
   },
 ];
 
-function getRoleSwatch(themeId: ThemeColorId, role: CustomRoleKey, isDark: boolean) {
-  const theme = getThemeColor(themeId);
-  if (isDark) {
-    const tokens = balancedDarkTheme({
-      text: theme,
-      icons: theme,
-      background: theme,
-      surfaces: theme,
-      navigation: theme,
-      accent: theme,
-    });
-    return tokens[
-      (
-        {
-          textId: "--foreground",
-          iconId: "--identity-icon",
-          backgroundId: "--background",
-          surfaceId: "--card",
-          navigationId: "--nav-bg",
-          accentId: "--primary",
-        } as const
-      )[role]
-    ];
-  }
-  switch (role) {
-    case "textId":
-      return isDark ? theme.darkSecondary : theme.navBg;
-    case "iconId":
-      return isDark ? theme.darkSecondary : theme.primary;
-    case "backgroundId":
-      return isDark ? theme.darkSpace : theme.space;
-    case "surfaceId":
-      return isDark ? theme.darkSoft : theme.soft;
-    case "navigationId":
-      return isDark ? theme.darkNavBg : theme.navBg;
-    case "accentId":
-      return isDark ? theme.darkPrimary : theme.primary;
-  }
-}
-
 function PreferencePreview({ preference }: { preference: CustomThemePreference }) {
   const isDark =
     typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-  const textTheme = getThemeColor(preference.textId);
-  const iconTheme = getThemeColor(preference.iconId);
-  const backgroundTheme = getThemeColor(preference.backgroundId);
-  const surfaceTheme = getThemeColor(preference.surfaceId);
-  const navigationTheme = getThemeColor(preference.navigationId);
-  const accentTheme = getThemeColor(preference.accentId);
-
-  const darkColors = balancedDarkTheme({
-    text: textTheme,
-    icons: iconTheme,
-    background: backgroundTheme,
-    surfaces: surfaceTheme,
-    navigation: navigationTheme,
-    accent: accentTheme,
-  });
-  const colors = isDark
-    ? {
-        text: darkColors["--foreground"],
-        mutedText: darkColors["--muted-foreground"],
-        icon: darkColors["--identity-icon"],
-        iconText: darkColors["--primary-foreground"],
-        iconOnNavigation: darkColors["--identity-icon-on-nav"],
-        background: darkColors["--background"],
-        surface: darkColors["--card"],
-        navigation: darkColors["--nav-bg"],
-        accent: darkColors["--primary"],
-        buttonText: darkColors["--primary-foreground"],
-      }
-    : {
-        text: isDark ? textTheme.darkSecondary : textTheme.navBg,
-        mutedText: isDark ? textTheme.darkSecondary : textTheme.primary,
-        icon: isDark ? iconTheme.darkSecondary : iconTheme.primary,
-        iconOnNavigation: isDark ? iconTheme.darkSecondary : iconTheme.tertiary,
-        background: isDark ? backgroundTheme.darkSpace : backgroundTheme.space,
-        surface: isDark ? surfaceTheme.darkSoft : surfaceTheme.soft,
-        navigation: isDark ? navigationTheme.darkNavBg : navigationTheme.navBg,
-        accent: isDark ? accentTheme.darkPrimary : accentTheme.primary,
-        buttonText: accentTheme.foreground,
-        iconText: iconTheme.foreground,
-      };
+  const tokens = getCustomThemeTokens(preference, isDark);
+  const colors = {
+    text: tokens["--foreground"],
+    mutedText: tokens["--muted-foreground"],
+    icon: tokens["--identity-icon"],
+    iconText: tokens["--identity-icon-foreground"] ?? tokens["--primary-foreground"],
+    iconOnNavigation: tokens["--identity-icon-on-nav"],
+    textOnNavigation: tokens["--identity-text-on-nav"],
+    background: tokens["--background"],
+    surface: tokens["--card"],
+    navigation: tokens["--nav-bg"],
+    accent: tokens["--primary"],
+    buttonText: tokens["--primary-foreground"],
+  };
 
   return (
     <div
@@ -170,7 +105,7 @@ function PreferencePreview({ preference }: { preference: CustomThemePreference }
         style={{ backgroundColor: colors.navigation, color: colors.iconOnNavigation }}
       >
         <Palette aria-hidden="true" />
-        <span>معاينة لوحة العائلة</span>
+        <span style={{ color: colors.textOnNavigation }}>معاينة لوحة العائلة</span>
         <Navigation aria-hidden="true" />
       </div>
       <div className="theme-customizer-preview-body">
@@ -255,6 +190,12 @@ export function ThemeCustomizationDialog({
   const isDark =
     typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
+  // Keep editing controls readable while previewing literal light text or accents.
+  const editorTokens = getCustomThemeTokens(
+    createCustomThemePreference(initialBaseId === "family-ivory" ? "emerald" : initialBaseId),
+    isDark,
+  );
+
   return (
     <motion.div
       className="theme-customizer-backdrop"
@@ -271,6 +212,7 @@ export function ThemeCustomizationDialog({
         aria-modal="true"
         aria-labelledby="theme-customizer-title"
         className="theme-customizer-dialog"
+        style={mode === "custom" ? (editorTokens as CSSProperties) : undefined}
         initial={{ y: 24, scale: 0.97, opacity: 0 }}
         animate={{ y: 0, scale: 1, opacity: 1 }}
         exit={{ y: 16, scale: 0.98, opacity: 0 }}
@@ -374,7 +316,7 @@ export function ThemeCustomizationDialog({
             <div className="theme-customizer-advanced" role="tabpanel">
               <div className="theme-customizer-section-copy">
                 <h3>خصص كل جزء لحاله</h3>
-                <p>اختر من نفس الهويات الموجودة؛ درجة الوضوح المناسبة تُستخدم تلقائيًا.</p>
+                <p>اختر لون كل جزء؛ العاجي هو نفس لون خلفية خدمات العائلة.</p>
               </div>
 
               <PreferencePreview preference={customDraft} />
@@ -383,7 +325,11 @@ export function ThemeCustomizationDialog({
                 {CUSTOM_ROLES.map((role) => {
                   const RoleIcon = role.icon;
                   return (
-                    <fieldset key={role.key} className="theme-customizer-role">
+                    <fieldset
+                      key={role.key}
+                      className="theme-customizer-role"
+                      data-theme-role={role.key}
+                    >
                       <legend>
                         <span aria-hidden="true">
                           <RoleIcon />
@@ -400,6 +346,7 @@ export function ThemeCustomizationDialog({
                             <button
                               type="button"
                               key={theme.id}
+                              data-color-id={theme.id}
                               aria-label={`${role.label}: ${theme.name}`}
                               aria-pressed={selected}
                               className={selected ? "is-selected" : undefined}
@@ -409,10 +356,17 @@ export function ThemeCustomizationDialog({
                               <i
                                 aria-hidden="true"
                                 style={{
-                                  backgroundColor: getRoleSwatch(theme.id, role.key, isDark),
+                                  backgroundColor: getCustomRoleSwatch(theme.id, role.key, isDark),
                                 }}
                               />
-                              {selected && <Check aria-hidden="true" />}
+                              {selected && (
+                                <Check
+                                  aria-hidden="true"
+                                  style={
+                                    theme.id === "family-ivory" ? { color: "#0D3F3E" } : undefined
+                                  }
+                                />
+                              )}
                             </button>
                           );
                         })}

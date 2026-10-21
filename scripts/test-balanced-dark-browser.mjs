@@ -304,7 +304,9 @@ try {
     );
     // Capture the approved neutral services colours using the same responsive fixture.
     for (const identity of ["emerald", "muted-palm"]) {
-      await evaluate(`window.qaTheme(${JSON.stringify(identity)});document.querySelector('.family-services-section,.desktop-services-panel').scrollIntoView({block:'center'})`);
+      await evaluate(
+        `window.qaTheme(${JSON.stringify(identity)});document.querySelector('.family-services-section,.desktop-services-panel').scrollIntoView({block:'center'})`,
+      );
       await settle();
       await shot(`light-services-${identity}-${name}`);
     }
@@ -367,8 +369,98 @@ try {
       `${name}: select portal follows dark mode`,
     );
     await shot(`dark-select-${name}`);
+    if (["phone", "ipad-landscape"].includes(name)) {
+      await evaluate(
+        "document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))",
+      );
+      await until("!document.querySelector('[role=listbox]')");
+      const roles = [
+        ["textId", "--foreground", ".theme-customizer-preview-card b", "color"],
+        ["iconId", "--identity-icon", ".theme-customizer-preview-icon", "backgroundColor"],
+        ["backgroundId", "--background", ".theme-customizer-preview", "backgroundColor"],
+        ["surfaceId", "--card", ".theme-customizer-preview-card", "backgroundColor"],
+        ["navigationId", "--nav-bg", ".theme-customizer-preview-nav", "backgroundColor"],
+        ["accentId", "--primary", ".theme-customizer-preview-body > button", "backgroundColor"],
+      ];
+      for (const appearance of ["light", "dark"]) {
+        await evaluate(
+          `window.${appearance === "light" ? "qaLight" : "qaDark"}();document.querySelector('#qa-open-theme').click()`,
+        );
+        await until("document.querySelector('.theme-customizer-role-list')");
+        for (const [role, property, preview, channel] of roles) {
+          const ivory = `[data-theme-role="${role}"] [data-color-id="family-ivory"]`;
+          assert.equal(
+            await evaluate(
+              `getComputedStyle(document.querySelector(${JSON.stringify(ivory + " i")})).backgroundColor`,
+            ),
+            "rgb(245, 241, 232)",
+            `${name}/${appearance}/${role}: ivory circle uses the actual services color`,
+          );
+          await evaluate(`document.querySelector(${JSON.stringify(ivory)}).click()`);
+          await settle();
+          assert.equal(
+            await evaluate(
+              `document.documentElement.style.getPropertyValue(${JSON.stringify(property)})`,
+            ),
+            "#F5F1E8",
+            `${role}: choosing ivory applies that exact color`,
+          );
+          assert.equal(
+            await evaluate(
+              `getComputedStyle(document.querySelector(${JSON.stringify(preview)}))[${JSON.stringify(channel)}]`,
+            ),
+            "rgb(245, 241, 232)",
+            `${role}: preview matches the chosen circle`,
+          );
+          assert.ok(
+            await evaluate(
+              "qaContrast(getComputedStyle(document.querySelector('#theme-customizer-title')).color,qaColors('.theme-customizer-dialog').bg)>=4.5",
+            ),
+            "Editing controls remain readable while previewing ivory text",
+          );
+          await evaluate(
+            `document.querySelector('[data-theme-role="${role}"] [data-color-id="emerald"]').click()`,
+          );
+          await settle();
+        }
+        await evaluate(
+          "document.querySelector('[data-theme-role=backgroundId] [data-color-id=family-ivory]').click()",
+        );
+        await settle();
+        await shot(`customizer-ivory-${appearance}-${name}`);
+        await evaluate("document.querySelector('.theme-customizer-save').click()");
+        await until("!document.querySelector('.theme-customizer-dialog')");
+        assert.equal(
+          await evaluate("JSON.parse(window.qaSavedTheme.slice('custom:'.length)).background"),
+          "family-ivory",
+          "Saving persists the exact ivory choice",
+        );
+        await evaluate("document.querySelector('#qa-open-theme').click()");
+        await until(
+          "document.querySelector('[data-theme-role=backgroundId] [data-color-id=family-ivory][aria-pressed=true]')",
+        );
+        await evaluate(
+          "document.querySelector('[data-theme-role=iconId] [data-color-id=family-ivory]').click()",
+        );
+        await settle();
+        await evaluate(
+          "document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))",
+        );
+        await until("!document.querySelector('.theme-customizer-dialog')");
+        assert.equal(
+          await evaluate("document.documentElement.style.getPropertyValue('--background')"),
+          "#F5F1E8",
+          "Cancelling retains saved ivory background",
+        );
+        assert.notEqual(
+          await evaluate("document.documentElement.style.getPropertyValue('--identity-icon')"),
+          "#F5F1E8",
+          "Cancelling removes the unsaved ivory icon choice",
+        );
+      }
+    }
     console.log(
-      `PASS ${name}: 6 identities, custom roles, dark cards and portals, read-only stats, preserved geometry, light restoration and no overflow`,
+      `PASS ${name}: identities, custom roles, dark cards and portals, read-only stats, preserved geometry, light restoration and no overflow`,
     );
   }
   assert.deepEqual(errors, [], "No component runtime errors");

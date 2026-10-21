@@ -1,5 +1,7 @@
 import { applyBalancedDarkTheme, balancedDarkTheme } from "./dark-theme";
 
+export const FAMILY_SERVICES_IVORY = "#F5F1E8";
+
 export const THEME_COLORS = [
   {
     id: "emerald",
@@ -35,7 +37,7 @@ export const THEME_COLORS = [
     navBg: "#0D3F3E",
     darkNavBg: "#29241E",
     // Match the approved Family Services background and cards exactly.
-    space: "#F5F1E8",
+    space: FAMILY_SERVICES_IVORY,
     darkSpace: "#302B24",
     panel: "#C6B99D",
     darkPanel: "#51483A",
