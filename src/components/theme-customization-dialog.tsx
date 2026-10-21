@@ -352,7 +352,13 @@ export function ThemeCustomizationDialog({
                       </span>
                       <span className="theme-customizer-preset-name">
                         <b>{theme.name}</b>
-                        <small>{theme.isPrimary ? "الهوية الأساسية" : "هوية جاهزة"}</small>
+                        <small>
+                          {theme.isPrimary
+                            ? "الهوية الأساسية"
+                            : theme.id === "family-ivory"
+                              ? "لون خلفية خدمات العائلة"
+                              : "هوية جاهزة"}
+                        </small>
                       </span>
                       {selected && (
                         <span className="theme-customizer-selected" aria-hidden="true">
