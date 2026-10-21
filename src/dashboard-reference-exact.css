@@ -610,9 +610,9 @@ html body main .desktop-portal-stage > .faith-home-shortcuts-desktop {
 
 /* Approved light services colours: petrol on ivory and matte palm on warm grey.
  * Keep the existing card geometry and expansion on every device. Scope these
- * surfaces to the two presets so dark mode and custom colour roles stay intact.
+ * surfaces to the matching presets so dark mode and custom colour roles stay intact.
  */
-html[data-theme-color-mode="preset"][data-theme-color-base="emerald"]:not(.dark) {
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"]):not(.dark) {
   --family-services-paper: #f5f1e8;
   --family-services-card: #fffefa;
   --family-services-line: #dfdcd4;
@@ -623,16 +623,16 @@ html[data-theme-color-mode="preset"][data-theme-color-base="muted-palm"]:not(.da
   --family-services-line: #ddded5;
 }
 
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main :is(.dashboard-page .family-services-section, .desktop-rebuild-shell .desktop-services-panel) {
   background: var(--family-services-paper) !important;
   color: var(--primary) !important;
 }
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main .family-services-section .family-services-panel {
   background: transparent !important;
 }
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main :is(.family-services-section, .desktop-services-panel)
   :is(.family-service-card, .desktop-service-card) {
   background: var(--family-services-card) !important;
@@ -640,7 +640,7 @@ html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data
   border-color: var(--family-services-line) !important;
   box-shadow: 0 12px 28px -22px rgb(38 44 36 / 22%) !important;
 }
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main :is(.family-services-section, .desktop-services-panel)
   :is(.family-service-icon, .desktop-service-icon) {
   background: color-mix(in srgb, var(--primary) 10%, var(--family-services-card)) !important;
@@ -648,28 +648,28 @@ html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data
   border-color: color-mix(in srgb, var(--primary) 12%, transparent) !important;
   box-shadow: 0 7px 16px -12px rgb(38 44 36 / 18%) !important;
 }
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main :is(.family-services-section, .desktop-services-panel)
   :is(.family-service-icon, .desktop-service-icon) svg {
   color: var(--primary) !important;
 }
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main :is(.family-services-section, .desktop-services-panel)
   :is(.family-services-heading h3, .desktop-section-head h2, .desktop-section-head h3,
       .family-service-label, .desktop-service-card strong) {
   color: var(--primary) !important;
 }
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main :is(.family-services-section, .desktop-services-panel)
   :is(.family-service-description, .desktop-service-card > span, .desktop-section-head p) {
   color: #626b66 !important;
 }
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main :is(.family-services-section, .desktop-services-panel)
   :is(.family-services-top-toggle, .desktop-section-head > button) {
   color: var(--primary) !important;
 }
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main :is(.family-services-section, .desktop-services-panel)
   :is(.family-services-toggle, .desktop-services-wide-toggle) {
   background: var(--family-services-card) !important;
@@ -677,7 +677,7 @@ html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data
   border-color: color-mix(in srgb, var(--primary) 48%, var(--family-services-paper)) !important;
   box-shadow: none !important;
 }
-html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="muted-palm"]):not(.dark)
+html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data-theme-color-base="family-ivory"], [data-theme-color-base="muted-palm"]):not(.dark)
   body main :is(.family-services-section, .desktop-services-panel)
   :is(.family-services-toggle, .desktop-services-wide-toggle) svg {
   color: var(--primary) !important;
