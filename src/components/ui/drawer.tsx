@@ -22,6 +22,7 @@ const DrawerOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <DrawerPrimitive.Overlay
+    data-interface-overlay="drawer"
     ref={ref}
     className={cn("fixed inset-0 z-[180] bg-black/80", className)}
     {...props}
@@ -36,6 +37,7 @@ const DrawerContent = React.forwardRef<
   <DrawerPortal>
     <DrawerOverlay />
     <DrawerPrimitive.Content
+      data-interface-surface="drawer"
       ref={ref}
       className={cn(
         "fixed inset-x-0 bottom-0 z-[180] mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",

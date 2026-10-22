@@ -513,6 +513,7 @@ function AppShellChrome({
       </AnimatePresence>
 
       <motion.aside
+        data-interface-surface="sheet"
         initial={false}
         animate={{ x: sidebarOpen ? 0 : 350 }}
         transition={{ type: "spring", damping: 32, stiffness: 320 }}
@@ -1065,6 +1066,7 @@ function AppShellChrome({
                   "bg-[var(--nav-bg)]/30 backdrop-blur-2xl rounded-t-[40px] border-t border-white/10 p-8 pb-12 space-y-8 shadow-[0_-20px_80px_rgba(0,0,0,0.5)]",
                   "touch-none relative overflow-hidden will-change-transform",
                 )}
+                data-interface-surface="navigation-sheet"
                 onClick={(e) => e.stopPropagation()}
                 dir="rtl"
               >
@@ -1191,6 +1193,7 @@ function AppShellChrome({
                   "bg-[var(--nav-bg)]/30 backdrop-blur-2xl rounded-t-[40px] border-t border-white/10 p-8 pb-12 space-y-8 shadow-[0_-20px_80px_rgba(0,0,0,0.6)]",
                   "touch-none relative overflow-hidden will-change-transform",
                 )}
+                data-interface-surface="navigation-sheet"
                 onClick={(e) => e.stopPropagation()}
                 dir="rtl"
               >

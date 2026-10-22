@@ -4,7 +4,7 @@ import type { InterfaceMaterial } from "@/lib/theme-preferences";
 
 const materials = [
   { id: "classic", label: "الكلاسيكي", description: "المظهر الحالي", icon: PanelsTopLeft },
-  { id: "crystal", label: "مجلس بلّوري", description: "زجاج سائل بألوان هويتك", icon: Droplets },
+  { id: "crystal", label: "مجلس بلّوري", description: "زجاج سائل شفاف، انعكاسات وحواف مضيئة", icon: Droplets },
 ] as const;
 
 export function InterfaceMaterialPicker({
