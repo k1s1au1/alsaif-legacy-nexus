@@ -27,6 +27,8 @@ jobs:
         run: npx tsc --noEmit
       - name: Check balanced dark identity contrast, saved appearance and light restoration
         run: node scripts/test-balanced-dark.mjs
+      - name: Check optional crystal material, independent colors and saved account compatibility
+        run: node scripts/test-interface-material.mjs
       - name: Check backup server connection configuration
         run: node --test scripts/test-supabase-server-clients.mjs
       - name: Check backup file saving and retry outcomes
@@ -75,6 +77,15 @@ jobs:
       - name: Check paper services folding, routes and responsive identity on all devices in Chrome
         if: ${{ !cancelled() && steps.web_build.outcome == 'success' }}
         run: node scripts/test-family-services-paper-browser.mjs
+      - name: Check crystal appearance, classic restoration and unchanged device layouts in Chrome
+        if: ${{ !cancelled() && steps.web_build.outcome == 'success' }}
+        run: node scripts/test-crystal-appearance-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crystal-appearance-previews
+          path: test-results/crystal
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
