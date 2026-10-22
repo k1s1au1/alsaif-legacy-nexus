@@ -19,6 +19,18 @@ import "../../src/settings-responsive.css";
 const win = window as any;
 const tablet = new URLSearchParams(location.search).has("tablet");
 const wide = innerWidth >= 970;
+// CI has no attached mouse. The desktop scenario sends real CDP mouse events,
+// so expose that hardware capability while keeping motion/transparency media native.
+if (wide && !tablet) {
+  const nativeMatchMedia = window.matchMedia.bind(window);
+  window.matchMedia = (query: string) => {
+    const media = nativeMatchMedia(query);
+    if (query === "(hover: hover) and (pointer: fine)") {
+      Object.defineProperty(media, "matches", { value: true });
+    }
+    return media;
+  };
+}
 if (new URLSearchParams(location.search).has("reset")) localStorage.removeItem("app-theme-color-id");
 document.documentElement.dataset.dashboardTabletLandscape = String(tablet);
 win.qaThemes = THEME_COLORS.map((theme) => theme.id);

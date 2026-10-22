@@ -158,9 +158,13 @@ try {
       await evaluate("document.querySelector('.family-services-paper__toggle').click();document.querySelector('[data-material=classic]').click()"); await settle();
       assert.equal(await evaluate("document.documentElement.dataset.interfaceMaterial"), undefined, `${name}: classic clears crystal styling`);
       if (name === "desktop") {
+        assert.equal(await evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches"), true, "desktop fixture exposes the simulated mouse capability");
         await evaluate("document.querySelector('[data-material=crystal]').click();document.querySelector('.qa-open-colors').scrollIntoView({block:'center'})"); await settle();
         const button = await evaluate("(()=>{const r=document.querySelector('.qa-open-colors').getBoundingClientRect();return{x:r.x+r.width*.7,y:r.y+r.height*.4}})()");
         await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: button.x, y: button.y });
+        await settle();
+        const pointerState = await evaluate(`(()=>{const n=document.querySelector('.qa-open-colors');return{fine:matchMedia('(hover: hover) and (pointer: fine)').matches,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,hit:document.elementFromPoint(${button.x},${button.y})?.className,highlight:n.style.getPropertyValue('--liquid-x')}})()`);
+        writeFileSync("test-results/crystal/desktop-pointer.json", JSON.stringify(pointerState));
         await until("document.querySelector('.qa-open-colors').style.getPropertyValue('--liquid-x')");
         await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
         await until("!document.querySelector('.qa-open-colors').style.getPropertyValue('--liquid-x')");
