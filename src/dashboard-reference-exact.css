@@ -917,7 +917,7 @@ html[data-theme-color-mode="custom"] body main .family-services-paper .family-se
 
 /* The full desktop dashboard supplies its own instance below the terrain. */
 @media (min-width: 1200px) {
-  html body:has(.desktop-rebuild-shell) main .family-services-paper.family-services-section { display: none !important; }
+  html body:has(.desktop-rebuild-shell) main .dashboard-page.max-w-6xl.mx-auto.space-y-12 .family-services-paper.family-services-section { display: none !important; }
 }
 @media (max-width: 620px) {
   html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 .family-services-paper {
