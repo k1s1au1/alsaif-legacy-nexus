@@ -168,8 +168,12 @@ try {
         await until("document.querySelector('.qa-open-colors').style.getPropertyValue('--liquid-x')");
         await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
         await until("!document.querySelector('.qa-open-colors').style.getPropertyValue('--liquid-x')");
-        assert.equal(await evaluate("getComputedStyle(document.querySelector('.qa-open-colors')).transitionDuration"), "0s", "reduced motion disables fluid interaction");
+        // Settings retains a 0.01ms accessibility duration. With no transitioned
+        // properties, the fluid interaction is disabled regardless of that value.
+        assert.equal(await evaluate("getComputedStyle(document.querySelector('.qa-open-colors')).transitionProperty"), "none", "reduced motion disables fluid interaction");
         await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-transparency", value: "reduce" }] }); await settle();
+        const transparencyState = await evaluate("({matches:matchMedia('(prefers-reduced-transparency: reduce)').matches,surface:getComputedStyle(document.querySelector('.qa-settings')).getPropertyValue('--crystal-surface').trim(),card:getComputedStyle(document.documentElement).getPropertyValue('--card').trim()})");
+        writeFileSync("test-results/crystal/desktop-pointer.json", JSON.stringify({ ...pointerState, transparency: transparencyState }));
         assert.equal(await evaluate("getComputedStyle(document.querySelector('.qa-settings')).getPropertyValue('--crystal-surface').trim() === getComputedStyle(document.documentElement).getPropertyValue('--card').trim()"), true, "reduced transparency restores an opaque surface");
         await send("Emulation.setEmulatedMedia", { features: [] });
         await evaluate("document.querySelector('[data-material=classic]').click()"); await settle();
