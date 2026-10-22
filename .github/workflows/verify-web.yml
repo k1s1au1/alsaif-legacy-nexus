@@ -90,6 +90,15 @@ jobs:
       - name: Check read-only family statistics on phones, iPads and desktop in Chrome
         if: ${{ !cancelled() && steps.web_build.outcome == 'success' }}
         run: node scripts/test-family-stats-browser.mjs
+      - name: Check paper services folding, routes and responsive identity on all devices in Chrome
+        if: ${{ !cancelled() && steps.web_build.outcome == 'success' }}
+        run: node scripts/test-family-services-paper-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: family-services-paper-previews
+          path: test-results/services-paper
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -682,3 +682,260 @@ html[data-theme-color-mode="preset"]:is([data-theme-color-base="emerald"], [data
   :is(.family-services-toggle, .desktop-services-wide-toggle) svg {
   color: var(--primary) !important;
 }
+
+/* Approved paper directory, shared by every dashboard breakpoint.
+ * Keep this composition in the final reference layer: old service/card rules
+ * must not restore capsule geometry or an independently scrolling list.
+ */
+html body main :is(.dashboard-page.max-w-6xl.mx-auto.space-y-12, .desktop-rebuild-shell) .family-services-paper {
+  --services-sheet-outer: var(--family-services-paper, var(--background));
+  --services-sheet-paper: var(--family-services-card, var(--card));
+  --services-sheet-ink: var(--foreground);
+  --services-sheet-line: var(--family-services-line, var(--border));
+  --services-sheet-soft: color-mix(in srgb, var(--identity-icon, var(--primary)) 7%, var(--services-sheet-paper));
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 24px !important;
+  overflow: visible !important;
+  border: 1px solid var(--services-sheet-line) !important;
+  border-radius: 24px !important;
+  background: var(--services-sheet-outer) !important;
+  color: var(--services-sheet-ink) !important;
+  box-shadow: none !important;
+  text-align: start;
+}
+
+html body main .family-services-paper .family-services-paper__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 20px;
+}
+html body main .family-services-paper .family-services-paper__heading h2 {
+  margin: 0;
+  color: var(--services-sheet-ink);
+  font-size: clamp(21px, 2.2vw, 26px);
+  font-weight: 900;
+  line-height: 1.3;
+}
+html body main .family-services-paper .family-services-paper__heading p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.6;
+}
+html body main .family-services-paper .family-services-paper__toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 10px 17px;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+}
+html body main .family-services-paper .family-services-paper__toggle svg {
+  flex-shrink: 0;
+  color: inherit;
+  transition: transform 500ms ease;
+}
+html body main .family-services-paper[data-expanded="true"] .family-services-paper__toggle svg {
+  transform: rotate(180deg);
+}
+html body main .family-services-paper :is(.family-services-paper__toggle, .family-services-paper__service):focus-visible {
+  outline: 2px solid var(--gold-primary);
+  outline-offset: 3px;
+}
+html body main .family-services-paper .family-services-paper__sheet {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--services-sheet-line);
+  border-radius: 7px 7px 15px 15px;
+  background: var(--services-sheet-paper);
+  box-shadow: 0 12px 28px -20px color-mix(in srgb, var(--services-sheet-ink) 24%, transparent);
+}
+html body main .family-services-paper .family-services-paper__masthead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 47px;
+  padding: 11px 20px 10px 42px;
+  border-top: 3px solid var(--gold-primary);
+  border-bottom: 1px solid var(--services-sheet-line);
+}
+html body main .family-services-paper .family-services-paper__masthead::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(45deg, var(--services-sheet-line) 49%, var(--services-sheet-outer) 51%);
+}
+html body main .family-services-paper .family-services-paper__masthead strong {
+  color: var(--services-sheet-ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+html body main .family-services-paper .family-services-paper__masthead > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+html body main .family-services-paper .family-services-paper__primary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px 12px;
+}
+html body main .family-services-paper .family-services-paper__service {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  min-height: 64px;
+  margin: 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--services-sheet-ink);
+  text-decoration: none;
+  transition: background-color 180ms ease;
+}
+html body main .family-services-paper .family-services-paper__service:hover {
+  background: var(--services-sheet-soft);
+}
+html body main .family-services-paper .family-services-paper__icon {
+  display: flex;
+  flex: 0 0 40px;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--services-sheet-soft);
+  color: var(--identity-icon, var(--primary));
+}
+html body main .family-services-paper .family-services-paper__icon svg { flex-shrink: 0; color: inherit; }
+html body main .family-services-paper .family-services-paper__label {
+  min-width: 0;
+  color: var(--services-sheet-ink);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+html body main .family-services-paper .family-services-paper__primary .family-services-paper__service {
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+  min-height: 99px;
+  padding: 11px 6px;
+  text-align: center;
+}
+html body main .family-services-paper .family-services-paper__primary .family-services-paper__icon {
+  flex-basis: 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: var(--identity-icon, var(--primary));
+  color: var(--identity-icon-foreground, var(--primary-foreground));
+}
+html body main .family-services-paper .family-services-paper__folds {
+  visibility: hidden;
+  transition: visibility 0ms 850ms;
+}
+html body main .family-services-paper .family-services-paper__fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  perspective: 1000px;
+  transition: grid-template-rows 620ms cubic-bezier(.22, .7, .16, 1);
+  transition-delay: calc((2 - var(--sheet-fold-order)) * 80ms);
+}
+html body main .family-services-paper .family-services-paper__fold-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+html body main .family-services-paper .family-services-paper__fold-face {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--services-sheet-line);
+  background: linear-gradient(180deg, var(--services-sheet-soft), transparent 20px), var(--services-sheet-paper);
+  transform: rotateX(-88deg);
+  transform-origin: center top;
+  opacity: 0;
+  transition: transform 620ms cubic-bezier(.22, .7, .16, 1), opacity 350ms ease;
+  transition-delay: calc((2 - var(--sheet-fold-order)) * 80ms);
+}
+html body main .family-services-paper .family-services-paper__fold:nth-child(2) .family-services-paper__fold-face {
+  background-color: var(--services-sheet-soft);
+}
+html body main .family-services-paper[data-expanded="true"] .family-services-paper__folds {
+  visibility: visible;
+  transition-delay: 0ms;
+}
+html body main .family-services-paper[data-expanded="true"] .family-services-paper__fold {
+  grid-template-rows: 1fr;
+  transition-delay: calc(var(--sheet-fold-order) * 90ms);
+}
+html body main .family-services-paper[data-expanded="true"] .family-services-paper__fold-face {
+  transform: rotateX(0);
+  opacity: 1;
+  transition-delay: calc(var(--sheet-fold-order) * 90ms);
+}
+html body main .family-services-paper .family-services-paper__rules {
+  height: 9px;
+  margin: 0 23px 11px;
+  border-top: 1px solid var(--services-sheet-line);
+  border-bottom: 1px solid var(--services-sheet-line);
+}
+
+html[data-theme-color-mode="custom"] body main .family-services-paper .family-services-paper__icon {
+  background: var(--identity-icon);
+  color: var(--identity-icon-foreground, var(--primary-foreground));
+}
+
+/* The full desktop dashboard supplies its own instance below the terrain. */
+@media (min-width: 1200px) {
+  html body:has(.desktop-rebuild-shell) main .family-services-paper.family-services-section { display: none !important; }
+}
+@media (max-width: 620px) {
+  html body main .dashboard-page.max-w-6xl.mx-auto.space-y-12 .family-services-paper {
+    padding: 19px 14px !important;
+    border-radius: 22px !important;
+  }
+  html body main .family-services-paper .family-services-paper__heading { gap: 10px; margin-bottom: 16px; align-items: flex-start; }
+  html body main .family-services-paper .family-services-paper__heading h2 { font-size: 21px; }
+  html body main .family-services-paper .family-services-paper__heading p { font-size: 11px; }
+  html body main .family-services-paper .family-services-paper__toggle { gap: 6px; padding-inline: 11px; font-size: 13px; }
+  html body main .family-services-paper .family-services-paper__masthead { padding-inline: 13px 34px; }
+  html body main .family-services-paper .family-services-paper__masthead > span { display: none; }
+  html body main .family-services-paper .family-services-paper__primary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px 9px; gap: 7px; }
+  html body main .family-services-paper .family-services-paper__fold-face { gap: 4px; padding: 8px 6px; }
+  html body main .family-services-paper .family-services-paper__fold-face .family-services-paper__service { flex-direction: column; justify-content: center; min-height: 90px; gap: 7px; padding: 7px 2px; text-align: center; }
+  html body main .family-services-paper .family-services-paper__fold-face .family-services-paper__label { font-size: 12px; }
+  html body main .family-services-paper .family-services-paper__fold-face .family-services-paper__icon { flex-basis: 36px; width: 36px; height: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html body main .family-services-paper :is(.family-services-paper__toggle svg, .family-services-paper__service, .family-services-paper__folds, .family-services-paper__fold, .family-services-paper__fold-face) { transition: none; }
+}

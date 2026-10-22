@@ -14,15 +14,10 @@ import {
   Plus,
   Sparkles,
   Users,
-  Handshake,
-  Wallet,
   Scroll,
   ShieldAlert,
   MapPin,
   PartyPopper,
-  MessageCircle,
-  Lock,
-  BookOpen,
 } from "lucide-react";
 import {
   useDashboardAnnouncements,
@@ -36,7 +31,7 @@ import { useSiteLogo } from "@/hooks/use-site-logo";
 import { useTodayVisitorCount } from "@/hooks/use-today-site-visits";
 import { HeritagePortal3D } from "@/components/dashboard/heritage-portal-3d";
 import { SpiritualQuotesWidget } from "@/components/dashboard/spiritual-quotes-widget";
-import { LineageLegacyIcon } from "@/components/icons/lineage-legacy-icon";
+import { FamilyServicesPaper } from "@/components/dashboard/family-services-paper";
 import { FamilyAgenda } from "@/components/dashboard/family-agenda";
 import { PrayerMushafShortcuts } from "@/components/dashboard/prayer-mushaf-shortcuts";
 import { TripImage } from "@/components/trip-image";
@@ -56,27 +51,6 @@ const fmtDate = (value?: string | null) => {
         month: "short",
       });
 };
-
-const services = [
-  { to: "/finance", label: "الصندوق المالي", desc: "إدارة الموارد المالية للعائلة", icon: Wallet },
-  { to: "/tasks", label: "المهام", desc: "إدارة ومتابعة المهام", icon: ListChecks },
-  { to: "/trips", label: "الرحلات", desc: "تنظيم الرحلات العائلية", icon: Plane },
-  { to: "/meetings", label: "الاجتماعات", desc: "جدولة اجتماعات العائلة", icon: Users },
-  {
-    to: "/family-occasions",
-    label: "مناسبات العائلة",
-    desc: "أفراح ومناسبات وذكريات العائلة",
-    icon: PartyPopper,
-  },
-  { to: "/majlis", label: "الأخبار", desc: "آخر أخبار العائلة", icon: Newspaper },
-  { to: "/archive", label: "الألبومات", desc: "ذكرياتنا في صور جميلة", icon: BookImage },
-  { to: "/calendar", label: "تقويم العائلة", desc: "المواعيد والمناسبات", icon: CalendarDays },
-  { to: "/chat", label: "المحادثات", desc: "تواصل خاص بالعائلة", icon: MessageCircle },
-  { to: "/community", label: "ركن الأعضاء", desc: "مجتمع أفراد العائلة", icon: Handshake },
-  { to: "/family-tree", label: "نسب وأثر", desc: "أنساب العائلة وإرثها", icon: LineageLegacyIcon },
-  { to: "/vault", label: "الخزنة", desc: "المحتوى العائلي الخاص", icon: Lock },
-  { to: "/faith", label: "الصلاة ومصحفي", desc: "مواقيت الصلاة ومصحفك", icon: BookOpen },
-];
 
 type LocalOccasion = {
   id: string;
@@ -303,7 +277,6 @@ export function DesktopDashboardExtras({
   const { data: profile } = useProfile();
   const logo = useSiteLogo();
   const visitorCount = useTodayVisitorCount();
-  const [servicesExpanded, setServicesExpanded] = useState(false);
   const [followExpanded, setFollowExpanded] = useState(false);
   const [followIndex, setFollowIndex] = useState(0);
   const [newsIndex, setNewsIndex] = useState(0);
@@ -401,7 +374,6 @@ export function DesktopDashboardExtras({
 
   const latest = announcementsData?.[newsIndex] || announcementsData?.[0];
   const name = profile?.realName || "عضو العائلة";
-  const visibleServices = servicesExpanded ? services : services.slice(0, 4);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "صباح الخير" : hour < 17 ? "مساء النور" : "مساء الخير";
 
@@ -427,50 +399,7 @@ export function DesktopDashboardExtras({
             />
           </div>
 
-          <div className={`desktop-services-panel${servicesExpanded ? " is-expanded" : ""}`}>
-            <div className="desktop-section-head desktop-section-head-on-dark">
-              <div>
-                <h2>خدمات العائلة</h2>
-                <p>كل ما تحتاجه من مكان واحد</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setServicesExpanded((value) => !value)}
-                aria-expanded={servicesExpanded}
-              >
-                {servicesExpanded ? "إخفاء" : "عرض الكل"}
-              </button>
-            </div>
-
-            <div className="desktop-services-grid">
-              {visibleServices.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={`${item.to}-${item.label}`}
-                    to={item.to}
-                    className="desktop-service-card"
-                  >
-                    <div className="desktop-service-icon">
-                      <Icon size={24} />
-                    </div>
-                    <strong>{item.label}</strong>
-                    <span>{item.desc}</span>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              className="desktop-services-wide-toggle"
-              onClick={() => setServicesExpanded((value) => !value)}
-              aria-expanded={servicesExpanded}
-            >
-              {servicesExpanded ? "إغلاق قائمة الخدمات" : "عرض جميع الخدمات"}
-              <ChevronLeft size={15} />
-            </button>
-          </div>
+          <FamilyServicesPaper className="desktop-services-panel" />
             </section>
           </>
         )}
