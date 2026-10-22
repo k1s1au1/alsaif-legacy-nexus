@@ -6,6 +6,7 @@ html[data-interface-material="crystal"] {
   --crystal-shadow: color-mix(in srgb, var(--primary) 22%, transparent);
   --crystal-surface: var(--card);
   --crystal-nav: var(--nav-bg);
+  --crystal-field: var(--card);
   --crystal-blur: 24px;
   --crystal-sheen-top: rgb(255 255 255 / .24);
   --crystal-sheen-bottom: rgb(255 255 255 / .06);
@@ -49,11 +50,14 @@ html[data-interface-material="crystal"] body .app-shell-main > .app-shell-conten
 /* Frosted content sits below the clearer floating navigation and controls. */
 html[data-interface-material="crystal"] :is(
   .card-surface, .theme-customizer-dialog, .family-seal-service-menu,
-  [data-interface-surface], .app-shell-content .bg-card,
+  [data-interface-surface], .app-shell-content .bg-card, .app-shell-content .bg-white,
   .settings-section-nav, .settings-theme-grid > button,
   .desktop-widget-card, .desktop-follow-panel, .integrated-hub,
   .dashboard-news-card, .desktop-news-feature-card, .majlis-editorial-card,
-  .simple-home__mode-bar, .simple-home__next-event, .simple-home__service
+  .simple-home__mode-bar, .simple-home__next-event, .simple-home__service,
+  .vault-list-panel, .vault-preview-panel, .vault-search,
+  .vault-preview-drawer, .vault-upload-dialog,
+  .legacy-reference-tabs, .legacy-tree-side-card, .legacy-minimap-shell, .legacy-fullscreen-toolbar
 ):not([style*="background-image"]) {
   background: var(--crystal-lens), var(--crystal-surface) !important;
   border-color: var(--crystal-rim) !important;
@@ -65,6 +69,7 @@ html[data-interface-material="crystal"] :is(
   html[data-interface-material="crystal"] {
     --crystal-surface: color-mix(in srgb, color-mix(in srgb, var(--card) 80%, var(--identity-accent, var(--primary))) 56%, transparent);
     --crystal-nav: color-mix(in srgb, var(--nav-bg) 72%, transparent);
+    --crystal-field: color-mix(in srgb, var(--card) 48%, transparent);
   }
   html.dark[data-interface-material="crystal"] {
     --crystal-surface: color-mix(in srgb, var(--card) 72%, transparent);
@@ -72,11 +77,14 @@ html[data-interface-material="crystal"] :is(
   }
   html[data-interface-material="crystal"] :is(
     .card-surface, .theme-customizer-dialog, .family-seal-service-menu,
-    [data-interface-surface], .app-shell-content .bg-card,
+    [data-interface-surface], .app-shell-content .bg-card, .app-shell-content .bg-white,
     .settings-section-nav, .settings-theme-grid > button,
     .desktop-widget-card, .desktop-follow-panel, .integrated-hub,
     .dashboard-news-card, .desktop-news-feature-card, .majlis-editorial-card,
-    .simple-home__mode-bar, .simple-home__next-event, .simple-home__service
+    .simple-home__mode-bar, .simple-home__next-event, .simple-home__service,
+    .vault-list-panel, .vault-preview-panel, .vault-search,
+    .vault-preview-drawer, .vault-upload-dialog,
+    .legacy-reference-tabs, .legacy-tree-side-card, .legacy-minimap-shell, .legacy-fullscreen-toolbar
   ):not([style*="background-image"]) {
     -webkit-backdrop-filter: blur(var(--crystal-blur)) saturate(1.65);
     backdrop-filter: blur(var(--crystal-blur)) saturate(1.65);
@@ -88,7 +96,8 @@ html[data-interface-material="crystal"] :is(
   [data-interface-surface="dialog"], [data-interface-surface="alert"],
   [data-interface-surface="sheet"], [data-interface-surface="drawer"],
   [data-interface-surface="menu"], [data-interface-surface="popover"],
-  [data-interface-surface="select"], [data-interface-surface="hovercard"]
+  [data-interface-surface="select"], [data-interface-surface="hovercard"],
+  .vault-preview-drawer, .vault-upload-dialog
 ) { --crystal-surface: color-mix(in srgb, var(--card) 84%, transparent); }
 html[data-interface-material="crystal"] [data-interface-surface="navigation-sheet"] {
   --crystal-surface: color-mix(in srgb, var(--nav-bg) 84%, transparent);
@@ -144,7 +153,7 @@ html[data-interface-material="crystal"] :is(
   [data-interface-field], [data-interface-control="select"]
 ) {
   background: linear-gradient(170deg, color-mix(in srgb, var(--crystal-glint) 40%, transparent), transparent 65%),
-    color-mix(in srgb, var(--card) 48%, transparent) !important;
+    var(--crystal-field) !important;
   border-color: color-mix(in srgb, var(--primary) 25%, var(--crystal-rim)) !important;
   color: var(--foreground);
   box-shadow: inset 0 2px 5px color-mix(in srgb, var(--primary) 7%, transparent), 0 1px 0 var(--crystal-highlight);
@@ -286,8 +295,8 @@ html[data-interface-material="crystal"] .desktop-sidebar-quick-access {
   .interface-material-option { transition: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  html[data-interface-material="crystal"], html.dark[data-interface-material="crystal"] { --crystal-surface: var(--card); --crystal-nav: var(--nav-bg); --crystal-blur: 0px; }
-  html[data-interface-material="crystal"] :is([data-interface-surface], .theme-customizer-dialog, .family-seal-service-menu) { --crystal-surface: var(--card); }
+  html[data-interface-material="crystal"], html.dark[data-interface-material="crystal"] { --crystal-surface: var(--card); --crystal-nav: var(--nav-bg); --crystal-field: var(--card); --crystal-blur: 0px; }
+  html[data-interface-material="crystal"] :is([data-interface-surface], .theme-customizer-dialog, .family-seal-service-menu, .vault-preview-drawer, .vault-upload-dialog) { --crystal-surface: var(--card); }
   html[data-interface-material="crystal"] [data-interface-surface="navigation-sheet"] { --crystal-surface: var(--nav-bg); }
   html[data-interface-material="crystal"] :is(.family-seal-wing::after, .family-seal-logo, .family-seal-utility, .family-seal-account > button, .family-seal-notifications > button) { background: var(--seal-paper); -webkit-backdrop-filter: none; backdrop-filter: none; }
   html[data-interface-material="crystal"] :is([data-interface-field], [data-interface-control="select"]) { background: var(--card) !important; }
@@ -295,11 +304,11 @@ html[data-interface-material="crystal"] .desktop-sidebar-quick-access {
   html[data-interface-material="crystal"] body main > .app-shell-bottom-dock > nav { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 }
 @media (prefers-contrast: more) {
-  html[data-interface-material="crystal"], html.dark[data-interface-material="crystal"] { --crystal-surface: var(--card); --crystal-nav: var(--nav-bg); --crystal-rim: var(--foreground); }
-  html[data-interface-material="crystal"] :is([data-interface-surface], .theme-customizer-dialog, .family-seal-service-menu) { --crystal-surface: var(--card); }
+  html[data-interface-material="crystal"], html.dark[data-interface-material="crystal"] { --crystal-surface: var(--card); --crystal-nav: var(--nav-bg); --crystal-field: var(--card); --crystal-rim: var(--foreground); }
+  html[data-interface-material="crystal"] :is([data-interface-surface], .theme-customizer-dialog, .family-seal-service-menu, .vault-preview-drawer, .vault-upload-dialog) { --crystal-surface: var(--card); }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  html[data-interface-material="crystal"] :is([data-interface-surface], .theme-customizer-dialog, .family-seal-service-menu) { --crystal-surface: var(--card); }
+  html[data-interface-material="crystal"] :is([data-interface-surface], .theme-customizer-dialog, .family-seal-service-menu, .vault-preview-drawer, .vault-upload-dialog) { --crystal-surface: var(--card); }
   html[data-interface-material="crystal"] [data-interface-surface="navigation-sheet"] { --crystal-surface: var(--nav-bg); }
   html[data-interface-material="crystal"] :is(.family-seal-wing::after, .family-seal-logo, .family-seal-utility) { background: var(--seal-paper); }
 }
