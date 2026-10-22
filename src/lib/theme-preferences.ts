@@ -3,16 +3,12 @@ import { balancedDarkTheme } from "@/lib/dark-theme";
 
 export const DEFAULT_THEME_COLOR_ID = "emerald";
 export const CUSTOM_THEME_PREFIX = "custom:";
-export const INTERFACE_MATERIAL_PREFIX = "appearance:";
-
-export type InterfaceMaterial = "classic" | "crystal";
 
 export type ThemeColorId = (typeof THEME_COLORS)[number]["id"];
 
 export type PresetThemePreference = {
   mode: "preset";
   presetId: ThemeColorId;
-  material?: InterfaceMaterial;
 };
 
 export type CustomThemePreference = {
@@ -24,12 +20,11 @@ export type CustomThemePreference = {
   surfaceId: ThemeColorId;
   navigationId: ThemeColorId;
   accentId: ThemeColorId;
-  material?: InterfaceMaterial;
 };
 
 export type ThemePreference = PresetThemePreference | CustomThemePreference;
 
-export type CustomThemeRole = Exclude<keyof CustomThemePreference, "mode" | "baseId" | "material">;
+export type CustomThemeRole = Exclude<keyof CustomThemePreference, "mode" | "baseId">;
 
 export const CUSTOM_ROLE_PROPERTIES = {
   textId: "--foreground",
@@ -110,7 +105,18 @@ export function getThemePreferenceBaseId(preference: ThemePreference): ThemeColo
   return preference.mode === "custom" ? preference.baseId : preference.presetId;
 }
 
-function parseColorPreference(value: string | null | undefined): ThemePreference {
+export function parseThemePreference(value: string | null | undefined): ThemePreference {
+  // Recover only the colors from the retired account preference format.
+  if (value?.startsWith("appearance:")) {
+    try {
+      const stored = JSON.parse(value.slice("appearance:".length));
+      value = stored?.v === 1 && typeof stored.color === "string" && !stored.color.startsWith("appearance:")
+        ? stored.color
+        : null;
+    } catch {
+      value = null;
+    }
+  }
   if (!value) return createPresetThemePreference();
   if (isThemeColorId(value)) return createPresetThemePreference(value);
   if (!value.startsWith(CUSTOM_THEME_PREFIX)) return createPresetThemePreference();
@@ -148,25 +154,7 @@ function parseColorPreference(value: string | null | undefined): ThemePreference
   }
 }
 
-export function parseThemePreference(value: string | null | undefined): ThemePreference {
-  if (!value?.startsWith(INTERFACE_MATERIAL_PREFIX)) return parseColorPreference(value);
-  try {
-    const stored = JSON.parse(value.slice(INTERFACE_MATERIAL_PREFIX.length));
-    if (
-      stored.v !== 1 ||
-      stored.material !== "crystal" ||
-      typeof stored.color !== "string" ||
-      stored.color.startsWith(INTERFACE_MATERIAL_PREFIX)
-    ) return createPresetThemePreference();
-    const color = parseColorPreference(stored.color);
-    if (color.mode === "preset" && color.presetId !== stored.color) return createPresetThemePreference();
-    return { ...color, material: "crystal" };
-  } catch {
-    return createPresetThemePreference();
-  }
-}
-
-function serializeColorPreference(preference: ThemePreference): string {
+export function serializeThemePreference(preference: ThemePreference): string {
   if (preference.mode === "preset") return preference.presetId;
 
   const stored: StoredCustomThemePreference = {
@@ -181,13 +169,6 @@ function serializeColorPreference(preference: ThemePreference): string {
   };
 
   return `${CUSTOM_THEME_PREFIX}${JSON.stringify(stored)}`;
-}
-
-/** Use the existing account preference so material and all color roles sync together. */
-export function serializeThemePreference(preference: ThemePreference): string {
-  const color = serializeColorPreference(preference);
-  if (preference.material !== "crystal") return color;
-  return `${INTERFACE_MATERIAL_PREFIX}${JSON.stringify({ v: 1, material: "crystal", color })}`;
 }
 
 function clearCustomThemeProperties(root: HTMLElement) {
@@ -302,8 +283,6 @@ export function applyThemePreference(preference: ThemePreference) {
   applyThemeColors(baseTheme);
   root.dataset.themeColorBase = baseTheme.id;
   root.dataset.themeColorMode = preference.mode;
-  if (preference.material === "crystal") root.dataset.interfaceMaterial = "crystal";
-  else delete root.dataset.interfaceMaterial;
   if (preference.mode === "preset") return;
 
   const tokens = getCustomThemeTokens(preference, root.classList.contains("dark"));

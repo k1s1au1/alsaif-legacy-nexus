@@ -50,7 +50,6 @@ import { useUserRole } from "@/hooks/use-user-role";
 import { useSimpleMode } from "@/hooks/use-simple-mode";
 import { APP_FONTS as FONTS, applyAppFont } from "@/lib/typography";
 import { ThemeCustomizationDialog } from "@/components/theme-customization-dialog";
-import { InterfaceMaterialPicker } from "@/components/interface-material-picker";
 import { HeaderNavigationDialog } from "@/components/header-navigation-dialog";
 import "@/settings-responsive.css";
 
@@ -106,7 +105,7 @@ function SettingsPage() {
   );
   const [isNative, setIsNative] = useState(() => Capacitor.isNativePlatform());
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [appearanceSaving, setAppearanceSaving] = useState(false);
+  const [themeSaving, setThemeSaving] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [showNavPicker, setShowNavPicker] = useState(false);
   const [navSlotToEdit, setNavSlotToEdit] = useState<1 | 2>(1);
@@ -260,7 +259,7 @@ function SettingsPage() {
     setShowFontPicker(false);
   };
 
-  const handleThemePreferenceChange = async (nextPreference: ThemePreference, message?: string) => {
+  const handleThemePreferenceChange = async (nextPreference: ThemePreference) => {
     const storedPreference = serializeThemePreference(nextPreference);
     const baseTheme =
       THEME_COLORS.find((color) => color.id === getThemePreferenceBaseId(nextPreference)) ||
@@ -269,7 +268,7 @@ function SettingsPage() {
     localStorage.setItem("app-theme-color-id", storedPreference);
     applyThemePreference(nextPreference);
     setShowColorPicker(false);
-    setAppearanceSaving(true);
+    setThemeSaving(true);
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw authError ?? new Error("Account unavailable");
@@ -279,12 +278,12 @@ function SettingsPage() {
         .eq("id", user.id)
         .select("theme_color")
         .single();
-      if (error || saved?.theme_color !== storedPreference) throw error ?? new Error("Appearance was not saved");
-      toast.success(message ?? (nextPreference.mode === "custom" ? "تم حفظ تخصيص ألوانك" : `تم تفعيل ${baseTheme.name}`));
+      if (error || saved?.theme_color !== storedPreference) throw error ?? new Error("Theme was not saved");
+      toast.success(nextPreference.mode === "custom" ? "تم حفظ تخصيص ألوانك" : `تم تفعيل ${baseTheme.name}`);
     } catch {
       toast.warning("حُفظ المظهر على هذا الجهاز، وتعذرت مزامنته مع الحساب. أعد المحاولة عند الاتصال.");
     } finally {
-      setAppearanceSaving(false);
+      setThemeSaving(false);
     }
   };
 
@@ -644,22 +643,10 @@ function SettingsPage() {
                   />
                 </div>
 
-                <InterfaceMaterialPicker
-                  value={themePreference.material ?? "classic"}
-                  disabled={appearanceSaving}
-                  onChange={(material) => {
-                    const current = parseThemePreference(localStorage.getItem("app-theme-color-id") || localStorage.getItem("theme-color"));
-                    void handleThemePreferenceChange(
-                      { ...current, material },
-                      material === "crystal" ? "تم تفعيل مجلس بلّوري" : "تم الرجوع إلى المظهر الكلاسيكي",
-                    );
-                  }}
-                />
-
                 <button
                   type="button"
                   onClick={() => setShowColorPicker(true)}
-                  disabled={appearanceSaving}
+                  disabled={themeSaving}
                   className="settings-identity-card w-full card-surface p-5 flex items-center justify-between gap-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-xl"
                 >
                   <div className="flex items-center gap-4 min-w-0">

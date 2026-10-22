@@ -12,7 +12,6 @@ const HoverCardContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>
 >(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
   <HoverCardPrimitive.Content
-    data-interface-surface="hovercard"
     ref={ref}
     align={align}
     sideOffset={sideOffset}
