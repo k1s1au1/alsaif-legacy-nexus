@@ -143,6 +143,10 @@ export function ThemeCustomizationDialog({
   onSave: (preference: ThemePreference) => void;
 }) {
   const initialBaseId = getThemePreferenceBaseId(preference);
+  const keepMaterial = (next: ThemePreference): ThemePreference => ({
+    ...next,
+    material: preference.material,
+  });
   const [mode, setMode] = useState<ThemePreference["mode"]>(preference.mode);
   const [presetId, setPresetId] = useState<ThemeColorId>(initialBaseId);
   const [customDraft, setCustomDraft] = useState<CustomThemePreference>(() =>
@@ -165,24 +169,24 @@ export function ThemeCustomizationDialog({
   const chooseMode = (nextMode: ThemePreference["mode"]) => {
     setMode(nextMode);
     applyThemePreference(
-      nextMode === "preset" ? createPresetThemePreference(presetId) : customDraft,
+      keepMaterial(nextMode === "preset" ? createPresetThemePreference(presetId) : customDraft),
     );
   };
 
   const choosePreset = (nextPresetId: ThemeColorId) => {
     setPresetId(nextPresetId);
     setCustomDraft(createCustomThemePreference(nextPresetId));
-    applyThemePreference(createPresetThemePreference(nextPresetId));
+    applyThemePreference(keepMaterial(createPresetThemePreference(nextPresetId)));
   };
 
   const chooseCustomRole = (role: CustomRoleKey, themeId: ThemeColorId) => {
     const nextPreference = { ...customDraft, [role]: themeId };
     setCustomDraft(nextPreference);
-    applyThemePreference(nextPreference);
+    applyThemePreference(keepMaterial(nextPreference));
   };
 
   const save = () => {
-    const nextPreference = mode === "preset" ? createPresetThemePreference(presetId) : customDraft;
+    const nextPreference = keepMaterial(mode === "preset" ? createPresetThemePreference(presetId) : customDraft);
     applyThemePreference(nextPreference);
     onSave(nextPreference);
   };
