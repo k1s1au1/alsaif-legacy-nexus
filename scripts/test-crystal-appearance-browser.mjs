@@ -76,6 +76,12 @@ try {
   const evaluate = async (expression) => { const result = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }); if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails)); return result.result.value; };
   const until = async (expression) => { for (let n = 0; n < 150; n++) { if (await evaluate(`Boolean(${expression})`)) return; await new Promise((resolve) => setTimeout(resolve, 40)); } throw Error(`Timed out: ${expression}`); };
   const settle = () => evaluate("new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,500))))");
+  const clickWithMouse = async (selector) => {
+    const point = await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'center'});const r=n.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+    await send("Input.dispatchMouseEvent", { type: "mousePressed", ...point, button: "left", clickCount: 1 });
+    await send("Input.dispatchMouseEvent", { type: "mouseReleased", ...point, button: "left", clickCount: 1 });
+  };
   const capture = async (name) => { const { cssContentSize } = await send("Page.getLayoutMetrics"); const image = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: 0, y: 0, width: cssContentSize.width, height: Math.min(cssContentSize.height, 2400), scale: 1 } }); writeFileSync(`test-results/crystal/${name}.png`, Buffer.from(image.data, "base64")); };
   const paperSnapshot = async () => {
     const clip = await evaluate("(()=>{const r=document.querySelector('.family-services-paper').getBoundingClientRect();return{x:r.x,y:r.y+scrollY,width:r.width,height:r.height,scale:1}})()");
@@ -112,7 +118,10 @@ try {
       const difference = await visualDifference(classicPaper, await paperSnapshot());
       assert.ok(difference.fraction > .22 && difference.mean > 7, `${name}: glass must visibly change the services surface, got ${JSON.stringify(difference)}`);
       assert.match(await evaluate("getComputedStyle(document.querySelector('.qa-settings')).backdropFilter"), /blur\(24px\)/, `${name}: internal pages use the full material`);
-      await evaluate("document.querySelector('.qa-search').value='العائلة';document.querySelector('[role=switch]').click();document.querySelector('[role=tab][data-state=inactive]').click()");
+      await evaluate("document.querySelector('.qa-search').value='العائلة';document.querySelector('[role=switch]').click()");
+      // Radix tabs activate on pointer-down; HTMLElement.click() omits that event.
+      await clickWithMouse('[role=tab][data-state=inactive]');
+      await until("document.querySelector('[role=tabpanel][data-state=active]')?.textContent.includes('المحفوظة')");
       assert.equal(await evaluate("document.querySelector('[role=switch]').getAttribute('aria-checked')"), "false", `${name}: glass switch remains interactive`);
       assert.match(await evaluate("document.querySelector('[role=tabpanel][data-state=active]').textContent"), /المحفوظة/, `${name}: segmented controls remain interactive`);
       await evaluate("document.querySelector('.qa-open-details').click()");
