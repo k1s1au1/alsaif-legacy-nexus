@@ -91,6 +91,7 @@ try {
       await evaluate("document.querySelector('[data-material=crystal]').click()");
       await settle();
       assert.equal(await evaluate("document.documentElement.dataset.interfaceMaterial"), "crystal");
+      assert.notEqual(await evaluate("getComputedStyle(document.querySelector('.qa-open-colors')).backgroundColor"), "rgba(0, 0, 0, 0)", `${name}: action buttons retain a solid identity fill under the sheen`);
       const crystal = await evaluate("qaLayout()");
       for (const block of ["hero","paper","header"]) for (const key of ["x","y","w","h"]) assert.ok(Math.abs(crystal[block][key] - classic[block][key]) < 1, `${name}: material preserves ${block}/${key}`);
       assert.ok(crystal.paper.y >= crystal.hero.y + crystal.hero.h - 1, `${name}: services stay below the full-width scene`);
