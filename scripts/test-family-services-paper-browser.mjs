@@ -222,138 +222,158 @@ try {
     ["ipad-pro-landscape", 1366, 1024, true],
     ["desktop", 1440, 1000, false],
   ]) {
-    await send("Emulation.setDeviceMetricsOverride", {
-      width,
-      height,
-      deviceScaleFactor: 1,
-      mobile: false,
-    });
-    await send("Emulation.setTouchEmulationEnabled", { enabled: width < 1400, maxTouchPoints: 5 });
-    await send("Emulation.setEmulatedMedia", {
-      features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
-    });
-    await send("Page.navigate", { url: `http://127.0.0.1:${port}/${tablet ? "?tablet=1" : ""}` });
-    await until("window.fixtureReady&&document.querySelector('.family-services-paper__toggle')");
-    await settle();
-    await evaluate(
-      `window.qaPapers=[...document.querySelectorAll('.family-services-paper')].filter(n=>n.getBoundingClientRect().width>0);window.qaPaper=qaPapers[0];window.qaToggle=qaPaper.querySelector('button');window.qaFolds=qaPaper.querySelector('.family-services-paper__folds');window.qaRect=n=>{const r=n.getBoundingClientRect();return{x:r.x,y:r.y+scrollY,width:r.width,height:r.height,right:r.right,bottom:r.bottom+scrollY}};window.qaSnapshot=()=>({paper:qaRect(qaPaper),after:qaRect(document.getElementById('qa-after')),scroll:document.documentElement.scrollWidth,toggle:qaRect(qaToggle),internal:[qaPaper,qaFolds,...qaPaper.querySelectorAll('.family-services-paper__fold')].some(n=>/auto|scroll/.test(getComputedStyle(n).overflowY))});window.qaContrast=()=>{const c=document.createElement('canvas').getContext('2d');const l=color=>{c.fillStyle=color;c.fillRect(0,0,1,1);return [...c.getImageData(0,0,1,1).data].slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0)};const contrast=(a,b)=>(Math.max(l(a),l(b))+.05)/(Math.min(l(a),l(b))+.05);const text=qaPaper.querySelector('.family-services-paper__label'),icon=qaPaper.querySelector('.family-services-paper__icon');return{text:contrast(getComputedStyle(text).color,getComputedStyle(qaPaper.querySelector('.family-services-paper__sheet')).backgroundColor),button:contrast(getComputedStyle(qaToggle).color,getComputedStyle(qaToggle).backgroundColor),icon:contrast(getComputedStyle(icon).color,getComputedStyle(icon).backgroundColor)}};`,
-    );
-    assert.equal(await evaluate("qaPapers.length"), 1, `${name}: one services directory`);
-    assert.deepEqual(
-      await evaluate("[...qaPaper.querySelectorAll('a')].map(a=>a.getAttribute('href'))"),
-      routes,
-      `${name}: all actual destinations retained`,
-    );
-    assert.equal(
-      await evaluate("qaPaper.querySelectorAll('.family-services-paper__primary a').length"),
-      4,
-    );
-    assert.equal(
-      await evaluate("qaFolds.inert&&qaFolds.getAttribute('aria-hidden')==='true'"),
-      true,
-    );
-    await evaluate('qaFolds.querySelector("a").focus()');
-    assert.equal(
-      await evaluate("qaFolds.contains(document.activeElement)"),
-      false,
-      `${name}: hidden services cannot receive focus`,
-    );
-    const before = await evaluate("qaSnapshot()");
-    assert.ok(before.scroll <= width + 2, `${name}: collapsed directory fits`);
-    assert.ok(before.toggle.height >= 44, `${name}: touch target`);
-    await screenshot(`${name}-collapsed`);
-    await evaluate("qaToggle.click()");
-    await settle();
-    const during = await evaluate("qaSnapshot()");
-    assert.ok(
-      during.paper.height > before.paper.height,
-      `${name}: unfolding changes paper geometry`,
-    );
-    await until(
-      "[...qaPaper.querySelectorAll('.family-services-paper__fold,.family-services-paper__fold-face')].every(n=>n.getAnimations().length===0)&&getComputedStyle(qaPaper.querySelector('.family-services-paper__fold:last-child .family-services-paper__fold-face')).opacity==='1'",
-    );
-    await settle();
-    const after = await evaluate("qaSnapshot()");
-    assert.ok(after.paper.height > before.paper.height + 150, `${name}: all paper folds appear`);
-    assert.ok(
-      Math.abs(after.after.y - before.after.y - (after.paper.height - before.paper.height)) < 3,
-      `${name}: subsequent content moves in normal page flow`,
-    );
-    assert.equal(after.internal, false, `${name}: no independent services scroller`);
-    assert.ok(after.scroll <= width + 2, `${name}: expanded directory fits`);
-    assert.equal(
-      await evaluate("qaFolds.inert||qaFolds.getAttribute('aria-hidden')!=='false'"),
-      false,
-    );
-    const fit = await evaluate(
-      `(()=>{const outer=qaRect(qaPaper.querySelector('.family-services-paper__sheet'));const links=[...qaPaper.querySelectorAll('a')];const labels=[...qaPaper.querySelectorAll('.family-services-paper__label')];return{inside:links.every(n=>{const r=qaRect(n);return r.x>=outer.x&&r.right<=outer.right+1&&r.y>=outer.y&&r.bottom<=outer.bottom+1&&r.height>=44}),labels:labels.every(n=>n.scrollWidth<=n.clientWidth+1),overlap:links.some((a,i)=>links.slice(i+1).some(b=>{const ra=qaRect(a),rb=qaRect(b);return Math.min(ra.right,rb.right)-Math.max(ra.x,rb.x)>1&&Math.min(ra.bottom,rb.bottom)-Math.max(ra.y,rb.y)>1}))}})()`,
-    );
-    assert.equal(fit.inside, true, `${name}: all services fit the paper`);
-    assert.equal(fit.labels, true, `${name}: Arabic labels remain visible`);
-    assert.equal(fit.overlap, false, `${name}: services do not overlap`);
-    await screenshot(`${name}-expanded`);
-    for (const mode of ["light", "dark", "custom"]) {
-      await evaluate(`qaTheme('${mode}')`);
+    try {
+      await send("Emulation.setDeviceMetricsOverride", {
+        width,
+        height,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      await send("Emulation.setTouchEmulationEnabled", {
+        enabled: width < 1400,
+        maxTouchPoints: 5,
+      });
+      await send("Emulation.setEmulatedMedia", {
+        features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
+      });
+      await send("Page.navigate", { url: `http://127.0.0.1:${port}/${tablet ? "?tablet=1" : ""}` });
+      await until("window.fixtureReady&&document.querySelector('.family-services-paper__toggle')");
       await settle();
-      // The site's global theme transition lasts 400ms. Measure the final
-      // identity after it settles, independently of the paper fold animation.
-      await until(
-        "[qaPaper,qaToggle,...qaPaper.querySelectorAll('.family-services-paper__sheet,.family-services-paper__label,.family-services-paper__icon')].every(n=>n.getAnimations().every(a=>a.playState!=='running'))",
-      );
-      const contrast = await evaluate("qaContrast()");
-      assert.ok(contrast.text >= 4.5, `${name}/${mode}: readable service labels ${contrast.text}`);
-      assert.ok(contrast.button >= 4.5, `${name}/${mode}: readable toggle ${contrast.button}`);
-      assert.ok(contrast.icon >= 3, `${name}/${mode}: visible service icon ${contrast.icon}`);
-      if (mode !== "light") await screenshot(`${name}-${mode}`);
-    }
-    await evaluate("qaToggle.focus()");
-    await send("Input.dispatchKeyEvent", {
-      type: "keyDown",
-      key: "Enter",
-      code: "Enter",
-      windowsVirtualKeyCode: 13,
-      nativeVirtualKeyCode: 13,
-    });
-    await send("Input.dispatchKeyEvent", {
-      type: "keyUp",
-      key: "Enter",
-      code: "Enter",
-      windowsVirtualKeyCode: 13,
-      nativeVirtualKeyCode: 13,
-    });
-    await until("qaToggle.getAttribute('aria-expanded')==='false'");
-    assert.equal(await evaluate("qaFolds.inert"), true);
-    await until("getComputedStyle(qaFolds).visibility==='hidden'");
-    await settle();
-    assert.ok(
-      Math.abs((await evaluate("qaSnapshot()")).paper.height - before.paper.height) < 3,
-      `${name}: folding restores compact height`,
-    );
-    await evaluate(
-      "new Promise(resolve=>{qaToggle.click();setTimeout(()=>{qaToggle.click();requestAnimationFrame(resolve)},150)})",
-    );
-    await until("qaToggle.getAttribute('aria-expanded')==='false'");
-    await until("getComputedStyle(qaFolds).visibility==='hidden'");
-    await settle();
-    assert.ok(
-      Math.abs((await evaluate("qaSnapshot()")).paper.height - before.paper.height) < 3,
-      `${name}: rapid reversal settles closed`,
-    );
-    await send("Emulation.setEmulatedMedia", {
-      features: [{ name: "prefers-reduced-motion", value: "reduce" }],
-    });
-    await evaluate("qaToggle.click()");
-    await settle();
-    assert.equal(
       await evaluate(
-        "getComputedStyle(qaPaper.querySelector('.family-services-paper__fold')).transitionDuration",
-      ),
-      "0s",
-      `${name}: respects reduced motion`,
-    );
-    console.log(
-      `${name}: paper geometry, 13 destinations, RTL labels, focus, folding, themes and reduced motion passed`,
-    );
+        `window.qaPapers=[...document.querySelectorAll('.family-services-paper')].filter(n=>n.getBoundingClientRect().width>0);window.qaPaper=qaPapers[0];window.qaToggle=qaPaper.querySelector('button');window.qaFolds=qaPaper.querySelector('.family-services-paper__folds');window.qaRect=n=>{const r=n.getBoundingClientRect();return{x:r.x,y:r.y+scrollY,width:r.width,height:r.height,right:r.right,bottom:r.bottom+scrollY}};window.qaSnapshot=()=>({paper:qaRect(qaPaper),after:qaRect(document.getElementById('qa-after')),scroll:document.documentElement.scrollWidth,toggle:qaRect(qaToggle),internal:[qaPaper,qaFolds,...qaPaper.querySelectorAll('.family-services-paper__fold')].some(n=>/auto|scroll/.test(getComputedStyle(n).overflowY))});window.qaContrast=()=>{const c=document.createElement('canvas').getContext('2d');const l=color=>{c.fillStyle=color;c.fillRect(0,0,1,1);return [...c.getImageData(0,0,1,1).data].slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0)};const contrast=(a,b)=>(Math.max(l(a),l(b))+.05)/(Math.min(l(a),l(b))+.05);const text=qaPaper.querySelector('.family-services-paper__label'),icon=qaPaper.querySelector('.family-services-paper__icon');return{text:contrast(getComputedStyle(text).color,getComputedStyle(qaPaper.querySelector('.family-services-paper__sheet')).backgroundColor),button:contrast(getComputedStyle(qaToggle).color,getComputedStyle(qaToggle).backgroundColor),icon:contrast(getComputedStyle(icon).color,getComputedStyle(icon).backgroundColor)}};`,
+      );
+      assert.equal(await evaluate("qaPapers.length"), 1, `${name}: one services directory`);
+      assert.deepEqual(
+        await evaluate("[...qaPaper.querySelectorAll('a')].map(a=>a.getAttribute('href'))"),
+        routes,
+        `${name}: all actual destinations retained`,
+      );
+      assert.equal(
+        await evaluate("qaPaper.querySelectorAll('.family-services-paper__primary a').length"),
+        4,
+      );
+      assert.equal(
+        await evaluate("qaFolds.inert&&qaFolds.getAttribute('aria-hidden')==='true'"),
+        true,
+      );
+      await evaluate('qaFolds.querySelector("a").focus()');
+      assert.equal(
+        await evaluate("qaFolds.contains(document.activeElement)"),
+        false,
+        `${name}: hidden services cannot receive focus`,
+      );
+      const before = await evaluate("qaSnapshot()");
+      assert.ok(before.scroll <= width + 2, `${name}: collapsed directory fits`);
+      assert.ok(before.toggle.height >= 44, `${name}: touch target`);
+      await screenshot(`${name}-collapsed`);
+      await evaluate("qaToggle.click()");
+      await settle();
+      const during = await evaluate("qaSnapshot()");
+      assert.ok(
+        during.paper.height > before.paper.height,
+        `${name}: unfolding changes paper geometry`,
+      );
+      await until(
+        "[...qaPaper.querySelectorAll('.family-services-paper__fold,.family-services-paper__fold-face')].every(n=>n.getAnimations().length===0)&&getComputedStyle(qaPaper.querySelector('.family-services-paper__fold:last-child .family-services-paper__fold-face')).opacity==='1'",
+      );
+      await settle();
+      const after = await evaluate("qaSnapshot()");
+      assert.ok(after.paper.height > before.paper.height + 150, `${name}: all paper folds appear`);
+      assert.ok(
+        Math.abs(after.after.y - before.after.y - (after.paper.height - before.paper.height)) < 3,
+        `${name}: subsequent content moves in normal page flow`,
+      );
+      assert.equal(after.internal, false, `${name}: no independent services scroller`);
+      assert.ok(after.scroll <= width + 2, `${name}: expanded directory fits`);
+      assert.equal(
+        await evaluate("qaFolds.inert||qaFolds.getAttribute('aria-hidden')!=='false'"),
+        false,
+      );
+      const fit = await evaluate(
+        `(()=>{const outer=qaRect(qaPaper.querySelector('.family-services-paper__sheet'));const links=[...qaPaper.querySelectorAll('a')];const labels=[...qaPaper.querySelectorAll('.family-services-paper__label')];return{inside:links.every(n=>{const r=qaRect(n);return r.x>=outer.x&&r.right<=outer.right+1&&r.y>=outer.y&&r.bottom<=outer.bottom+1&&r.height>=44}),labels:labels.every(n=>n.scrollWidth<=n.clientWidth+1),overlap:links.some((a,i)=>links.slice(i+1).some(b=>{const ra=qaRect(a),rb=qaRect(b);return Math.min(ra.right,rb.right)-Math.max(ra.x,rb.x)>1&&Math.min(ra.bottom,rb.bottom)-Math.max(ra.y,rb.y)>1}))}})()`,
+      );
+      assert.equal(fit.inside, true, `${name}: all services fit the paper`);
+      assert.equal(fit.labels, true, `${name}: Arabic labels remain visible`);
+      assert.equal(fit.overlap, false, `${name}: services do not overlap`);
+      await screenshot(`${name}-expanded`);
+      for (const mode of ["light", "dark", "custom"]) {
+        await evaluate(`qaTheme('${mode}')`);
+        await settle();
+        // The site's global theme transition lasts 400ms. Measure the final
+        // identity after it settles, independently of the paper fold animation.
+        await until(
+          "[qaPaper,qaToggle,...qaPaper.querySelectorAll('.family-services-paper__sheet,.family-services-paper__label,.family-services-paper__icon')].every(n=>n.getAnimations().every(a=>a.playState!=='running'))",
+        );
+        const contrast = await evaluate("qaContrast()");
+        assert.ok(
+          contrast.text >= 4.5,
+          `${name}/${mode}: readable service labels ${contrast.text}`,
+        );
+        assert.ok(contrast.button >= 4.5, `${name}/${mode}: readable toggle ${contrast.button}`);
+        assert.ok(contrast.icon >= 3, `${name}/${mode}: visible service icon ${contrast.icon}`);
+        if (mode !== "light") await screenshot(`${name}-${mode}`);
+      }
+      await evaluate("qaToggle.focus()");
+      await send("Input.dispatchKeyEvent", {
+        type: "keyDown",
+        key: "Enter",
+        code: "Enter",
+        text: "\r",
+        unmodifiedText: "\r",
+        windowsVirtualKeyCode: 13,
+        nativeVirtualKeyCode: 13,
+      });
+      await send("Input.dispatchKeyEvent", {
+        type: "keyUp",
+        key: "Enter",
+        code: "Enter",
+        windowsVirtualKeyCode: 13,
+        nativeVirtualKeyCode: 13,
+      });
+      await until("qaToggle.getAttribute('aria-expanded')==='false'");
+      assert.equal(await evaluate("qaFolds.inert"), true);
+      await until("getComputedStyle(qaFolds).visibility==='hidden'");
+      await settle();
+      assert.ok(
+        Math.abs((await evaluate("qaSnapshot()")).paper.height - before.paper.height) < 3,
+        `${name}: folding restores compact height`,
+      );
+      await evaluate(
+        "new Promise(resolve=>{qaToggle.click();setTimeout(()=>{qaToggle.click();requestAnimationFrame(resolve)},150)})",
+      );
+      await until("qaToggle.getAttribute('aria-expanded')==='false'");
+      await until("getComputedStyle(qaFolds).visibility==='hidden'");
+      await settle();
+      assert.ok(
+        Math.abs((await evaluate("qaSnapshot()")).paper.height - before.paper.height) < 3,
+        `${name}: rapid reversal settles closed`,
+      );
+      await send("Emulation.setEmulatedMedia", {
+        features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+      });
+      await evaluate("qaToggle.click()");
+      await settle();
+      assert.equal(
+        await evaluate(
+          "getComputedStyle(qaPaper.querySelector('.family-services-paper__fold')).transitionDuration",
+        ),
+        "0s",
+        `${name}: respects reduced motion`,
+      );
+      console.log(
+        `${name}: paper geometry, 13 destinations, RTL labels, focus, folding, themes and reduced motion passed`,
+      );
+    } catch (error) {
+      const report = await evaluate(
+        "({paper:window.qaPaper?qaSnapshot():null,expanded:window.qaToggle?.getAttribute('aria-expanded'),foldsVisibility:window.qaFolds?getComputedStyle(qaFolds).visibility:null,focused:document.activeElement?.outerHTML,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches})",
+      ).catch(() => null);
+      writeFileSync(
+        `test-results/services-paper/${name}-failure.json`,
+        JSON.stringify({ error: error.stack, report }, null, 2),
+      );
+      await screenshot(`${name}-failure`).catch(() => {});
+      throw error;
+    }
   }
   assert.deepEqual(errors, [], "No component runtime errors");
 } finally {
