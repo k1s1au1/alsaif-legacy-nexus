@@ -72,6 +72,15 @@ jobs:
       - name: Build web app
         id: web_build
         run: npm run build
+      - name: Check paper services folding, routes and responsive identity on all devices in Chrome
+        if: ${{ !cancelled() && steps.web_build.outcome == 'success' }}
+        run: node scripts/test-family-services-paper-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: family-services-paper-previews
+          path: test-results/services-paper
+          if-no-files-found: ignore
       - name: Check iPad landscape follow-up swipes, vertical scrolling and card activation in Chrome
         if: ${{ !cancelled() && steps.web_build.outcome == 'success' }}
         run: node scripts/test-followup-swipe-browser.mjs
