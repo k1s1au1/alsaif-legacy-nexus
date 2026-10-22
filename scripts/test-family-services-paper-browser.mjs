@@ -295,6 +295,11 @@ try {
     for (const mode of ["light", "dark", "custom"]) {
       await evaluate(`qaTheme('${mode}')`);
       await settle();
+      // The site's global theme transition lasts 400ms. Measure the final
+      // identity after it settles, independently of the paper fold animation.
+      await until(
+        "[qaPaper,qaToggle,...qaPaper.querySelectorAll('.family-services-paper__sheet,.family-services-paper__label,.family-services-paper__icon')].every(n=>n.getAnimations().every(a=>a.playState!=='running'))",
+      );
       const contrast = await evaluate("qaContrast()");
       assert.ok(contrast.text >= 4.5, `${name}/${mode}: readable service labels ${contrast.text}`);
       assert.ok(contrast.button >= 4.5, `${name}/${mode}: readable toggle ${contrast.button}`);
