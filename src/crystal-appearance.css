@@ -1,7 +1,7 @@
 /* Optional Liquid Glass. Keep geometry and identity roles owned by the existing UI. */
 html[data-interface-material="crystal"] {
   --crystal-highlight: rgb(255 255 255 / .9);
-  --crystal-glint: rgb(255 255 255 / .52);
+  --crystal-glint: rgb(255 255 255 / .38);
   --crystal-rim: color-mix(in srgb, white 72%, var(--identity-accent, var(--primary)));
   --crystal-shadow: color-mix(in srgb, var(--primary) 22%, transparent);
   --crystal-surface: var(--card);
@@ -63,7 +63,7 @@ html[data-interface-material="crystal"] :is(
 }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   html[data-interface-material="crystal"] {
-    --crystal-surface: color-mix(in srgb, var(--card) 56%, transparent);
+    --crystal-surface: color-mix(in srgb, color-mix(in srgb, var(--card) 80%, var(--identity-accent, var(--primary))) 56%, transparent);
     --crystal-nav: color-mix(in srgb, var(--nav-bg) 72%, transparent);
   }
   html.dark[data-interface-material="crystal"] {

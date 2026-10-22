@@ -943,7 +943,7 @@ html[data-theme-color-mode="custom"] body main .family-services-paper .family-se
 /* Optional crystal skin: keep the approved wide scene, greeting and paper folds in place. */
 html[data-interface-material="crystal"] body main :is(.dashboard-page.max-w-6xl.mx-auto.space-y-12, .desktop-rebuild-shell) .family-services-paper {
   background: var(--crystal-lens),
-    color-mix(in srgb, var(--services-sheet-outer) 38%, transparent) !important;
+    color-mix(in srgb, color-mix(in srgb, var(--services-sheet-outer) 62%, var(--identity-accent, var(--primary))) 56%, transparent) !important;
   border-color: var(--crystal-rim) !important;
   box-shadow: var(--crystal-depth) !important;
   -webkit-backdrop-filter: blur(26px) saturate(1.65);
@@ -951,13 +951,13 @@ html[data-interface-material="crystal"] body main :is(.dashboard-page.max-w-6xl.
 }
 html[data-interface-material="crystal"] body main .family-services-paper .family-services-paper__sheet {
   background: linear-gradient(165deg, var(--crystal-glint), transparent 55%),
-    color-mix(in srgb, var(--services-sheet-paper) 48%, transparent);
+    color-mix(in srgb, color-mix(in srgb, var(--services-sheet-paper) 65%, var(--identity-accent, var(--primary))) 56%, transparent);
   border-color: var(--crystal-rim);
   box-shadow: inset 0 1px 1px var(--crystal-highlight), 0 12px 32px -20px var(--crystal-shadow);
 }
 html[data-interface-material="crystal"] body main .family-services-paper .family-services-paper__fold-face {
   background: linear-gradient(180deg, var(--crystal-glint), transparent 35px),
-    color-mix(in srgb, var(--services-sheet-paper) 34%, transparent);
+    color-mix(in srgb, color-mix(in srgb, var(--services-sheet-paper) 65%, var(--identity-accent, var(--primary))) 42%, transparent);
 }
 html[data-interface-material="crystal"] body main .family-services-paper :is(.family-services-paper__toggle, .family-services-paper__icon) {
   background-image: radial-gradient(ellipse at var(--liquid-x, 15%) var(--liquid-y, 0%), rgb(255 255 255 / .32), transparent 65%),
@@ -968,7 +968,7 @@ html[data-interface-material="crystal"] body main .family-services-paper :is(.fa
 }
 html[data-interface-material="crystal"] body main .family-services-paper .family-services-paper__service {
   background: linear-gradient(150deg, color-mix(in srgb, var(--crystal-glint) 50%, transparent), transparent 55%),
-    color-mix(in srgb, var(--services-sheet-paper) 22%, transparent);
+    color-mix(in srgb, var(--services-sheet-paper) 12%, transparent);
   box-shadow: inset 0 1px 0 var(--crystal-highlight), 0 5px 16px -12px var(--crystal-shadow);
   outline: 1px solid color-mix(in srgb, var(--crystal-highlight) 60%, transparent);
   outline-offset: -1px;
