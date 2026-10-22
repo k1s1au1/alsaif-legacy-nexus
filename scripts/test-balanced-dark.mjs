@@ -180,6 +180,21 @@ for (const isDark of [false, true]) {
   }
 }
 const ivoryBase = createCustomThemePreference("family-ivory");
+// Existing accounts keep their identity colors after the old appearance wrapper is retired.
+for (const color of [...THEME_COLORS.map((theme) => theme.id), serializeThemePreference(custom)]) {
+  const legacy = `appearance:${JSON.stringify({ v: 1, material: "crystal", color })}`;
+  const restored = parseThemePreference(legacy);
+  assert.equal(serializeThemePreference(restored), color, "Legacy account colors survive migration");
+  assert.equal("material" in restored, false, "Retired material is discarded");
+  dark = false;
+  applyThemePreference(parseThemePreference(color));
+  const before = JSON.stringify([...properties]);
+  applyThemePreference(restored);
+  assert.equal(JSON.stringify([...properties]), before, "Restored colors match the original identity");
+}
+for (const value of ["appearance:broken", "appearance:null", 'appearance:{"v":1}', 'appearance:{"v":2,"color":"midnight"}', `appearance:${JSON.stringify({ v: 1, color: 'appearance:{"v":1,"color":"midnight"}' })}`]) {
+  assert.equal(serializeThemePreference(parseThemePreference(value)), "emerald", "Invalid legacy data falls back safely");
+}
 assert.equal(ivoryBase.textId, "emerald", "Starting from the ivory preset keeps its readable ink");
 assert.equal(
   ivoryBase.backgroundId,
