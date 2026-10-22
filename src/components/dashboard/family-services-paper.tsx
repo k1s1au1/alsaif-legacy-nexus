@@ -86,7 +86,7 @@ export function FamilyServicesPaper({ className = "" }: { className?: string }) 
       aria-labelledby={headingId}
       data-expanded={expanded}
     >
-      <header className="family-services-paper__heading">
+      <div className="family-services-paper__heading">
         <div>
           <h2 id={headingId}>خدمات العائلة</h2>
           <p>دليل المجلس، في ورقة واحدة</p>
@@ -101,7 +101,7 @@ export function FamilyServicesPaper({ className = "" }: { className?: string }) 
           <span>{expanded ? "إخفاء الكل" : "عرض الكل"}</span>
           <ChevronDown size={18} aria-hidden="true" />
         </button>
-      </header>
+      </div>
       <div className="family-services-paper__sheet">
         <div className="family-services-paper__masthead">
           <strong>دليل خدمات العائلة</strong>
