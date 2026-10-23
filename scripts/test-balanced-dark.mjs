@@ -141,6 +141,8 @@ assert.equal(properties.get("--card"), selected(custom.surfaceId).soft);
 assert.equal(properties.has("--input"), false, "Dark field border removed in custom light mode");
 for (const isDark of [false, true]) {
   dark = isDark;
+  applyThemePreference(createCustomThemePreference());
+  const originalIconForeground = properties.get("--identity-icon-foreground");
   for (const [role, property] of Object.entries(CUSTOM_ROLE_PROPERTIES)) {
     const draft = { ...createCustomThemePreference(), [role]: "family-ivory" };
     const restored = parseThemePreference(serializeThemePreference(draft));
@@ -173,9 +175,9 @@ for (const isDark of [false, true]) {
       `${role}: cancelling restores the saved account color`,
     );
     assert.equal(
-      properties.has("--identity-icon-foreground"),
-      false,
-      "Temporary ivory icon labels cleared",
+      properties.get("--identity-icon-foreground"),
+      originalIconForeground,
+      "Restoring a saved identity restores its own icon labels",
     );
   }
 }

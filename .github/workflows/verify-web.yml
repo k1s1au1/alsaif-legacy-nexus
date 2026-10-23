@@ -27,6 +27,8 @@ jobs:
         run: npx tsc --noEmit
       - name: Check balanced dark identity contrast, saved appearance and light restoration
         run: node scripts/test-balanced-dark.mjs
+      - name: Check every advanced color combination and role isolation
+        run: node scripts/test-advanced-color-roles.mjs
       - name: Check backup server connection configuration
         run: node --test scripts/test-supabase-server-clients.mjs
       - name: Check backup file saving and retry outcomes

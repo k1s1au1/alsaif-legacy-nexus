@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { THEME_COLORS } from "@/lib/themes";
+import { readableThemeInk } from "@/lib/theme-color-contrast";
 import {
   applyThemePreference,
   createCustomThemePreference,
@@ -342,6 +343,7 @@ export function ThemeCustomizationDialog({
                       <div className="theme-customizer-role-options">
                         {THEME_COLORS.map((theme) => {
                           const selected = customDraft[role.key] === theme.id;
+                          const swatchColor = getCustomRoleSwatch(theme.id, role.key, isDark);
                           return (
                             <button
                               type="button"
@@ -356,15 +358,13 @@ export function ThemeCustomizationDialog({
                               <i
                                 aria-hidden="true"
                                 style={{
-                                  backgroundColor: getCustomRoleSwatch(theme.id, role.key, isDark),
+                                  backgroundColor: swatchColor,
                                 }}
                               />
                               {selected && (
                                 <Check
                                   aria-hidden="true"
-                                  style={
-                                    theme.id === "family-ivory" ? { color: "#0D3F3E" } : undefined
-                                  }
+                                  style={{ color: readableThemeInk("#FFFFFF", swatchColor, 4.5) }}
                                 />
                               )}
                             </button>

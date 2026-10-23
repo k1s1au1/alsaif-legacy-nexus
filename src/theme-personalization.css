@@ -6,14 +6,79 @@ html[data-theme-color-mode="custom"] .text-primary {
 }
 
 html[data-theme-color-mode="custom"] .family-seal-header {
-  --seal-ink: var(--identity-text) !important;
+  --seal-ink: var(--identity-text-on-nav) !important;
+  --seal-paper: var(--identity-header) !important;
+  --seal-frame-ink: var(--identity-icon);
 }
 
-html[data-theme-color-mode="custom"] .family-seal-header svg,
 html[data-theme-color-mode="custom"] .settings-page .settings-section-nav svg,
 html[data-theme-color-mode="custom"] .settings-page .settings-identity-card svg,
 html[data-theme-color-mode="custom"] .desktop-sidebar-quick-access svg {
   color: var(--identity-icon) !important;
+}
+
+html[data-theme-color-mode="custom"] .family-seal-header svg {
+  color: var(--identity-icon-on-nav) !important;
+}
+
+html[data-theme-color-mode="custom"] :is(.family-seal-title, .family-seal-caption) {
+  color: var(--identity-text);
+}
+
+html[data-theme-color-mode="custom"] body main.app-shell-main,
+html[data-theme-color-mode="custom"] body main.app-shell-main > .app-shell-content {
+  background-color: var(--background) !important;
+}
+
+html[data-theme-color-mode="custom"] body main > .app-shell-header-wrap > header:not(.family-seal-header) {
+  background: var(--identity-header) !important;
+  color: var(--identity-text-on-nav) !important;
+}
+
+html[data-theme-color-mode="custom"] .family-services-paper {
+  --family-services-paper: var(--background);
+  --family-services-card: var(--card);
+  --family-services-line: var(--border);
+}
+
+html[data-theme-color-mode="custom"] .settings-page .settings-panel {
+  background: var(--card) !important;
+}
+
+html[data-theme-color-mode="custom"] :is(
+  [role="dialog"]:not(.theme-customizer-dialog),
+  [role="alertdialog"],
+  [role="listbox"],
+  [role="menu"]
+) {
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+}
+
+html[data-theme-color-mode="custom"] .btn-gold,
+html[data-theme-color-mode="custom"] :is(.settings-section-nav, .settings-nav-links, .admin-navigation) button.is-active {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+html[data-theme-color-mode="custom"] .btn-gold {
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+html[data-theme-color-mode="custom"] .settings-page .settings-section-nav button.is-active svg {
+  color: var(--identity-icon-on-accent) !important;
+}
+
+html[data-theme-color-mode="custom"] body main > .app-shell-bottom-dock > nav.app-shell-curved-dock {
+  background: var(--identity-header) !important;
+}
+
+html[data-theme-color-mode="custom"] body main > .app-shell-bottom-dock > nav.app-shell-curved-dock > .app-shell-dock-item > svg {
+  color: var(--identity-icon-on-nav) !important;
+}
+
+html[data-theme-color-mode="custom"] body main > .app-shell-bottom-dock > nav.app-shell-curved-dock > .app-shell-dock-item > span {
+  color: var(--identity-text-on-nav) !important;
 }
 
 /* This menu is portaled outside the header. Its ink follows text/icons, not the button accent. */
