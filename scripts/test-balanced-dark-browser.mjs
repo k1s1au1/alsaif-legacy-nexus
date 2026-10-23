@@ -350,6 +350,86 @@ try {
     }
     await evaluate("window.qaLight()");
     await settle();
+    // Exercise every palette choice in every role, plus mixed identities, against actual consumers.
+    const paletteIds = await evaluate("window.qaThemes");
+    const roleKeys = ["textId", "iconId", "backgroundId", "surfaceId", "navigationId", "accentId"];
+    const roleCases = [];
+    for (const dark of [false, true]) {
+      for (const role of roleKeys) for (const color of paletteIds) {
+        roleCases.push({ dark, label: `${dark ? "dark" : "light"}/${role}/${color}`, preference: {
+          mode: "custom", baseId: "emerald", textId: "emerald", iconId: "muted-palm",
+          backgroundId: "muted-palm", surfaceId: "emerald", navigationId: "emerald", accentId: "family-ivory", [role]: color,
+        } });
+      }
+      for (let offset = 0; offset < paletteIds.length; offset++) roleCases.push({
+        dark, label: `${dark ? "dark" : "light"}/mixed/${offset}`, preference: {
+          mode: "custom", baseId: "emerald", ...Object.fromEntries(roleKeys.map((role, index) => [role, paletteIds[(offset + index) % paletteIds.length]])),
+        },
+      });
+    }
+    await evaluate("window.scrollTo(0,0)");
+    if (width >= 970) {
+      await evaluate("document.querySelector('.family-seal-header [aria-label=\"فتح قائمة الخدمات\"]').focus()");
+      await key("Enter", 13);
+      await until("document.querySelector('.family-seal-service-item small')");
+    } else {
+      await evaluate("document.querySelector('#qa-open-dialog').click()");
+      await until("document.querySelector('[role=dialog]')");
+    }
+    const roleFailures = await evaluate(`(async () => {
+      const cases=${JSON.stringify(roleCases)},failures=[];
+      const color=(token,parent=document.body)=>{const n=document.createElement('i');n.style.color='var('+token+')';parent.append(n);const value=getComputedStyle(n).color;n.remove();return value;};
+      for(const item of cases){
+        window.qaPreference(item.preference,item.dark);
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        const check=(selector,property,token,parent)=>{const node=document.querySelector(selector);if(!node){failures.push({case:item.label,selector,missing:true});return;}const actual=getComputedStyle(node)[property],expected=color(token,parent);if(actual!==expected)failures.push({case:item.label,selector,property,expected,actual});};
+        check('body','backgroundColor','--background');
+        check('main.app-shell-main','backgroundColor','--background');
+        check('.app-shell-content','backgroundColor','--background');
+        check('.settings-panel','backgroundColor','--card');
+        check('.settings-panel h2','color','--foreground');
+        check('.family-services-paper','backgroundColor','--background');
+        check('.family-services-paper__sheet','backgroundColor','--card');
+        check('.family-services-paper__heading h2','color','--foreground');
+        check('.family-services-paper__label','color','--foreground');
+        check('.family-services-paper__icon','backgroundColor','--identity-icon');
+        check('.family-services-paper__icon svg','color','--identity-icon-foreground');
+        for(const selector of ['#qa-primary','#qa-accent-utility','.family-services-paper__toggle','#qa-settings-active','#qa-admin-active']){
+          check(selector,'backgroundColor','--primary');check(selector,'color','--primary-foreground');
+        }
+        const portal=${width >= 970 ? JSON.stringify(".family-seal-service-menu") : JSON.stringify("[role=dialog]")};
+        check(portal,'backgroundColor','--popover');
+        if(${width >= 970}){
+          const header=document.querySelector('.family-seal-header');
+          const paper=color('--seal-paper',header),nav=color('--nav-bg');
+          if(paper!==nav)failures.push({case:item.label,selector:'wide navigation surface',expected:nav,actual:paper});
+          check('.family-seal-link span','color','--identity-text-on-nav');
+          check('.family-seal-link svg','color','--identity-icon-on-nav');
+          check('.family-seal-title','color','--identity-text');
+          check('.family-seal-service-heading','color','--identity-text');
+          check('.family-seal-service-item span','color','--identity-text');
+          check('.family-seal-service-item>svg','color','--identity-icon');
+        }else{
+          check('.app-shell-header','backgroundColor','--nav-bg');
+          check('.app-shell-header b','color','--identity-text-on-nav');
+          check('#qa-header-icon','color','--identity-icon-on-nav');
+          check('.app-shell-curved-dock','backgroundColor','--nav-bg');
+          check('.app-shell-dock-item>svg','color','--identity-icon-on-nav');
+          check('.app-shell-dock-item>span','color','--identity-text-on-nav');
+        }
+        const icon=document.querySelector('.family-services-paper__icon'),button=document.querySelector('#qa-primary');
+        for(const [node,minimum] of [[icon,4.5],[button,4.5]]){const c=getComputedStyle(node);if(qaContrast(c.color,c.backgroundColor)<minimum)failures.push({case:item.label,selector:'filled control contrast',fg:c.color,bg:c.backgroundColor});}
+        if(failures.length>30)break;
+      }
+      return failures;
+    })()`);
+    if (roleFailures.length) console.log("ADVANCED_COLOR_FAILURES", JSON.stringify(roleFailures));
+    assert.deepEqual(roleFailures, [], `${name}: every advanced color reaches its own actual component without borrowing another role`);
+    await key("Escape", 27);
+    await until(width >= 970 ? "!document.querySelector('.family-seal-service-menu')" : "!document.querySelector('[role=dialog]')");
+    await evaluate("window.qaLight()");
+    await settle();
+    console.log(`PASS ${name}: ${roleCases.length} advanced role/color scenarios across page, cards, paper, icons, buttons, navigation and portals`);
     assert.ok(
       await evaluate("qaLuminance(qaColors('body').bg)>.8"),
       "Returning to light mode clears dark overrides",
@@ -440,6 +520,17 @@ try {
         );
         await until("document.querySelector('.theme-customizer-role-list')");
         for (const [role, property, preview, channel] of roles) {
+          for (const colorId of paletteIds) {
+            const choice = `[data-theme-role="${role}"] [data-color-id="${colorId}"]`;
+            await evaluate(`document.querySelector(${JSON.stringify(choice)}).click()`);
+            await until(`document.querySelector(${JSON.stringify(choice + '[aria-pressed=true]')})`);
+            const applied = await evaluate(`(() => {const n=document.createElement('i');n.style.color='var(${property})';document.body.append(n);const color=getComputedStyle(n).color;n.remove();return color;})()`);
+            assert.equal(
+              await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(preview)}))[${JSON.stringify(channel)}]`),
+              applied,
+              `${name}/${appearance}/${role}/${colorId}: preview matches the applied selection`,
+            );
+          }
           const ivory = `[data-theme-role="${role}"] [data-color-id="family-ivory"]`;
           assert.equal(
             await evaluate(

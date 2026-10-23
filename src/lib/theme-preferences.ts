@@ -1,5 +1,6 @@
 import { FAMILY_SERVICES_IVORY, THEME_COLORS, applyThemeColors } from "@/lib/themes";
 import { balancedDarkTheme } from "@/lib/dark-theme";
+import { readableThemeInk } from "@/lib/theme-color-contrast";
 
 export const DEFAULT_THEME_COLOR_ID = "emerald";
 export const CUSTOM_THEME_PREFIX = "custom:";
@@ -63,6 +64,7 @@ const customStyleProperties = [
   "--identity-icon",
   "--identity-icon-on-nav",
   "--identity-icon-foreground",
+  "--identity-icon-on-accent",
 ] as const;
 
 const themeIds = new Set(THEME_COLORS.map((theme) => theme.id));
@@ -260,13 +262,19 @@ export function getCustomThemeTokens(
     }
   }
   const ivoryInk = getThemeColor(DEFAULT_THEME_COLOR_ID).navBg;
-  if (preference.iconId === "family-ivory") tokens["--identity-icon-foreground"] = ivoryInk;
   if (preference.accentId === "family-ivory") tokens["--primary-foreground"] = ivoryInk;
   if (preference.navigationId === "family-ivory") {
-    tokens["--identity-text-on-nav"] = text.navBg;
-    tokens["--nav-fg"] = text.navBg;
-    tokens["--identity-icon-on-nav"] = icons.primary;
+    tokens["--identity-text-on-nav"] = preference.textId === "family-ivory" ? FAMILY_SERVICES_IVORY : text.navBg;
+    tokens["--identity-icon-on-nav"] = preference.iconId === "family-ivory" ? FAMILY_SERVICES_IVORY : icons.primary;
   }
+  // Foreground colors belong to their own container, never to a different role's accent.
+  const iconInk = preference.iconId === "family-ivory" ? ivoryInk : isDark ? icons.darkNavBg : icons.foreground;
+  tokens["--identity-icon-foreground"] = readableThemeInk(iconInk, tokens["--identity-icon"], 4.5);
+  tokens["--primary-foreground"] = readableThemeInk(tokens["--primary-foreground"], tokens["--primary"], 4.5);
+  tokens["--identity-text-on-nav"] = readableThemeInk(tokens["--identity-text-on-nav"], tokens["--nav-bg"], 4.5);
+  tokens["--identity-icon-on-nav"] = readableThemeInk(tokens["--identity-icon-on-nav"], tokens["--nav-bg"], 3);
+  tokens["--identity-icon-on-accent"] = readableThemeInk(tokens["--identity-icon"], tokens["--primary"], 3);
+  tokens["--nav-fg"] = tokens["--identity-text-on-nav"];
   return tokens;
 }
 
