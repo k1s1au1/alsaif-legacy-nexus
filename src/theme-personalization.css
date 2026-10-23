@@ -47,6 +47,10 @@ html[data-theme-color-mode="custom"] :is(.settings-section-nav, .settings-nav-li
   color: var(--primary-foreground) !important;
 }
 
+html[data-theme-color-mode="custom"] .btn-gold {
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
 html[data-theme-color-mode="custom"] .settings-page .settings-section-nav button.is-active svg {
   color: var(--identity-icon-on-accent) !important;
 }

@@ -33,6 +33,8 @@ for (const isDark of [false, true]) {
   const dependencies = {
     "--foreground": ["textId"], "--muted-foreground": ["textId"],
     "--background": ["backgroundId"], "--card": ["surfaceId"], "--popover": ["surfaceId"],
+    "--navy-base": ["backgroundId"], "--hero-card": ["surfaceId"], "--hero-pill": ["surfaceId"], "--navy-card": ["surfaceId"],
+    "--hero-logo-badge": ["navigationId"], "--gold-soft": ["accentId"],
     "--nav-bg": ["navigationId"],
     "--identity-icon": isDark ? ["iconId", "surfaceId", "navigationId"] : ["iconId"],
     "--primary": isDark ? ["accentId", "backgroundId", "surfaceId", "navigationId"] : ["accentId"],
