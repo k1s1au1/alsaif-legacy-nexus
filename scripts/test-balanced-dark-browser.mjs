@@ -202,6 +202,11 @@ try {
         windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode,
       });
   };
+  // These assertions sample final color states. Component motion is checked separately.
+  const freezeColorTransitions = () => evaluate(`document.querySelectorAll('body *').forEach(node=>{
+    node.style.setProperty('transition','none','important');
+    node.style.setProperty('animation','none','important');
+  })`);
   const shot = async (name) => {
     const png = await send("Page.captureScreenshot", {
       format: "png",
@@ -376,6 +381,7 @@ try {
       await evaluate("document.querySelector('#qa-open-dialog').click()");
       await until("document.querySelector('[role=dialog]')");
     }
+    await freezeColorTransitions();
     const roleFailures = await evaluate(`(async () => {
       const cases=${JSON.stringify(roleCases)},failures=[];
       const color=(token,parent=document.body)=>{const n=document.createElement('i');n.style.color='var('+token+')';parent.append(n);const value=getComputedStyle(n).color;n.remove();return value;};
@@ -519,6 +525,7 @@ try {
           `window.${appearance === "light" ? "qaLight" : "qaDark"}();document.querySelector('#qa-open-theme').click()`,
         );
         await until("document.querySelector('.theme-customizer-role-list')");
+        await freezeColorTransitions();
         for (const [role, property, preview, channel] of roles) {
           for (const colorId of paletteIds) {
             const choice = `[data-theme-role="${role}"] [data-color-id="${colorId}"]`;

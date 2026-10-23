@@ -41,6 +41,20 @@ html[data-theme-color-mode="custom"] .family-services-paper {
   --family-services-line: var(--border);
 }
 
+html[data-theme-color-mode="custom"] .settings-page .settings-panel {
+  background: var(--card) !important;
+}
+
+html[data-theme-color-mode="custom"] :is(
+  [role="dialog"]:not(.theme-customizer-dialog),
+  [role="alertdialog"],
+  [role="listbox"],
+  [role="menu"]
+) {
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+}
+
 html[data-theme-color-mode="custom"] .btn-gold,
 html[data-theme-color-mode="custom"] :is(.settings-section-nav, .settings-nav-links, .admin-navigation) button.is-active {
   background: var(--primary) !important;
