@@ -43,6 +43,7 @@ import {
 } from "../../src/lib/theme-preferences";
 import { ThemeCustomizationDialog } from "../../src/components/theme-customization-dialog";
 import { THEME_COLORS } from "../../src/lib/themes";
+import { NAV_REGISTRY } from "../../src/lib/navigation-registry";
 import tripPhoto from "../../src/assets/trip-alula.jpg";
 import "../../src/settings-responsive.css";
 import "../../src/chat-workspace.css";
@@ -68,6 +69,10 @@ win.qaCustom = () =>
     navigationId: "heritage-maroon",
     accentId: "muted-palm",
   });
+win.qaPreference = (preference: ThemePreference, dark: boolean) => {
+  document.documentElement.classList.toggle("dark", dark);
+  applyThemePreference(preference);
+};
 win.qaLight = () => {
   document.documentElement.classList.remove("dark");
   applyThemePreference({ mode: "preset", presetId: "emerald" });
@@ -268,7 +273,8 @@ function Header() {
           title="السيف"
           path="/dashboard"
           shortcuts={[]}
-          services={[]}
+          services={NAV_REGISTRY.filter((item) => ["finance", "tasks", "trips", "meetings"].includes(item.id))
+            .map((item) => ({ ...item, description: "إدارة خدمات العائلة" }))}
           onOpenMenu={() => {}}
           account={<span>حساب المعاينة</span>}
           notifications={<Bell size={18} />}
