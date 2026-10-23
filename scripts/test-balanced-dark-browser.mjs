@@ -531,6 +531,10 @@ try {
             const choice = `[data-theme-role="${role}"] [data-color-id="${colorId}"]`;
             await evaluate(`document.querySelector(${JSON.stringify(choice)}).click()`);
             await until(`document.querySelector(${JSON.stringify(choice + '[aria-pressed=true]')})`);
+            assert.ok(
+              await evaluate(`(() => {const option=document.querySelector(${JSON.stringify(choice)});return qaContrast(getComputedStyle(option.querySelector('svg')).color,getComputedStyle(option.querySelector('i')).backgroundColor)>=4.5;})()`),
+              `${name}/${appearance}/${role}/${colorId}: the selected color's checkmark remains readable`,
+            );
             const applied = await evaluate(`(() => {const n=document.createElement('i');n.style.color='var(${property})';document.body.append(n);const color=getComputedStyle(n).color;n.remove();return color;})()`);
             assert.equal(
               await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(preview)}))[${JSON.stringify(channel)}]`),
