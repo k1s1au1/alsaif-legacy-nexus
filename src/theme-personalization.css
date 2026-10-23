@@ -16,6 +16,23 @@ html[data-theme-color-mode="custom"] .desktop-sidebar-quick-access svg {
   color: var(--identity-icon) !important;
 }
 
+/* This menu is portaled outside the header. Its ink follows text/icons, not the button accent. */
+html[data-theme-color-mode="custom"] :is(
+  .family-seal-service-menu,
+  .family-seal-service-heading,
+  .family-seal-service-item
+) {
+  color: var(--identity-text) !important;
+}
+
+html[data-theme-color-mode="custom"] .family-seal-service-item > svg {
+  color: var(--identity-icon) !important;
+}
+
+html[data-theme-color-mode="custom"] .family-seal-service-item small {
+  color: var(--muted-foreground) !important;
+}
+
 html[data-theme-color-mode="custom"] .app-shell-header svg,
 html[data-theme-color-mode="custom"] .app-shell-bottom-dock svg,
 html[data-theme-color-mode="custom"] .integrated-hub .hub-tabs svg {

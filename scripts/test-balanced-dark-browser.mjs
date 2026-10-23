@@ -195,6 +195,13 @@ try {
     }
     throw Error(`Timed out: ${expression}`);
   };
+  const key = async (value, keyCode) => {
+    for (const type of ["keyDown", "keyUp"])
+      await send("Input.dispatchKeyEvent", {
+        type, key: value, code: value,
+        windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode,
+      });
+  };
   const shot = async (name) => {
     const png = await send("Page.captureScreenshot", {
       format: "png",
@@ -296,6 +303,51 @@ try {
       true,
       "Custom text color reaches trip cards",
     );
+    if (width >= 970) {
+      // Reproduce green text/icons with an ivory button accent in the real portaled services menu.
+      for (const appearance of ["light", "dark"]) {
+        let savedInk;
+        for (const accentId of ["family-ivory", "royal-copper"]) {
+          const preference = {
+            mode: "custom", baseId: "emerald", textId: "emerald", iconId: "muted-palm",
+            backgroundId: "muted-palm", surfaceId: "emerald", navigationId: "emerald", accentId,
+          };
+          await evaluate(`window.qaPreference(${JSON.stringify(preference)},${appearance === "dark"});window.scrollTo(0,0)`);
+          await settle();
+          if (!(await evaluate("Boolean(document.querySelector('.family-seal-service-menu'))"))) {
+            await evaluate("document.querySelector('.family-seal-header [aria-label=\"فتح قائمة الخدمات\"]').focus()");
+            await key("Enter", 13);
+            await until("document.querySelector('.family-seal-service-item small')");
+            await settle();
+          }
+          const colors = await evaluate(`(() => {
+            const menu=document.querySelector('.family-seal-service-menu');
+            const item=menu.querySelector('.family-seal-service-item');
+            const resolve=token=>{const n=document.createElement('span');n.style.color='var('+token+')';document.body.append(n);const c=getComputedStyle(n).color;n.remove();return c;};
+            const heading=getComputedStyle(menu.querySelector('.family-seal-service-heading')).color;
+            const label=getComputedStyle(item.querySelector('span')).color;
+            const icon=getComputedStyle(item.querySelector('svg')).color;
+            const description=getComputedStyle(item.querySelector('small')).color;
+            const bg=getComputedStyle(menu).backgroundColor;
+            return {heading,label,icon,description,textToken:resolve('--identity-text'),iconToken:resolve('--identity-icon'),mutedToken:resolve('--muted-foreground'),portal:!menu.closest('.family-seal-header'),textContrast:qaContrast(label,bg),iconContrast:qaContrast(icon,bg),descriptionContrast:qaContrast(description,bg)};
+          })()`);
+          assert.equal(colors.portal, true, "Services menu is tested outside the header");
+          assert.equal(colors.heading, colors.textToken, `${name}/${appearance}: menu heading follows text color`);
+          assert.equal(colors.label, colors.textToken, `${name}/${appearance}: service labels follow text color`);
+          assert.equal(colors.icon, colors.iconToken, `${name}/${appearance}: service icons follow icon color`);
+          assert.equal(colors.description, colors.mutedToken, `${name}/${appearance}: descriptions use readable secondary text`);
+          assert.ok(colors.textContrast >= 4.5 && colors.descriptionContrast >= 4.5, "Green menu text remains readable with an ivory button accent");
+          assert.ok(colors.iconContrast >= 3, "Selected green icons remain visible");
+          const ink = { heading: colors.heading, label: colors.label, icon: colors.icon, description: colors.description };
+          if (savedInk) assert.deepEqual(ink, savedInk, "Changing button accents does not recolor menu text or icons");
+          savedInk = ink;
+          if (accentId === "family-ivory") await shot(`services-menu-${appearance}-${name}`);
+        }
+        await key("Escape", 27);
+        await until("!document.querySelector('.family-seal-service-menu')");
+      }
+      console.log(`PASS ${name}: portaled services menu respects independent green text/icons with ivory and copper button accents`);
+    }
     await evaluate("window.qaLight()");
     await settle();
     assert.ok(
