@@ -1,0 +1,20 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.alsaif.familyhub.tv'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.alsaif.familyhub.tv'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0-preview'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    buildTypes {
+        release { minifyEnabled false }
+    }
+}

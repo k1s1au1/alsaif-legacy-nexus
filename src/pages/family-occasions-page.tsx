@@ -290,7 +290,7 @@ async function shareOccasion(o: Occasion) {
   });
 }
 
-function Preview({
+export function Preview({
   type,
   design,
   birthDate,
