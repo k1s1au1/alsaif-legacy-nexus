@@ -12,6 +12,8 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.ServiceWorkerClient;
+import android.webkit.ServiceWorkerController;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -61,21 +63,16 @@ public final class TvActivity extends Activity {
         settings.setUserAgentString(settings.getUserAgentString() + " AlsaifTV/1.0");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
+        ServiceWorkerController.getInstance().setServiceWorkerClient(new ServiceWorkerClient() {
+            @Override public WebResourceResponse shouldInterceptRequest(WebResourceRequest request) {
+                return localResponse(request);
+            }
+        });
         web.setWebChromeClient(new WebChromeClient());
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) { mainLoadFailed = false; }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                Uri uri = request.getUrl();
-                if (!isOwned(uri)) return null;
-                String asset = localAsset(uri.getPath());
-                if (asset == null) return null;
-                try {
-                    return new WebResourceResponse(mime(asset), asset.endsWith(".html") || asset.endsWith(".js") || asset.endsWith(".css") ? "UTF-8" : null,
-                        200, "OK", Collections.singletonMap("Cache-Control", "no-cache"), getAssets().open(asset));
-                } catch (IOException missing) {
-                    return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", Collections.emptyMap(),
-                        new java.io.ByteArrayInputStream(new byte[0]));
-                }
+                return localResponse(request);
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
@@ -114,6 +111,19 @@ public final class TvActivity extends Activity {
     }
 
     static boolean isOwned(Uri uri) { return "https".equalsIgnoreCase(uri.getScheme()) && HOST.equalsIgnoreCase(uri.getHost()) && (uri.getPort() == -1 || uri.getPort() == 443); }
+
+    private WebResourceResponse localResponse(WebResourceRequest request) {
+        Uri uri = request.getUrl();
+        if (!isOwned(uri)) return null;
+        String asset = localAsset(uri.getPath());
+        if (asset == null) return null;
+        try {
+            return new WebResourceResponse(mime(asset), asset.endsWith(".html") || asset.endsWith(".js") || asset.endsWith(".css") ? "UTF-8" : null,
+                200, "OK", Collections.singletonMap("Cache-Control", "no-cache"), getAssets().open(asset));
+        } catch (IOException missing) {
+            return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", Collections.emptyMap(), new java.io.ByteArrayInputStream(new byte[0]));
+        }
+    }
 
     static String localAsset(String path) {
         if (path == null || path.contains("..") || path.contains("\\") || path.indexOf('\0') >= 0) return null;
@@ -171,5 +181,5 @@ public final class TvActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle state) { web.saveState(state); super.onSaveInstanceState(state); }
     @Override protected void onPause() { CookieManager.getInstance().flush(); if (web != null) web.onPause(); super.onPause(); }
     @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); }
-    @Override protected void onDestroy() { if (web != null) { web.stopLoading(); web.destroy(); } super.onDestroy(); }
+    @Override protected void onDestroy() { ServiceWorkerController.getInstance().setServiceWorkerClient(null); if (web != null) { web.stopLoading(); web.destroy(); } super.onDestroy(); }
 }
