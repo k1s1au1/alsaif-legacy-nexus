@@ -9,6 +9,7 @@ import {
   Bell, Wallet, LockKeyhole, MessageCircle, Lightbulb, UserRound, ImageOff,
 } from "lucide-react";
 import { getCurrentUser, supabase } from "@/integrations/supabase/client";
+import { clearOfflineData } from "@/lib/offline-data";
 import { Preview as OccasionPreview } from "@/pages/family-occasions-page";
 import { TermsGate, useTermsReady } from "@/components/terms-gate";
 import { useSiteLogo } from "@/hooks/use-site-logo";
@@ -22,6 +23,10 @@ import "./tv.css";
 declare const __TV_PREVIEW__: boolean;
 declare global { interface Window { alsaifTvBack?: () => boolean } }
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 60000, refetchOnWindowFocus: true, refetchInterval: 5 * 60000, networkMode: "offlineFirst" } } });
+async function clearTvSessionData() {
+  await client.cancelQueries(); clearPrivateImageCache(); client.clear();
+  await Promise.race([clearOfflineData().catch(() => undefined), new Promise(resolve => setTimeout(resolve, 1500))]);
+}
 const views = [
   ["home", "الرئيسية", Home], ["events", "مناسبات العائلة", CalendarDays],
   ["members", "ركن الأعضاء", UsersRound], ["news", "الأخبار", Newspaper],
@@ -259,7 +264,12 @@ function TvApp({ userId }: { userId: string }) {
     };
     document.addEventListener("keydown", handle); return () => document.removeEventListener("keydown", handle);
   }, [back, termsReady]);
-  async function signOut() { await supabase.auth.signOut(); clearPrivateImageCache(); qc.clear(); web("/auth?next=%2Ftv-app%2Findex.html"); }
+  async function signOut() {
+    await clearTvSessionData();
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) { toast.error("تعذّر تسجيل الخروج، حاول مجددًا"); return; }
+    web("/auth?next=%2Ftv-app%2Findex.html");
+  }
   const overlay = detail !== null;
   return <div className="tv-app" ref={root} dir="rtl" inert={!termsReady || undefined}>
     <aside className="tv-sidebar" inert={overlay || undefined}><div className="tv-brand"><img src={logo || "/logo-home.png"} alt="شعار عائلة السيف" /><span>مجلس السيف<small>العائلة أقرب</small></span></div><nav aria-label="أقسام العائلة">{views.map(([next, title, Icon]) => <button type="button" key={next} data-tv-focus={`nav-${next}`} aria-current={view === next ? "page" : undefined} onClick={() => navigate(next)}><Icon /><span>{title}</span></button>)}</nav><button type="button" className="tv-settings-link" data-tv-focus="nav-settings" onClick={() => navigate("settings")}><Settings /><span>الإعدادات</span></button></aside>
@@ -277,7 +287,7 @@ function Entry() {
     setFailed(false);
     try { const { data, error } = await getCurrentUser(); if (error) throw error; if (data.user) setUserId(data.user.id); else web("/auth?next=%2Ftv-app%2Findex.html"); } catch { setFailed(true); }
   }, []);
-  useEffect(() => { check(); const { data } = supabase.auth.onAuthStateChange((event) => { if (event === "SIGNED_OUT") { clearPrivateImageCache(); client.clear(); setUserId(null); web("/auth?next=%2Ftv-app%2Findex.html"); } }); return () => data.subscription.unsubscribe(); }, [check]);
+  useEffect(() => { check(); const { data } = supabase.auth.onAuthStateChange((event) => { if (event === "SIGNED_OUT") { setUserId(null); void clearTvSessionData().finally(() => web("/auth?next=%2Ftv-app%2Findex.html")); } }); return () => data.subscription.unsubscribe(); }, [check]);
   if (failed) return <div className="tv-app tv-entry"><ErrorView retry={check} /></div>;
   if (!userId) return <div className="tv-app tv-entry"><Loading /></div>;
   return <TermsGate><TvApp userId={userId} /></TermsGate>;
