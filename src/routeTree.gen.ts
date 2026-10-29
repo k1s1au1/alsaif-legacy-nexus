@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as GamePreviewsRouteImport } from './routes/game-previews'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TvLoginRouteImport } from './routes/tv-login'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedArchiveRouteImport } from './routes/_authenticated/archive'
@@ -37,6 +38,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSuggestionsRouteImport } from './routes/_authenticated/suggestions'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedVaultRouteImport } from './routes/_authenticated/vault'
+import { Route as ApiTvPairRouteImport } from './routes/api.tv-pair'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedChatConversationIdRouteImport } from './routes/_authenticated/chat.$conversationId'
@@ -72,6 +74,11 @@ const McpRoute = McpRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvLoginRoute = TvLoginRouteImport.update({
+  id: '/tv-login',
+  path: '/tv-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -188,6 +195,11 @@ const AuthenticatedVaultRoute = AuthenticatedVaultRouteImport.update({
   path: '/vault',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiTvPairRoute = ApiTvPairRouteImport.update({
+  id: '/api/tv-pair',
+  path: '/api/tv-pair',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -234,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/game-previews': typeof GamePreviewsRoute
   '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tv-login': typeof TvLoginRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/archive': typeof AuthenticatedArchiveRoute
@@ -256,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/suggestions': typeof AuthenticatedSuggestionsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/vault': typeof AuthenticatedVaultRoute
+  '/api/tv-pair': typeof ApiTvPairRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
   '/members/$userId': typeof AuthenticatedMembersUserIdRoute
@@ -270,6 +284,7 @@ export interface FileRoutesByTo {
   '/game-previews': typeof GamePreviewsRoute
   '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tv-login': typeof TvLoginRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/archive': typeof AuthenticatedArchiveRoute
@@ -291,6 +306,7 @@ export interface FileRoutesByTo {
   '/suggestions': typeof AuthenticatedSuggestionsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/vault': typeof AuthenticatedVaultRoute
+  '/api/tv-pair': typeof ApiTvPairRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
   '/members/$userId': typeof AuthenticatedMembersUserIdRoute
@@ -307,6 +323,7 @@ export interface FileRoutesById {
   '/game-previews': typeof GamePreviewsRoute
   '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tv-login': typeof TvLoginRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/archive': typeof AuthenticatedArchiveRoute
@@ -329,6 +346,7 @@ export interface FileRoutesById {
   '/_authenticated/suggestions': typeof AuthenticatedSuggestionsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/vault': typeof AuthenticatedVaultRoute
+  '/api/tv-pair': typeof ApiTvPairRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
   '/_authenticated/members/$userId': typeof AuthenticatedMembersUserIdRoute
@@ -345,6 +363,7 @@ export interface FileRouteTypes {
     | '/game-previews'
     | '/mcp'
     | '/reset-password'
+    | '/tv-login'
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/archive'
@@ -367,6 +386,7 @@ export interface FileRouteTypes {
     | '/suggestions'
     | '/tasks'
     | '/vault'
+    | '/api/tv-pair'
     | '/.lovable/oauth/consent'
     | '/chat/$conversationId'
     | '/members/$userId'
@@ -381,6 +401,7 @@ export interface FileRouteTypes {
     | '/game-previews'
     | '/mcp'
     | '/reset-password'
+    | '/tv-login'
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/archive'
@@ -402,6 +423,7 @@ export interface FileRouteTypes {
     | '/suggestions'
     | '/tasks'
     | '/vault'
+    | '/api/tv-pair'
     | '/.lovable/oauth/consent'
     | '/chat/$conversationId'
     | '/members/$userId'
@@ -417,6 +439,7 @@ export interface FileRouteTypes {
     | '/game-previews'
     | '/mcp'
     | '/reset-password'
+    | '/tv-login'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
     | '/_authenticated/archive'
@@ -439,6 +462,7 @@ export interface FileRouteTypes {
     | '/_authenticated/suggestions'
     | '/_authenticated/tasks'
     | '/_authenticated/vault'
+    | '/api/tv-pair'
     | '/.lovable/oauth/consent'
     | '/_authenticated/chat/$conversationId'
     | '/_authenticated/members/$userId'
@@ -455,7 +479,9 @@ export interface RootRouteChildren {
   GamePreviewsRoute: typeof GamePreviewsRoute
   McpRoute: typeof McpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TvLoginRoute: typeof TvLoginRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ApiTvPairRoute: typeof ApiTvPairRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
 }
 
@@ -501,6 +527,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tv-login': {
+      id: '/tv-login'
+      path: '/tv-login'
+      fullPath: '/tv-login'
+      preLoaderRoute: typeof TvLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-protected-resource': {
@@ -657,6 +690,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVaultRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/tv-pair': {
+      id: '/api/tv-pair'
+      path: '/api/tv-pair'
+      fullPath: '/api/tv-pair'
+      preLoaderRoute: typeof ApiTvPairRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -788,8 +828,10 @@ const rootRouteChildren: RootRouteChildren = {
   GamePreviewsRoute: GamePreviewsRoute,
   McpRoute: McpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TvLoginRoute: TvLoginRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ApiTvPairRoute: ApiTvPairRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
 }
 export const routeTree = rootRouteImport

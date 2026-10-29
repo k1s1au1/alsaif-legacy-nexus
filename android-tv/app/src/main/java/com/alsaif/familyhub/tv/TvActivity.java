@@ -60,7 +60,7 @@ public final class TvActivity extends Activity {
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setSupportMultipleWindows(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " AlsaifTV/1.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " AlsaifTV/1.1");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         ServiceWorkerController.getInstance().setServiceWorkerClient(new ServiceWorkerClient() {
@@ -76,6 +76,7 @@ public final class TvActivity extends Activity {
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
+                if (request.isForMainFrame() && isOwned(uri) && "/auth".equals(uri.getPath())) { view.loadUrl(START); return true; }
                 if (isOwned(uri)) return false;
                 if (request.hasGesture() && "https".equalsIgnoreCase(uri.getScheme())) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (android.content.ActivityNotFoundException ignored) { }
@@ -84,6 +85,7 @@ public final class TvActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 if (mainLoadFailed) return;
+                if (isOwned(Uri.parse(url)) && "/auth".equals(Uri.parse(url).getPath())) { view.loadUrl(START); return; }
                 if (errorView != null) { frame.removeView(errorView); errorView = null; }
                 returnButton.setVisibility(url.startsWith(ORIGIN + "/tv-app/") ? View.GONE : View.VISIBLE);
                 if (!url.startsWith(ORIGIN + "/tv-app/")) installWebsiteRemoteNavigation();

@@ -39,6 +39,8 @@ jobs:
         run: npm run test:member-posts
       - name: Check approved account entry
         run: npm run test:account-entry
+      - name: Check TV phone approval, expiry, replay, quotas and private database access
+        run: node --experimental-transform-types --test scripts/test-tv-pairing.mts
       - name: Check navigation preferences and permissions
         run: npm run test:navigation
       - name: Check prayer rollover, official Mushaf sources and member bookmarks

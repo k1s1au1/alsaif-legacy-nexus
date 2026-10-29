@@ -156,6 +156,36 @@ body { margin: 0; }
 .tv-settings p { margin-bottom: calc(24 * var(--u)); }
 .tv-settings .tv-button { margin: 0 0 calc(14 * var(--u)) calc(10 * var(--u)); }
 .tv-entry { display: flex; align-items: center; justify-content: center; }
+.tv-login { position:relative; display:flex; flex-direction:column; isolation:isolate; padding:calc(34 * var(--u)) calc(62 * var(--u)) calc(18 * var(--u)); }
+.tv-login-scenery { position:absolute; inset:0; z-index:-2; width:100%; height:100%; object-fit:cover; opacity:.2; }
+.tv-login::before { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg,#071c19e8,#071c19b8 60%,#071c19ef); }
+.tv-login-brand { display:flex; align-items:center; gap:calc(14 * var(--u)); font-size:calc(24 * var(--u)); font-weight:700; }
+.tv-login-brand img { width:calc(65 * var(--u)); height:calc(65 * var(--u)); object-fit:contain; border-radius:50%; background:#f5f1e8; padding:calc(3 * var(--u)); }
+.tv-login-brand small { display:block; font-size:calc(15 * var(--u)); font-weight:400; color:#c3d4c9; }
+.tv-login-device { display:flex; align-items:center; gap:calc(9 * var(--u)); margin-right:auto; font-size:calc(16 * var(--u)); color:#c3d4c9; }
+.tv-login-content { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) calc(366 * var(--u)); gap:calc(72 * var(--u)); align-items:center; }
+.tv-login-copy { padding-bottom:calc(12 * var(--u)); }
+.tv-login-eyebrow { display:flex; align-items:center; gap:calc(10 * var(--u)); color:#d5c394; font-size:calc(21 * var(--u)); margin-bottom:calc(15 * var(--u)); }
+.tv-login h1 { font-size:calc(42 * var(--u)); line-height:1.5; margin-bottom:calc(10 * var(--u)); }
+.tv-login-lead { font-size:calc(25 * var(--u)); color:#d8e2d8; line-height:1.65; }
+.tv-login ol { list-style:none; margin:calc(24 * var(--u)) 0 0; padding:0; display:flex; flex-direction:column; gap:calc(17 * var(--u)); }
+.tv-login li { display:flex; align-items:center; gap:calc(15 * var(--u)); font-size:calc(22 * var(--u)); font-weight:600; }
+.tv-login li>span { width:calc(39 * var(--u)); height:calc(39 * var(--u)); display:grid; place-items:center; background:#d5c3941a; color:#e5d3a4; border:1px solid #d5c39444; border-radius:50%; flex-shrink:0; }
+.tv-login li small { display:block; font-size:calc(15 * var(--u)); color:#bdcfc3; font-weight:400; }
+.tv-login .tv-login-note { display:flex; align-items:center; gap:calc(10 * var(--u)); font-size:calc(16 * var(--u)); color:#bdcfc3; margin-top:calc(27 * var(--u)); }
+.tv-login-panel { padding:calc(18 * var(--u)) calc(20 * var(--u)); background:#f5f1e8; border-radius:calc(22 * var(--u)); color:#153d36; text-align:center; box-shadow:0 calc(20 * var(--u)) calc(60 * var(--u)) #0004; }
+.tv-login-panel h2 { font-size:calc(22 * var(--u)); margin-bottom:calc(10 * var(--u)); }
+.tv-login-qr { width:calc(290 * var(--u)); height:calc(290 * var(--u)); margin:auto; background:#fff; border-radius:calc(8 * var(--u)); overflow:hidden; }
+.tv-login-qr img { width:100%; height:100%; object-fit:contain; }
+.tv-login-qr-state { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:calc(18 * var(--u)); padding:calc(20 * var(--u)); font-size:calc(20 * var(--u)); color:#153d36; }
+.tv-login-qr-state svg { width:calc(50 * var(--u)); height:calc(50 * var(--u)); }
+.tv-login .tv-login-code-label { font-size:calc(14 * var(--u)); margin-top:calc(8 * var(--u)); }
+.tv-login-code { display:block; font-size:calc(30 * var(--u)); line-height:1.3; letter-spacing:calc(5 * var(--u)); font-variant-numeric:tabular-nums; }
+.tv-login .tv-login-countdown { font-size:calc(12 * var(--u)); margin-top:calc(3 * var(--u)); color:#52665a; }
+.tv-login .tv-login-status { font-size:calc(14 * var(--u)); min-height:calc(23 * var(--u)); line-height:1.5; margin-top:calc(8 * var(--u)); }
+.tv-login .tv-login-panel .tv-button { margin-top:calc(8 * var(--u)); padding:calc(8 * var(--u)) calc(18 * var(--u)); min-height:calc(42 * var(--u)); font-size:calc(16 * var(--u)); background:#e3e8de; border-color:#bccabd; color:#163f34; }
+.tv-login .tv-login-panel .tv-button:focus-visible { outline-color:#d5c394; outline-width:calc(4 * var(--u)); outline-offset:calc(4 * var(--u)); box-shadow:0 0 0 calc(8 * var(--u)) #153d36; }
+.tv-login-footer { text-align:center; color:#a8c0b1; font-size:calc(13 * var(--u)); }
 .tv-spin { animation: tv-spin 1.6s linear infinite; }
 @keyframes tv-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .tv-spin { animation: none; } }

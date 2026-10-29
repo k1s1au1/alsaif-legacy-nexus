@@ -19,6 +19,7 @@ import councilPhoto from "@/assets/council-oasis-night-wide-v2.webp";
 import { clearPrivateImageCache, loadTvItems, PROFILE_FIELDS, setAttendance, signedImage } from "./data";
 import { lineageIds, nearestInDirection, taskStage, tvDate, tvTime, type Direction, type TvItem, type TvView } from "./model";
 import "./tv.css";
+import { TvSignIn } from "./sign-in";
 
 declare const __TV_PREVIEW__: boolean;
 declare global { interface Window { alsaifTvBack?: () => boolean } }
@@ -268,7 +269,7 @@ function TvApp({ userId }: { userId: string }) {
     await clearTvSessionData();
     const { error } = await supabase.auth.signOut({ scope: "local" });
     if (error) { toast.error("تعذّر تسجيل الخروج، حاول مجددًا"); return; }
-    web("/auth?next=%2Ftv-app%2Findex.html");
+    window.location.replace("/tv-app/index.html");
   }
   const overlay = detail !== null;
   return <div className="tv-app" ref={root} dir="rtl" inert={!termsReady || undefined}>
@@ -282,14 +283,15 @@ function TvApp({ userId }: { userId: string }) {
 }
 
 function Entry() {
-  const [userId, setUserId] = useState<string | null>(null), [failed, setFailed] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null), [failed, setFailed] = useState(false), [checked, setChecked] = useState(false);
   const check = useCallback(async () => {
     setFailed(false);
-    try { const { data, error } = await getCurrentUser(); if (error) throw error; if (data.user) setUserId(data.user.id); else web("/auth?next=%2Ftv-app%2Findex.html"); } catch { setFailed(true); }
+    try { const { data, error } = await getCurrentUser(); if (error) throw error; setUserId(data.user?.id || null); setChecked(true); } catch { setFailed(true); }
   }, []);
-  useEffect(() => { check(); const { data } = supabase.auth.onAuthStateChange((event) => { if (event === "SIGNED_OUT") { setUserId(null); void clearTvSessionData().finally(() => web("/auth?next=%2Ftv-app%2Findex.html")); } }); return () => data.subscription.unsubscribe(); }, [check]);
+  useEffect(() => { check(); const { data } = supabase.auth.onAuthStateChange((event, session) => { if (event === "SIGNED_OUT") { setUserId(null); setChecked(true); void clearTvSessionData(); } else if (event === "SIGNED_IN" && session?.user) { setUserId(session.user.id); setChecked(true); } }); return () => data.subscription.unsubscribe(); }, [check]);
   if (failed) return <div className="tv-app tv-entry"><ErrorView retry={check} /></div>;
-  if (!userId) return <div className="tv-app tv-entry"><Loading /></div>;
+  if (!checked) return <div className="tv-app tv-entry"><Loading /></div>;
+  if (!userId) return <TvSignIn onSignedIn={setUserId} />;
   return <TermsGate><TvApp userId={userId} /></TermsGate>;
 }
 
