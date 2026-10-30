@@ -24,12 +24,19 @@ export class TvPairError extends Error {
   constructor(message: string, public status: number, public code: string) { super(message); }
 }
 export async function callTvPair(action: TvPairAction, body: Record<string, unknown>, token?: string, signal?: AbortSignal) {
-  const response = await fetch("/api/tv-pair", {
-    method: "POST", cache: "no-store", credentials: "omit", signal,
-    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: JSON.stringify({ action, ...body }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new TvPairError(data.error || "تعذّر الاتصال بخدمة دخول التلفزيون", response.status, data.code || "unavailable");
-  return data;
+  // Avoid AbortSignal.any/timeout: some supported TV WebViews predate those APIs.
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) abort(); else signal?.addEventListener("abort", abort, { once: true });
+  const timer = setTimeout(abort, 15000);
+  try {
+    const response = await fetch("/api/tv-pair", {
+      method: "POST", cache: "no-store", credentials: "omit", signal: controller.signal,
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ action, ...body }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new TvPairError(data.error || "تعذّر الاتصال بخدمة دخول التلفزيون", response.status, data.code || "unavailable");
+    return data;
+  } finally { clearTimeout(timer); signal?.removeEventListener("abort", abort); }
 }
