@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { createTvPairingHandler, pairHash } from "../src/lib/api/tv-pairing.server.ts";
-import { newPairSecret, pairingUrl, parsePairLink } from "../src/lib/tv-pairing.ts";
+import { callTvPair, newPairSecret, pairingUrl, parsePairLink, TvPairError } from "../src/lib/tv-pairing.ts";
 
 // Small in-memory PostgREST stand-in. Mutations execute atomically before yielding,
 // so parallel handler calls exercise the same compare-and-set contract as SQL.
@@ -120,6 +120,17 @@ test("cross-origin requests, rapid polling and quota errors fail closed; no-cach
   e.advance(3000); assert.equal((await e.call({ action: "status", ...pair })).status, 200);
   e.admin.rpc = async () => ({ data: false, error: null });
   assert.equal((await e.call({ action: "start", deviceSecret: newPairSecret(), approvalSecret: newPairSecret() })).status, 429);
+});
+
+test("network failure and cancellation return a recoverable Arabic error", async () => {
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => { throw new TypeError("Failed to fetch"); };
+    await assert.rejects(callTvPair("start", {}), err => err instanceof TvPairError && err.code === "network" && err.message.includes("تحقق من الإنترنت"));
+    const controller = new AbortController(); controller.abort();
+    globalThis.fetch = async (_url, init) => { assert(init?.signal?.aborted); throw new DOMException("Aborted", "AbortError"); };
+    await assert.rejects(callTvPair("status", {}, undefined, controller.signal), err => err instanceof TvPairError && err.code === "network");
+  } finally { globalThis.fetch = original; }
 });
 
 test("actual SQL denies client roles, enforces atomic quotas and a single consumed row", async () => {

@@ -38,5 +38,8 @@ export async function callTvPair(action: TvPairAction, body: Record<string, unkn
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new TvPairError(data.error || "تعذّر الاتصال بخدمة دخول التلفزيون", response.status, data.code || "unavailable");
     return data;
+  } catch (error) {
+    if (error instanceof TvPairError) throw error;
+    throw new TvPairError("تعذّر الاتصال. تحقق من الإنترنت وأعد المحاولة.", 0, "network");
   } finally { clearTimeout(timer); signal?.removeEventListener("abort", abort); }
 }
