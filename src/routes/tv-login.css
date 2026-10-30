@@ -1,0 +1,29 @@
+.tv-approval { min-height:100dvh; padding:max(24px,env(safe-area-inset-top)) 18px max(28px,env(safe-area-inset-bottom)); background:#eef2e9; color:#153d36; font-family:"IBM Plex Sans Arabic",sans-serif; line-height:1.7; display:flex; justify-content:center; }
+.tv-approval *, .tv-approval *::before, .tv-approval *::after { box-sizing:border-box; }
+.tv-approval-shell { width:min(100%,480px); }
+.tv-approval header { display:flex; align-items:center; gap:13px; margin:8px 3px 28px; font-size:23px; font-weight:700; }
+.tv-approval header img { width:64px; height:64px; object-fit:contain; border-radius:50%; background:#fff; }
+.tv-approval header small { display:block; font-size:14px; color:#50665e; font-weight:400; }
+.tv-approval-card { border:1px solid #d6e0d6; border-radius:26px; background:#fffdf7; padding:30px 24px; box-shadow:0 20px 70px #163d3610; text-align:center; }
+.tv-approval h1 { font-size:27px; font-weight:700; line-height:1.5; margin:16px 0 12px; color:#153d36; }
+.tv-approval p { font-size:17px; line-height:1.8; margin:12px 0 20px; color:#38564b; }
+.tv-approval svg { width:24px; height:24px; flex-shrink:0; vertical-align:middle; }
+.tv-approval-symbol { width:76px; height:76px; background:#e9efe7; color:#215b4d; border-radius:24px; display:grid; place-items:center; margin:auto; }
+.tv-approval-symbol svg { width:38px; height:38px; }
+.tv-approval-symbol.is-done { background:#154e41; color:#fff; }
+.tv-approval .tv-approval-code { display:block; font-size:46px; letter-spacing:7px; color:#164b3d; line-height:1.5; font-variant-numeric:tabular-nums; }
+.tv-approval .tv-approval-hint { font-size:13px; color:#56695e; margin:10px 0; }
+.tv-approval .tv-approval-primary,.tv-approval .tv-approval-secondary { width:100%; display:flex; align-items:center; justify-content:center; gap:9px; min-height:54px; padding:13px 15px; margin-top:13px; border-radius:14px; font:600 17px/1.6 "IBM Plex Sans Arabic",sans-serif; text-decoration:none; cursor:pointer; }
+.tv-approval .tv-approval-primary { background:#154e41; border:1px solid #154e41; color:#fffdf7; }
+.tv-approval .tv-approval-secondary { background:transparent; border:1px solid #aebfb2; color:#244e41; }
+.tv-approval .tv-approval-primary:disabled { background:#dce4db; border-color:#dce4db; color:#536756; cursor:default; }
+.tv-approval button:focus-visible,.tv-approval a:focus-visible,.tv-approval input:focus-visible { outline:3px solid #9a751b; outline-offset:4px; }
+.tv-approval-account { padding:15px; margin:22px 0 14px; background:#edf1e9; border-radius:14px; display:flex; gap:12px; align-items:center; text-align:right; font-size:13px; }
+.tv-approval-account strong { display:block; color:#153d36; font-size:15px; font-weight:600; overflow-wrap:anywhere; }
+.tv-approval-match { display:flex; align-items:flex-start; gap:12px; padding:14px 0; text-align:right; font-size:15px; color:#244c40; cursor:pointer; }
+.tv-approval-match input { width:23px; height:23px; flex-shrink:0; margin-top:2px; accent-color:#154e41; }
+.tv-approval footer { margin:23px 10px 0; text-align:center; font-size:13px; color:#50665b; display:flex; justify-content:center; gap:8px; }
+.tv-approval footer svg { width:19px; height:19px; }
+.tv-approval-spin { animation:tv-approval-turn 1.4s linear infinite; }
+@keyframes tv-approval-turn { to { transform:rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .tv-approval-spin { animation:none; } }

@@ -1,0 +1,43 @@
+name: Build Alsaif Android TV
+
+on:
+  push:
+    branches: [android-tv-image-first, tv-phone-signin]
+    paths: ["tv-app/**", "android-tv/**", "src/**", "public/**", "package*.json", ".github/workflows/build-android-tv.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tv-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: npm install --package-lock=false --ignore-scripts
+      - name: Verify TV navigation and data formatting
+        run: |
+          node --test tv-app/model.test.mjs
+          node --experimental-transform-types --test scripts/test-tv-pairing.mts
+          npx tsc -p tv-app/tsconfig.json --pretty false
+      - name: Build TV interface and original invitation templates
+        run: npx vite build --config tv-app/vite.config.ts
+      - name: Build television APK
+        run: |
+          chmod +x android/gradlew
+          android/gradlew -p android-tv assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Alsaif-TV-1.1.0-preview
+          path: android-tv/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
