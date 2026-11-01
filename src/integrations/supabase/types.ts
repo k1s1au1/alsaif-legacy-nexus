@@ -389,6 +389,24 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_site_visits: {
+        Row: {
+          recorded_at: string
+          user_id: string
+          visit_date: string
+        }
+        Insert: {
+          recorded_at?: string
+          user_id: string
+          visit_date: string
+        }
+        Update: {
+          recorded_at?: string
+          user_id?: string
+          visit_date?: string
+        }
+        Relationships: []
+      }
       event_attendees: {
         Row: {
           created_at: string
@@ -1761,10 +1779,61 @@ export type Database = {
         }
         Relationships: []
       }
-      daily_site_visits: {
-        Row: { visit_date: string; user_id: string; recorded_at: string }
-        Insert: { visit_date: string; user_id: string; recorded_at?: string }
-        Update: { visit_date?: string; user_id?: string; recorded_at?: string }
+      tv_login_rate_limits: {
+        Row: {
+          attempts: number
+          rate_key: string
+          window_start: string
+        }
+        Insert: {
+          attempts?: number
+          rate_key: string
+          window_start: string
+        }
+        Update: {
+          attempts?: number
+          rate_key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      tv_login_requests: {
+        Row: {
+          approval_hash: string
+          approved_user_id: string | null
+          claimed_at: string | null
+          code: string
+          created_at: string
+          device_hash: string
+          expires_at: string
+          id: string
+          last_polled_at: string | null
+          status: string
+        }
+        Insert: {
+          approval_hash: string
+          approved_user_id?: string | null
+          claimed_at?: string | null
+          code: string
+          created_at?: string
+          device_hash: string
+          expires_at: string
+          id: string
+          last_polled_at?: string | null
+          status?: string
+        }
+        Update: {
+          approval_hash?: string
+          approved_user_id?: string | null
+          claimed_at?: string | null
+          code?: string
+          created_at?: string
+          device_hash?: string
+          expires_at?: string
+          id?: string
+          last_polled_at?: string | null
+          status?: string
+        }
         Relationships: []
       }
       user_presence: {
@@ -1940,6 +2009,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_today_site_visit_count: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1958,7 +2028,6 @@ export type Database = {
       }
       is_council_leadership: { Args: { _u: string }; Returns: boolean }
       is_family_member: { Args: { _u: string }; Returns: boolean }
-      get_today_site_visit_count: { Args: Record<PropertyKey, never>; Returns: Json }
       is_guest: { Args: { _user_id: string }; Returns: boolean }
       is_technical_admin: { Args: { _u: string }; Returns: boolean }
       is_vice_chairman: { Args: { _u: string }; Returns: boolean }
@@ -2047,6 +2116,10 @@ export type Database = {
       submit_profile_change_request: {
         Args: { _changes: Json; _reason?: string }
         Returns: string
+      }
+      tv_login_take_rate_limit: {
+        Args: { _key: string; _limit: number; _window: string }
+        Returns: boolean
       }
     }
     Enums: {
